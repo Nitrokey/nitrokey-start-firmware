@@ -51,17 +51,98 @@ static msg_t Thread1(void *arg) {
   return 0;
 }
 
+static
+struct stdout {
+  Mutex m;
+  CondVar start_cnd;
+  CondVar finish_cnd;
+  const char *str;
+  int size;
+} stdout;
+
+static void
+stdout_init (void)
+{
+  chMtxInit (&stdout.m);
+  chCondInit (&stdout.start_cnd);
+  chCondInit (&stdout.finish_cnd);
+  stdout.size = 0;
+  stdout.str = NULL;
+}
+
+static int
+_write (const char *s, int size)
+{
+  chMtxLock (&stdout.m);
+  if (stdout.str)
+    chCondWait (&stdout.finish_cnd);
+  stdout.str = s;
+  stdout.size = size;
+  chCondSignal (&stdout.start_cnd);
+  chCondWait (&stdout.finish_cnd);
+  chMtxUnlock ();
+  return 0;
+}
+
 extern uint32_t count_in;
 extern __IO uint32_t count_out;
 extern uint8_t buffer_in[VIRTUAL_COM_PORT_DATA_SIZE];
 extern uint8_t buffer_out[VIRTUAL_COM_PORT_DATA_SIZE];
 extern void USB_Init (void);
 
+
+static WORKING_AREA(waThread2, 128);
+static msg_t Thread2 (void *arg)
+{
+  (void)arg;
+
+ again:
+
+  while (1)
+    {
+      if (bDeviceState == CONFIGURED)
+	break;
+
+      chThdSleepMilliseconds (100);
+    }
+
+  while (1)
+    {
+      if (bDeviceState != CONFIGURED)
+	break;
+
+      chMtxLock (&stdout.m);
+      if (stdout.str == NULL)
+	chCondWait (&stdout.start_cnd);
+
+      {
+	/* assume DATA_SIZE is large enough */
+	int i;
+
+	for (i = 0; i < stdout.size; i++)
+	  buffer_in[i] = stdout.str[i];
+	count_in = stdout.size;
+	USB_SIL_Write (EP1_IN, buffer_in, count_in);
+	SetEPTxValid (ENDP1);
+      }
+
+      stdout.str = NULL;
+      stdout.size = 0;
+      chCondSignal (&stdout.finish_cnd);
+      chMtxUnlock ();
+    }
+
+  goto again;
+  return 0;
+}
+
 /*
  * Entry point, note, the main() function is already a thread in the system
  * on entry.
  */
-int main(int argc, char **argv) {
+int main(int argc, char **argv)
+{
+  int count = 0;
 
   (void)argc;
   (void)argv;
@@ -69,31 +150,29 @@ int main(int argc, char **argv) {
   usb_lld_init ();
   USB_Init();
 
+  stdout_init ();
   /*
    * Creates the blinker thread.
    */
   chThdCreateStatic (waThread1, sizeof(waThread1), NORMALPRIO, Thread1, NULL);
 
-  while (TRUE) {
-    if (palReadPad(IOPORT1, GPIOA_BUTTON))
-      palSetPad (IOPORT3, GPIOC_LED);
-  
-    if ((count_out != 0) && (bDeviceState == CONFIGURED)) {
-      uint8_t i;
+  /*
+   * Creates 'stdout' thread.
+   */
+  chThdCreateStatic (waThread2, sizeof(waThread2), NORMALPRIO, Thread2, NULL);
 
-      for (i = 0; i<count_out; i++) {
-	buffer_in[(count_in+i)%64] = buffer_out[i];
-      }
-      count_in += count_out;
-      count_out = 0;
+  while (1)
+    {
+      if (palReadPad(IOPORT1, GPIOA_BUTTON))
+	palSetPad (IOPORT3, GPIOC_LED);
+
+      chThdSleepMilliseconds (100);
+
+      if (bDeviceState == CONFIGURED && (count % 10) == 0)
+	_write ("Hello world\r\n", 13);
+
+      count++;
     }
 
-    if (count_in > 0) {
-      USB_SIL_Write (EP1_IN, buffer_in, count_in);
-      SetEPTxValid (ENDP1);
-    }
-
-    chThdSleepMilliseconds (50);
-  }
   return 0;
 }
