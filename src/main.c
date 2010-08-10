@@ -44,9 +44,9 @@ static msg_t Thread1(void *arg) {
   (void)arg;
   while (TRUE) {
     palClearPad (IOPORT3, GPIOC_LED);
-    chThdSleepMilliseconds (500);
+    chThdSleepMilliseconds (1000);
     palSetPad (IOPORT3, GPIOC_LED);
-    chThdSleepMilliseconds (500);
+    chThdSleepMilliseconds (1000);
   }
   return 0;
 }
@@ -73,6 +73,9 @@ stdout_init (void)
 static int
 _write (const char *s, int size)
 {
+  if (size == 0)
+    return 0;
+
   chMtxLock (&stdout.m);
   if (stdout.str)
     chCondWait (&stdout.finish_cnd);
@@ -108,6 +111,9 @@ static msg_t Thread2 (void *arg)
 
   while (1)
     {
+      const char *p;
+      int len;
+
       if (bDeviceState != CONFIGURED)
 	break;
 
@@ -115,16 +121,34 @@ static msg_t Thread2 (void *arg)
       if (stdout.str == NULL)
 	chCondWait (&stdout.start_cnd);
 
-      {
-	/* assume DATA_SIZE is large enough */
-	int i;
+      p = stdout.str;
+      len = stdout.size;
+      while (len > 0)
+	{
+	  int i;
 
-	for (i = 0; i < stdout.size; i++)
-	  buffer_in[i] = stdout.str[i];
-	count_in = stdout.size;
-	USB_SIL_Write (EP1_IN, buffer_in, count_in);
-	SetEPTxValid (ENDP1);
-      }
+	  if (len < VIRTUAL_COM_PORT_DATA_SIZE)
+	    {
+	      for (i = 0; i < len; i++)
+		buffer_in[i] = p[i];
+	      count_in = len;
+	      len = 0;
+	    }
+	  else
+	    {
+	      for (i = 0; i < VIRTUAL_COM_PORT_DATA_SIZE; i++)
+		buffer_in[i] = p[i];
+	      len -= VIRTUAL_COM_PORT_DATA_SIZE;
+	      count_in = VIRTUAL_COM_PORT_DATA_SIZE;
+	      p += count_in;
+	    }
+
+	  USB_SIL_Write (EP1_IN, buffer_in, count_in);
+	  SetEPTxValid (ENDP1);
+
+	  while (count_in > 0)
+	    chThdSleepMilliseconds (1);
+	}
 
       stdout.str = NULL;
       stdout.size = 0;
@@ -163,14 +187,20 @@ int main(int argc, char **argv)
 
   while (1)
     {
+#if 0
       if (palReadPad(IOPORT1, GPIOA_BUTTON))
 	palSetPad (IOPORT3, GPIOC_LED);
+#endif
 
       chThdSleepMilliseconds (100);
 
-      if (bDeviceState == CONFIGURED && (count % 10) == 0)
-	_write ("Hello world\r\n", 13);
-
+      if (bDeviceState == CONFIGURED && (count % 30) == 0)
+	{
+	  _write ("0123456789"+((count / 30)%10), 1);
+	  _write ("\r\nThis is ChibiOS 2.0.2 on Olimex STM32-H103.\r\n"
+		  "Testing USB driver.\n\n"
+		  "Hello world\r\n\r\n", 47+21+15);
+	}
       count++;
     }
 
