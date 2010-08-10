@@ -114,11 +114,11 @@
  * Everything input with pull-up except:
  * PC6  - Normal input because there is an external resistor.
  * PC7  - Normal input because there is an external resistor.
- * PC11 - Push Pull output (CAN CNTRL).
+ * PC11 - Open Drain output (USB disconnect).
  * PC12 - Push Pull output (LED).
  */
 #define VAL_GPIOCCRL            0x44888888      /*  PC7...PC0 */
-#define VAL_GPIOCCRH            0x88833888      /* PC15...PC8 */
+#define VAL_GPIOCCRH            0x88837888      /* PC15...PC8 */
 #define VAL_GPIOCODR            0xFFFFFFFF
 
 /*

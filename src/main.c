@@ -27,6 +27,13 @@
 #include "ch.h"
 #include "hal.h"
 #include "test.h"
+#include "usb_lld.h"
+
+#include "usb_lib.h"
+#include "usb_istr.h"
+#include "usb_desc.h"
+#include "hw_config.h"
+#include "usb_pwr.h"
 
 /*
  * Red LEDs blinker thread, times are in milliseconds.
@@ -36,13 +43,19 @@ static msg_t Thread1(void *arg) {
 
   (void)arg;
   while (TRUE) {
-    palClearPad(IOPORT3, GPIOC_LED);
-    chThdSleepMilliseconds(500);
-    palSetPad(IOPORT3, GPIOC_LED);
-    chThdSleepMilliseconds(500);
+    palClearPad (IOPORT3, GPIOC_LED);
+    chThdSleepMilliseconds (500);
+    palSetPad (IOPORT3, GPIOC_LED);
+    chThdSleepMilliseconds (500);
   }
   return 0;
 }
+
+extern uint32_t count_in;
+extern __IO uint32_t count_out;
+extern uint8_t buffer_in[VIRTUAL_COM_PORT_DATA_SIZE];
+extern uint8_t buffer_out[VIRTUAL_COM_PORT_DATA_SIZE];
+extern void USB_Init (void);
 
 /*
  * Entry point, note, the main() function is already a thread in the system
@@ -53,24 +66,34 @@ int main(int argc, char **argv) {
   (void)argc;
   (void)argv;
 
-  /*
-   * Activates the serial driver 2 using the driver default configuration.
-   */
-  sdStart(&SD2, NULL);
+  usb_lld_init ();
+  USB_Init();
 
   /*
    * Creates the blinker thread.
    */
-  chThdCreateStatic(waThread1, sizeof(waThread1), NORMALPRIO, Thread1, NULL);
+  chThdCreateStatic (waThread1, sizeof(waThread1), NORMALPRIO, Thread1, NULL);
 
-  /*
-   * Normal main() thread activity, in this demo it does nothing except
-   * sleeping in a loop and check the button state.
-   */
   while (TRUE) {
     if (palReadPad(IOPORT1, GPIOA_BUTTON))
-      TestThread(&SD2);
-    chThdSleepMilliseconds(500);
+      palSetPad (IOPORT3, GPIOC_LED);
+  
+    if ((count_out != 0) && (bDeviceState == CONFIGURED)) {
+      uint8_t i;
+
+      for (i = 0; i<count_out; i++) {
+	buffer_in[(count_in+i)%64] = buffer_out[i];
+      }
+      count_in += count_out;
+      count_out = 0;
+    }
+
+    if (count_in > 0) {
+      USB_SIL_Write (EP1_IN, buffer_in, count_in);
+      SetEPTxValid (ENDP1);
+    }
+
+    chThdSleepMilliseconds (50);
   }
   return 0;
 }

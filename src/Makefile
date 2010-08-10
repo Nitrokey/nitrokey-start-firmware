@@ -57,7 +57,6 @@ LDSCRIPT= gpgtoken.ld
 
 # Imported source files
 CHIBIOS = ../ChibiOS_2.0.2
-include $(CHIBIOS)/boards/OLIMEX_STM32_P103/board.mk
 include $(CHIBIOS)/os/hal/platforms/STM32/platform.mk
 include $(CHIBIOS)/os/hal/hal.mk
 include $(CHIBIOS)/os/ports/GCC/ARMCMx/STM32F10x/port.mk
@@ -65,6 +64,7 @@ include $(CHIBIOS)/os/kernel/kernel.mk
 include $(CHIBIOS)/test/test.mk
 include stmusb.mk
 include usbcdc.mk
+include ../boards/OLIMEX_STM32_H103/board.mk
 
 # C sources that can be compiled in ARM or THUMB mode depending on the global
 # setting.
@@ -78,7 +78,7 @@ CSRC = $(PORTSRC) \
        $(CHIBIOS)/os/various/syscalls.c \
        $(STMUSBSRC) \
        $(USBCDCSRC) \
-       main.c
+       main.c hw_config.c usb_lld.c
 
 # List ASM source files here
 ASMSRC = $(PORTASM) \
