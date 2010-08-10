@@ -8,6 +8,7 @@ External source
 
 * ChibiOS_2.0.2
 Taken from http://chibios.sourceforge.net/
+Note that CRLF is converted to LF in this repository.
 
 * STM32_USB-FS-Device_Driver
 Taken from http://github.com/robots/STM32.git
