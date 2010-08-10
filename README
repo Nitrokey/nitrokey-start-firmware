@@ -1,0 +1,16 @@
+Souce code
+==========
+
+Initially, it is copy of ChibiOS_2.0.2/demos/ARMCM3-STM32F103-GCC/*.
+
+External source
+===============
+
+* ChibiOS_2.0.2
+Taken from http://chibios.sourceforge.net/
+
+* STM32_USB-FS-Device_Driver
+Taken from http://github.com/robots/STM32.git
+
+* USBCDC
+Taken from http://github.com/robots/STM32.git
