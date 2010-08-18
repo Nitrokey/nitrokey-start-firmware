@@ -50,10 +50,10 @@ endif
 #
 
 # Define project name here
-PROJECT = gpgtoken
+PROJECT = gnuk
 
 # Define linker script file here
-LDSCRIPT= gpgtoken.ld
+LDSCRIPT= gnuk.ld
 
 # Imported source files
 CHIBIOS = ../ChibiOS_2.0.2
@@ -78,7 +78,7 @@ CSRC = $(PORTSRC) \
        $(CHIBIOS)/os/various/syscalls.c \
        $(STMUSBSRC) \
        $(USBCDCSRC) \
-       main.c hw_config.c usb_lld.c
+       main.c hw_config.c usb_lld.c usb_desc.c usb_prop.c
 
 # List ASM source files here
 ASMSRC = $(PORTASM) \
