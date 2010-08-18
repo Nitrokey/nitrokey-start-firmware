@@ -70,7 +70,7 @@ stdout_init (void)
   stdout.str = NULL;
 }
 
-static int
+int
 _write (const char *s, int size)
 {
   if (size == 0)
@@ -160,6 +160,9 @@ static msg_t Thread2 (void *arg)
   return 0;
 }
 
+static WORKING_AREA(waUSBThread, 128);
+extern msg_t USBThread (void *arg);
+
 /*
  * Entry point, note, the main() function is already a thread in the system
  * on entry.
@@ -184,6 +187,8 @@ int main(int argc, char **argv)
    * Creates 'stdout' thread.
    */
   chThdCreateStatic (waThread2, sizeof(waThread2), NORMALPRIO, Thread2, NULL);
+
+  chThdCreateStatic (waUSBThread, sizeof(waUSBThread), NORMALPRIO, USBThread, NULL);
 
   while (1)
     {

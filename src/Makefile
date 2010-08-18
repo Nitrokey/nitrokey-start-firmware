@@ -78,7 +78,7 @@ CSRC = $(PORTSRC) \
        $(CHIBIOS)/os/various/syscalls.c \
        $(STMUSBSRC) \
        $(USBCDCSRC) \
-       main.c hw_config.c usb_lld.c usb_desc.c usb_prop.c
+       main.c hw_config.c usb_lld.c usb_desc.c usb_prop.c usb.c
 
 # List ASM source files here
 ASMSRC = $(PORTASM) \

@@ -15,3 +15,18 @@ Taken from http://github.com/robots/STM32.git
 
 * USBCDC
 Taken from http://github.com/robots/STM32.git
+
+
+HOWTO RUN
+=================
+
+$ openocd -f interface/olimex-jtag-tiny.cfg -f board/olimex_stm32_h103.cfg
+
+$ arm-none-eabi-gdb --annotate=3 gnuk.elf
+
+$ telnet localhost 4444
+> reset halt
+> flash write_image erase gnuk.elf
+> reset
+> exit
+$ 

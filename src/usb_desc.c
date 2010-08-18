@@ -37,7 +37,7 @@ static const uint8_t gnukConfigDescriptor[] = {
   0x01,   /* bConfigurationValue: Configuration value */
   0x00,   /* iConfiguration: Index of string descriptor describing the configuration */
   0xC0,   /* bmAttributes: self powered */
-  0x32,   /* MaxPower 0 mA */
+  50,	  /* MaxPower 100 mA */
 
   /* Interface Descriptor */
   9,			      /* bLength: Interface Descriptor size */
@@ -53,7 +53,7 @@ static const uint8_t gnukConfigDescriptor[] = {
   /* ICC Descriptor */
   54,			  /* bLength: */
   0x21,			  /* bDescriptorType: USBDESCR_ICC */
-  0x10, 0x01,		  /* bcdCCID: 1.1 */
+  0x10, 0x01,		  /* bcdCCID: 1.1 XXX */
   0,			  /* bMaxSlotIndex: */
   1,			  /* bVoltageSupport: FIXED VALUE */
   0x02, 0, 0, 0,	  /* dwProtocols: T=1 */
@@ -67,7 +67,7 @@ static const uint8_t gnukConfigDescriptor[] = {
   0, 0, 0, 0,		  /* dwSynchProtocols: FIXED VALUE */
   0, 0, 0, 0,		  /* dwMechanical: FIXED VALUE */
   0x40, 0x08, 0x04, 0x00, /* dwFeatures: Short and extended ADPU level */
-  0x0f, 0x01, 0, 0,	  /* dwMaxCCIDMessageLength: 261+10 */
+  0x0f, 0x01, 0, 0,	  /* dwMaxCCIDMessageLength: 261+10 XXX */
   0xff,			  /* bClassGetResponse: */
   0xff,			  /* bClassEnvelope: */
   0, 0,			  /* wLCDLayout: FIXED VALUE */
@@ -109,7 +109,7 @@ static const uint8_t gnukConfigDescriptor[] = {
   0x24,	    /* bDescriptorType: CS_INTERFACE */
   0x01,	    /* bDescriptorSubtype: Call Management Func Desc */
   0x00,	    /* bmCapabilities: D0+D1 */
-  0x01,	    /* bDataInterface: 1 */
+  0x02,	    /* bDataInterface: 1 */
   /*ACM Functional Descriptor*/
   4,	    /* bFunctionLength */
   0x24,	    /* bDescriptorType: CS_INTERFACE */
@@ -119,8 +119,8 @@ static const uint8_t gnukConfigDescriptor[] = {
   5,		 /* bFunctionLength */
   0x24,		 /* bDescriptorType: CS_INTERFACE */
   0x06,		 /* bDescriptorSubtype: Union func desc */
-  0x00,		 /* bMasterInterface: Communication class interface */
-  0x01,		 /* bSlaveInterface0: Data Class Interface */
+  0x01,		 /* bMasterInterface: Communication class interface */
+  0x02,		 /* bSlaveInterface0: Data Class Interface */
   /*Endpoint 2 Descriptor*/
   7,			       /* bLength: Endpoint Descriptor size */
   USB_ENDPOINT_DESCRIPTOR_TYPE,	   /* bDescriptorType: Endpoint */

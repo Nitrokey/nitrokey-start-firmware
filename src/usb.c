@@ -21,6 +21,37 @@
  *
  */
 
+#include "ch.h"
+#include "hal.h"
+
+#include "usb_lib.h"
+#include "usb_desc.h"
+#include "usb_mem.h"
+#include "hw_config.h"
+#include "usb_istr.h"
+
+static uint8_t icc_buffer_out[64];
+static uint8_t icc_buffer_in[64];
+
+static __IO uint32_t icc_count_out = 0;
+static uint32_t icc_count_in = 0;
+
+void
+EP4_IN_Callback(void)
+{
+}
+
+void
+EP5_OUT_Callback(void)
+{
+  /* Get the received data buffer and update the counter */
+  icc_count_out = USB_SIL_Read (EP5_OUT, icc_buffer_out);
+
+  /* Enable the receive of data on EP5 */
+  SetEPRxValid (ENDP5);
+}
+
+#if 0
 #define ICC_POWER_ON	0x62
 0 bMessageType  0x62
 1 dwLength      0x00000000
@@ -146,3 +177,19 @@ RDR_to_PC_DataBlock
 
 PC_to_RDR_XfrBlock
 RDR_to_PC_DataBlock
+#endif
+
+msg_t
+USBThread (void *arg)
+{
+  while (TRUE)
+    {
+      while (icc_count_out == 0)
+	chThdSleepMilliseconds (1);
+
+      _write ("!\r\n", 3);
+      icc_count_out = 0;
+    }
+
+  return 0;
+}
