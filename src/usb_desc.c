@@ -109,7 +109,7 @@ static const uint8_t gnukConfigDescriptor[] = {
   0x24,	    /* bDescriptorType: CS_INTERFACE */
   0x01,	    /* bDescriptorSubtype: Call Management Func Desc */
   0x00,	    /* bmCapabilities: D0+D1 */
-  0x02,	    /* bDataInterface: 1 */
+  0x02,	    /* bDataInterface: 2 */
   /*ACM Functional Descriptor*/
   4,	    /* bFunctionLength */
   0x24,	    /* bDescriptorType: CS_INTERFACE */

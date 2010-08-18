@@ -77,7 +77,7 @@ _write (const char *s, int size)
     return 0;
 
   chMtxLock (&stdout.m);
-  if (stdout.str)
+  while (stdout.str)
     chCondWait (&stdout.finish_cnd);
   stdout.str = s;
   stdout.size = size;
@@ -152,7 +152,7 @@ static msg_t Thread2 (void *arg)
 
       stdout.str = NULL;
       stdout.size = 0;
-      chCondSignal (&stdout.finish_cnd);
+      chCondBroadcast (&stdout.finish_cnd);
       chMtxUnlock ();
     }
 
@@ -160,7 +160,7 @@ static msg_t Thread2 (void *arg)
   return 0;
 }
 
-static WORKING_AREA(waUSBThread, 128);
+static WORKING_AREA(waUSBThread, 128*2);
 extern msg_t USBThread (void *arg);
 
 /*

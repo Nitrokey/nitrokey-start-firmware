@@ -30,6 +30,8 @@
 #include "hw_config.h"
 #include "usb_istr.h"
 
+Mutex icc_in_mutex;
+
 static uint8_t icc_buffer_out[64];
 static uint8_t icc_buffer_in[64];
 
@@ -39,6 +41,7 @@ static uint32_t icc_count_in = 0;
 void
 EP4_IN_Callback(void)
 {
+  icc_count_in = 0;
 }
 
 void
@@ -46,20 +49,25 @@ EP5_OUT_Callback(void)
 {
   /* Get the received data buffer and update the counter */
   icc_count_out = USB_SIL_Read (EP5_OUT, icc_buffer_out);
-
-  /* Enable the receive of data on EP5 */
-  SetEPRxValid (ENDP5);
 }
 
-#if 0
 #define ICC_POWER_ON	0x62
+#define ICC_POWER_OFF	0x63
+#define ICC_SLOT_STATUS	0x65
+#define XFR_BLOCK	0x6F
+
+#define ICC_MSG_SEQ_OFFSET 6
+#define ICC_MSG_STATUS_OFFSET 7
+#define ICC_MSG_ERROR_OFFSET 8
+
+#if 0
 0 bMessageType  0x62
 1 dwLength      0x00000000
 5 bSlot         0x00   FIXED
 6 bSeq          0x00-FF
 7 bReserved     0x01   FIXED
 8 abRFU         0x0000
-
+-->
 0  bMessageType    0x80 Indicates RDR_to_PC_DataBlock
 1  dwLength             Size of bytes for the ATR
 5  bSlot           0x00 FIXED
@@ -70,24 +78,21 @@ EP5_OUT_Callback(void)
 10 abData               ATR
 
 
-
-#define ICC_POWER_OFF	0x63
- 0 bMessageType 0x63             Indicates PC_to_RDR_IccPowerOn
- 1 dwLength     0x00000000       Message-specific data length
- 5 bSlot        0x00             FIXED
- 6 bSeq         0x00-FF          Sequence number for command.
- 7 abRFU        0x000000
-
- 0 bMessageType  81h         Indicates RDR_to_PC_SlotStatus
- 1 dwLength      0x00000000  Message-specific data length
- 5 bSlot         0x00        FIXED
- 6 bSeq          	     Sequence number for the corresponding command.
- 7 bStatus                   USB-ICC Status register as defined in Table 6.1-8
- 8 bError                    USB-ICC Error register as defined in Table 6.1-9
- 9 bReserved     0x00        FIXED
+0 bMessageType 0x63
+1 dwLength     0x00000000       Message-specific data length
+5 bSlot        0x00             FIXED
+6 bSeq         0x00-FF          Sequence number for command.
+7 abRFU        0x000000
+-->
+0 bMessageType  81h         Indicates RDR_to_PC_SlotStatus
+1 dwLength      0x00000000  Message-specific data length
+5 bSlot         0x00        FIXED
+6 bSeq          	     Sequence number for the corresponding command.
+7 bStatus                   USB-ICC Status register as defined in Table 6.1-8
+8 bError                    USB-ICC Error register as defined in Table 6.1-9
+9 bReserved     0x00        FIXED
 
 
-#define XFR_BLOCK	0x6F
 0  bMessageType     0x6F    Indicates PC_to_RDR_XfrBlock
 1  dwLength                 Size of abData field of this message
 5  bSlot            0x00    FIXED
@@ -114,8 +119,7 @@ EP5_OUT_Callback(void)
                            is expected in the next RDR_to_PC_DataBlock.
 
 10 abData                  Data block sent to the USB-ICC
-
-
+-->
 0  bMessageType   0x80      Indicates RDR_to_PC_DataBlock
 1  dwLength                 Size of abData field of this message
 5  bSlot          0x00      FIXED
@@ -179,16 +183,102 @@ PC_to_RDR_XfrBlock
 RDR_to_PC_DataBlock
 #endif
 
+/* Direct conversion, T=1, "FSIJ" */
+static const char ATR[] = { '\x3B', '\x84', '\x01', 'F', 'S', 'I', 'J' };
+
+void
+icc_power_on (char *buf, int len)
+{
+  int i, size_atr;
+
+  size_atr = sizeof (ATR);
+
+  chMtxLock (&icc_in_mutex);
+  icc_buffer_in[0] = 0x80;
+  icc_buffer_in[1] = size_atr;
+		/* not including '\0' at the end */
+  icc_buffer_in[2] = 0x00;
+  icc_buffer_in[3] = 0x00;
+  icc_buffer_in[4] = 0x00;
+  icc_buffer_in[5] = 0x00;	/* Slot */
+  icc_buffer_in[ICC_MSG_SEQ_OFFSET] = buf[ICC_MSG_SEQ_OFFSET];
+  icc_buffer_in[ICC_MSG_STATUS_OFFSET] = 0x00;
+  icc_buffer_in[ICC_MSG_ERROR_OFFSET] = 0x00;
+  icc_buffer_in[9] = 0x00;
+  for (i = 0; i < size_atr; i++)
+    icc_buffer_in[i+10] = ATR[i];
+
+  icc_count_in = 10 + size_atr;
+
+  USB_SIL_Write (EP4_IN, icc_buffer_in, icc_count_in);
+  SetEPTxValid (ENDP4);
+  chMtxUnlock ();
+
+  _write ("ON\r\n", 4);
+}
+
+void
+icc_power_off (char *buf, int len)
+{
+  chMtxLock (&icc_in_mutex);
+
+  icc_buffer_in[0] = 0x81;
+  icc_buffer_in[1] = 0x00;
+  icc_buffer_in[2] = 0x00;
+  icc_buffer_in[3] = 0x00;
+  icc_buffer_in[4] = 0x00;
+  icc_buffer_in[5] = 0x00;	/* Slot */
+  icc_buffer_in[ICC_MSG_SEQ_OFFSET] = buf[ICC_MSG_SEQ_OFFSET];
+  icc_buffer_in[ICC_MSG_STATUS_OFFSET] = 0x00;
+  icc_buffer_in[ICC_MSG_ERROR_OFFSET] = 0x00;
+  icc_buffer_in[9] = 0x00;
+
+  icc_count_in = 10;
+  USB_SIL_Write (EP4_IN, icc_buffer_in, icc_count_in);
+  SetEPTxValid (ENDP4);
+  chMtxUnlock ();
+
+  _write ("OFF\r\n", 5);
+}
+
 msg_t
 USBThread (void *arg)
 {
+  char b[3];
+
+  chMtxInit (&icc_in_mutex);
+
   while (TRUE)
     {
       while (icc_count_out == 0)
 	chThdSleepMilliseconds (1);
 
-      _write ("!\r\n", 3);
+      b[0] = icc_buffer_out[0];
+      b[1] = '\r';
+      b[2] = '\n';
+
+      _write (b, 3);
+      if (icc_buffer_out[0] == ICC_POWER_ON)
+	{
+	  /* Send back ATR (Answer To Reset) */
+	  icc_power_on (icc_buffer_out, icc_count_out);
+	}
+      else if (icc_buffer_out[0] == ICC_POWER_OFF
+	       || icc_buffer_out[0] == ICC_SLOT_STATUS)
+	{
+	  /* Kill ICC thread(s) and send back slot status */
+	  icc_power_off (icc_buffer_out, icc_count_out);
+	}
+      else if (icc_buffer_out[0] == XFR_BLOCK)
+	{
+	  /* Give this message to ICC thread */
+	}
+      else
+	{
+	}
+
       icc_count_out = 0;
+      SetEPRxValid (ENDP5);
     }
 
   return 0;
