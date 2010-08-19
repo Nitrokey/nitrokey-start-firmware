@@ -1,5 +1,5 @@
 /*
- * gpg.c -- 
+ * gpg.c -- OpenPGP card protocol support 
  *
  * Copyright (C) 2010 Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
@@ -21,7 +21,11 @@
  *
  */
 
-#define RSA_SIGNATURE_LENGTH 128 /* 128 byte == 1024-bit */
+#include "ch.h"
+#include "hal.h"
+#include "gnuk.h"
+
+#define RSA_SIGNATURE_LENGTH 256 /* 256 byte == 2048-bit */
 extern unsigned char *rsa_sign (unsigned char *);
 
 #define INS_PUT_DATA      0xDA
@@ -207,19 +211,20 @@ const char const do_5f50[] =
  * 6e L-6e [47 3 x x x ] [4f L-4f ...] [c0 L-c0 ...] ...
  * 7a L-7a [93 L-93 ... ]
  */
+#if 0
 
 static byte
 process_command_adpu (void)
 {
   if (icc_read_buf[1] == INS_GET_RESPONSE)
     {
-      stx_put_string (" - GET Response\r\n");
+      put_string (" - GET Response\r\n");
 
       if ((icc_result_flag & ICC_RESULT_BUF))
 	return 0;
       else
 	{
-	  stx_put_string ("Wrong GET Response\r\n");
+	  put_string ("Wrong GET Response\r\n");
 	  return 1;
 	}
     }
@@ -239,7 +244,7 @@ INS_VERIFY
 
   if (icc_read_buf[1] == INS_PUT_DATA)
     {
-      stx_put_string (" - PUT DATA\r\n");
+      put_string (" - PUT DATA\r\n");
       icc_result_value = 0x9000; /* 6a88: No record */
       icc_result_len = 0;
       icc_result_flag = 0;
@@ -248,7 +253,7 @@ INS_VERIFY
 
   if (icc_read_buf[1] == INS_PGP_GENERATE_ASYMMETRIC_KEY_PAIR)
     {
-      stx_put_string (" - Generate Asymmetric Key Pair\r\n");
+      put_string (" - Generate Asymmetric Key Pair\r\n");
 
       if (icc_read_buf[2] == 0x81)
 	{
@@ -346,7 +351,7 @@ INS_VERIFY
     }
   else if (icc_read_buf[1] == INS_READ_BINARY)
     {				/* it must be for DF 0x2f02 */
-      stx_put_string (" - Read binary\r\n");
+      put_string (" - Read binary\r\n");
 
       if (icc_read_buf[3] >= 6)
 	{
@@ -369,7 +374,7 @@ INS_VERIFY
     {
       if (icc_read_buf[2] == 4)	/* Selection by DF name */
 	{
-	  stx_put_string (" - select DF by name\r\n");
+	  put_string (" - select DF by name\r\n");
 	  /*
 	   * XXX: Should return contents.
 	   */
@@ -385,7 +390,7 @@ INS_VERIFY
 	      && icc_read_buf[5] == 0x2f
 	      && icc_read_buf[6] == 02)
 	{
-	  stx_put_string (" - select 0x2f02 EF\r\n");
+	  put_string (" - select 0x2f02 EF\r\n");
 	  /*
 	   * MF.EF-GDO -- Serial number of the card and name of the owner
 	   */
@@ -398,7 +403,7 @@ INS_VERIFY
 	    && icc_read_buf[5] == 0x3f
 	    && icc_read_buf[6] == 0)
 	  {
-	    stx_put_string (" - select ROOT MF\r\n");
+	    put_string (" - select ROOT MF\r\n");
 	    if (icc_read_buf[3] == 0x0c)
 	      {
 		icc_result_value = 0x9000;
@@ -414,7 +419,7 @@ INS_VERIFY
 	  }
 	else
 	  {
-	    stx_put_string (" - select ?? \r\n");
+	    put_string (" - select ?? \r\n");
 
 	    icc_result_value = 0x6a82; /* File missing */
 	    icc_result_len = 0;
@@ -423,7 +428,7 @@ INS_VERIFY
     }
   else if (icc_read_buf[1] == INS_GET_DATA)
     {
-      stx_put_string (" - Get Data\r\n");
+      put_string (" - Get Data\r\n");
 
       switch (((icc_read_buf[2]<<8) | icc_read_buf[3]))
 	{
@@ -535,12 +540,12 @@ INS_VERIFY
     }
   else if (icc_read_buf[1] == INS_PSO)
     {
-      stx_put_string (" - PSO\r\n");
+      put_string (" - PSO\r\n");
 
       if (icc_read_buf[2] == 0x9E && icc_read_buf[3] == 0x9A)
 	{
 	  if (icc_read_len != 5 + 35 && icc_read_len != 5 + 35 + 1)
-	    stx_put_string (" wrong length\r\n");
+	    put_string (" wrong length\r\n");
 	  else
 	    {
 	      icc_result_value = rsa_sign (&icc_read_buf[5]);
@@ -548,11 +553,11 @@ INS_VERIFY
 	      icc_result_flag = ICC_RESULT_BUF | ICC_RESULT_BUF_RAM;
 	    }
 
-	  stx_put_string ("done.\r\n");
+	  put_string ("done.\r\n");
 	}
       else
 	{
-	  stx_put_string (" - ???\r\n");
+	  put_string (" - ???\r\n");
 	  icc_result_value = 0x9000;
 	  icc_result_len = 0;
 	  icc_result_flag = 0;
@@ -560,10 +565,44 @@ INS_VERIFY
     }
   else
     {
-      stx_put_string (" - ???\r\n");
+      put_string (" - ???\r\n");
       icc_result_value = 0x9000;
       icc_result_len = 0;
       icc_result_flag = 0;
+    }
+
+  return 0;
+}
+#endif
+
+Thread *gpg_thread;
+
+msg_t
+GPGthread (void *arg)
+{
+  (void)arg;
+
+  gpg_thread = chThdSelf ();
+  chEvtClear (ALL_EVENTS);
+
+  while (1)
+    {
+      eventmask_t m;
+
+      m = chEvtWaitOne (ALL_EVENTS);
+
+      _write ("GPG!\r\n", 6);
+#if 0
+      receive_command_adpu ();
+#endif
+#if 0
+      process_command_adpu ();
+#endif
+#if 0
+      send_result_adpu ();
+#endif
+
+      chEvtSignal (icc_thread, EV_EXEC_FINISHED);
     }
 
   return 0;

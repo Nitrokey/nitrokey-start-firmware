@@ -1,5 +1,5 @@
 /*
- * usb.c -- 
+ * usb-icc.c -- USB CCID/ICCD protocol handling
  *
  * Copyright (C) 2010 Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
@@ -24,13 +24,13 @@
 #include "ch.h"
 #include "hal.h"
 
+#include "gnuk.h"
+
 #include "usb_lib.h"
 #include "usb_desc.h"
 #include "usb_mem.h"
 #include "hw_config.h"
 #include "usb_istr.h"
-
-Mutex icc_in_mutex;
 
 static uint8_t icc_buffer_out[64];
 static uint8_t icc_buffer_in[64];
@@ -38,17 +38,28 @@ static uint8_t icc_buffer_in[64];
 static __IO uint32_t icc_count_out = 0;
 static uint32_t icc_count_in = 0;
 
+Thread *icc_thread;
+
+#define EV_RX_DATA_READY (eventmask_t)1  /* USB Rx data available  */
+
+/*
+ * Tx done
+ */
 void
-EP4_IN_Callback(void)
+EP4_IN_Callback (void)
 {
   icc_count_in = 0;
 }
 
+/*
+ * Rx data
+ */
 void
-EP5_OUT_Callback(void)
+EP5_OUT_Callback (void)
 {
   /* Get the received data buffer and update the counter */
   icc_count_out = USB_SIL_Read (EP5_OUT, icc_buffer_out);
+  chEvtSignalI (icc_thread, EV_RX_DATA_READY);
 }
 
 #define ICC_POWER_ON	0x62
@@ -168,32 +179,31 @@ HW_ERROR     0xFB                         The USB-ICC detected a hardware error.
 
             all others                  Reserved for future use
             (0x80 and those filling the gaps)
-
-extern const uchar *icc_power_on (void);
-extern byte icc_get_status (void);
-
-
-PC_to_RDR_IccPowerOff
-RDR_to_PC_SlotStatus
-
-PC_to_RDR_IccPowerOn
-RDR_to_PC_DataBlock             
-
-PC_to_RDR_XfrBlock
-RDR_to_PC_DataBlock
 #endif
+
+enum icc_state
+{
+  ICC_STATE_START,		/* Initial */
+  ICC_STATE_WAIT,		/* Waiting ADPU */
+				/* Busy1, Busy2, Busy3, Busy5 */
+  ICC_STATE_EXECUTE,		/* Busy4 */
+  ICC_STATE_RECEIVE,		/* ADPU Received Partially */
+  ICC_STATE_SEND		/* ADPU Sent Partially */
+};
+
+static enum icc_state icc_state;
 
 /* Direct conversion, T=1, "FSIJ" */
 static const char ATR[] = { '\x3B', '\x84', '\x01', 'F', 'S', 'I', 'J' };
 
-void
+/* Send back ATR (Answer To Reset) */
+enum icc_state
 icc_power_on (char *buf, int len)
 {
   int i, size_atr;
 
   size_atr = sizeof (ATR);
 
-  chMtxLock (&icc_in_mutex);
   icc_buffer_in[0] = 0x80;
   icc_buffer_in[1] = size_atr;
 		/* not including '\0' at the end */
@@ -212,16 +222,14 @@ icc_power_on (char *buf, int len)
 
   USB_SIL_Write (EP4_IN, icc_buffer_in, icc_count_in);
   SetEPTxValid (ENDP4);
-  chMtxUnlock ();
 
   _write ("ON\r\n", 4);
+  return ICC_STATE_WAIT;
 }
 
-void
-icc_power_off (char *buf, int len)
+static void
+icc_send_status (char *buf, int len)
 {
-  chMtxLock (&icc_in_mutex);
-
   icc_buffer_in[0] = 0x81;
   icc_buffer_in[1] = 0x00;
   icc_buffer_in[2] = 0x00;
@@ -229,56 +237,212 @@ icc_power_off (char *buf, int len)
   icc_buffer_in[4] = 0x00;
   icc_buffer_in[5] = 0x00;	/* Slot */
   icc_buffer_in[ICC_MSG_SEQ_OFFSET] = buf[ICC_MSG_SEQ_OFFSET];
-  icc_buffer_in[ICC_MSG_STATUS_OFFSET] = 0x00;
+  if (icc_state == ICC_STATE_START)
+    icc_buffer_in[ICC_MSG_STATUS_OFFSET] = 2; /* No ICC present */
+  else
+    icc_buffer_in[ICC_MSG_STATUS_OFFSET] = 0; /* An ICC is present and active */
   icc_buffer_in[ICC_MSG_ERROR_OFFSET] = 0x00;
   icc_buffer_in[9] = 0x00;
 
   icc_count_in = 10;
   USB_SIL_Write (EP4_IN, icc_buffer_in, icc_count_in);
   SetEPTxValid (ENDP4);
-  chMtxUnlock ();
-
-  _write ("OFF\r\n", 5);
 }
 
-msg_t
-USBThread (void *arg)
+enum icc_state
+icc_power_off (char *buf, int len)
 {
+  
+  icc_send_status (buf, len);
+  _write ("OFF\r\n", 5);
+  return ICC_STATE_START;
+}
+
+static enum icc_state
+icc_handle_data (void)
+{
+  enum icc_state next_state = icc_state;
+
+#if 1
   char b[3];
 
-  chMtxInit (&icc_in_mutex);
+  b[0] = icc_buffer_out[0];
+  b[1] = '\r';
+  b[2] = '\n';
 
-  while (TRUE)
+  _write (b, 3);
+#endif
+
+  switch (icc_state)
     {
-      while (icc_count_out == 0)
-	chThdSleepMilliseconds (1);
-
-      b[0] = icc_buffer_out[0];
-      b[1] = '\r';
-      b[2] = '\n';
-
-      _write (b, 3);
+    case ICC_STATE_START:
       if (icc_buffer_out[0] == ICC_POWER_ON)
-	{
-	  /* Send back ATR (Answer To Reset) */
-	  icc_power_on (icc_buffer_out, icc_count_out);
+	next_state = icc_power_on (icc_buffer_out, icc_count_out);
+      else if (icc_buffer_out[0] == ICC_POWER_OFF)
+	next_state = icc_power_off (icc_buffer_out, icc_count_out);
+      else if (icc_buffer_out[0] == ICC_SLOT_STATUS)
+	icc_send_status (icc_buffer_out, icc_count_out);
+      else
+	{			/* XXX: error */
+	  _write ("ERR01\r\n", 7);
 	}
-      else if (icc_buffer_out[0] == ICC_POWER_OFF
-	       || icc_buffer_out[0] == ICC_SLOT_STATUS)
-	{
-	  /* Kill ICC thread(s) and send back slot status */
-	  icc_power_off (icc_buffer_out, icc_count_out);
-	}
+      break;
+    case ICC_STATE_WAIT:
+      if (icc_buffer_out[0] == ICC_POWER_OFF)
+	next_state = icc_power_off (icc_buffer_out, icc_count_out);
+      else if (icc_buffer_out[0] == ICC_SLOT_STATUS)
+	icc_send_status (icc_buffer_out, icc_count_out);
       else if (icc_buffer_out[0] == XFR_BLOCK)
 	{
-	  /* Give this message to ICC thread */
+	  if (icc_buffer_out[8] == 0 && icc_buffer_out[9] == 0)
+	    {
+	      /* Give this message to GPG thread */
+	      next_state = ICC_STATE_EXECUTE;
+	      chEvtSignal (gpg_thread, (eventmask_t)1);
+	    }
+	  else if (icc_buffer_out[8] == 1 && icc_buffer_out[9] == 0)
+	    {
+	      /* XXX: return back RDR_to_PC_DataBlock */
+	      /* bChainParameter = 0x10, abData=empty */
+	      next_state = ICC_STATE_RECEIVE;
+	    }
+	  else
+	    {
+	      /* XXX: error */;
+	      _write ("ERR02\r\n", 7);
+	    }
 	}
       else
-	{
+	{			/* XXX: error */
+	  _write ("ERR03\r\n", 7);
 	}
+      break;
+    case ICC_STATE_EXECUTE:
+      if (icc_buffer_out[0] == ICC_POWER_OFF)
+	{
+	  /* XXX: Kill GPG thread */
+	  next_state = icc_power_off (icc_buffer_out, icc_count_out);
+	}
+      else if (icc_buffer_out[0] == ICC_SLOT_STATUS)
+	icc_send_status (icc_buffer_out, icc_count_out);
+      else
+	{			/* XXX: error */
+	  _write ("ERR04\r\n", 7);
+	}
+      break;
+    case ICC_STATE_RECEIVE:
+      if (icc_buffer_out[0] == ICC_POWER_OFF)
+	{
+	  /* XXX: release partial ADPU received */
+	  next_state = icc_power_off (icc_buffer_out, icc_count_out);
+	}
+      else if (icc_buffer_out[0] == ICC_SLOT_STATUS)
+	icc_send_status (icc_buffer_out, icc_count_out);
+      else if (icc_buffer_out[0] == XFR_BLOCK)
+	{
+	  if (1 /* XXX */)			/* Got final block */
+	    {
+	      /* Give this message to GPG thread */
+	      next_state = ICC_STATE_EXECUTE;
+	      chEvtSignal (gpg_thread, (eventmask_t)1);
+	    }
+	}
+      else
+	{			/* XXX: error */
+	  _write ("ERR05\r\n", 7);
+	}
+      break;
+    case ICC_STATE_SEND:
+      if (icc_buffer_out[0] == ICC_POWER_OFF)
+	{
+	  /* XXX: release partial ADPU sending */
+	  next_state = icc_power_off (icc_buffer_out, icc_count_out);
+	}
+      else if (icc_buffer_out[0] == ICC_SLOT_STATUS)
+	icc_send_status (icc_buffer_out, icc_count_out);
+      else if (icc_buffer_out[0] == XFR_BLOCK)
+	{
+	  /* XXX: send back to data */
+	  /* finished?, then go ICC_STATE_WAIT */
+	  next_state = ICC_STATE_WAIT;
+	}
+      else
+	{			/* XXX: error */
+	  _write ("ERR06\r\n", 7);
+	}
+      break;
+    }
 
-      icc_count_out = 0;
-      SetEPRxValid (ENDP5);
+  icc_count_out = 0;
+  SetEPRxValid (ENDP5);
+  return next_state;
+}
+
+static enum icc_state
+icc_handle_timeout (void)
+{
+  enum icc_state next_state = icc_state;
+
+  /*
+   * 
+   * XXX: ICC_STATE_EXECUTE -> kill
+   * XXX: ICC_STATE_RECEIVE -> cancel
+   * XXX: ICC_STATE_SEND    -> cancel
+   */
+  if (icc_state == ICC_STATE_START
+      || icc_state == ICC_STATE_WAIT)
+    ;
+  else
+    {
+      next_state = ICC_STATE_WAIT;
+    }
+
+  chEvtSignal (blinker_thread, (eventmask_t)1);
+  return next_state;
+}
+
+#define USB_ICC_TIMEOUT MS2ST(1000)
+
+msg_t
+USBthread (void *arg)
+{
+  (void)arg;
+
+  icc_thread = chThdSelf ();
+  chEvtClear (ALL_EVENTS);
+
+  icc_state = ICC_STATE_START;
+
+  while (1)
+    {
+      eventmask_t m;
+
+      m = chEvtWaitOneTimeout (ALL_EVENTS, USB_ICC_TIMEOUT);
+
+      if (m == EV_RX_DATA_READY)
+	icc_state = icc_handle_data ();
+      else if (m == EV_EXEC_FINISHED)
+	{
+	  if (icc_state == ICC_STATE_EXECUTE)
+	    {
+	      if (1/* message is short enough*/)
+		{
+		  /* XXX: send back result */;
+		  icc_state = ICC_STATE_WAIT;
+		}
+	      else
+		{
+		  /* XXX: send back part of result */;
+		  icc_state = ICC_STATE_SEND;
+		}
+	    }
+	  else
+	    {			/* XXX: error */
+	      _write ("ERR07\r\n", 7);
+	    }
+	}
+      else			/* Timeout */
+	icc_state = icc_handle_timeout ();
     }
 
   return 0;

@@ -35,19 +35,23 @@
 #include "hw_config.h"
 #include "usb_pwr.h"
 
+Thread *blinker_thread;
 /*
  * Red LEDs blinker thread, times are in milliseconds.
  */
 static WORKING_AREA(waThread1, 128);
-static msg_t Thread1(void *arg) {
-
+static msg_t
+Thread1 (void *arg)
+{
   (void)arg;
-  while (TRUE) {
-    palClearPad (IOPORT3, GPIOC_LED);
-    chThdSleepMilliseconds (1000);
-    palSetPad (IOPORT3, GPIOC_LED);
-    chThdSleepMilliseconds (1000);
-  }
+  blinker_thread = chThdSelf ();
+  while (1)
+    {
+      palClearPad (IOPORT3, GPIOC_LED);
+      chEvtWaitOne (ALL_EVENTS);
+      palSetPad (IOPORT3, GPIOC_LED);
+      chEvtWaitOne (ALL_EVENTS);
+    }
   return 0;
 }
 
@@ -160,8 +164,11 @@ static msg_t Thread2 (void *arg)
   return 0;
 }
 
-static WORKING_AREA(waUSBThread, 128*2);
-extern msg_t USBThread (void *arg);
+static WORKING_AREA(waUSBthread, 128*2);
+extern msg_t USBthread (void *arg);
+
+static WORKING_AREA(waGPGthread, 128*4);
+extern msg_t GPGthread (void *arg);
 
 /*
  * Entry point, note, the main() function is already a thread in the system
@@ -188,7 +195,8 @@ int main(int argc, char **argv)
    */
   chThdCreateStatic (waThread2, sizeof(waThread2), NORMALPRIO, Thread2, NULL);
 
-  chThdCreateStatic (waUSBThread, sizeof(waUSBThread), NORMALPRIO, USBThread, NULL);
+  chThdCreateStatic (waUSBthread, sizeof(waUSBthread), NORMALPRIO, USBthread, NULL);
+  chThdCreateStatic (waGPGthread, sizeof(waGPGthread), NORMALPRIO, GPGthread, NULL);
 
   while (1)
     {
