@@ -26,7 +26,6 @@
 
 #include "ch.h"
 #include "hal.h"
-#include "test.h"
 #include "usb_lld.h"
 
 #include "usb_lib.h"
@@ -167,7 +166,7 @@ static msg_t Thread2 (void *arg)
 static WORKING_AREA(waUSBthread, 128*2);
 extern msg_t USBthread (void *arg);
 
-static WORKING_AREA(waGPGthread, 128*4);
+static WORKING_AREA(waGPGthread, 128*16);
 extern msg_t GPGthread (void *arg);
 
 /*

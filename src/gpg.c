@@ -46,7 +46,7 @@ put_byte (uint8_t b)
   _write ("\r\n", 2);
 }
 
-static void
+void
 put_string (const char *s)
 {
   _write (s, strlen (s));
@@ -406,11 +406,8 @@ INS_VERIFY
 	    put_string (" wrong length\r\n");
 	  else
 	    {
-#if 0
-	      r = rsa_sign (&cmd_APDU[5]);
-	      write_res_apdu (NULL, RSA_SIGNATURE_LENGTH, 0x90, 0x00);
-#endif
-	      write_res_apdu (NULL, 0, 0x64, 0x00);
+	      unsigned char * r = rsa_sign (&cmd_APDU[5]);
+	      write_res_apdu (r, RSA_SIGNATURE_LENGTH, 0x90, 0x00);
 	    }
 
 	  put_string ("done.\r\n");

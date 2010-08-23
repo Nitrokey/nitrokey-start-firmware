@@ -1,6 +1,7 @@
 extern Thread *blinker_thread;
 
 extern void put_byte (uint8_t b);
+extern void put_string (const char *s);
 
 extern void _write (const char *, int);
 
