@@ -185,7 +185,7 @@ static const uint8_t gnukStringProduct[VIRTUAL_COM_PORT_SIZ_STRING_PRODUCT] = {
 static uint8_t gnukStringSerial[] = {
   8,				/* bLength */
   USB_STRING_DESCRIPTOR_TYPE,	/* bDescriptorType */
-  '2', 0, '.', 0, '0', 0
+  '2', 0, '0', 0, '0', 0
 };
 
 ONE_DESCRIPTOR Device_Descriptor = {

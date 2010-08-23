@@ -207,9 +207,9 @@ int main(int argc, char **argv)
 
       chThdSleepMilliseconds (100);
 
-      if (bDeviceState == CONFIGURED && (count % 30) == 0)
+      if (bDeviceState == CONFIGURED && (count % 300) == 0)
 	{
-	  _write ("0123456789"+((count / 30)%10), 1);
+	  _write ("0123456789"+((count / 300)%10), 1);
 	  _write ("\r\nThis is ChibiOS 2.0.2 on Olimex STM32-H103.\r\n"
 		  "Testing USB driver.\n\n"
 		  "Hello world\r\n\r\n", 47+21+15);

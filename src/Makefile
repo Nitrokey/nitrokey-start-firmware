@@ -82,7 +82,7 @@ CSRC = $(PORTSRC) \
 
 # List ASM source files here
 ASMSRC = $(PORTASM) \
-         $(CHIBIOS)/os/ports/GCC/ARMCMx/STM32F10x/vectors.s
+         $(CHIBIOS)/os/ports/GCC/ARMCMx/STM32F10x/vectors.s gpg-data.s
 
 INCDIR = $(STMUSBINCDIR) $(USBCDCDIR) \
 	 $(PORTINC) $(KERNINC) $(TESTINC) \
