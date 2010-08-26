@@ -69,6 +69,9 @@ rsa_sign (unsigned char *raw_message)
 {
   rsa_context ctx;
   mpi P1, Q1, H;
+  int len;
+
+  len = (cmd_APDU[5]<<8) | cmd_APDU[6]; /* cmd_APDU_size - 6 */
 
   mpi_init( &P1, &Q1, &H, NULL );
   rsa_init( &ctx, RSA_PKCS_V15, 0, NULL, NULL );
@@ -104,10 +107,11 @@ rsa_sign (unsigned char *raw_message)
   }
 
 #if 0
-  rsa_pkcs1_sign( &ctx, RSA_PRIVATE, SIG_RSA_SHA256, 0, raw_message, output);
+  rsa_pkcs1_sign( &ctx, RSA_PRIVATE, SIG_RSA_RAW, len, raw_message, output);
+  put_string ("done.\r\n");
+  return output;
 #else
-  rsa_pkcs1_sign( &ctx, RSA_PRIVATE, SIG_RSA_RAW, 35, raw_message, output );
-
+  rsa_pkcs1_sign( &ctx, RSA_PRIVATE, SIG_RSA_RAW, len, raw_message, output );
   put_string ("done.\r\n");
   return output;
 #endif

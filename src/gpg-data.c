@@ -1,172 +1,79 @@
-const char const select_file_TOP_result[] __attribute__ ((aligned (1))) =
-  { 0x00, 0x00, 0x0b, 0x10, 0x3f, 0x00, 0x38, 0xff, 0xff, 0x44,
-    0x44, 0x01, 0x05, 0x03, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00 };
+#include "ch.h"
+#include "gnuk.h"
 
-const char const get_data_64_result[] __attribute__ ((aligned (1))) =
-  {
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-  };
+const char const select_file_TOP_result[] __attribute__ ((aligned (1))) = {
+  0x00, 0x00,			/* unused */
+  0x0b, 0x10,			/* number of bytes in this directory */
+  0x3f, 0x00,			/* field of selected file: MF, 3f00 */
+  0x38,			/* it's DF */
+  0xff,			/* unused */
+  0xff,	0x44, 0x44,	/* access conditions */
+  0x01,			/* status of the selected file (OK, unblocked) */
+  0x05,			/* number of bytes of data follow */
+    0x03,			/* Features: unused */
+    0x01,			/* number of subdirectories (OpenPGP) */
+    0x01,			/* number of elementary files (SerialNo) */
+    0x00,			/* number of secret codes */
+    0x00,			/* Unused */
+  0x00, 0x00		/* PIN status: OK, PIN blocked?: No */
+};
 
-const char const get_data_5e_result[] __attribute__ ((aligned (1))) =
-  {				/* Login Data */
-    'g', 'n', 'i', 'i', 'b', 'e'
-  };
+const char const do_5e[] __attribute__ ((aligned (1))) =  {
+  6,
+  'g', 'n', 'i', 'i', 'b', 'e'
+};
 
-/***** do_6e is compound object of { do_47, do_4f, do_c0,..,c6,cd }*/
-const char const do_6e_head[] __attribute__ ((aligned (1))) =
-  {
-    0x6e, 0x81, 2*10+3+16+1+1+1+1+7+60+60+12 /* (> 128) */
-  };
+const char const do_c4[] __attribute__ ((aligned (1))) = {
+  7,
+  1, 127, 127, 127, 3, 0, 3
+};
 
-const char const do_47[] __attribute__ ((aligned (1))) = /* Card Capabilities */
-  {
-    0x47, 3,
-    0x00 /*???*/, 0x00 /*???*/, 0x00 /*???*/
-    /* XXX: See ISO 7816-4 for first byte and second byte */
-  };
+const char const do_c7[] __attribute__ ((aligned (1))) =  {
+  20,
+  /* sign */
+  0x5b, 0x85, 0x67, 0x3c, 0x08, 0x4f, 0x80, 0x0d,
+  0x54, 0xac, 0x95, 0x1c, 0x35, 0x15, 0x97, 0xcc,
+  0xe5, 0x02, 0xbf, 0xcd,
+};
 
-const char const do_4f[] __attribute__ ((aligned (1))) = /* AID */
-  {
-    0x4f, 16,
-    0xD2, 0x76, 0x00, 0x01, 0x24, 0x01,
-    0x01, 0x01,			/* Version 1.1 */
-    0xF5, 0x17,			/* Manufacturer (FSIJ) */
-    0x00, 0x00, 0x00, 0x02,	/* Serial */
-    0x00, 0x00
-  };
+const char const do_ca[] __attribute__ ((aligned (1))) = {
+  20,
+  0x5b, 0x85, 0x67, 0x3c, 0x08, 0x4f, 0x80, 0x0d,
+  0x54, 0xac, 0x95, 0x1c, 0x35, 0x15, 0x97, 0xcc,
+  0xe5, 0x02, 0xbf, 0xcd,
+};
 
-const char const do_c0[] __attribute__ ((aligned (1))) =
-  {				/* Extended capability */
-    0xc0, 1,
-    0x00
-  };
+const char const do_ce[] __attribute__ ((aligned (1))) = {
+  4,
+  0x49, 0x8a, 0x50, 0x7a, /* 0xce */
+};
 
-const char const do_c1[] __attribute__ ((aligned (1))) =
-  {				/* Algorithm Attributes Signature ??? */
-    0xc1, 1,
-    0x01, /* RSA */ /*??? should have length modulus, length exponent ??? */
-  };
+const char const do_5b[] __attribute__ ((aligned (1))) = {
+  12,
+  'N', 'I', 'I', 'B', 'E', ' ', 'Y', 'u', 't', 'a', 'k', 'a'
+};
 
-const char const do_c2[] __attribute__ ((aligned (1))) =
-  {				/* Algorithm Attributes Decryption ??? */
-    0xc2, 1,
-    0x00
-  };
+const char const do_5f2d[] __attribute__ ((aligned (1))) = {
+  2,
+  'j', 'a'
+};
 
-const char const do_c3[] __attribute__ ((aligned (1))) =
-  {				/* Algorithm Attributes Authentication ??? */
-    0xc3, 1,
-    0x00
-  };
-
-const char const do_c4[] __attribute__ ((aligned (1))) =
-  {				/* CHV status bytes */
-    0xc4, 7,
-    0x01, 0x00, 0x00, 0x00, 0x01, 0x01, 0x01
-  };
-
-const char const do_c5[] __attribute__ ((aligned (1))) =
-  {
-    0xc5, 60,
-    /* sign */
-    0x5b, 0x85, 0x67, 0x3c, 0x08, 0x4f, 0x80, 0x0d,
-    0x54, 0xac, 0x95, 0x1c, 0x35, 0x15, 0x97, 0xcc,
-    0xe5, 0x02, 0xbf, 0xcd,
-    /* enc */
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00,
-    /* auth */
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00,
-  };
-
-const char const do_c6[] __attribute__ ((aligned (1))) = /* CA Fingerprints */
-  {
-    0xc6, 60,
-    /* c6 */
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00,
-    /* c7 */
-    0x5b, 0x85, 0x67, 0x3c, 0x08, 0x4f, 0x80, 0x0d,
-    0x54, 0xac, 0x95, 0x1c, 0x35, 0x15, 0x97, 0xcc,
-    0xe5, 0x02, 0xbf, 0xcd,
-    /* c8 */
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00,
-  };
-
-const char const do_cd[] __attribute__ ((aligned (1))) =
-  {				/* Generation time */
-    0xcd, 12,
-    0x00, 0x00, 0x00, 0x00,
-    0x49, 0x8a, 0x50, 0x7a, /* 0xce */
-    0x00, 0x00, 0x00, 0x00,
-  };
-/*************************/
-
-/***** do_65 is compound object of { do_5b, do_5f2d, do_5f35 }*/
-const char const do_65_head[] __attribute__ ((aligned (1))) =
-  {
-    0x65, 2*1+3*2+12+2+1
-  };
-
-const char const do_5b[] __attribute__ ((aligned (1))) =
-  {
-    0x5b, 12,
-    'N', 'I', 'I', 'B', 'E', ' ', 'Y', 'u', 't', 'a', 'k', 'a'
-  };
-
-const char const do_5f2d[] __attribute__ ((aligned (1))) =
-  {
-    0x5f, 0x2d, 2,
-    'j', 'a'
-  };
-
-const char const do_5f35[] __attribute__ ((aligned (1))) =
-  {
-    0x5f, 0x35, 1,
-    '1'
-  };
-/****************************/
-
-/* do_7a is compound object of { do_93 } */
-const char const do_7a_head[] __attribute__ ((aligned (1))) =
-  {
-    0x7a, 2+3
-  };
+const char const do_5f35[] __attribute__ ((aligned (1))) = {
+  1,
+  '1'
+};
 
 /* Digital Signature Counter (3-bytes) */
-const char const do_93[] __attribute__ ((aligned (1))) =
-  {
-    0x93, 3,
-    0, 0, 0
-  };
-/****************************/
+const char const do_93[] __attribute__ ((aligned (1))) = {
+  3,
+  0, 0, 0
+};
 
-
-const char const do_5f50[] __attribute__ ((aligned (1))) =
-  {
-    0x5f, 0x50, 20,
-    'h', 't', 't', 'p', ':', '/', '/', 'w', 'w', 'w',
-    '.', 'f', 's', 'i', 'j', '.', 'o', 'r', 'g', '/'
-  };
-
-/* Historycal bytes */
-const char const do_5f52[] __attribute__ ((aligned (1))) =
-  {
-    0x5f, 0x52, 10,
-    0x00,
-    0x31, 0xc0,			/* full DF name, partial DF name supported */
-    0x73,
-    0xc0, 0x01, 0x00,		/* full DF name, partial DF name supported */
-				/* 1-byte */
-				/* no command chaining, no ext lc_le */
-    0x00, 0x90, 0x00	/* Status info */
-  };
+const char const do_5f50[] __attribute__ ((aligned (1))) = {
+  20,
+  'h', 't', 't', 'p', ':', '/', '/', 'w', 'w', 'w',
+  '.', 'f', 's', 'i', 'j', '.', 'o', 'r', 'g', '/'
+};
 
 const char const get_data_rb_result[] __attribute__ ((aligned (1))) = {
   0x5a, 0x4, 0x01, 0x02, 0x03, 0x04

@@ -78,7 +78,7 @@ CSRC = $(PORTSRC) \
        $(STMUSBSRC) \
        $(USBCDCSRC) \
        $(RSASRC) \
-       main.c hw_config.c usb_lld.c usb_desc.c usb_prop.c usb-icc.c gpg.c
+       main.c hw_config.c usb_lld.c usb_desc.c usb_prop.c usb-icc.c gpg.c ac.c gpg-do.c
 
 # List ASM source files here
 ASMSRC = $(PORTASM) \

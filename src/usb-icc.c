@@ -130,12 +130,16 @@ EP5_OUT_Callback (void)
   icc_data_size = len - ICC_MSG_HEADER_SIZE;
   icc_seq = icc_header->seq;
 
-  if (icc_data_size < 0 || icc_data_size != icc_header->data_len)
+  if (icc_data_size < 0)
     /* just ignore short invalid packet, enable Rx again */
     SetEPRxValid (ENDP5);
   else
     /* Notify icc_thread */
     chEvtSignalI (icc_thread, EV_RX_DATA_READY);
+
+  /*
+   * what if (icc_data_size != icc_header->data_len)???
+   */
 }
 
 enum icc_state

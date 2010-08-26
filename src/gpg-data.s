@@ -38,112 +38,40 @@ select_file_TOP_result:
 	.byte	1
 	.byte	5
 	.byte	3
-	.byte	0
-	.byte	2
-	.byte	0
-	.byte	0
+	.byte	1
+	.byte	1
 	.byte	0
 	.byte	0
-	.global	get_data_64_result
-	.type	get_data_64_result, %object
-	.size	get_data_64_result, 7
-get_data_64_result:
-	.space	7
-	.global	get_data_5e_result
-	.type	get_data_5e_result, %object
-	.size	get_data_5e_result, 6
-get_data_5e_result:
+	.byte	0
+	.byte	0
+	.global	do_5e
+	.type	do_5e, %object
+	.size	do_5e, 7
+do_5e:
+	.byte	6
 	.byte	103
 	.byte	110
 	.byte	105
 	.byte	105
 	.byte	98
 	.byte	101
-	.global	do_6e_head
-	.type	do_6e_head, %object
-	.size	do_6e_head, 3
-do_6e_head:
-	.byte	110
-	.byte	-127
-	.byte	-74
-	.global	do_47
-	.type	do_47, %object
-	.size	do_47, 5
-do_47:
-	.byte	71
-	.byte	3
-	.byte	0
-	.byte	0
-	.byte	0
-	.global	do_4f
-	.type	do_4f, %object
-	.size	do_4f, 18
-do_4f:
-	.byte	79
-	.byte	16
-	.byte	-46
-	.byte	118
-	.byte	0
-	.byte	1
-	.byte	36
-	.byte	1
-	.byte	1
-	.byte	1
-	.byte	-11
-	.byte	23
-	.byte	0
-	.byte	0
-	.byte	0
-	.byte	2
-	.byte	0
-	.byte	0
-	.global	do_c0
-	.type	do_c0, %object
-	.size	do_c0, 3
-do_c0:
-	.byte	-64
-	.byte	1
-	.byte	0
-	.global	do_c1
-	.type	do_c1, %object
-	.size	do_c1, 3
-do_c1:
-	.byte	-63
-	.byte	1
-	.byte	1
-	.global	do_c2
-	.type	do_c2, %object
-	.size	do_c2, 3
-do_c2:
-	.byte	-62
-	.byte	1
-	.byte	0
-	.global	do_c3
-	.type	do_c3, %object
-	.size	do_c3, 3
-do_c3:
-	.byte	-61
-	.byte	1
-	.byte	0
 	.global	do_c4
 	.type	do_c4, %object
-	.size	do_c4, 9
+	.size	do_c4, 8
 do_c4:
-	.byte	-60
 	.byte	7
 	.byte	1
+	.byte	127
+	.byte	127
+	.byte	127
+	.byte	3
 	.byte	0
-	.byte	0
-	.byte	0
-	.byte	1
-	.byte	1
-	.byte	1
-	.global	do_c5
-	.type	do_c5, %object
-	.size	do_c5, 62
-do_c5:
-	.byte	-59
-	.byte	60
+	.byte	3
+	.global	do_c7
+	.type	do_c7, %object
+	.size	do_c7, 21
+do_c7:
+	.byte	20
 	.byte	91
 	.byte	-123
 	.byte	103
@@ -164,72 +92,11 @@ do_c5:
 	.byte	2
 	.byte	-65
 	.byte	-51
-	.byte	0
-	.byte	0
-	.byte	0
-	.byte	0
-	.byte	0
-	.byte	0
-	.byte	0
-	.byte	0
-	.byte	0
-	.byte	0
-	.byte	0
-	.byte	0
-	.byte	0
-	.byte	0
-	.byte	0
-	.byte	0
-	.byte	0
-	.byte	0
-	.byte	0
-	.byte	0
-	.byte	0
-	.byte	0
-	.byte	0
-	.byte	0
-	.byte	0
-	.byte	0
-	.byte	0
-	.byte	0
-	.byte	0
-	.byte	0
-	.byte	0
-	.byte	0
-	.byte	0
-	.byte	0
-	.byte	0
-	.byte	0
-	.byte	0
-	.byte	0
-	.byte	0
-	.byte	0
-	.global	do_c6
-	.type	do_c6, %object
-	.size	do_c6, 62
-do_c6:
-	.byte	-58
-	.byte	60
-	.byte	0
-	.byte	0
-	.byte	0
-	.byte	0
-	.byte	0
-	.byte	0
-	.byte	0
-	.byte	0
-	.byte	0
-	.byte	0
-	.byte	0
-	.byte	0
-	.byte	0
-	.byte	0
-	.byte	0
-	.byte	0
-	.byte	0
-	.byte	0
-	.byte	0
-	.byte	0
+	.global	do_ca
+	.type	do_ca, %object
+	.size	do_ca, 21
+do_ca:
+	.byte	20
 	.byte	91
 	.byte	-123
 	.byte	103
@@ -250,55 +117,19 @@ do_c6:
 	.byte	2
 	.byte	-65
 	.byte	-51
-	.byte	0
-	.byte	0
-	.byte	0
-	.byte	0
-	.byte	0
-	.byte	0
-	.byte	0
-	.byte	0
-	.byte	0
-	.byte	0
-	.byte	0
-	.byte	0
-	.byte	0
-	.byte	0
-	.byte	0
-	.byte	0
-	.byte	0
-	.byte	0
-	.byte	0
-	.byte	0
-	.global	do_cd
-	.type	do_cd, %object
-	.size	do_cd, 14
-do_cd:
-	.byte	-51
-	.byte	12
-	.byte	0
-	.byte	0
-	.byte	0
-	.byte	0
+	.global	do_ce
+	.type	do_ce, %object
+	.size	do_ce, 5
+do_ce:
+	.byte	4
 	.byte	73
 	.byte	-118
 	.byte	80
 	.byte	122
-	.byte	0
-	.byte	0
-	.byte	0
-	.byte	0
-	.global	do_65_head
-	.type	do_65_head, %object
-	.size	do_65_head, 2
-do_65_head:
-	.byte	101
-	.byte	23
 	.global	do_5b
 	.type	do_5b, %object
-	.size	do_5b, 14
+	.size	do_5b, 13
 do_5b:
-	.byte	91
 	.byte	12
 	.byte	78
 	.byte	73
@@ -314,42 +145,29 @@ do_5b:
 	.byte	97
 	.global	do_5f2d
 	.type	do_5f2d, %object
-	.size	do_5f2d, 5
+	.size	do_5f2d, 3
 do_5f2d:
-	.byte	95
-	.byte	45
 	.byte	2
 	.byte	106
 	.byte	97
 	.global	do_5f35
 	.type	do_5f35, %object
-	.size	do_5f35, 4
+	.size	do_5f35, 2
 do_5f35:
-	.byte	95
-	.byte	53
 	.byte	1
 	.byte	49
-	.global	do_7a_head
-	.type	do_7a_head, %object
-	.size	do_7a_head, 2
-do_7a_head:
-	.byte	122
-	.byte	5
 	.global	do_93
 	.type	do_93, %object
-	.size	do_93, 5
+	.size	do_93, 4
 do_93:
-	.byte	-109
 	.byte	3
 	.byte	0
 	.byte	0
 	.byte	0
 	.global	do_5f50
 	.type	do_5f50, %object
-	.size	do_5f50, 23
+	.size	do_5f50, 21
 do_5f50:
-	.byte	95
-	.byte	80
 	.byte	20
 	.byte	104
 	.byte	116
@@ -371,23 +189,6 @@ do_5f50:
 	.byte	114
 	.byte	103
 	.byte	47
-	.global	do_5f52
-	.type	do_5f52, %object
-	.size	do_5f52, 13
-do_5f52:
-	.byte	95
-	.byte	82
-	.byte	10
-	.byte	0
-	.byte	49
-	.byte	-64
-	.byte	115
-	.byte	-64
-	.byte	1
-	.byte	0
-	.byte	0
-	.byte	-112
-	.byte	0
 	.global	get_data_rb_result
 	.type	get_data_rb_result, %object
 	.size	get_data_rb_result, 6
@@ -690,398 +491,296 @@ get_data_enckey_result:
 .Letext0:
 	.file 1 "gpg-data.c"
 	.section	.debug_info
-	.4byte	0x34b
+	.4byte	0x264
 	.2byte	0x2
 	.4byte	.Ldebug_abbrev0
 	.byte	0x4
 	.uleb128 0x1
-	.4byte	.LASF25
+	.4byte	.LASF24
 	.byte	0x1
+	.4byte	.LASF25
 	.4byte	.LASF26
-	.4byte	.LASF27
 	.4byte	.Ltext0
 	.4byte	.Letext0
 	.4byte	.Ldebug_line0
 	.uleb128 0x2
-	.4byte	0x38
-	.4byte	0x35
+	.byte	0x4
+	.byte	0x5
+	.ascii	"int\000"
 	.uleb128 0x3
-	.4byte	0x35
-	.byte	0x13
-	.byte	0x0
+	.byte	0x4
+	.byte	0x7
+	.4byte	.LASF0
+	.uleb128 0x3
+	.byte	0x1
+	.byte	0x6
+	.4byte	.LASF1
+	.uleb128 0x3
+	.byte	0x1
+	.byte	0x8
+	.4byte	.LASF2
+	.uleb128 0x3
+	.byte	0x2
+	.byte	0x5
+	.4byte	.LASF3
+	.uleb128 0x3
+	.byte	0x2
+	.byte	0x7
+	.4byte	.LASF4
+	.uleb128 0x3
+	.byte	0x4
+	.byte	0x5
+	.4byte	.LASF5
+	.uleb128 0x3
+	.byte	0x4
+	.byte	0x7
+	.4byte	.LASF6
+	.uleb128 0x3
+	.byte	0x8
+	.byte	0x5
+	.4byte	.LASF7
+	.uleb128 0x3
+	.byte	0x8
+	.byte	0x7
+	.4byte	.LASF8
 	.uleb128 0x4
 	.byte	0x4
 	.byte	0x7
 	.uleb128 0x5
+	.4byte	0x7e
+	.4byte	0x7e
+	.uleb128 0x6
+	.4byte	0x6b
+	.byte	0x13
+	.byte	0x0
+	.uleb128 0x3
 	.byte	0x1
 	.byte	0x8
-	.4byte	.LASF28
-	.uleb128 0x6
-	.4byte	.LASF0
+	.4byte	.LASF9
+	.uleb128 0x7
+	.4byte	.LASF10
 	.byte	0x1
-	.byte	0x1
-	.4byte	0x51
+	.byte	0x4
+	.4byte	0x97
 	.byte	0x1
 	.byte	0x5
 	.byte	0x3
 	.4byte	select_file_TOP_result
-	.uleb128 0x7
-	.4byte	0x25
-	.uleb128 0x2
-	.4byte	0x38
-	.4byte	0x66
-	.uleb128 0x3
-	.4byte	0x35
+	.uleb128 0x8
+	.4byte	0x6e
+	.uleb128 0x5
+	.4byte	0x7e
+	.4byte	0xac
+	.uleb128 0x6
+	.4byte	0x6b
 	.byte	0x6
 	.byte	0x0
-	.uleb128 0x6
-	.4byte	.LASF1
-	.byte	0x1
-	.byte	0x5
-	.4byte	0x78
-	.byte	0x1
-	.byte	0x5
-	.byte	0x3
-	.4byte	get_data_64_result
 	.uleb128 0x7
-	.4byte	0x56
-	.uleb128 0x2
-	.4byte	0x38
-	.4byte	0x8d
-	.uleb128 0x3
-	.4byte	0x35
-	.byte	0x5
-	.byte	0x0
-	.uleb128 0x6
-	.4byte	.LASF2
-	.byte	0x1
-	.byte	0xa
-	.4byte	0x9f
-	.byte	0x1
-	.byte	0x5
-	.byte	0x3
-	.4byte	get_data_5e_result
-	.uleb128 0x7
-	.4byte	0x7d
-	.uleb128 0x2
-	.4byte	0x38
-	.4byte	0xb4
-	.uleb128 0x3
-	.4byte	0x35
-	.byte	0x2
-	.byte	0x0
-	.uleb128 0x6
-	.4byte	.LASF3
-	.byte	0x1
-	.byte	0x10
-	.4byte	0xc6
-	.byte	0x1
-	.byte	0x5
-	.byte	0x3
-	.4byte	do_6e_head
-	.uleb128 0x7
-	.4byte	0xa4
-	.uleb128 0x2
-	.4byte	0x38
-	.4byte	0xdb
-	.uleb128 0x3
-	.4byte	0x35
-	.byte	0x4
-	.byte	0x0
-	.uleb128 0x6
-	.4byte	.LASF4
+	.4byte	.LASF11
 	.byte	0x1
 	.byte	0x15
-	.4byte	0xed
+	.4byte	0xbe
 	.byte	0x1
 	.byte	0x5
 	.byte	0x3
-	.4byte	do_47
-	.uleb128 0x7
-	.4byte	0xcb
-	.uleb128 0x2
-	.4byte	0x38
-	.4byte	0x102
-	.uleb128 0x3
-	.4byte	0x35
-	.byte	0x11
+	.4byte	do_5e
+	.uleb128 0x8
+	.4byte	0x9c
+	.uleb128 0x5
+	.4byte	0x7e
+	.4byte	0xd3
+	.uleb128 0x6
+	.4byte	0x6b
+	.byte	0x7
 	.byte	0x0
-	.uleb128 0x6
-	.4byte	.LASF5
-	.byte	0x1
-	.byte	0x1c
-	.4byte	0x114
-	.byte	0x1
-	.byte	0x5
-	.byte	0x3
-	.4byte	do_4f
 	.uleb128 0x7
-	.4byte	0xf2
-	.uleb128 0x6
-	.4byte	.LASF6
+	.4byte	.LASF12
 	.byte	0x1
-	.byte	0x26
-	.4byte	0x12b
-	.byte	0x1
-	.byte	0x5
-	.byte	0x3
-	.4byte	do_c0
-	.uleb128 0x7
-	.4byte	0xa4
-	.uleb128 0x6
-	.4byte	.LASF7
-	.byte	0x1
-	.byte	0x2c
-	.4byte	0x142
-	.byte	0x1
-	.byte	0x5
-	.byte	0x3
-	.4byte	do_c1
-	.uleb128 0x7
-	.4byte	0xa4
-	.uleb128 0x6
-	.4byte	.LASF8
-	.byte	0x1
-	.byte	0x32
-	.4byte	0x159
-	.byte	0x1
-	.byte	0x5
-	.byte	0x3
-	.4byte	do_c2
-	.uleb128 0x7
-	.4byte	0xa4
-	.uleb128 0x6
-	.4byte	.LASF9
-	.byte	0x1
-	.byte	0x38
-	.4byte	0x170
-	.byte	0x1
-	.byte	0x5
-	.byte	0x3
-	.4byte	do_c3
-	.uleb128 0x7
-	.4byte	0xa4
-	.uleb128 0x2
-	.4byte	0x38
-	.4byte	0x185
-	.uleb128 0x3
-	.4byte	0x35
-	.byte	0x8
-	.byte	0x0
-	.uleb128 0x6
-	.4byte	.LASF10
-	.byte	0x1
-	.byte	0x3e
-	.4byte	0x197
+	.byte	0x1a
+	.4byte	0xe5
 	.byte	0x1
 	.byte	0x5
 	.byte	0x3
 	.4byte	do_c4
-	.uleb128 0x7
-	.4byte	0x175
-	.uleb128 0x2
-	.4byte	0x38
-	.4byte	0x1ac
-	.uleb128 0x3
-	.4byte	0x35
-	.byte	0x3d
+	.uleb128 0x8
+	.4byte	0xc3
+	.uleb128 0x5
+	.4byte	0x7e
+	.4byte	0xfa
+	.uleb128 0x6
+	.4byte	0x6b
+	.byte	0x14
 	.byte	0x0
-	.uleb128 0x6
-	.4byte	.LASF11
-	.byte	0x1
-	.byte	0x44
-	.4byte	0x1be
-	.byte	0x1
-	.byte	0x5
-	.byte	0x3
-	.4byte	do_c5
 	.uleb128 0x7
-	.4byte	0x19c
-	.uleb128 0x6
-	.4byte	.LASF12
-	.byte	0x1
-	.byte	0x55
-	.4byte	0x1d5
-	.byte	0x1
-	.byte	0x5
-	.byte	0x3
-	.4byte	do_c6
-	.uleb128 0x7
-	.4byte	0x19c
-	.uleb128 0x2
-	.4byte	0x38
-	.4byte	0x1ea
-	.uleb128 0x3
-	.4byte	0x35
-	.byte	0xd
-	.byte	0x0
-	.uleb128 0x6
 	.4byte	.LASF13
 	.byte	0x1
-	.byte	0x66
-	.4byte	0x1fc
+	.byte	0x1f
+	.4byte	0x10c
 	.byte	0x1
 	.byte	0x5
 	.byte	0x3
-	.4byte	do_cd
+	.4byte	do_c7
+	.uleb128 0x8
+	.4byte	0xea
 	.uleb128 0x7
-	.4byte	0x1da
-	.uleb128 0x2
-	.4byte	0x38
-	.4byte	0x211
-	.uleb128 0x3
-	.4byte	0x35
-	.byte	0x1
-	.byte	0x0
-	.uleb128 0x6
 	.4byte	.LASF14
 	.byte	0x1
-	.byte	0x70
-	.4byte	0x223
+	.byte	0x27
+	.4byte	0x123
 	.byte	0x1
 	.byte	0x5
 	.byte	0x3
-	.4byte	do_65_head
-	.uleb128 0x7
-	.4byte	0x201
+	.4byte	do_ca
+	.uleb128 0x8
+	.4byte	0xea
+	.uleb128 0x5
+	.4byte	0x7e
+	.4byte	0x138
 	.uleb128 0x6
+	.4byte	0x6b
+	.byte	0x4
+	.byte	0x0
+	.uleb128 0x7
 	.4byte	.LASF15
 	.byte	0x1
-	.byte	0x75
-	.4byte	0x23a
+	.byte	0x2e
+	.4byte	0x14a
+	.byte	0x1
+	.byte	0x5
+	.byte	0x3
+	.4byte	do_ce
+	.uleb128 0x8
+	.4byte	0x128
+	.uleb128 0x5
+	.4byte	0x7e
+	.4byte	0x15f
+	.uleb128 0x6
+	.4byte	0x6b
+	.byte	0xc
+	.byte	0x0
+	.uleb128 0x7
+	.4byte	.LASF16
+	.byte	0x1
+	.byte	0x33
+	.4byte	0x171
 	.byte	0x1
 	.byte	0x5
 	.byte	0x3
 	.4byte	do_5b
-	.uleb128 0x7
-	.4byte	0x1da
+	.uleb128 0x8
+	.4byte	0x14f
+	.uleb128 0x5
+	.4byte	0x7e
+	.4byte	0x186
 	.uleb128 0x6
-	.4byte	.LASF16
+	.4byte	0x6b
+	.byte	0x2
+	.byte	0x0
+	.uleb128 0x7
+	.4byte	.LASF17
 	.byte	0x1
-	.byte	0x7b
-	.4byte	0x251
+	.byte	0x38
+	.4byte	0x198
 	.byte	0x1
 	.byte	0x5
 	.byte	0x3
 	.4byte	do_5f2d
-	.uleb128 0x7
-	.4byte	0xcb
-	.uleb128 0x2
-	.4byte	0x38
-	.4byte	0x266
-	.uleb128 0x3
-	.4byte	0x35
-	.byte	0x3
-	.byte	0x0
+	.uleb128 0x8
+	.4byte	0x176
+	.uleb128 0x5
+	.4byte	0x7e
+	.4byte	0x1ad
 	.uleb128 0x6
-	.4byte	.LASF17
+	.4byte	0x6b
 	.byte	0x1
-	.byte	0x81
-	.4byte	0x278
+	.byte	0x0
+	.uleb128 0x7
+	.4byte	.LASF18
+	.byte	0x1
+	.byte	0x3d
+	.4byte	0x1bf
 	.byte	0x1
 	.byte	0x5
 	.byte	0x3
 	.4byte	do_5f35
-	.uleb128 0x7
-	.4byte	0x256
+	.uleb128 0x8
+	.4byte	0x19d
+	.uleb128 0x5
+	.4byte	0x7e
+	.4byte	0x1d4
 	.uleb128 0x6
-	.4byte	.LASF18
-	.byte	0x1
-	.byte	0x89
-	.4byte	0x28f
-	.byte	0x1
-	.byte	0x5
+	.4byte	0x6b
 	.byte	0x3
-	.4byte	do_7a_head
+	.byte	0x0
 	.uleb128 0x7
-	.4byte	0x201
-	.uleb128 0x6
 	.4byte	.LASF19
 	.byte	0x1
-	.byte	0x8f
-	.4byte	0x2a6
+	.byte	0x43
+	.4byte	0x1e6
 	.byte	0x1
 	.byte	0x5
 	.byte	0x3
 	.4byte	do_93
+	.uleb128 0x8
+	.4byte	0x1c4
 	.uleb128 0x7
-	.4byte	0xcb
-	.uleb128 0x2
-	.4byte	0x38
-	.4byte	0x2bb
-	.uleb128 0x3
-	.4byte	0x35
-	.byte	0x16
-	.byte	0x0
-	.uleb128 0x6
 	.4byte	.LASF20
 	.byte	0x1
-	.byte	0x97
-	.4byte	0x2cd
+	.byte	0x48
+	.4byte	0x1fd
 	.byte	0x1
 	.byte	0x5
 	.byte	0x3
 	.4byte	do_5f50
-	.uleb128 0x7
-	.4byte	0x2ab
-	.uleb128 0x2
-	.4byte	0x38
-	.4byte	0x2e2
-	.uleb128 0x3
-	.4byte	0x35
-	.byte	0xc
-	.byte	0x0
+	.uleb128 0x8
+	.4byte	0xea
+	.uleb128 0x5
+	.4byte	0x7e
+	.4byte	0x212
 	.uleb128 0x6
+	.4byte	0x6b
+	.byte	0x5
+	.byte	0x0
+	.uleb128 0x7
 	.4byte	.LASF21
 	.byte	0x1
-	.byte	0x9f
-	.4byte	0x2f4
-	.byte	0x1
-	.byte	0x5
-	.byte	0x3
-	.4byte	do_5f52
-	.uleb128 0x7
-	.4byte	0x2d2
-	.uleb128 0x6
-	.4byte	.LASF22
-	.byte	0x1
-	.byte	0xab
-	.4byte	0x30b
+	.byte	0x4e
+	.4byte	0x224
 	.byte	0x1
 	.byte	0x5
 	.byte	0x3
 	.4byte	get_data_rb_result
-	.uleb128 0x7
-	.4byte	0x7d
-	.uleb128 0x2
-	.4byte	0x38
-	.4byte	0x320
-	.uleb128 0x3
-	.4byte	0x35
+	.uleb128 0x8
+	.4byte	0x202
+	.uleb128 0x5
+	.4byte	0x7e
+	.4byte	0x239
+	.uleb128 0x6
+	.4byte	0x6b
 	.byte	0x8b
 	.byte	0x0
-	.uleb128 0x6
-	.4byte	.LASF23
+	.uleb128 0x7
+	.4byte	.LASF22
 	.byte	0x1
-	.byte	0xaf
-	.4byte	0x332
+	.byte	0x52
+	.4byte	0x24b
 	.byte	0x1
 	.byte	0x5
 	.byte	0x3
 	.4byte	get_data_sigkey_result
+	.uleb128 0x8
+	.4byte	0x229
 	.uleb128 0x7
-	.4byte	0x310
-	.uleb128 0x6
-	.4byte	.LASF24
+	.4byte	.LASF23
 	.byte	0x1
-	.byte	0xc8
-	.4byte	0x349
+	.byte	0x6b
+	.4byte	0x262
 	.byte	0x1
 	.byte	0x5
 	.byte	0x3
 	.4byte	get_data_enckey_result
-	.uleb128 0x7
-	.4byte	0x310
+	.uleb128 0x8
+	.4byte	0x229
 	.byte	0x0
 	.section	.debug_abbrev
 	.uleb128 0x1
@@ -1104,21 +803,25 @@ get_data_enckey_result:
 	.byte	0x0
 	.byte	0x0
 	.uleb128 0x2
-	.uleb128 0x1
-	.byte	0x1
-	.uleb128 0x49
-	.uleb128 0x13
-	.uleb128 0x1
-	.uleb128 0x13
+	.uleb128 0x24
+	.byte	0x0
+	.uleb128 0xb
+	.uleb128 0xb
+	.uleb128 0x3e
+	.uleb128 0xb
+	.uleb128 0x3
+	.uleb128 0x8
 	.byte	0x0
 	.byte	0x0
 	.uleb128 0x3
-	.uleb128 0x21
+	.uleb128 0x24
 	.byte	0x0
-	.uleb128 0x49
-	.uleb128 0x13
-	.uleb128 0x2f
 	.uleb128 0xb
+	.uleb128 0xb
+	.uleb128 0x3e
+	.uleb128 0xb
+	.uleb128 0x3
+	.uleb128 0xe
 	.byte	0x0
 	.byte	0x0
 	.uleb128 0x4
@@ -1131,17 +834,24 @@ get_data_enckey_result:
 	.byte	0x0
 	.byte	0x0
 	.uleb128 0x5
-	.uleb128 0x24
-	.byte	0x0
-	.uleb128 0xb
-	.uleb128 0xb
-	.uleb128 0x3e
-	.uleb128 0xb
-	.uleb128 0x3
-	.uleb128 0xe
+	.uleb128 0x1
+	.byte	0x1
+	.uleb128 0x49
+	.uleb128 0x13
+	.uleb128 0x1
+	.uleb128 0x13
 	.byte	0x0
 	.byte	0x0
 	.uleb128 0x6
+	.uleb128 0x21
+	.byte	0x0
+	.uleb128 0x49
+	.uleb128 0x13
+	.uleb128 0x2f
+	.uleb128 0xb
+	.byte	0x0
+	.byte	0x0
+	.uleb128 0x7
 	.uleb128 0x34
 	.byte	0x0
 	.uleb128 0x3
@@ -1158,7 +868,7 @@ get_data_enckey_result:
 	.uleb128 0xa
 	.byte	0x0
 	.byte	0x0
-	.uleb128 0x7
+	.uleb128 0x8
 	.uleb128 0x26
 	.byte	0x0
 	.uleb128 0x49
@@ -1167,118 +877,92 @@ get_data_enckey_result:
 	.byte	0x0
 	.byte	0x0
 	.section	.debug_pubnames,"",%progbits
-	.4byte	0x179
+	.4byte	0xe0
 	.2byte	0x2
 	.4byte	.Ldebug_info0
-	.4byte	0x34f
-	.4byte	0x3f
+	.4byte	0x268
+	.4byte	0x85
 	.ascii	"select_file_TOP_result\000"
-	.4byte	0x66
-	.ascii	"get_data_64_result\000"
-	.4byte	0x8d
-	.ascii	"get_data_5e_result\000"
-	.4byte	0xb4
-	.ascii	"do_6e_head\000"
-	.4byte	0xdb
-	.ascii	"do_47\000"
-	.4byte	0x102
-	.ascii	"do_4f\000"
-	.4byte	0x119
-	.ascii	"do_c0\000"
-	.4byte	0x130
-	.ascii	"do_c1\000"
-	.4byte	0x147
-	.ascii	"do_c2\000"
-	.4byte	0x15e
-	.ascii	"do_c3\000"
-	.4byte	0x185
+	.4byte	0xac
+	.ascii	"do_5e\000"
+	.4byte	0xd3
 	.ascii	"do_c4\000"
-	.4byte	0x1ac
-	.ascii	"do_c5\000"
-	.4byte	0x1c3
-	.ascii	"do_c6\000"
-	.4byte	0x1ea
-	.ascii	"do_cd\000"
-	.4byte	0x211
-	.ascii	"do_65_head\000"
-	.4byte	0x228
+	.4byte	0xfa
+	.ascii	"do_c7\000"
+	.4byte	0x111
+	.ascii	"do_ca\000"
+	.4byte	0x138
+	.ascii	"do_ce\000"
+	.4byte	0x15f
 	.ascii	"do_5b\000"
-	.4byte	0x23f
+	.4byte	0x186
 	.ascii	"do_5f2d\000"
-	.4byte	0x266
+	.4byte	0x1ad
 	.ascii	"do_5f35\000"
-	.4byte	0x27d
-	.ascii	"do_7a_head\000"
-	.4byte	0x294
+	.4byte	0x1d4
 	.ascii	"do_93\000"
-	.4byte	0x2bb
+	.4byte	0x1eb
 	.ascii	"do_5f50\000"
-	.4byte	0x2e2
-	.ascii	"do_5f52\000"
-	.4byte	0x2f9
+	.4byte	0x212
 	.ascii	"get_data_rb_result\000"
-	.4byte	0x320
+	.4byte	0x239
 	.ascii	"get_data_sigkey_result\000"
-	.4byte	0x337
+	.4byte	0x250
 	.ascii	"get_data_enckey_result\000"
 	.4byte	0x0
 	.section	.debug_str,"MS",%progbits,1
-.LASF22:
-	.ascii	"get_data_rb_result\000"
+.LASF7:
+	.ascii	"long long int\000"
 .LASF4:
-	.ascii	"do_47\000"
-.LASF1:
-	.ascii	"get_data_64_result\000"
-.LASF16:
-	.ascii	"do_5f2d\000"
-.LASF9:
-	.ascii	"do_c3\000"
-.LASF10:
-	.ascii	"do_c4\000"
-.LASF14:
-	.ascii	"do_65_head\000"
-.LASF24:
-	.ascii	"get_data_enckey_result\000"
-.LASF20:
-	.ascii	"do_5f50\000"
-.LASF2:
-	.ascii	"get_data_5e_result\000"
+	.ascii	"short unsigned int\000"
 .LASF0:
-	.ascii	"select_file_TOP_result\000"
-.LASF25:
-	.ascii	"GNU C 4.4.2\000"
+	.ascii	"unsigned int\000"
+.LASF2:
+	.ascii	"unsigned char\000"
 .LASF17:
-	.ascii	"do_5f35\000"
-.LASF28:
-	.ascii	"char\000"
+	.ascii	"do_5f2d\000"
+.LASF23:
+	.ascii	"get_data_enckey_result\000"
+.LASF6:
+	.ascii	"long unsigned int\000"
+.LASF8:
+	.ascii	"long long unsigned int\000"
 .LASF19:
 	.ascii	"do_93\000"
-.LASF21:
-	.ascii	"do_5f52\000"
-.LASF6:
-	.ascii	"do_c0\000"
-.LASF7:
-	.ascii	"do_c1\000"
-.LASF8:
-	.ascii	"do_c2\000"
-.LASF3:
-	.ascii	"do_6e_head\000"
-.LASF26:
-	.ascii	"gpg-data.c\000"
-.LASF11:
-	.ascii	"do_c5\000"
-.LASF12:
-	.ascii	"do_c6\000"
-.LASF23:
-	.ascii	"get_data_sigkey_result\000"
-.LASF13:
-	.ascii	"do_cd\000"
-.LASF27:
-	.ascii	"gnuk/src\000"
-.LASF5:
-	.ascii	"do_4f\000"
+.LASF14:
+	.ascii	"do_ca\000"
+.LASF24:
+	.ascii	"GNU C 4.4.2\000"
 .LASF15:
-	.ascii	"do_5b\000"
+	.ascii	"do_ce\000"
 .LASF18:
-	.ascii	"do_7a_head\000"
+	.ascii	"do_5f35\000"
+.LASF9:
+	.ascii	"char\000"
+.LASF21:
+	.ascii	"get_data_rb_result\000"
+.LASF5:
+	.ascii	"long int\000"
+.LASF20:
+	.ascii	"do_5f50\000"
+.LASF12:
+	.ascii	"do_c4\000"
+.LASF10:
+	.ascii	"select_file_TOP_result\000"
+.LASF13:
+	.ascii	"do_c7\000"
+.LASF1:
+	.ascii	"signed char\000"
+.LASF22:
+	.ascii	"get_data_sigkey_result\000"
+.LASF26:
+	.ascii	"/var/tmp/stm32/gnuk/src\000"
+.LASF3:
+	.ascii	"short int\000"
+.LASF16:
+	.ascii	"do_5b\000"
+.LASF11:
+	.ascii	"do_5e\000"
+.LASF25:
+	.ascii	"gpg-data.c\000"
 	.ident	"GCC: (GNU) 4.4.2"

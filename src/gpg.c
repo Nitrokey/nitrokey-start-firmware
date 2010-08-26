@@ -47,16 +47,27 @@ put_byte (uint8_t b)
 }
 
 void
+put_short (uint16_t x)
+{
+  put_hex (x >> 12);
+  put_hex ((x >> 8)&0x0f);
+  put_hex ((x >> 4)&0x0f);
+  put_hex (x & 0x0f);
+  _write ("\r\n", 2);
+}
+
+void
 put_string (const char *s)
 {
   _write (s, strlen (s));
 }
 
 
-#define RSA_SIGNATURE_LENGTH 128 /* 256 byte == 2048-bit */
+#define RSA_SIGNATURE_LENGTH 128 /* 256 *//* 256 byte == 2048-bit */
 extern unsigned char *rsa_sign (unsigned char *);
 
 #define INS_PUT_DATA      0xDA
+#define INS_PUT_DATA_ODD  0xDB	/* For key import */
 #define INS_VERIFY        0x20
 #define INS_GET_DATA      0xCA
 #define INS_GET_RESPONSE  0xC0
@@ -66,50 +77,12 @@ extern unsigned char *rsa_sign (unsigned char *);
 #define INS_PSO		  0x2A
 
 extern const char const select_file_TOP_result[20];
-extern const char const get_data_64_result[7];
-extern const char const get_data_5e_result[6];
-extern const char const do_6e_head[3];
-extern const char const do_47[2+3];
-extern const char const do_4f[2+16];
-extern const char const do_c0[2+1];
-extern const char const do_c1[2+1];
-extern const char const do_c2[2+1];
-extern const char const do_c3[2+1];
-extern const char const do_c4[2+7];
-extern const char const do_c5[2+60];
-extern const char const do_c6[2+60];
-extern const char const do_cd[2+12];
-extern const char const do_65_head[2];
-extern const char const do_5b[2+12];
-extern const char const do_5f2d[3+2];
-extern const char const do_5f35[3+1];
-extern const char const do_7a_head[2];
-extern const char const do_93[2+3];
-extern const char const do_5f50[3+20];
-extern const char const do_5f52[3+10];
 extern const char const get_data_rb_result[6];
 extern const char const get_data_sigkey_result[7+128];
 extern const char const get_data_enckey_result[7+128];
 
 
-/*
- * 73
- * 101
- * 102
- * 103
- * 104
- *
- * 65 - 5b, 5f2d, 5f35
- * 6e - 47, 4f, c0, c1, c2, c3, c4, c5, c6, cd
- * 7a - 93
- *
- *
- * 65 L-65 [5b L-5b .... ] [5f2d 2 'j' 'a'] [5f35 1 '1']
- * 6e L-6e [47 3 x x x ] [4f L-4f ...] [c0 L-c0 ...] ...
- * 7a L-7a [93 L-93 ... ]
- */
-
-static void
+void
 write_res_apdu (const uint8_t *p, int len, uint8_t sw1, uint8_t sw2)
 {
   res_APDU_size = 2 + len;
@@ -119,25 +92,62 @@ write_res_apdu (const uint8_t *p, int len, uint8_t sw1, uint8_t sw2)
   res_APDU[len+1] = sw2;
 }
 
-static int
+#define FILE_NONE	-1
+#define FILE_DF_OPENPGP	0
+#define FILE_MF		1
+#define FILE_EF_DIR	2
+#define FILE_EF_SERIAL	3
+
+static int file_selection = FILE_NONE;
+
+static void
 process_command_apdu (void)
 {
-  /*
-INS_VERIFY
+  uint16_t tag;
+  uint8_t *data;
+  int len;
 
- 00 20 00 81 06 - ???
-          CHV1
- 00 20 00 82 06 - ???
-          CHV2
- 00 20 00 83 08 - ???
-          CHV3
-  */
+  if (cmd_APDU[1] == INS_VERIFY)
+    {
+      uint8_t p2 = cmd_APDU[3];
+      int r;
 
-  if (cmd_APDU[1] == INS_PUT_DATA)
+      put_string (" - VERIFY\r\n");
+
+      len = cmd_APDU[4];
+      if (p2 == 0x81)
+	r = verify_pso_cds (&cmd_APDU[5], len);
+      else if (p2 == 0x82)
+	r = verify_pso_other (&cmd_APDU[5], len);
+      else
+	r = verify_pso_admin (&cmd_APDU[5], len);
+
+      if (r < 0)
+	write_res_apdu (NULL, 0, 0x69, 0x82);
+      else
+	write_res_apdu (NULL, 0, 0x90, 0x00);
+      return;
+    }
+
+  if (cmd_APDU[1] == INS_PUT_DATA || cmd_APDU[1] == INS_PUT_DATA_ODD)
     {
       put_string (" - PUT DATA\r\n");
-      write_res_apdu (NULL, 0, 0x90, 0x00); /* 0x6a, 0x88: No record */
-      return 0;
+
+      if (file_selection != FILE_DF_OPENPGP)
+	write_res_apdu (NULL, 0, 0x6a, 0x88); /* No record */
+
+      tag = ((cmd_APDU[2]<<8) | cmd_APDU[3]);
+      len = cmd_APDU_size - 5;
+      data = &cmd_APDU[5];
+      if (len >= 256)
+	/* extended Lc */
+	{
+	  data += 2;
+	  len -= 2;
+	}
+
+      gpg_do_put_data (tag, data, len);
+      return;
     }
 
   if (cmd_APDU[1] == INS_PGP_GENERATE_ASYMMETRIC_KEY_PAIR)
@@ -183,218 +193,82 @@ INS_VERIFY
 	}
     }
   else if (cmd_APDU[1] == INS_READ_BINARY)
-    {				/* it must be for DF 0x2f02 */
+    {
       put_string (" - Read binary\r\n");
 
-      if (cmd_APDU[3] >= 6)
+      if (file_selection == FILE_EF_SERIAL)
 	{
-	  write_res_apdu (NULL, 0, 0x6b, 0x00); /* BAD_P0_P1 */
+	  if (cmd_APDU[3] >= 6)
+	    write_res_apdu (NULL, 0, 0x6b, 0x00); /* BAD_P0_P1 */
+	  else
+	    /* Tag 5a, serial number */
+	    write_res_apdu (get_data_rb_result,
+			    sizeof (get_data_rb_result), 0x90, 0x00);
 	}
       else
-	{			/* Tag 5a, serial number */
-	  write_res_apdu (get_data_rb_result,
-			  sizeof (get_data_rb_result), 0x90, 0x00);
-	}
+	write_res_apdu (NULL, 0, 0x6a, 0x88); /* No record */
     }
   else if (cmd_APDU[1] == INS_SELECT_FILE)
     {
       if (cmd_APDU[2] == 4)	/* Selection by DF name */
 	{
 	  put_string (" - select DF by name\r\n");
+
 	  /*
-	   * XXX: Should return contents.
+	   * P2 == 0, LC=6, name = D2 76 00 01 24 01
 	   */
 
-	  if (1)
-	    {
-	      write_res_apdu (NULL, 0, 0x90, 0x00);
-	    }
+	  file_selection = FILE_DF_OPENPGP;
+
+	  /* XXX: Should return contents??? */
+	  write_res_apdu (NULL, 0, 0x90, 0x00);
 	}
       else if (cmd_APDU[4] == 2
 	      && cmd_APDU[5] == 0x2f
-	      && cmd_APDU[6] == 02)
+	      && cmd_APDU[6] == 0x02)
 	{
 	  put_string (" - select 0x2f02 EF\r\n");
 	  /*
 	   * MF.EF-GDO -- Serial number of the card and name of the owner
 	   */
 	  write_res_apdu (NULL, 0, 0x90, 0x00);
+	  file_selection = FILE_EF_SERIAL;
+	}
+      else if (cmd_APDU[4] == 2
+	       && cmd_APDU[5] == 0x3f
+	       && cmd_APDU[6] == 0x00)
+	{
+	  put_string (" - select ROOT MF\r\n");
+	  if (cmd_APDU[3] == 0x0c)
+	    {
+	      write_res_apdu (NULL, 0, 0x90, 0x00);
+	    }
+	  else
+	    {
+	      write_res_apdu (select_file_TOP_result,
+			      sizeof (select_file_TOP_result), 0x90, 0x00);
+	    }
+
+	  file_selection = FILE_MF;
 	}
       else
-	if (cmd_APDU[4] == 2
-	    && cmd_APDU[5] == 0x3f
-	    && cmd_APDU[6] == 0)
-	  {
-	    put_string (" - select ROOT MF\r\n");
-	    if (cmd_APDU[3] == 0x0c)
-	      {
-		write_res_apdu (NULL, 0, 0x90, 0x00);
-	      }
-	    else
-	      {
-		write_res_apdu (select_file_TOP_result,
-				sizeof (select_file_TOP_result), 0x90, 0x00);
-	      }
-	  }
-	else
-	  {
-	    put_string (" - select ?? \r\n");
+	{
+	  put_string (" - select ?? \r\n");
 
-	    write_res_apdu (NULL, 0, 0x6a, 0x82); /* File missing */
-	  }
+	  write_res_apdu (NULL, 0, 0x6a, 0x82); /* File missing */
+	  file_selection = FILE_NONE;
+	}
     }
   else if (cmd_APDU[1] == INS_GET_DATA)
     {
+      tag = ((cmd_APDU[2]<<8) | cmd_APDU[3]);
+
       put_string (" - Get Data\r\n");
 
-      switch (((cmd_APDU[2]<<8) | cmd_APDU[3]))
-	{
-	case 0x4f:		/* AID */
-	    {
-	      put_string ("   AID\r\n");
-	      write_res_apdu (&do_4f[2],
-			      sizeof (do_4f) - 2, 0x90, 0x00);
-	      break;
-	    }
-	case 0x5e:		/* Login data */
-	    {
-	      put_string ("   Login data\r\n");
-	      write_res_apdu (get_data_5e_result,
-			      sizeof (get_data_5e_result), 0x90, 0x00);
-	      break;
-	    }
-	case 0x64:
-	    {
-	      put_string ("   64\r\n");
-	      write_res_apdu (get_data_64_result,
-			      sizeof (get_data_64_result), 0x90, 0x00);
-	      break;
-	    }
-	case 0xc0:
-	    {
-	      put_string ("   c0\r\n");
-	      write_res_apdu (&do_c0[2],
-			      sizeof (do_c0) - 2, 0x90, 0x00);
-	      break;
-	    }
-	case 0xc1:
-	    {
-	      put_string ("   c1\r\n");
-	      write_res_apdu (&do_c1[2],
-			      sizeof (do_c1) - 2, 0x90, 0x00);
-	      break;
-	    }
-	case 0xc2:
-	    {
-	      put_string ("   c2\r\n");
-	      write_res_apdu (&do_c2[2],
-			      sizeof (do_c2) - 2, 0x90, 0x00);
-	      break;
-	    }
-	case 0xc3:
-	    {
-	      put_string ("   c3\r\n");
-	      write_res_apdu (&do_c3[2],
-			      sizeof (do_c3) - 2, 0x90, 0x00);
-	      break;
-	    }
-	case 0xc4:
-	    {
-	      put_string ("   c4\r\n");
-	      write_res_apdu (&do_c4[2],
-			      sizeof (do_c4) - 2, 0x90, 0x00);
-	      break;
-	    }
-	case 0x5b:		/* Name */
-	    {
-	      put_string ("   5b\r\n");
-	      write_res_apdu (&do_5b[2],
-			      sizeof (do_5b) - 2, 0x90, 0x00);
-	      break;
-	    }
-	case 0x93:		/* Digital Signature Counter (3-bytes) */
-	    {
-	      put_string ("   93\r\n");
-	      write_res_apdu (&do_93[2],
-			      sizeof (do_93) - 2, 0x90, 0x00);
-	      break;
-	    }
-	case 0xc5:		/* Fingerprints */
-	    {
-	      put_string ("   c5\r\n");
-	      write_res_apdu (&do_c5[2],
-			      sizeof (do_c5) - 2, 0x90, 0x00);
-	      break;
-	    }
-	case 0x5f2d:		/* Language preference */
-	    {
-	      put_string ("   5f2d\r\n");
-	      write_res_apdu (&do_5f2d[3],
-			      sizeof (do_5f2d) - 3, 0x90, 0x00);
-	      break;
-	    }
-	case 0x5f35:		/* Sex */
-	    {
-	      put_string ("   5f35\r\n");
-	      write_res_apdu (&do_5f35[3],
-			      sizeof (do_5f35) - 3, 0x90, 0x00);
-	      break;
-	    }
-	case 0x5f50:		/* URL */
-	    {
-	      put_string ("   5f50\r\n");
-	      write_res_apdu (&do_5f50[3],
-			      sizeof (do_5f50) - 3, 0x90, 0x00);
-	      break;
-	    }
-	case 0x5f52:		/* Historycal bytes */
-	    {
-	      put_string ("   5f52\r\n");
-	      write_res_apdu (&do_5f52[3],
-			      sizeof (do_5f52) - 3, 0x90, 0x00);
-	      break;
-	    }
-	case 0x65:		/* Card Holder Related Data (Tag) */
-	    {
-	      put_string ("   65\r\n");
-	      write_res_apdu (do_65_head,
-			      do_65_head[1] + 2, 0x90, 0x00);
-	      break;
-	    }
-	case 0x6e:		/* Application Related Data (Tag) */
-	    {
-	      put_string ("   6e\r\n");
-	      write_res_apdu (do_6e_head,
-			      do_6e_head[2] + 3, 0x90, 0x00);
-	      break;
-	    }
-	case 0x7a:		/* Security Support Template (Tag) */
-	    {
-	      put_string ("   7a\r\n");
-	      write_res_apdu (do_7a_head,
-			      do_7a_head[1] + 2, 0x90, 0x00);
-	      break;
-	    }
-	case 0xc6:		/* List of CA fingerprints */
-	    {
-	      put_string ("   c6\r\n");
-	      write_res_apdu (&do_c6[2],
-			      sizeof (do_c6) - 2, 0x90, 0x00);
-	      break;
-	    }
-	case 0xcd:		/* List of generation dates/times public-key pairs */
-	    {
-	      put_string ("   cd\r\n");
-	      write_res_apdu (&do_cd[2],
-			      sizeof (do_cd) - 2, 0x90, 0x00);
-	      break;
-	    }
-	default:
-	  put_string ("   ?");
-	  put_byte (((cmd_APDU[2]<<8) | cmd_APDU[3]));
-	  write_res_apdu (NULL, 0, 0x90, 0x00);
-	  break;
-	}
+      if (file_selection != FILE_DF_OPENPGP)
+	write_res_apdu (NULL, 0, 0x6a, 0x88); /* No record */
+
+      gpg_do_get_data (tag);
     }
   else if (cmd_APDU[1] == INS_PSO)
     {
@@ -402,11 +276,14 @@ INS_VERIFY
 
       if (cmd_APDU[2] == 0x9E && cmd_APDU[3] == 0x9A)
 	{
-	  if (cmd_APDU_size != 5 + 35 && cmd_APDU_size != 5 + 35 + 1)
-	    put_string (" wrong length\r\n");
+	  if (cmd_APDU_size != 8 + 35 && cmd_APDU_size != 8 + 35 + 1)
+	    {
+	      put_string (" wrong length: ");
+	      put_short (cmd_APDU_size);
+	    }
 	  else
 	    {
-	      unsigned char * r = rsa_sign (&cmd_APDU[5]);
+	      unsigned char * r = rsa_sign (&cmd_APDU[7]);
 	      write_res_apdu (r, RSA_SIGNATURE_LENGTH, 0x90, 0x00);
 	    }
 
@@ -414,17 +291,19 @@ INS_VERIFY
 	}
       else
 	{
-	  put_string (" - ???\r\n");
+	  put_string (" - ??");
+	  put_byte (cmd_APDU[2]);
+	  put_string (" - ??");
+	  put_byte (cmd_APDU[3]);
 	  write_res_apdu (NULL, 0, 0x90, 0x00);
 	}
     }
   else
     {
-      put_string (" - ???\r\n");
-      write_res_apdu (NULL, 0, 0x90, 0x00);
+      put_string (" - ??");
+      put_byte (cmd_APDU[1]);
+      write_res_apdu (NULL, 0, 0x6D, 0x00); /* INS not supported. */
     }
-
-  return 0;
 }
 
 Thread *gpg_thread;

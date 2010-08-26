@@ -28,6 +28,8 @@
 #include "hal.h"
 #include "usb_lld.h"
 
+#include "gnuk.h"
+
 #include "usb_lib.h"
 #include "usb_istr.h"
 #include "usb_desc.h"
@@ -73,11 +75,11 @@ stdout_init (void)
   stdout.str = NULL;
 }
 
-int
+void
 _write (const char *s, int size)
 {
   if (size == 0)
-    return 0;
+    return;
 
   chMtxLock (&stdout.m);
   while (stdout.str)
@@ -87,7 +89,6 @@ _write (const char *s, int size)
   chCondSignal (&stdout.start_cnd);
   chCondWait (&stdout.finish_cnd);
   chMtxUnlock ();
-  return 0;
 }
 
 extern uint32_t count_in;
@@ -179,6 +180,8 @@ int main(int argc, char **argv)
 
   (void)argc;
   (void)argv;
+
+  gpg_do_table_init ();
 
   usb_lld_init ();
   USB_Init();

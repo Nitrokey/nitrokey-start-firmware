@@ -67,7 +67,7 @@ static const uint8_t gnukConfigDescriptor[] = {
   0, 0, 0, 0,		  /* dwSynchProtocols: FIXED VALUE */
   0, 0, 0, 0,		  /* dwMechanical: FIXED VALUE */
   0x40, 0x08, 0x04, 0x00, /* dwFeatures: Short and extended ADPU level */
-  0x0f, 0x01, 0, 0,	  /* dwMaxCCIDMessageLength: 261+10 XXX */
+  0x40, 0x00, 0, 0,	  /* dwMaxCCIDMessageLength: 64 */
   0xff,			  /* bClassGetResponse: */
   0xff,			  /* bClassEnvelope: */
   0, 0,			  /* wLCDLayout: FIXED VALUE */
@@ -108,7 +108,7 @@ static const uint8_t gnukConfigDescriptor[] = {
   5,	    /* bFunctionLength */
   0x24,	    /* bDescriptorType: CS_INTERFACE */
   0x01,	    /* bDescriptorSubtype: Call Management Func Desc */
-  0x00,	    /* bmCapabilities: D0+D1 */
+  0x03,	    /* bmCapabilities: D0+D1 */
   0x02,	    /* bDataInterface: 2 */
   /*ACM Functional Descriptor*/
   4,	    /* bFunctionLength */
