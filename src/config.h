@@ -1,0 +1,4 @@
+#define DEBUG 1
+#define ENABLE_VIRTUAL_COM_PORT 1
+
+#define GNUK_MAX_PACKET_SIZE 64	/* USB */
