@@ -1,34 +1,110 @@
+Gnuk - A USB Token software implementation
+
+						Version 0.0	2010-09-01
+							      Niibe Yutaka
+
+What's Gnuk
+===========
+
+Gnuk is a USB token software implementation to use with GNU privacy
+guard.  Gnuk supports OpenPGP card protocol version 2, and it runs on
+Olimex STM32-H103 board.
+
+
+Release notes
+=============
+
+Initially, the development was started with a copy of the files in
+ChibiOS_2.0.2/demos/ARMCM3-STM32F103-GCC/*, Makefile, linker script,
+and header files (chconf.h, halconf.h, and mcuconf.h).
+
+Since this is the initial release, some garbages still remain.
+
+
+Target
+======
+
+We use Olimex STM32-H103 board.
+
+I think that it runs on Olimex STM32-P103 too.  We are porting to
+STM32 Primer 2.
+
+
 Souce code
 ==========
 
-Initially, it is copy of ChibiOS_2.0.2/demos/ARMCM3-STM32F103-GCC/*.
+Gnuk source code is under src/ directory.
 
-External source
-===============
 
-* ChibiOS_2.0.2
+License
+=======
+
+It is distributed under GNU General Public Licence version 3 or later
+(GPLv3+).
+
+
+External source code
+====================
+
+Gnuk is distributed with external source code.
+
+* ChibiOS_2.0.2/  -- ChibiOS/RT 2.0.2
 Taken from http://chibios.sourceforge.net/
 Note that CRLF is converted to LF in this repository.
+We use ChibiOS/RT as the kernel for Gnuk.
 
-* PolarSSS 0.14.0
+* polarssl-0.14.0/  -- PolarSSL 0.14.0
 Taken from http://polarssl.org/
+We use PolarSSL for RSA computation.
 
-* STM32F10x USB Full Speed Device Library (USB-FS-Device_Lib)
+
+* STM32_USB-FS-Device_Driver/ -- a part of USB-FS-Device_Lib
+* Virtual_COM_Port/ -- a part of USB-FS-Device_Lib
+
+STM32F10x USB Full Speed Device Library (USB-FS-Device_Lib)
+is a STM32F10x library for USB functionality.
+
 I took Libraries/STM32_USB-FS-Device_Driver and a part of
-Project/Virtual_COM_Port in STM32_USB-FS-Device_Lib distribution.
+Project/ in STM32_USB-FS-Device_Lib distribution.
 See http://www.st.com for detail.
 
 
-HOWTO RUN
-=================
+How to compile
+==============
 
-$ openocd -f interface/olimex-jtag-tiny.cfg -f board/olimex_stm32_h103.cfg
+You need GNU Toolchain and newlib for 'arm-none-eabi' target.
 
-$ arm-none-eabi-gdb --annotate=3 gnuk.elf
+See http://github.com/esden/summon-arm-toolchain/ for preparation of
+GNU Toolchain for 'arm-none-eabi' target.
 
-$ telnet localhost 4444
-> reset halt
-> flash write_image erase gnuk.elf
-> reset
-> exit
-$ 
+  $ cd gnuk-VERSION/src
+  $ make
+
+Then, we will have "gnuk.elf".
+
+
+How to run
+==========
+
+If you are using Olimex JTAG-Tiny, type following to invoke OpenOCD:
+
+  $ openocd -f interface/olimex-jtag-tiny.cfg -f board/olimex_stm32_h103.cfg
+
+Then, with another terminal, type following to write "gnuk.elf" to Flash ROM:
+
+  $ telnet localhost 4444
+  > reset halt
+  > flash write_image erase gnuk.elf
+  > reset
+  > exit
+  $ 
+
+
+How to debug
+============
+
+We can use GDB.
+
+  $ arm-none-eabi-gdb gnuk.elf
+
+-- 

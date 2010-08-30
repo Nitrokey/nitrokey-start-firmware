@@ -5,6 +5,9 @@
 #include "ch.h"
 #include "gnuk.h"
 
+#include "polarssl/config.h"
+#include "polarssl/sha1.h"
+
 static uint8_t auth_status = AC_NONE_AUTHORIZED;
 
 int
@@ -26,16 +29,21 @@ ac_check_status (uint8_t ac_flag)
  * check magic in params
  */
 
+uint8_t keystring_pw1[KEYSTRING_LEN] = {
+  0x62, 0x10, 0x27, 0x44, 0x34, 0x05, 0x2f, 0x20,
+  0xfc, 0xb8, 0x3e, 0x1d, 0x0f, 0x49, 0x22, 0x04,
+  0xfc, 0xb1, 0x18, 0x84
+};
+
 int
 verify_pso_cds (uint8_t *pw, int pw_len)
 {
-#if 0
-  compute_hash;
-  if (cmp_hash (pw1_hash, hash) == 0)
-    good;
-  else
-    return -1;
-#endif
+  int r;
+
+  sha1 (pw, pw_len, keystring_pw1);
+  if ((r = gpg_load_key (GPG_KEY_FOR_SIGNATURE)) < 0)
+    return r;
+
   auth_status |= AC_PSO_CDS_AUTHORIZED;
   return 0;
 }
@@ -43,13 +51,6 @@ verify_pso_cds (uint8_t *pw, int pw_len)
 int
 verify_pso_other (uint8_t *pw, int pw_len)
 {
-#if 0
-  compute_hash;
-  if (cmp_hash (pw1_hash, hash) == 0)
-    good;
-  else
-    return -1;
-#endif
   auth_status |= AC_PSO_OTHER_AUTHORIZED;
   return 0;
 }

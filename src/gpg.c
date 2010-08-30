@@ -25,45 +25,7 @@
 #include "hal.h"
 #include "gnuk.h"
 
-static void
-put_hex (uint8_t nibble)
-{
-  uint8_t c;
-
-  if (nibble < 0x0a)
-    c = '0' + nibble;
-  else
-    c = 'a' + nibble - 0x0a;
-
-  _write (&c, 1);
-}
-
-void
-put_byte (uint8_t b)
-{
-  put_hex (b >> 4);
-  put_hex (b &0x0f);
-  _write ("\r\n", 2);
-}
-
-void
-put_short (uint16_t x)
-{
-  put_hex (x >> 12);
-  put_hex ((x >> 8)&0x0f);
-  put_hex ((x >> 4)&0x0f);
-  put_hex (x & 0x0f);
-  _write ("\r\n", 2);
-}
-
-void
-put_string (const char *s)
-{
-  _write (s, strlen (s));
-}
-
-
-#define RSA_SIGNATURE_LENGTH 128 /* 256 *//* 256 byte == 2048-bit */
+#define RSA_SIGNATURE_LENGTH 256 /* 256 byte == 2048-bit */
 extern unsigned char *rsa_sign (unsigned char *);
 
 #define INS_PUT_DATA      0xDA
@@ -277,6 +239,7 @@ process_command_apdu (void)
       if (cmd_APDU[2] == 0x9E && cmd_APDU[3] == 0x9A)
 	{
 	  if (cmd_APDU_size != 8 + 35 && cmd_APDU_size != 8 + 35 + 1)
+	    /* Extended Lc: 3-byte */
 	    {
 	      put_string (" wrong length: ");
 	      put_short (cmd_APDU_size);

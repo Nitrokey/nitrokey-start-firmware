@@ -66,7 +66,7 @@ include $(CHIBIOS)/os/ports/GCC/ARMCMx/STM32F10x/port.mk
 include $(CHIBIOS)/os/kernel/kernel.mk
 include stmusb.mk
 include vcomport.mk
-include rsa.mk
+include crypt.mk
 include ../boards/OLIMEX_STM32_H103/board.mk
 
 # C sources that can be compiled in ARM or THUMB mode depending on the global
@@ -80,15 +80,16 @@ CSRC = $(PORTSRC) \
        $(CHIBIOS)/os/various/syscalls.c \
        $(STMUSBSRC) \
        $(VCOMSRC) \
-       $(RSASRC) \
-       main.c hw_config.c usb_lld.c usb_desc.c usb_prop.c \
+       $(CRYPTSRC) \
+       main.c debug.c usb_lld.c \
+	hw_config.c usb_desc.c usb_prop.c \
 	usb-icc.c gpg.c ac.c openpgp-do.c flash.c
 
 # List ASM source files here
 ASMSRC = $(PORTASM) \
          $(CHIBIOS)/os/ports/GCC/ARMCMx/STM32F10x/vectors.s gpg-data.s
 
-INCDIR = $(RSAINCDIR) $(STMUSBINCDIR) $(VCOMDIR) \
+INCDIR = $(CRYPTINCDIR) $(STMUSBINCDIR) $(VCOMDIR) \
 	 $(PORTINC) $(KERNINC) $(TESTINC) \
          $(HALINC) $(PLATFORMINC) $(BOARDINC) \
          $(CHIBIOS)/os/various

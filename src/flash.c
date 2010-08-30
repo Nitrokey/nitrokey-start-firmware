@@ -21,14 +21,22 @@
  *
  */
 
+/*
+ * Writing to Flash ROM is NOT YET IMPLEMENTED, just API only
+ */
+
 #include "ch.h"
 #include "gnuk.h"
 
+static uint8_t do_pool[256];
+static uint8_t *last_p = do_pool;
+
+/*
+ * TLV (Tag, Length, and Value)
+ */
 uint8_t *
 flash_do_write (uint16_t tag, uint8_t *data, int len)
 {
-  static uint8_t do_pool[1024];
-  static uint8_t *last_p = do_pool;
   uint8_t *p = last_p;
 
   if (last_p - do_pool + len + 2 + 3 > 1024)
@@ -53,4 +61,36 @@ flash_do_write (uint16_t tag, uint8_t *data, int len)
   last_p += len;
 
   return p + 2;
+}
+
+static uint8_t k1[KEY_CONTENT_LEN];
+#if 0
+static uint8_t k2[KEY_CONTENT_LEN];
+static uint8_t k3[KEY_CONTENT_LEN];
+#endif
+
+uint8_t *
+flash_key_alloc (enum kind_of_key kk)
+{
+  switch (kk)
+    {
+    case GPG_KEY_FOR_SIGNATURE:
+      return k1;
+#if 0
+    case GPG_KEY_FOR_DECRYPT:
+      return k2;
+    case GPG_KEY_FOR_AUTHENTICATION:
+      return k3;
+#else
+    default:
+      return k1;
+#endif
+    }
+}
+
+int
+flash_key_write (uint8_t *key_addr, uint8_t *key_data)
+{
+  memcpy (key_addr, key_data, KEY_CONTENT_LEN);
+  return 0;
 }

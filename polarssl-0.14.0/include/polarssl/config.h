@@ -92,9 +92,8 @@
 
 /*
  * Uncomment this macro to store the AES tables in ROM.
- *
-#define POLARSSL_AES_ROM_TABLES
  */
+#define POLARSSL_AES_ROM_TABLES
 
 /*
  * Module:  library/aes.c

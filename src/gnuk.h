@@ -1,6 +1,7 @@
 extern Thread *blinker_thread;
 
 extern void put_byte (uint8_t b);
+extern void put_byte_with_no_nl (uint8_t b);
 extern void put_short (uint16_t x);
 extern void put_string (const char *s);
 
@@ -50,3 +51,34 @@ extern void gpg_do_get_data (uint16_t tag);
 extern void gpg_do_put_data (uint16_t tag, uint8_t *data, int len);
 
 extern uint8_t * flash_do_write (uint16_t tag, uint8_t *data, int len);
+
+enum kind_of_key {
+  GPG_KEY_FOR_SIGNATURE,
+  GPG_KEY_FOR_DECRYPT,
+  GPG_KEY_FOR_AUTHENTICATION,
+};
+
+extern uint8_t *flash_key_alloc (enum kind_of_key);
+
+#define KEY_MAGIC_LEN 8
+#define KEY_CONTENT_LEN 256
+#define GNUK_MAGIC "Gnuk KEY"
+#define KEYSTORE_LEN (KEY_MAGIC_LEN+4+4+KEY_CONTENT_LEN)
+
+struct key_data {
+  uint8_t *key_addr;
+  /* encrypted data content */
+  char magic[KEY_MAGIC_LEN];
+  uint32_t random;
+  uint32_t check;
+  uint8_t data[KEY_CONTENT_LEN];
+};
+
+extern int flash_key_write (uint8_t *key_addr, uint8_t *key_data);
+
+#define KEYSTRING_LEN 20	/* Use 16-byte for AES encryption */
+extern uint8_t keystring_pw1[KEYSTRING_LEN];
+
+extern int gpg_load_key (enum kind_of_key kk);
+
+extern struct key_data kd;
