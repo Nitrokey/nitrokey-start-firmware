@@ -1,3 +1,6 @@
+# Makefile for Gnuk
+
+
 ##############################################################################
 # Build global options
 # NOTE: Can be overridden externally.
@@ -62,7 +65,7 @@ include $(CHIBIOS)/os/hal/hal.mk
 include $(CHIBIOS)/os/ports/GCC/ARMCMx/STM32F10x/port.mk
 include $(CHIBIOS)/os/kernel/kernel.mk
 include stmusb.mk
-include usbcdc.mk
+include vcomport.mk
 include rsa.mk
 include ../boards/OLIMEX_STM32_H103/board.mk
 
@@ -76,15 +79,16 @@ CSRC = $(PORTSRC) \
        $(CHIBIOS)/os/various/evtimer.c \
        $(CHIBIOS)/os/various/syscalls.c \
        $(STMUSBSRC) \
-       $(USBCDCSRC) \
+       $(VCOMSRC) \
        $(RSASRC) \
-       main.c hw_config.c usb_lld.c usb_desc.c usb_prop.c usb-icc.c gpg.c ac.c gpg-do.c
+       main.c hw_config.c usb_lld.c usb_desc.c usb_prop.c \
+	usb-icc.c gpg.c ac.c openpgp-do.c flash.c
 
 # List ASM source files here
 ASMSRC = $(PORTASM) \
          $(CHIBIOS)/os/ports/GCC/ARMCMx/STM32F10x/vectors.s gpg-data.s
 
-INCDIR = $(RSAINCDIR) $(STMUSBINCDIR) $(USBCDCDIR) \
+INCDIR = $(RSAINCDIR) $(STMUSBINCDIR) $(VCOMDIR) \
 	 $(PORTINC) $(KERNINC) $(TESTINC) \
          $(HALINC) $(PLATFORMINC) $(BOARDINC) \
          $(CHIBIOS)/os/various

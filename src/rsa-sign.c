@@ -74,7 +74,7 @@ rsa_sign (unsigned char *raw_message)
   len = (cmd_APDU[5]<<8) | cmd_APDU[6]; /* cmd_APDU_size - 6 */
 
   mpi_init( &P1, &Q1, &H, NULL );
-  rsa_init( &ctx, RSA_PKCS_V15, 0, NULL, NULL );
+  rsa_init( &ctx, RSA_PKCS_V15, 0 );
 
 #if 0
   ctx.len = 2048 / 8;

@@ -1,5 +1,5 @@
 /*
- * gpg-do.c -- OpenPGP card Data Objects (DO) handling
+ * openpgp-do.c -- OpenPGP card Data Objects (DO) handling
  *
  * Copyright (C) 2010 Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
@@ -20,6 +20,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
+
+#include "config.h"
 
 #include "ch.h"
 #include "gnuk.h"
@@ -617,37 +619,6 @@ gpg_do_get_data (uint16_t tag)
   else
     /* No record */
       write_res_apdu (NULL, 0, 0x6a, 0x88);
-}
-
-uint8_t *
-flash_do_write (uint16_t tag, uint8_t *data, int len)
-{
-  static uint8_t do_pool[1024];
-  static uint8_t *last_p = do_pool;
-  uint8_t *p = last_p;
-
-  if (last_p - do_pool + len + 2 + 3 > 1024)
-    return NULL;
-
-  *last_p++ = (tag >> 8);
-  *last_p++ = (tag & 0xff);
-  if (len < 128)
-    *last_p++ = len;
-  else if (len < 256)
-    {
-      *last_p++ = 0x81;
-      *last_p++ = len;
-    }
-  else
-    {
-      *last_p++ = 0x82;
-      *last_p++ = (len >> 8);
-      *last_p++ = (len & 0xff);
-    }
-  memcpy (last_p, data, len);
-  last_p += len;
-
-  return p + 2;
 }
 
 void

@@ -1,10 +1,27 @@
 /*
-usb_prop.c
-MCD Application Team
-V3.1.1
-04/07/2010
-All processing related to Virtual Com Port Demo
-*/
+ * usb_prop.c - glue/interface code between Gnuk and USB-FS-Device_Lib
+ *
+ * Copyright (C) 2010 Free Software Initiative of Japan
+ * Author: NIIBE Yutaka <gniibe@fsij.org>
+ *
+ * This file is a part of Gnuk, a GnuPG USB Token implementation.
+ *
+ * Gnuk is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Gnuk is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+ * or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+ * License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+
+#include "config.h"
 
 #include "usb_lib.h"
 #include "usb_conf.h"
@@ -13,56 +30,16 @@ All processing related to Virtual Com Port Demo
 #include "usb_pwr.h"
 #include "hw_config.h"
 
-#if 0
-static uint8_t Request = 0;
+#ifdef ENABLE_VIRTUAL_COM_PORT
+#include "usb-cdc-vport.c"
 #endif
-
-typedef struct
-{
-  uint32_t bitrate;
-  uint8_t format;
-  uint8_t paritytype;
-  uint8_t datatype;
-} LINE_CODING;
-
-static LINE_CODING linecoding = {
-  115200, /* baud rate*/
-  0x00,   /* stop bits-1*/
-  0x00,   /* parity - none*/
-  0x08    /* no. of bits 8*/
-};
-
-static uint8_t *Virtual_Com_Port_GetLineCoding(uint16_t Length)
-{
-  if (Length == 0)
-    {
-      pInformation->Ctrl_Info.Usb_wLength = sizeof(linecoding);
-      return NULL;
-    }
-
-  return (uint8_t *)&linecoding;
-}
-
-static uint8_t *Virtual_Com_Port_SetLineCoding(uint16_t Length)
-{
-  if (Length == 0)
-    {
-      pInformation->Ctrl_Info.Usb_wLength = sizeof(linecoding);
-      return NULL;
-    }
-
-  return (uint8_t *)&linecoding;
-}
-
-
-#define GNUK_MAX_PACKET_SIZE 64
 
 static void
 gnuk_device_init (void)
 {
-
-  /* Update the serial number string descriptor with the data from the unique
-  ID*/
+  /*
+   * Update the serial number string descriptor (if needed)
+   */
   Get_SerialNum ();
 
   pInformation->Current_Configuration = 0;
@@ -79,13 +56,13 @@ gnuk_device_init (void)
 static void
 gnuk_device_reset (void)
 {
-  /* Set Virtual_Com_Port DEVICE as not configured */
+  /* Set DEVICE as not configured */
   pInformation->Current_Configuration = 0;
 
   /* Current Feature initialization */
   pInformation->Current_Feature = Config_Descriptor.Descriptor[7];
 
-  /* Set Virtual_Com_Port DEVICE with the default Interface*/
+  /* Set DEVICE with the default Interface*/
   pInformation->Current_Interface = 0;
 
   SetBTABLE (BTABLE_ADDRESS);
@@ -99,6 +76,7 @@ gnuk_device_reset (void)
   SetEPRxCount (ENDP0, GNUK_MAX_PACKET_SIZE);
   SetEPRxValid (ENDP0);
 
+#ifdef ENABLE_VIRTUAL_COM_PORT
   /* Initialize Endpoint 1 */
   SetEPType (ENDP1, EP_BULK);
   SetEPTxAddr (ENDP1, ENDP1_TXADDR);
@@ -117,6 +95,7 @@ gnuk_device_reset (void)
   SetEPRxCount (ENDP3, VIRTUAL_COM_PORT_DATA_SIZE);
   SetEPRxStatus (ENDP3, EP_RX_VALID);
   SetEPTxStatus (ENDP3, EP_TX_DIS);
+#endif
 
   /* Initialize Endpoint 4 */
   SetEPType (ENDP4, EP_BULK);
@@ -127,7 +106,7 @@ gnuk_device_reset (void)
   /* Initialize Endpoint 5 */
   SetEPType (ENDP5, EP_BULK);
   SetEPRxAddr (ENDP5, ENDP5_RXADDR);
-  SetEPRxCount (ENDP5, VIRTUAL_COM_PORT_DATA_SIZE); /* XXX */
+  SetEPRxCount (ENDP5, GNUK_MAX_PACKET_SIZE);
   SetEPRxStatus (ENDP5, EP_RX_VALID);
   SetEPTxStatus (ENDP5, EP_TX_DIS);
 
@@ -157,75 +136,12 @@ gnuk_device_SetDeviceAddress (void)
 static void
 gnuk_device_Status_In (void)
 {
-#if 0
-  if (Request == SET_LINE_CODING)
-    Request = 0;
-#endif
 }
 
 /* OUT to port 0 */
 static void
 gnuk_device_Status_Out (void)
 {
-}
-
-/*******************************************************************************
-* Function Name  : Virtual_Com_Port_Data_Setup
-* Description    : handle the data class specific requests
-* Input          : Request Nb.
-* Output         : None.
-* Return         : USB_UNSUPPORT or USB_SUCCESS.
-*******************************************************************************/
-static RESULT
-Virtual_Com_Port_Data_Setup (uint8_t RequestNo)
-{
-  uint8_t    *(*CopyRoutine)(uint16_t);
-
-  CopyRoutine = NULL;
-
-  if (RequestNo == GET_LINE_CODING)
-    {
-      if (Type_Recipient == (CLASS_REQUEST | INTERFACE_RECIPIENT))
-	CopyRoutine = Virtual_Com_Port_GetLineCoding;
-    }
-  else if (RequestNo == SET_LINE_CODING)
-    {
-      if (Type_Recipient == (CLASS_REQUEST | INTERFACE_RECIPIENT))
-	CopyRoutine = Virtual_Com_Port_SetLineCoding;
-#if 0
-      Request = SET_LINE_CODING;
-#endif
-    }
-
-  if (CopyRoutine == NULL)
-    return USB_UNSUPPORT;
-
-  pInformation->Ctrl_Info.CopyData = CopyRoutine;
-  pInformation->Ctrl_Info.Usb_wOffset = 0;
-  (*CopyRoutine) (0);
-
-  return USB_SUCCESS;
-}
-
-/*******************************************************************************
-* Function Name  : Virtual_Com_Port_NoData_Setup.
-* Description    : handle the no data class specific requests.
-* Input          : Request Nb.
-* Output         : None.
-* Return         : USB_UNSUPPORT or USB_SUCCESS.
-*******************************************************************************/
-static RESULT
-Virtual_Com_Port_NoData_Setup (uint8_t RequestNo)
-{
-  if (Type_Recipient == (CLASS_REQUEST | INTERFACE_RECIPIENT))
-    {
-      if (RequestNo == SET_COMM_FEATURE)
-	return USB_SUCCESS;
-      else if (RequestNo == SET_CONTROL_LINE_STATE)
-	return USB_SUCCESS;
-    }
-
-  return USB_UNSUPPORT;
 }
 
 static uint8_t *
@@ -261,7 +177,7 @@ gnuk_device_Get_Interface_Setting (uint8_t Interface, uint8_t AlternateSetting)
 
   return USB_SUCCESS;
 }
-
+
 /*
  * Interface to USB core
  */
@@ -271,8 +187,13 @@ DEVICE_PROP Device_Property = {
   gnuk_device_reset,
   gnuk_device_Status_In,
   gnuk_device_Status_Out,
+#ifdef ENABLE_VIRTUAL_COM_PORT
   Virtual_Com_Port_Data_Setup,
   Virtual_Com_Port_NoData_Setup,
+#else
+  NULL,
+  NULL,
+#endif
   gnuk_device_Get_Interface_Setting,
   gnuk_device_GetDeviceDescriptor,
   gnuk_device_GetConfigDescriptor,

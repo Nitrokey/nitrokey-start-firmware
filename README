@@ -10,11 +10,13 @@ External source
 Taken from http://chibios.sourceforge.net/
 Note that CRLF is converted to LF in this repository.
 
-* STM32_USB-FS-Device_Driver
-Taken from http://github.com/robots/STM32.git
+* PolarSSS 0.14.0
+Taken from http://polarssl.org/
 
-* USBCDC
-Taken from http://github.com/robots/STM32.git
+* STM32F10x USB Full Speed Device Library (USB-FS-Device_Lib)
+I took Libraries/STM32_USB-FS-Device_Driver and a part of
+Project/Virtual_COM_Port in STM32_USB-FS-Device_Lib distribution.
+See http://www.st.com for detail.
 
 
 HOWTO RUN

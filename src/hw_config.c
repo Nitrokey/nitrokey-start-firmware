@@ -1,3 +1,10 @@
+/* Hardware specific USB functions */
+/*
+ * For detail, please see the documentation of 
+ * STM32F10x USB Full Speed Device Library (USB-FS-Device_Lib)
+ * by STMicroelectronics' MCD Application Team
+ */
+
 #include "ch.h"
 #include "hal.h"
 

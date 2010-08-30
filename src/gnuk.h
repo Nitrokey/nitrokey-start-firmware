@@ -44,8 +44,9 @@ extern int verify_pso_admin (uint8_t *pw, int pw_len);
 
 extern void write_res_apdu (const uint8_t *p, int len,
 			    uint8_t sw1, uint8_t sw2);
-#define DEBUG 1
 
 extern int gpg_do_table_init (void);
 extern void gpg_do_get_data (uint16_t tag);
 extern void gpg_do_put_data (uint16_t tag, uint8_t *data, int len);
+
+extern uint8_t * flash_do_write (uint16_t tag, uint8_t *data, int len);
