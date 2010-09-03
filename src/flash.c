@@ -34,10 +34,10 @@ static uint8_t *last_p = do_pool;
 /*
  * TLV (Tag, Length, and Value)
  */
-uint8_t *
-flash_do_write (uint16_t tag, uint8_t *data, int len)
+const uint8_t *
+flash_do_write (uint16_t tag, const uint8_t *data, int len)
 {
-  uint8_t *p = last_p;
+  const uint8_t *p = last_p;
 
   if (last_p - do_pool + len + 2 + 3 > 1024)
     return NULL;
@@ -63,10 +63,16 @@ flash_do_write (uint16_t tag, uint8_t *data, int len)
   return p + 2;
 }
 
-static uint8_t k1[KEY_CONTENT_LEN];
+void
+flash_do_release (const uint8_t *data)
+{
+  (void)data;/*XXX*/
+}
+
+static uint8_t k1[KEY_CONTENT_LEN*2]; /* p, q and N */
 #if 0
-static uint8_t k2[KEY_CONTENT_LEN];
-static uint8_t k3[KEY_CONTENT_LEN];
+static uint8_t k2[KEY_CONTENT_LEN*2];
+static uint8_t k3[KEY_CONTENT_LEN*2];
 #endif
 
 uint8_t *
@@ -89,8 +95,16 @@ flash_key_alloc (enum kind_of_key kk)
 }
 
 int
-flash_key_write (uint8_t *key_addr, uint8_t *key_data)
+flash_key_write (uint8_t *key_addr, const uint8_t *key_data,
+		 const uint8_t *modulus)
 {
   memcpy (key_addr, key_data, KEY_CONTENT_LEN);
+  memcpy (key_addr+KEY_CONTENT_LEN, modulus, KEY_CONTENT_LEN);
   return 0;
+}
+
+void
+flash_key_release (const uint8_t *key_addr)
+{
+  (void)key_addr; /*XXX*/
 }

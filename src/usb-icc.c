@@ -180,14 +180,14 @@ icc_power_on (void)
 
   if (!icc_tx_ready ())
     {
-      _write ("ERR0B\r\n", 7);
+      DEBUG_INFO ("ERR0B\r\n");
     }
   else
     {
       icc_tx_size = ICC_MSG_DATA_OFFSET + size_atr;
       USB_SIL_Write (EP4_IN, icc_tx_data, icc_tx_size);
       SetEPTxValid (ENDP4);
-      _write ("ON\r\n", 4);
+      DEBUG_INFO ("ON\r\n");
     }
 
   return ICC_STATE_WAIT;
@@ -214,7 +214,7 @@ icc_send_status (void)
 
   if (!icc_tx_ready ())
     {
-      _write ("ERR0C\r\n", 7);
+      DEBUG_INFO ("ERR0C\r\n");
     }
   else
     {
@@ -222,7 +222,7 @@ icc_send_status (void)
       USB_SIL_Write (EP4_IN, icc_tx_data, icc_tx_size);
       SetEPTxValid (ENDP4);
     }
-  _write ("St\r\n", 4);
+  DEBUG_INFO ("St\r\n");
 }
 
 enum icc_state
@@ -230,7 +230,7 @@ icc_power_off (void)
 {
   
   icc_send_status ();
-  _write ("OFF\r\n", 5);
+  DEBUG_INFO ("OFF\r\n");
   return ICC_STATE_START;
 }
 
@@ -261,14 +261,14 @@ icc_send_data_block (uint8_t status, uint8_t error, uint8_t chain,
 
   if (!icc_tx_ready ())
     {				/* not ready to send */
-      _write ("ERR09\r\n", 7);
+      DEBUG_INFO ("ERR09\r\n");
     }
   else
     {
       icc_tx_size = ICC_MSG_DATA_OFFSET + len;
       USB_SIL_Write (EP4_IN, icc_tx_data, icc_tx_size);
       SetEPTxValid (ENDP4);
-      _write ("DATA\r\n", 6);
+      DEBUG_INFO ("DATA\r\n");
     }
 }
 
@@ -288,7 +288,7 @@ icc_handle_data (void)
 	icc_send_status ();
       else
 	{			/* XXX: error */
-	  _write ("ERR01\r\n", 7);
+	  DEBUG_INFO ("ERR01\r\n");
 	}
       break;
     case ICC_STATE_WAIT:
@@ -320,13 +320,13 @@ icc_handle_data (void)
 	    }
 	  else
 	    {				/* XXX: error */;
-	      _write ("ERR02\r\n", 7);
+	      DEBUG_INFO ("ERR02\r\n");
 	    }
 	}
       else
 	{			/* XXX: error */
-	  _write ("ERR03\r\n", 7);
-	  put_byte (icc_header->msg_type);
+	  DEBUG_INFO ("ERR03\r\n");
+	  DEBUG_BYTE (icc_header->msg_type);
 	  next_state = ICC_STATE_START;
 	}
       break;
@@ -340,8 +340,8 @@ icc_handle_data (void)
 	icc_send_status ();
       else
 	{			/* XXX: error */
-	  _write ("ERR04\r\n", 7);
-	  put_byte (icc_header->msg_type);
+	  DEBUG_INFO ("ERR04\r\n");
+	  DEBUG_BYTE (icc_header->msg_type);
 	  next_state = ICC_STATE_START;
 	}
       break;
@@ -368,7 +368,7 @@ icc_handle_data (void)
 		icc_send_data_block (0, 0, 0x10, NULL, 0);
 	      else
 		{			/* XXX: error */
-		  _write ("ERR08\r\n", 7);
+		  DEBUG_INFO ("ERR08\r\n");
 		}
 	    }
 	  else			/* Overrun */
@@ -380,8 +380,8 @@ icc_handle_data (void)
 	}
       else
 	{			/* XXX: error */
-	  _write ("ERR05\r\n", 7);
-	  put_byte (icc_header->msg_type);
+	  DEBUG_INFO ("ERR05\r\n");
+	  DEBUG_BYTE (icc_header->msg_type);
 	  next_state = ICC_STATE_START;
 	}
       break;
@@ -409,16 +409,16 @@ icc_handle_data (void)
 	    }
 	  else
 	    {			/* XXX: error */
-	      _write ("ERR0A\r\n", 7);
-	      put_byte (icc_header->param >> 8);
-	      put_byte (icc_header->param & 0xff);
+	      DEBUG_INFO ("ERR0A\r\n");
+	      DEBUG_BYTE (icc_header->param >> 8);
+	      DEBUG_BYTE (icc_header->param & 0xff);
 	      next_state = ICC_STATE_WAIT;
 	    }
 	}
       else
 	{			/* XXX: error */
-	  _write ("ERR06\r\n", 7);
-	  put_byte (icc_header->msg_type);
+	  DEBUG_INFO ("ERR06\r\n");
+	  DEBUG_BYTE (icc_header->msg_type);
 	  next_state = ICC_STATE_START;
 	}
       break;
@@ -491,7 +491,7 @@ USBthread (void *arg)
 	    }
 	  else
 	    {			/* XXX: error */
-	      _write ("ERR07\r\n", 7);
+	      DEBUG_INFO ("ERR07\r\n");
 	    }
 	}
       else			/* Timeout */

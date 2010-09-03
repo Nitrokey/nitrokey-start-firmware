@@ -25,9 +25,11 @@
 
 #include "ch.h"
 #include "gnuk.h"
+#include "openpgp.h"
 
 #include "polarssl/config.h"
 #include "polarssl/aes.h"
+#include "polarssl/sha1.h"
 
 /*
  * Compile time vars:
@@ -84,38 +86,18 @@ static const uint8_t const algorithm_attr[] __attribute__ ((aligned (1))) = {
   0x00		      /* 0: p&q , 3: CRT with N (not yet supported) */
 };
 
-
-
-#define SIZE_PW_STATUS_BYTES 7
-#if 0
+const uint8_t const pw_status_bytes_template[] =
 {
   1,				/* PW1 valid for several PSO:CDS commands */
   127, 127, 127,		/* max length of PW1, RC, and PW3 */
   3, 0, 3			/* Error counter of PW1, RC, and PW3 */
 };
-#endif
 
 #define SIZE_DIGITAL_SIGNATURE_COUNTER 3
-#if 0
-{
-  0, 0, 0			/* 3-byte binary */
-};
-#endif
+/* 3-byte binary (big endian) */
 
 #define SIZE_FINGER_PRINT 20
 #define SIZE_KEYGEN_TIME 4	/* RFC4880 */
-
-/* Runtime vars: PSO */
-
-struct key_store {
-  uint8_t p[128];
-  uint8_t q[128];
-};
-
-static struct key_store key_sig, key_dec, key_aut;
-
-#define HASH_SIZE 20
-static uint8_t pw3_hash[HASH_SIZE];
 
 enum do_type {
   DO_FIXED,
@@ -124,8 +106,6 @@ enum do_type {
   DO_PROC_READ,
   DO_PROC_WRITE,
   DO_PROC_READWRITE,
-  DO_HASH,
-  DO_KEYPTR
 };
 
 struct do_table_entry {
@@ -141,13 +121,6 @@ static int with_tag;
 
 static void copy_do_1 (uint16_t tag, const uint8_t *do_data);
 static struct do_table_entry *get_do_entry (uint16_t tag);
-
-#define GNUK_DO_KEYPTR_SIG 0xff01
-#define GNUK_DO_KEYPTR_DEC 0xff02
-#define GNUK_DO_KEYPTR_AUT 0xff03
-#define GNUK_DO_HASH_PW3   0xff04
-#define GNUK_DO_HASH_RC    0xff05
-#define GNUK_DO_PW_STATUS  0xff06
 
 #define GPG_DO_AID		0x004f
 #define GPG_DO_NAME		0x005b
@@ -194,18 +167,19 @@ copy_tag (uint16_t tag)
     }
 }
 
-static void
+static int
 do_hist_bytes (uint16_t tag)
 {
   /* XXX: For now, no life cycle management, just return template as is. */
   /* XXX: Supporing TERMINATE DF / ACTIVATE FILE, we need to fix here */
   copy_do_1 (tag, historical_bytes);
+  return 0;
 }
 
 #define SIZE_FP 20
 #define SIZE_KGTIME 4
 
-static void
+static int
 do_fp_all (uint16_t tag)
 {
   struct do_table_entry *do_p;
@@ -240,9 +214,11 @@ do_fp_all (uint16_t tag)
   else
     memset (res_p, 0, SIZE_FP);
   res_p += SIZE_FP;
+
+  return 0;
 }
 
-static void
+static int
 do_cafp_all (uint16_t tag)
 {
   struct do_table_entry *do_p;
@@ -277,9 +253,11 @@ do_cafp_all (uint16_t tag)
   else
     memset (res_p, 0, SIZE_FP);
   res_p += SIZE_FP;
+
+  return 0;
 }
 
-static void
+static int
 do_kgtime_all (uint16_t tag)
 {
   struct do_table_entry *do_p;
@@ -314,33 +292,38 @@ do_kgtime_all (uint16_t tag)
   else
     memset (res_p, 0, SIZE_KGTIME);
   res_p += SIZE_KGTIME;
+  return 0;
 }
 
-static void
-rw_pw_status (uint16_t tag, uint8_t *data, int len, int is_write)
+static int
+rw_pw_status (uint16_t tag, const uint8_t *data, int len, int is_write)
 {
   struct do_table_entry *do_p;
 
   if (is_write)
     {
       const uint8_t *do_data;
+      uint8_t pwsb[SIZE_PW_STATUS_BYTES];
 
+      (void)len;
       do_p = get_do_entry (GNUK_DO_PW_STATUS);
-      if (do_p)
+      do_data = (const uint8_t *)do_p->obj;
+      if (do_data)
 	{
-	  do_data = (const uint8_t *)do_p->obj;
-	  if (do_data)
-	    memcpy (data, &do_data[2], SIZE_PW_STATUS_BYTES - 1);
-
-	  do_p->obj = flash_do_write (tag, data, len);
-	  if (do_p->obj)
-	    write_res_apdu (NULL, 0, 0x90, 0x00); /* success */
-	  else
-	    write_res_apdu (NULL, 0, 0x65, 0x81); /* memory failure */
+	  memcpy (pwsb, &do_data[1], SIZE_PW_STATUS_BYTES);
+	  flash_do_release (do_p->obj);
 	}
       else
-	/* No record */
-	write_res_apdu (NULL, 0, 0x6a, 0x88);
+	memcpy (pwsb, pw_status_bytes_template, SIZE_PW_STATUS_BYTES);
+
+      pwsb[0] = data[0];
+      do_p->obj = flash_do_write (tag, pwsb, SIZE_PW_STATUS_BYTES);
+      if (do_p->obj)
+	GPG_SUCCESS ();
+      else
+	GPG_MEMORY_FAILURE();
+
+      return 0;
     }
   else
     {
@@ -360,182 +343,306 @@ rw_pw_status (uint16_t tag, uint8_t *data, int len, int is_write)
 	  res_p += SIZE_PW_STATUS_BYTES;
 	}
       else
-	/* No record */
-	write_res_apdu (NULL, 0, 0x6a, 0x88);
+	return -1;
     }
-}
 
-static void
-proc_resetting_code (uint16_t tag, uint8_t *data, int len)
-{
-  /* Not implementad yet */
-  /*
-   * calculate hash, write it to GNUK_DO_HASH_RC.
-   */
-  /* Then, we need to reset RC counter in GNUK_DO_PW_STATUS */
+  return 0;
 }
-
-static uint8_t iv[16];
 
 static aes_context aes;
+static uint8_t iv[16];
 static int iv_offset;
 
 static void
-encrypt (uint8_t *key_str, uint8_t *data)
+proc_resetting_code (const uint8_t *data, int len)
+{
+  const uint8_t *old_ks = keystring_md_pw3;
+  uint8_t new_ks0[KEYSTRING_MD_SIZE+1];
+  uint8_t *new_ks = &new_ks0[1];
+  const uint8_t *newpw;
+  int newpw_len;
+  int r;
+  uint8_t pwsb[SIZE_PW_STATUS_BYTES];
+  struct do_table_entry *do_p;
+  const uint8_t *do_data;
+
+  newpw_len = len;
+  newpw = data;
+  sha1 (newpw, newpw_len, new_ks);
+  new_ks0[0] = newpw_len;
+  r = gpg_change_keystring (3, old_ks, 2, new_ks);
+  if (r < -2)
+    {
+      GPG_MEMORY_FAILURE ();
+      return;
+    }
+  else if (r < 0)
+    {
+      GPG_SECURITY_FAILURE ();
+      return;
+    }
+  else if (r == 0)
+    gpg_do_write_simple (GNUK_DO_KEYSTRING_RC, new_ks0, KEYSTRING_SIZE_RC);
+  else
+    GPG_SUCCESS ();
+
+  /* Reset RC counter in GNUK_DO_PW_STATUS */
+  do_p = get_do_entry (GNUK_DO_PW_STATUS);
+  do_data = (const uint8_t *)do_p->obj;
+  if (do_data)
+    {
+      memcpy (pwsb, &do_data[1], SIZE_PW_STATUS_BYTES);
+      pwsb[PW_STATUS_RC] = 3;
+      flash_do_release (do_data);
+    }
+  else
+    {
+      memcpy (pwsb, pw_status_bytes_template, SIZE_PW_STATUS_BYTES);
+      pwsb[5] = 3;
+    }
+
+  gpg_do_write_simple (GNUK_DO_PW_STATUS, pwsb, SIZE_PW_STATUS_BYTES);
+}
+
+static void
+encrypt (const uint8_t *key_str, uint8_t *data, int len)
 {
   aes_setkey_enc (&aes, key_str, 128);
   memset (iv, 0, 16);
   iv_offset = 0;
-  aes_crypt_cfb128 (&aes, AES_ENCRYPT, KEYSTORE_LEN, &iv_offset, iv, data, data);
+  aes_crypt_cfb128 (&aes, AES_ENCRYPT, len, &iv_offset, iv, data, data);
 
-  {
-    int i, len = KEYSTORE_LEN;
-
-    put_string ("ENC\r\n");
-    for (i = 0; i < len; i++)
-      {
-	put_byte_with_no_nl (data[i]);
-	if ((i & 0x0f) == 0x0f)
-	  _write ("\r\n", 2);
-      }
-    _write ("\r\n", 2);
-  }
+  DEBUG_INFO ("ENC\r\n");
+  DEBUG_BINARY (data, KEYSTORE_LEN);
 }
 
 struct key_data kd;
 
 static void
-decrypt (uint8_t *key_str, uint8_t *data)
+decrypt (const uint8_t *key_str, uint8_t *data, int len)
 {
   aes_setkey_enc (&aes, key_str, 128);
   memset (iv, 0, 16);
   iv_offset = 0;
-  aes_crypt_cfb128 (&aes, AES_DECRYPT, KEYSTORE_LEN, &iv_offset, iv, data, data);
-  {
-    int i, len = KEYSTORE_LEN;
-
-    put_string ("DEC\r\n");
-    for (i = 0; i < len; i++)
-      {
-	put_byte_with_no_nl (data[i]);
-	if ((i & 0x0f) == 0x0f)
-	  _write ("\r\n", 2);
-      }
-    _write ("\r\n", 2);
-  }
+  aes_crypt_cfb128 (&aes, AES_DECRYPT, len, &iv_offset, iv, data, data);
+  DEBUG_INFO ("DEC\r\n");
+  DEBUG_BINARY (data, KEYSTORE_LEN);
 }
 
-int
-gpg_load_key (enum kind_of_key kk)
+static uint16_t
+get_tag_for_kk (enum kind_of_key kk)
 {
-  struct do_table_entry *do_p;
-
   switch (kk)
     {
     case GPG_KEY_FOR_SIGNATURE:
-      do_p = get_do_entry (GNUK_DO_KEYPTR_SIG);
-      break;
+      return GNUK_DO_PRVKEY_SIG;
     case GPG_KEY_FOR_DECRYPT:
-      do_p = get_do_entry (GNUK_DO_KEYPTR_DEC);
-      break;
+      return GNUK_DO_PRVKEY_DEC;
     case GPG_KEY_FOR_AUTHENTICATION:
-      do_p = get_do_entry (GNUK_DO_KEYPTR_AUT);
-      break;
+      return GNUK_DO_PRVKEY_AUT;
     }
-  if (do_p == NULL)
-    return -1;
+  return GNUK_DO_PRVKEY_SIG;
+}
 
-  kd.key_addr = *(uint8_t **)&((uint8_t *)do_p->obj)[1];
-  memcpy (((uint8_t *)&kd)+4, ((uint8_t *)do_p->obj)+5, KEY_MAGIC_LEN+4+4);
-  memcpy (kd.data, kd.key_addr, KEY_CONTENT_LEN);
+/*
+ * Return  1 on success,
+ *         0 if none,
+ *        -1 on error,
+ */
+int
+gpg_do_load_prvkey (enum kind_of_key kk, int who, const uint8_t *keystring)
+{
+  uint16_t tag = get_tag_for_kk (kk);
+  struct do_table_entry *do_p = get_do_entry (tag);
+  uint8_t *key_addr;
+  uint8_t dek[DATA_ENCRYPTION_KEY_SIZE];
 
-  decrypt (keystring_pw1, ((uint8_t *)&kd) + 4);
+  if (do_p->obj == NULL)
+    return 0;
+
+  key_addr = *(uint8_t **)&((uint8_t *)do_p->obj)[1];
+  memcpy (kd.data, key_addr, KEY_CONTENT_LEN);
+  memcpy (((uint8_t *)&kd.check), ((uint8_t *)do_p->obj)+5, ADDITIONAL_DATA_SIZE);
+  memcpy (dek, ((uint8_t *)do_p->obj)+5+16*who, DATA_ENCRYPTION_KEY_SIZE);
+
+  decrypt (keystring, dek, DATA_ENCRYPTION_KEY_SIZE);
+  decrypt (dek, (uint8_t *)&kd, sizeof (kd));
   if (memcmp (kd.magic, GNUK_MAGIC, KEY_MAGIC_LEN) != 0)
     return -1;
   /* XXX: more sanity check */
-  return 0;
-}
-
-uint32_t
-get_random (void)
-{
-  return 0x80808080;		/* XXX: for now */
+  return 1;
 }
 
 static uint32_t
-calc_check (uint8_t *data, int len)
+calc_check32 (const uint8_t *p, int len)
 {
   uint32_t check = 0;
+  uint32_t *data = (uint32_t *)p;
   int i;
 
-  for (i = 0; i < len; i++)
+  for (i = 0; i < len/4; i++)
     check += data[i];
 
   return check;
 }
 
-static int
-gpg_write_do_keyptr (enum kind_of_key kk, uint8_t *key_data, int key_len)
+int
+gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
+		     const uint8_t *keystring)
 {
-  uint8_t *p;
-  int len;
+  const uint8_t *p;
   int r;
-  uint32_t key_addr;
   struct do_table_entry *do_p;
+  const uint8_t *modulus;
+  struct key_data *kd;
+  struct prvkey_data *pd;
+  uint8_t *key_addr;
+  uint8_t *dek;
+  uint16_t tag = get_tag_for_kk (kk);
+  const uint8_t *ks_pw1 = gpg_do_read_simple (GNUK_DO_KEYSTRING_PW1);
+  const uint8_t *ks_rc = gpg_do_read_simple (GNUK_DO_KEYSTRING_RC);
 
 #if 0
-  assert (key_len == KEY_CONTENT_LEN+4);
-  /* key_data should starts with 00 01 00 01 (E) */
+  assert (key_len == KEY_CONTENT_LEN);
 #endif
 
-  put_short (key_len);
+  DEBUG_SHORT (key_len);
 
-  key_data += 4;
-
-  kd.key_addr = flash_key_alloc (kk);
-  if (kd.key_addr == NULL)
+  kd = (struct key_data *)malloc (sizeof (struct key_data));
+  if (kd == NULL)
     return -1;
 
-  memcpy (kd.magic, GNUK_MAGIC, KEY_MAGIC_LEN);
-  kd.check = calc_check (key_data, KEY_CONTENT_LEN);
-  kd.random = get_random ();
-  memcpy (kd.data, key_data, KEY_CONTENT_LEN);
-
-  put_string ("enc...");
-
-  encrypt (keystring_pw1, ((uint8_t *)&kd) + 4);
-
-  put_string ("done\r\n");
-
-  if ((r = flash_key_write (kd.key_addr, kd.data)) < 0)
-    return r;
-
-  switch (kk)
+  pd = (struct prvkey_data *)malloc (sizeof (struct prvkey_data));
+  if (pd == NULL)
     {
-    case GPG_KEY_FOR_SIGNATURE:
-      p = flash_do_write (GNUK_DO_KEYPTR_SIG, &kd,
-			  sizeof (kd) - KEY_CONTENT_LEN);
-      do_p = get_do_entry (GNUK_DO_KEYPTR_SIG);
-      do_p->obj = p;
-      break;
-    case GPG_KEY_FOR_DECRYPT:
-      p = flash_do_write (GNUK_DO_KEYPTR_DEC, &kd,
-			  sizeof (kd) - KEY_CONTENT_LEN);
-      do_p = get_do_entry (GNUK_DO_KEYPTR_DEC);
-      do_p->obj = p;
-      break;
-    case GPG_KEY_FOR_AUTHENTICATION:
-      p = flash_do_write (GNUK_DO_KEYPTR_AUT, &kd,
-			  sizeof (kd) - KEY_CONTENT_LEN);
-      do_p = get_do_entry (GNUK_DO_KEYPTR_AUT);
-      do_p->obj = p;
-      break;
+      free (kd);
+      return -1;
     }
 
+  modulus = modulus_calc (key_data, key_len);
+  if (modulus == NULL)
+    {
+      free (kd);
+      free (pd);
+      return -1;
+    }
+
+  key_addr = flash_key_alloc (kk);
+  if (key_addr == NULL)
+    {
+      free (kd);
+      free (pd);
+      modulus_free (modulus);
+      return -1;
+    }
+
+  memcpy (kd->data, key_data, KEY_CONTENT_LEN);
+  kd->check = calc_check32 (key_data, KEY_CONTENT_LEN);
+  kd->random = get_random ();
+  memcpy (kd->magic, GNUK_MAGIC, KEY_MAGIC_LEN);
+
+  DEBUG_INFO ("enc...");
+
+  dek = get_data_encryption_key (); /* 16-byte random bytes */
+  encrypt (dek, (uint8_t *)kd, sizeof (kd));
+
+  DEBUG_INFO ("done\r\n");
+
+  r = flash_key_write (key_addr, kd->data, modulus);
+  modulus_free (modulus);
+
+  if (r < 0)
+    {
+      dek_free (dek);
+      free (pd);
+      free (kd);
+      return r;
+    }
+
+  pd->key_addr = key_addr;
+  memcpy (pd->crm_encrypted, (uint8_t *)&kd->check, ADDITIONAL_DATA_SIZE);
+
+  reset_pso_cds ();
+  if (ks_pw1)
+    {
+      memcpy (pd->dek_encrypted_1, dek, DATA_ENCRYPTION_KEY_SIZE);
+      encrypt (ks_pw1+1, pd->dek_encrypted_1, DATA_ENCRYPTION_KEY_SIZE);
+      /* Only its length */
+      gpg_do_write_simple (GNUK_DO_KEYSTRING_PW1, ks_pw1, 1);
+    }
+  else
+    {
+      uint8_t ks123_pw1[KEYSTRING_SIZE_PW1];
+
+      ks123_pw1[0] = 6;
+      sha1 ((uint8_t *)"123456", 6, ks123_pw1+1);
+      memcpy (pd->dek_encrypted_1, dek, DATA_ENCRYPTION_KEY_SIZE);
+      encrypt (ks123_pw1+1, pd->dek_encrypted_1, DATA_ENCRYPTION_KEY_SIZE);
+      /* Only but its length */
+      gpg_do_write_simple (GNUK_DO_KEYSTRING_PW1, ks123_pw1, 1);
+    }
+
+  if (ks_rc)
+    {
+      memcpy (pd->dek_encrypted_2, dek, DATA_ENCRYPTION_KEY_SIZE);
+      encrypt (ks_rc+1, pd->dek_encrypted_2, DATA_ENCRYPTION_KEY_SIZE);
+      /* Only its length */
+      gpg_do_write_simple (GNUK_DO_KEYSTRING_RC, ks_rc, 1);
+    }
+  else
+    memset (pd->dek_encrypted_2, 0, DATA_ENCRYPTION_KEY_SIZE);
+
+  memcpy (pd->dek_encrypted_3, dek, DATA_ENCRYPTION_KEY_SIZE);
+  encrypt (keystring, pd->dek_encrypted_3, DATA_ENCRYPTION_KEY_SIZE);
+
+  p = flash_do_write (tag, (const uint8_t *)pd, sizeof (struct prvkey_data));
+  do_p = get_do_entry (tag);
+  do_p->obj = p;
+
+  dek_free (dek);
+  free (kd);
+  free (pd);
   if (p == NULL)
     return -1;
 
   return 0;
+}
+
+int
+gpg_do_chks_prvkey (enum kind_of_key kk,
+		    int who_old, const uint8_t *old_ks,
+		    int who_new, const uint8_t *new_ks)
+{
+  uint16_t tag = get_tag_for_kk (kk);
+  struct do_table_entry *do_p = get_do_entry (tag);
+  uint8_t dek[DATA_ENCRYPTION_KEY_SIZE];
+  struct prvkey_data *pd;
+  const uint8_t *p;
+  uint8_t *dek_p;
+
+  if (do_p->obj == NULL)
+    return 0;			/* No private key */
+
+  pd = (struct prvkey_data *)malloc (sizeof (struct prvkey_data));
+  if (pd == NULL)
+    return -1;
+
+  memcpy (pd, &((uint8_t *)do_p->obj)[1], sizeof (struct prvkey_data));
+  dek_p = ((uint8_t *)pd) + 4 + ADDITIONAL_DATA_SIZE + DATA_ENCRYPTION_KEY_SIZE * (who_old - 1);
+  memcpy (dek, dek_p, DATA_ENCRYPTION_KEY_SIZE);
+  decrypt (old_ks, dek, DATA_ENCRYPTION_KEY_SIZE);
+  encrypt (new_ks, dek, DATA_ENCRYPTION_KEY_SIZE);
+  dek_p += DATA_ENCRYPTION_KEY_SIZE * (who_new - who_old);
+  memcpy (dek_p, dek, DATA_ENCRYPTION_KEY_SIZE);
+
+  p = flash_do_write (tag, (const uint8_t *)pd, sizeof (struct prvkey_data));
+  do_p->obj = p;
+
+  free (pd);
+  if (p == NULL)
+    return -1;
+
+  return 1;
 }
 
 /*
@@ -548,31 +655,45 @@ gpg_write_do_keyptr (enum kind_of_key kk, uint8_t *key_data, int key_len)
  *   5f48, xx: cardholder private key
  */
 static void
-proc_key_import (uint16_t tag, uint8_t *data, int len)
+proc_key_import (const uint8_t *data, int len)
 {
-  int i, r;
+  int r;
   enum kind_of_key kk;
 
-  for (i = 0; i < len; i++)
-    {
-      put_byte_with_no_nl (data[i]);
-      if ((i & 0x0f) == 0x0f)
-	_write ("\r\n", 2);
-    }
-  _write ("\r\n", 2);
+  DEBUG_BINARY (data, len);
 
-  if (data[4] == 0xa4)
-    kk = GPG_KEY_FOR_AUTHENTICATION;
+  if (data[4] == 0xb6)
+    kk = GPG_KEY_FOR_SIGNATURE;
   else if (data[4] == 0xb8)
     kk = GPG_KEY_FOR_DECRYPT;
-  else				/* 0xb6 */
-    kk = GPG_KEY_FOR_SIGNATURE;
+  else				/* 0xa4 */
+    kk = GPG_KEY_FOR_AUTHENTICATION;
 
-  r = gpg_write_do_keyptr (kk, &data[22], len - 22);
+  if (len <= 22)
+    {					    /* Deletion of the key */
+      uint16_t tag = get_tag_for_kk (kk);
+      struct do_table_entry *do_p = get_do_entry (tag);
+
+      if (do_p->obj)
+	{
+	  uint8_t *key_addr = *(uint8_t **)&((uint8_t *)do_p->obj)[1];
+
+	  flash_do_release (do_p->obj);
+	  flash_key_release (key_addr);
+	}
+
+      do_p->obj = NULL;
+      GPG_SUCCESS ();
+      return;
+    }
+
+  /* It should starts with 00 01 00 01 (E) */
+  /* Skip E, 4-byte */
+  r = gpg_do_write_prvkey (kk, &data[26], len - 26, keystring_md_pw3);
   if (r < 0)
-    write_res_apdu (NULL, 0, 0x65, 0x81); /* memory failure */
+    GPG_MEMORY_FAILURE();
   else
-    write_res_apdu (NULL, 0, 0x90, 0x00); /* success */
+    GPG_SUCCESS ();
 }
 
 static const uint16_t const cn_ch_data[] = {
@@ -597,12 +718,13 @@ static const uint16_t const cn_ss_temp[] = { 1, GPG_DO_DS_COUNT };
 
 static struct do_table_entry
 gpg_do_table[] = {
-  /* Pseudo DO (private): not user accessible */
-  { GNUK_DO_KEYPTR_SIG, DO_KEYPTR, AC_NEVER, AC_NEVER, NULL },
-  { GNUK_DO_KEYPTR_DEC, DO_KEYPTR, AC_NEVER, AC_NEVER, NULL },
-  { GNUK_DO_KEYPTR_AUT, DO_KEYPTR, AC_NEVER, AC_NEVER, NULL },
-  { GNUK_DO_HASH_PW3, DO_HASH, AC_NEVER, AC_NEVER, NULL },
-  { GNUK_DO_HASH_RC, DO_HASH, AC_NEVER, AC_NEVER, NULL },
+  /* Pseudo DO (private): not directly user accessible */
+  { GNUK_DO_PRVKEY_SIG, DO_VAR, AC_NEVER, AC_NEVER, NULL },
+  { GNUK_DO_PRVKEY_DEC, DO_VAR, AC_NEVER, AC_NEVER, NULL },
+  { GNUK_DO_PRVKEY_AUT, DO_VAR, AC_NEVER, AC_NEVER, NULL },
+  { GNUK_DO_KEYSTRING_PW1, DO_VAR, AC_NEVER, AC_NEVER, NULL },
+  { GNUK_DO_KEYSTRING_PW3, DO_VAR, AC_NEVER, AC_NEVER, NULL },
+  { GNUK_DO_KEYSTRING_RC, DO_VAR, AC_NEVER, AC_NEVER, NULL },
   { GNUK_DO_PW_STATUS, DO_VAR, AC_NEVER, AC_NEVER, NULL },
   /* Pseudo DO READ: calculated */
   { GPG_DO_HIST_BYTES, DO_PROC_READ, AC_ALWAYS, AC_NEVER, do_hist_bytes },
@@ -652,14 +774,9 @@ gpg_do_table[] = {
 #define NUM_DO_ENTRIES (int)(sizeof (gpg_do_table) / sizeof (struct do_table_entry))
 
 extern const uint8_t const do_5e[];
-extern const uint8_t const do_c4[];
-extern const uint8_t const do_c7[];
-extern const uint8_t const do_ca[];
-extern const uint8_t const do_ce[];
 extern const uint8_t const do_5b[];
 extern const uint8_t const do_5f2d[];
 extern const uint8_t const do_5f35[];
-extern const uint8_t const do_93[];
 extern const uint8_t const do_5f50[];
 
 /*
@@ -673,23 +790,13 @@ gpg_do_table_init (void)
   do_p = get_do_entry (GPG_DO_LOGIN_DATA);
   do_p->obj = do_5e;
   do_p = get_do_entry (GNUK_DO_PW_STATUS);
-  do_p->obj = do_c4;
-#if 0
-  do_p = get_do_entry (GPG_DO_FP_SIG);
-  do_p->obj = do_c7;
-  do_p = get_do_entry (GPG_DO_CAFP_1);
-  do_p->obj = do_ca;
-  do_p = get_do_entry (GPG_DO_KGTIME_SIG);
-  do_p->obj = do_ce;
-#endif
+  do_p->obj = pw_status_bytes_template;
   do_p = get_do_entry (GPG_DO_NAME);
   do_p->obj = do_5b;
   do_p = get_do_entry (GPG_DO_LANGUAGE);
   do_p->obj = do_5f2d;
   do_p = get_do_entry (GPG_DO_SEX);
   do_p->obj = do_5f35;
-  do_p = get_do_entry (GPG_DO_DS_COUNT);
-  do_p->obj = do_93;
   do_p = get_do_entry (GPG_DO_URL);
   do_p->obj = do_5f50;
 
@@ -753,7 +860,7 @@ copy_do (struct do_table_entry *do_p)
   if (do_p == NULL)
     return 0;
 
-  if (ac_check_status (do_p->ac_read) == 0)
+  if (!ac_check_status (do_p->ac_read))
     return -1;
 
   switch (do_p->do_type)
@@ -797,22 +904,18 @@ copy_do (struct do_table_entry *do_p)
       }
     case DO_PROC_READ:
       {
-	void (*do_func)(uint16_t) = (void (*)(uint16_t))do_p->obj;
+	int (*do_func)(uint16_t) = (int (*)(uint16_t))do_p->obj;
 
-	do_func (do_p->tag);
-	break;
+	return do_func (do_p->tag);
       }
     case DO_PROC_READWRITE:
       {
-	void (*rw_func)(uint16_t, uint8_t *, int, int)
-	  = (void (*)(uint16_t, uint8_t *, int, int))do_p->obj;
+	int (*rw_func)(uint16_t, uint8_t *, int, int)
+	  = (int (*)(uint16_t, uint8_t *, int, int))do_p->obj;
 
-	rw_func (do_p->tag, NULL, 0, 0);
-	break;
+	return rw_func (do_p->tag, NULL, 0, 0);
       }
     case DO_PROC_WRITE:
-    case DO_HASH:
-    case DO_KEYPTR:
       return -1;
     }
 
@@ -831,16 +934,14 @@ gpg_do_get_data (uint16_t tag)
   res_p = res_APDU;
   with_tag = 0;
 
-#ifdef DEBUG
-  put_string ("   ");
-  put_short (tag);
-#endif
+  DEBUG_INFO ("   ");
+  DEBUG_SHORT (tag);
 
   if (do_p)
     {
       if (copy_do (do_p) < 0)
-	/* Overwrite partially written result  */
-	write_res_apdu (NULL, 0, 0x69, 0x82);
+	/* Overwriting partially written result  */
+	GPG_SECURITY_FAILURE ();
       else
 	{
 	  *res_p++ = 0x90;
@@ -849,25 +950,22 @@ gpg_do_get_data (uint16_t tag)
 	}
     }
   else
-    /* No record */
-      write_res_apdu (NULL, 0, 0x6a, 0x88);
+    GPG_NO_RECORD();
 }
 
 void
-gpg_do_put_data (uint16_t tag, uint8_t *data, int len)
+gpg_do_put_data (uint16_t tag, const uint8_t *data, int len)
 {
   struct do_table_entry *do_p = get_do_entry (tag);
 
-#ifdef DEBUG
-  put_string ("   ");
-  put_short (tag);
-#endif
+  DEBUG_INFO ("   ");
+  DEBUG_SHORT (tag);
 
   if (do_p)
     {
-      if (ac_check_status (do_p->ac_write) == 0)
+      if (!ac_check_status (do_p->ac_write))
 	{
-	  write_res_apdu (NULL, 0, 0x69, 0x82);
+	  GPG_SECURITY_FAILURE ();
 	  return;
 	}
 
@@ -876,17 +974,15 @@ gpg_do_put_data (uint16_t tag, uint8_t *data, int len)
 	case DO_FIXED:
 	case DO_CN_READ:
 	case DO_PROC_READ:
-	case DO_HASH:
-	case DO_KEYPTR:
-	  write_res_apdu (NULL, 0, 0x69, 0x82);
+	  GPG_SECURITY_FAILURE ();
 	  break;
 	case DO_VAR:
 	  {
-#if 0
 	    const uint8_t *do_data = (const uint8_t *)do_p->obj;
 
-	    flash_do_release (do_data);
-#endif
+	    if (do_data)
+	      flash_do_release (do_data);
+
 	    if (len == 0)
 	      /* make DO empty */
 	      do_p->obj = NULL;
@@ -894,31 +990,134 @@ gpg_do_put_data (uint16_t tag, uint8_t *data, int len)
 	      {
 		do_p->obj = flash_do_write (tag, data, len);
 		if (do_p->obj)
-		  write_res_apdu (NULL, 0, 0x90, 0x00); /* success */
+		  GPG_SUCCESS ();
 		else
-		  write_res_apdu (NULL, 0, 0x65, 0x81); /* memory failure */
+		  GPG_MEMORY_FAILURE();
 	      }
 	    break;
 	  }
 	case DO_PROC_READWRITE:
 	  {
-	    void (*rw_func)(uint16_t, uint8_t *, int, int)
-	      = (void (*)(uint16_t, uint8_t *, int, int))do_p->obj;
+	    int (*rw_func)(uint16_t, const uint8_t *, int, int)
+	      = (int (*)(uint16_t, const uint8_t *, int, int))do_p->obj;
 
 	    rw_func (tag, data, len, 1);
 	    break;
 	  }
 	case DO_PROC_WRITE:
 	  {
-	    void (*proc_func)(uint16_t, uint8_t *, int)
-	      = (void (*)(uint16_t, uint8_t *, int))do_p->obj;
+	    void (*proc_func)(const uint8_t *, int)
+	      = (void (*)(const uint8_t *, int))do_p->obj;
 
-	    proc_func (tag, data, len);
+	    proc_func (data, len);
 	    break;
 	  }
 	}
     }
   else
-    /* No record */
-    write_res_apdu (NULL, 0, 0x6a, 0x88);
+    GPG_NO_RECORD();
+}
+
+void
+gpg_do_public_key (uint8_t kk_byte)
+{
+  struct do_table_entry *do_p;
+  uint8_t *key_addr;
+
+  if (kk_byte == 0xa4)
+    do_p = get_do_entry (GNUK_DO_PRVKEY_AUT);
+  else if (kk_byte == 0xb8)
+    do_p = get_do_entry (GNUK_DO_PRVKEY_DEC);
+  else				/* 0xb6 */
+    do_p = get_do_entry (GNUK_DO_PRVKEY_SIG);
+  if (do_p->obj == NULL)
+    {
+      GPG_NO_RECORD();
+      return;
+    }
+
+  key_addr = *(uint8_t **)&((uint8_t *)do_p->obj)[1];
+
+  res_p = res_APDU;
+
+  /* TAG */
+  *res_p++ = 0x7f; *res_p++ = 0x49;
+  /* LEN = 9+256 */
+  *res_p++ = 0x82; *res_p++ = 0x01; *res_p++ = 0x09;
+
+  {
+    /*TAG*/          /*LEN = 256 */
+    *res_p++ = 0x81; *res_p++ = 0x82; *res_p++ = 0x01; *res_p++ = 0x00;
+    /* 256-byte binary (big endian) */
+    memcpy (res_p, key_addr + KEY_CONTENT_LEN, KEY_CONTENT_LEN);
+    res_p += 256;
+  }
+  {
+    /*TAG*/          /*LEN= 3 */
+    *res_p++ = 0x82; *res_p++ = 3;
+    /* 3-byte E=0x10001 (big endian) */
+    *res_p++ = 0x01; *res_p++ = 0x00; *res_p++ = 0x01;
+
+    /* Success */
+    *res_p++ = 0x90; *res_p++ = 0x00;
+    res_APDU_size = res_p - res_APDU;
+  }
+
+  return;
+}
+
+const uint8_t *
+gpg_do_read_simple (uint16_t tag)
+{
+  struct do_table_entry *do_p;
+  const uint8_t *do_data;
+
+  do_p = get_do_entry (tag);
+  do_data = (const uint8_t *)do_p->obj;
+  if (do_data == NULL)
+    return NULL;
+
+  return do_data+1;
+}
+
+void
+gpg_do_write_simple (uint16_t tag, const uint8_t *data, int size)
+{
+  struct do_table_entry *do_p;
+  const uint8_t *do_data;
+
+  do_p = get_do_entry (tag);
+  do_data = (const uint8_t *)do_p->obj;
+  if (do_data)
+    flash_do_release (do_p->obj);
+
+  do_p->obj = flash_do_write (tag, data, size);
+  if (do_p->obj)
+    GPG_SUCCESS ();
+  else
+    GPG_MEMORY_FAILURE();
+}
+
+void
+gpg_do_increment_digital_signature_counter (void)
+{
+  struct do_table_entry *do_p;
+  const uint8_t *do_data;
+  uint32_t count;
+  uint8_t count_data[SIZE_DIGITAL_SIGNATURE_COUNTER];
+
+  do_p = get_do_entry (GPG_DO_DS_COUNT);
+  do_data = (const uint8_t *)do_p->obj;
+  if (do_data == NULL)		/* No object means count 0 */
+    count = 0; 
+  else
+    count = (do_data[1]<<16) | (do_data[2]<<8) | do_data[3];
+
+  count++;
+  count_data[0] = (count >> 16) & 0xff;
+  count_data[1] = (count >> 8) & 0xff;
+  count_data[2] = count & 0xff;
+
+  do_p->obj = flash_do_write (GPG_DO_DS_COUNT, count_data,
+			      SIZE_DIGITAL_SIGNATURE_COUNTER);
 }

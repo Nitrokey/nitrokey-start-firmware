@@ -1,0 +1,36 @@
+USB communication
+=================
+
+  * No command chaining, but extended APDU and extended Lc and Le
+  * dwMaxCCIDMessageLength: 64
+
+
+OpenPGP card protocol implementation
+====================================
+
+* No clear password(s)
+
+PW1
+
+* Support of Resetting code
+
+
+KEY
+=======
+
+KEYPTR
+         ----> [   P   ][   Q   ][       N        ]
+               <---encrypted----><---  plain  ---->
+
+key_addr                       4-byte
+additional_data_encrypted      16-byte
+dek_encrypted_by_keystring_pw1 16-byte
+dek_encrypted_by_keystring_rc  16-byte
+dek_encrypted_by_keystring_pw3 16-byte
+
+... decrypted to
+
+[   P   ][   Q   ]
+check   4-byte
+random  4-byte
+magic[] 8-byte

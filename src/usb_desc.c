@@ -66,7 +66,7 @@ static const uint8_t gnukConfigDescriptor[] = {
   0xfe, 0, 0, 0,	  /* dwMaxIFSD:  */
   0, 0, 0, 0,		  /* dwSynchProtocols: FIXED VALUE */
   0, 0, 0, 0,		  /* dwMechanical: FIXED VALUE */
-  0x40, 0x08, 0x04, 0x00, /* dwFeatures: Short and extended ADPU level */
+  0x40, 0x08, 0x04, 0x00, /* dwFeatures: Short and extended APDU level */
   0x40, 0x00, 0, 0,	  /* dwMaxCCIDMessageLength: 64 */
   0xff,			  /* bClassGetResponse: */
   0xff,			  /* bClassEnvelope: */

@@ -35,7 +35,7 @@ put_hex (uint8_t nibble)
   else
     c = 'a' + nibble - 0x0a;
 
-  _write (&c, 1);
+  _write ((const char *)&c, 1);
 }
 
 void
@@ -61,6 +61,20 @@ put_short (uint16_t x)
   put_hex ((x >> 8)&0x0f);
   put_hex ((x >> 4)&0x0f);
   put_hex (x & 0x0f);
+  _write ("\r\n", 2);
+}
+
+void
+put_binary (const char *s, int len)
+{
+  int i;
+
+  for (i = 0; i < len; i++)
+    {
+      put_byte_with_no_nl (s[i]);
+      if ((i & 0x0f) == 0x0f)
+	_write ("\r\n", 2);
+      }
   _write ("\r\n", 2);
 }
 

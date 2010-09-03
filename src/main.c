@@ -53,6 +53,7 @@ Thread1 (void *arg)
   return 0;
 }
 
+#ifdef DEBUG
 static
 struct stdout {
   Mutex m;
@@ -94,9 +95,8 @@ extern uint8_t buffer_in[VIRTUAL_COM_PORT_DATA_SIZE];
 extern uint8_t buffer_out[VIRTUAL_COM_PORT_DATA_SIZE];
 extern void USB_Init (void);
 
-
-static WORKING_AREA(waThread2, 128);
-static msg_t Thread2 (void *arg)
+static WORKING_AREA(waSTDOUTthread, 128);
+static msg_t STDOUTthread (void *arg)
 {
   (void)arg;
 
@@ -160,12 +160,85 @@ static msg_t Thread2 (void *arg)
   goto again;
   return 0;
 }
+#else
+static void
+stdout_init (void)
+{
+}
+
+void
+_write (const char *s, int size)
+{
+  (void)s;
+  (void)size;
+}
+#endif
 
 static WORKING_AREA(waUSBthread, 128*2);
 extern msg_t USBthread (void *arg);
 
 static WORKING_AREA(waGPGthread, 128*16);
 extern msg_t GPGthread (void *arg);
+
+/*
+ * XXX: I have tried havege_rand, but it requires too much memory...
+ */
+/*
+ * Multiply-with-carry method by George Marsaglia
+ */
+static uint32_t m_w;
+static uint32_t m_z;
+
+static void
+random_init (void)
+{
+  static uint8_t s = 0;
+
+ again:
+  switch ((s & 1))
+    {
+    case 0:
+      m_w = (m_w << 8) ^ hardclock ();
+      break;
+    case 1:
+      m_z = (m_z << 8) ^ hardclock ();
+      break;
+    }
+
+  s++;
+  if (m_w == 0 || m_z == 0)
+    goto again;
+}
+
+uint32_t
+get_random (void)
+{
+  m_z = 36969 * (m_z & 65535) + (m_z >> 16);
+  m_w = 18000 * (m_w & 65535) + (m_w >> 16);
+
+  return (m_z << 16) + m_w;
+}
+
+uint8_t dek[16];
+uint8_t *get_data_encryption_key (void)
+{
+  uint32_t r;
+  r = get_random ();
+  memcpy (dek, &r, 4);
+  r = get_random ();
+  memcpy (dek+4, &r, 4);
+  r = get_random ();
+  memcpy (dek+8, &r, 4);
+  r = get_random ();
+  memcpy (dek+12, &r, 4);
+  return dek;
+}
+
+void dek_free (uint8_t *dek)
+{
+  (void)dek;
+}
+
 
 /*
  * Entry point, note, the main() function is already a thread in the system
@@ -190,10 +263,12 @@ main (int argc, char **argv)
    */
   chThdCreateStatic (waThread1, sizeof(waThread1), NORMALPRIO, Thread1, NULL);
 
+#ifdef DEBUG
   /*
    * Creates 'stdout' thread.
    */
-  chThdCreateStatic (waThread2, sizeof(waThread2), NORMALPRIO, Thread2, NULL);
+  chThdCreateStatic (waSTDOUTthread2, sizeof(waSTDOUTthread2), NORMALPRIO, STDOUTthread2, NULL);
+#endif
 
   chThdCreateStatic (waUSBthread, sizeof(waUSBthread), NORMALPRIO, USBthread, NULL);
   chThdCreateStatic (waGPGthread, sizeof(waGPGthread), NORMALPRIO, GPGthread, NULL);
@@ -207,9 +282,15 @@ main (int argc, char **argv)
 
       chThdSleepMilliseconds (100);
 
+      if (bDeviceState != CONFIGURED)
+	random_init ();
+
       if (bDeviceState == CONFIGURED && (count % 300) == 0)
 	{
-	  _write ("0123456789"+((count / 300)%10), 1);
+	  uint32_t r;
+	  r = get_random ();
+
+	  DEBUG_SHORT (r);
 	  _write ("\r\nThis is ChibiOS 2.0.2 on Olimex STM32-H103.\r\n"
 		  "Testing USB driver.\n\n"
 		  "Hello world\r\n\r\n", 47+21+15);
@@ -218,4 +299,11 @@ main (int argc, char **argv)
     }
 
   return 0;
+}
+
+void
+fatal (void)
+{
+  _write ("fatal\r\n", 7);
+  for (;;);
 }
