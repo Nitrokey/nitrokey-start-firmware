@@ -769,24 +769,13 @@ gpg_do_table[] = {
 
 #define NUM_DO_ENTRIES (int)(sizeof (gpg_do_table) / sizeof (struct do_table_entry))
 
-extern const uint8_t const do_5e[];
-extern const uint8_t const do_5b[];
-extern const uint8_t const do_5f2d[];
-extern const uint8_t const do_5f35[];
-extern const uint8_t const do_5f50[];
-
 /*
  * Initialize GPG_DO_TABLE reading from Flash ROM
  */
 int
 gpg_do_table_init (void)
 {
-  do_ptr[NR_DO_LOGIN_DATA] = do_5e;
   do_ptr[NR_DO_PW_STATUS] = do_pw_status_bytes_template;
-  do_ptr[NR_DO_NAME] = do_5b;
-  do_ptr[NR_DO_LANGUAGE] = do_5f2d;
-  do_ptr[NR_DO_SEX] = do_5f35;
-  do_ptr[NR_DO_URL] = do_5f50;
   return 0;
 }
 

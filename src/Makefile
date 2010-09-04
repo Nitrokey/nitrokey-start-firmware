@@ -94,7 +94,7 @@ CSRC = $(PORTSRC) \
 
 # List ASM source files here
 ASMSRC = $(PORTASM) \
-         $(CHIBIOS)/os/ports/GCC/ARMCMx/STM32F10x/vectors.s gpg-data.s
+         $(CHIBIOS)/os/ports/GCC/ARMCMx/STM32F10x/vectors.s
 
 INCDIR = $(CRYPTINCDIR) $(STMUSBINCDIR) $(VCOMDIR) \
 	 $(PORTINC) $(KERNINC) $(TESTINC) \

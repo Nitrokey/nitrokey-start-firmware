@@ -42,8 +42,28 @@
 #define INS_PUT_DATA				0xda
 #define INS_PUT_DATA_ODD			0xdb	/* For key import */
 
-extern const char const select_file_TOP_result[20];
-extern const char const get_data_rb_result[6];
+static const uint8_t const
+select_file_TOP_result[] __attribute__ ((aligned (1))) = {
+  0x00, 0x00,			/* unused */
+  0x0b, 0x10,			/* number of bytes in this directory */
+  0x3f, 0x00,			/* field of selected file: MF, 3f00 */
+  0x38,			/* it's DF */
+  0xff,			/* unused */
+  0xff,	0x44, 0x44,	/* access conditions */
+  0x01,			/* status of the selected file (OK, unblocked) */
+  0x05,			/* number of bytes of data follow */
+    0x03,			/* Features: unused */
+    0x01,			/* number of subdirectories (OpenPGP) */
+    0x01,			/* number of elementary files (SerialNo) */
+    0x00,			/* number of secret codes */
+    0x00,			/* Unused */
+  0x00, 0x00		/* PIN status: OK, PIN blocked?: No */
+};
+
+static const uint8_t const
+get_data_rb_result[] __attribute__ ((aligned (1))) = {
+  0x5a, 0x4, 0x01, 0x02, 0x03, 0x04
+};
 
 void
 write_res_apdu (const uint8_t *p, int len, uint8_t sw1, uint8_t sw2)
@@ -394,7 +414,7 @@ cmd_select_file (void)
 	}
       else
 	{
-	  write_res_apdu ((const uint8_t *)select_file_TOP_result,
+	  write_res_apdu (select_file_TOP_result,
 			  sizeof (select_file_TOP_result), 0x90, 0x00);
 	}
 
