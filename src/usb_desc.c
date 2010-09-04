@@ -193,12 +193,12 @@ ONE_DESCRIPTOR Device_Descriptor = {
   sizeof (gnukDeviceDescriptor)
 };
 
-ONE_DESCRIPTOR Config_Descriptor = {
+const ONE_DESCRIPTOR Config_Descriptor = {
   (uint8_t*)gnukConfigDescriptor,
   sizeof (gnukConfigDescriptor)
 };
 
-ONE_DESCRIPTOR String_Descriptor[4] = {
+const ONE_DESCRIPTOR String_Descriptor[4] = {
   {(uint8_t*)gnukStringLangID, sizeof (gnukStringLangID)},
   {(uint8_t*)gnukStringVendor, sizeof (gnukStringVendor)},
   {(uint8_t*)gnukStringProduct, sizeof (gnukStringProduct)},

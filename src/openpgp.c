@@ -21,6 +21,7 @@
  *
  */
 
+#include "config.h"
 #include "ch.h"
 #include "hal.h"
 #include "gnuk.h"
@@ -475,7 +476,7 @@ struct command
   void (*cmd_handler) (void);
 };
 
-struct command cmds[] = {
+const struct command cmds[] = {
   { INS_VERIFY, cmd_verify },
   { INS_CHANGE_REFERENCE_DATA, cmd_change_password },
   { INS_PSO, cmd_pso },

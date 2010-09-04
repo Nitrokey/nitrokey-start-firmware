@@ -21,6 +21,8 @@
  *
  */
 
+#include "config.h"
+
 #include "ch.h"
 #include "hal.h"
 #include "usb_lld.h"
@@ -33,35 +35,16 @@
 #include "hw_config.h"
 #include "usb_pwr.h"
 
-Thread *blinker_thread;
-/*
- * Red LEDs blinker thread, times are in milliseconds.
- */
-static WORKING_AREA(waThread1, 128);
-static msg_t
-Thread1 (void *arg)
-{
-  (void)arg;
-  blinker_thread = chThdSelf ();
-  while (1)
-    {
-      palClearPad (IOPORT3, GPIOC_LED);
-      chEvtWaitOne (ALL_EVENTS);
-      palSetPad (IOPORT3, GPIOC_LED);
-      chEvtWaitOne (ALL_EVENTS);
-    }
-  return 0;
-}
-
 #ifdef DEBUG
-static
 struct stdout {
   Mutex m;
   CondVar start_cnd;
   CondVar finish_cnd;
   const char *str;
   int size;
-} stdout;
+};
+
+static struct stdout stdout;
 
 static void
 stdout_init (void)
@@ -93,10 +76,10 @@ extern uint32_t count_in;
 extern __IO uint32_t count_out;
 extern uint8_t buffer_in[VIRTUAL_COM_PORT_DATA_SIZE];
 extern uint8_t buffer_out[VIRTUAL_COM_PORT_DATA_SIZE];
-extern void USB_Init (void);
 
 static WORKING_AREA(waSTDOUTthread, 128);
-static msg_t STDOUTthread (void *arg)
+static msg_t
+STDOUTthread (void *arg)
 {
   (void)arg;
 
@@ -174,71 +157,17 @@ _write (const char *s, int size)
 }
 #endif
 
-static WORKING_AREA(waUSBthread, 128*2);
+static WORKING_AREA(waUSBthread, 128);
 extern msg_t USBthread (void *arg);
 
 static WORKING_AREA(waGPGthread, 128*16);
 extern msg_t GPGthread (void *arg);
 
+Thread *blinker_thread;
 /*
- * XXX: I have tried havege_rand, but it requires too much memory...
+ * Red LEDs blinker
  */
-/*
- * Multiply-with-carry method by George Marsaglia
- */
-static uint32_t m_w;
-static uint32_t m_z;
-
-static void
-random_init (void)
-{
-  static uint8_t s = 0;
-
- again:
-  switch ((s & 1))
-    {
-    case 0:
-      m_w = (m_w << 8) ^ hardclock ();
-      break;
-    case 1:
-      m_z = (m_z << 8) ^ hardclock ();
-      break;
-    }
-
-  s++;
-  if (m_w == 0 || m_z == 0)
-    goto again;
-}
-
-uint32_t
-get_random (void)
-{
-  m_z = 36969 * (m_z & 65535) + (m_z >> 16);
-  m_w = 18000 * (m_w & 65535) + (m_w >> 16);
-
-  return (m_z << 16) + m_w;
-}
-
-uint8_t dek[16];
-uint8_t *get_data_encryption_key (void)
-{
-  uint32_t r;
-  r = get_random ();
-  memcpy (dek, &r, 4);
-  r = get_random ();
-  memcpy (dek+4, &r, 4);
-  r = get_random ();
-  memcpy (dek+8, &r, 4);
-  r = get_random ();
-  memcpy (dek+12, &r, 4);
-  return dek;
-}
-
-void dek_free (uint8_t *dek)
-{
-  (void)dek;
-}
-
+#define EV_LED (eventmask_t)1
 
 /*
  * Entry point, note, the main() function is already a thread in the system
@@ -247,10 +176,13 @@ void dek_free (uint8_t *dek)
 int
 main (int argc, char **argv)
 {
+  eventmask_t m;
   int count = 0;
 
   (void)argc;
   (void)argv;
+
+  blinker_thread = chThdSelf ();
 
   gpg_do_table_init ();
 
@@ -258,16 +190,12 @@ main (int argc, char **argv)
   USB_Init();
 
   stdout_init ();
-  /*
-   * Creates the blinker thread.
-   */
-  chThdCreateStatic (waThread1, sizeof(waThread1), NORMALPRIO, Thread1, NULL);
 
 #ifdef DEBUG
   /*
    * Creates 'stdout' thread.
    */
-  chThdCreateStatic (waSTDOUTthread2, sizeof(waSTDOUTthread2), NORMALPRIO, STDOUTthread2, NULL);
+  chThdCreateStatic (waSTDOUTthread, sizeof(waSTDOUTthread), NORMALPRIO, STDOUTthread, NULL);
 #endif
 
   chThdCreateStatic (waUSBthread, sizeof(waUSBthread), NORMALPRIO, USBthread, NULL);
@@ -275,17 +203,23 @@ main (int argc, char **argv)
 
   while (1)
     {
+      uint8_t once = 0;
 #if 0
       if (palReadPad(IOPORT1, GPIOA_BUTTON))
 	palSetPad (IOPORT3, GPIOC_LED);
 #endif
 
-      chThdSleepMilliseconds (100);
+      m = chEvtWaitOneTimeout (ALL_EVENTS, 100);
+      if (m == EV_LED)
+	palClearPad (IOPORT3, GPIOC_LED);
 
-      if (bDeviceState != CONFIGURED)
-	random_init ();
+      if (once == 0 && bDeviceState == CONFIGURED)
+	{
+	  random_init ();
+	  once = 1;
+	}
 
-      if (bDeviceState == CONFIGURED && (count % 300) == 0)
+      if (bDeviceState == CONFIGURED && (count % 100) == 0)
 	{
 	  uint32_t r;
 	  r = get_random ();
@@ -295,6 +229,11 @@ main (int argc, char **argv)
 		  "Testing USB driver.\n\n"
 		  "Hello world\r\n\r\n", 47+21+15);
 	}
+
+      m = chEvtWaitOneTimeout (ALL_EVENTS, 100);
+      if (m == EV_LED)
+	palSetPad (IOPORT3, GPIOC_LED);
+
       count++;
     }
 

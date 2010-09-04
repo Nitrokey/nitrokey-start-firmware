@@ -193,7 +193,7 @@ get_data_rb_result:
 	.uleb128 0x7
 	.4byte	.LASF10
 	.byte	0x1
-	.byte	0x4
+	.byte	0x5
 	.4byte	0x97
 	.byte	0x1
 	.byte	0x5
@@ -211,7 +211,7 @@ get_data_rb_result:
 	.uleb128 0x7
 	.4byte	.LASF11
 	.byte	0x1
-	.byte	0x15
+	.byte	0x16
 	.4byte	0xbe
 	.byte	0x1
 	.byte	0x5
@@ -229,7 +229,7 @@ get_data_rb_result:
 	.uleb128 0x7
 	.4byte	.LASF12
 	.byte	0x1
-	.byte	0x1a
+	.byte	0x1b
 	.4byte	0xe5
 	.byte	0x1
 	.byte	0x5
@@ -247,7 +247,7 @@ get_data_rb_result:
 	.uleb128 0x7
 	.4byte	.LASF13
 	.byte	0x1
-	.byte	0x1f
+	.byte	0x20
 	.4byte	0x10c
 	.byte	0x1
 	.byte	0x5
@@ -265,7 +265,7 @@ get_data_rb_result:
 	.uleb128 0x7
 	.4byte	.LASF14
 	.byte	0x1
-	.byte	0x24
+	.byte	0x25
 	.4byte	0x133
 	.byte	0x1
 	.byte	0x5
@@ -283,7 +283,7 @@ get_data_rb_result:
 	.uleb128 0x7
 	.4byte	.LASF15
 	.byte	0x1
-	.byte	0x29
+	.byte	0x2a
 	.4byte	0x15a
 	.byte	0x1
 	.byte	0x5
@@ -301,7 +301,7 @@ get_data_rb_result:
 	.uleb128 0x7
 	.4byte	.LASF16
 	.byte	0x1
-	.byte	0x2f
+	.byte	0x30
 	.4byte	0x181
 	.byte	0x1
 	.byte	0x5

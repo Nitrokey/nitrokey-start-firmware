@@ -182,7 +182,7 @@ gnuk_device_Get_Interface_Setting (uint8_t Interface, uint8_t AlternateSetting)
  * Interface to USB core
  */
 
-DEVICE_PROP Device_Property = {
+const DEVICE_PROP Device_Property = {
   gnuk_device_init,
   gnuk_device_reset,
   gnuk_device_Status_In,
@@ -202,12 +202,12 @@ DEVICE_PROP Device_Property = {
   GNUK_MAX_PACKET_SIZE
 };
 
-DEVICE Device_Table = {
+const DEVICE Device_Table = {
   EP_NUM,
   1
 };
 
-USER_STANDARD_REQUESTS User_Standard_Requests = {
+const USER_STANDARD_REQUESTS User_Standard_Requests = {
   NOP_Process,			/* GetConfiguration */ 
   gnuk_device_SetConfiguration,
   NOP_Process,			/* GetInterface */

@@ -76,7 +76,6 @@ extern void flash_key_release (const uint8_t *);
 #define KEY_MAGIC_LEN 8
 #define KEY_CONTENT_LEN 256	/* p and q */
 #define GNUK_MAGIC "Gnuk KEY"
-#define KEYSTORE_LEN (KEY_MAGIC_LEN+4+4+KEY_CONTENT_LEN*2)
 
 /* encrypted data content */
 struct key_data {
@@ -95,8 +94,6 @@ struct prvkey_data {
   uint8_t dek_encrypted_2[DATA_ENCRYPTION_KEY_SIZE];
   uint8_t dek_encrypted_3[DATA_ENCRYPTION_KEY_SIZE];
 };
-
-extern uint32_t get_random (void);
 
 extern int flash_key_write (uint8_t *key_addr, const uint8_t *key_data, const uint8_t *modulus);
 
@@ -163,5 +160,7 @@ extern uint8_t keystring_md_pw3[KEYSTRING_MD_SIZE];
 /* 16-byte random bytes */
 extern uint8_t *get_data_encryption_key (void);
 extern void dek_free (uint8_t *);
+extern uint32_t get_random (void);
+extern void random_init (void);
 
 extern uint32_t hardclock (void);

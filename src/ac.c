@@ -2,6 +2,7 @@
  * ac.c -- Check access condition
  */
 
+#include "config.h"
 #include "ch.h"
 #include "gnuk.h"
 

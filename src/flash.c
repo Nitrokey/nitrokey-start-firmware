@@ -25,6 +25,7 @@
  * Writing to Flash ROM is NOT YET IMPLEMENTED, just API only
  */
 
+#include "config.h"
 #include "ch.h"
 #include "gnuk.h"
 

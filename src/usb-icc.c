@@ -21,11 +21,10 @@
  *
  */
 
+#include "config.h"
 #include "ch.h"
 #include "hal.h"
-
 #include "gnuk.h"
-
 #include "usb_lib.h"
 #include "usb_desc.h"
 #include "usb_mem.h"
