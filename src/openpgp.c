@@ -179,15 +179,20 @@ cmd_change_password (void)
     {
     no_prvkey:
       gpg_do_write_simple (GNUK_DO_KEYSTRING_PW1, new_ks0, KEYSTRING_SIZE_PW1);
-      reset_pso_cds ();
+      ac_reset_pso_cds ();
+      gpg_do_reset_pw_counter (PW_STATUS_PW1);
     }
   else if (r > 0 && who == 1)
     {
       gpg_do_write_simple (GNUK_DO_KEYSTRING_PW1, new_ks0, 1);
-      reset_pso_cds ();
+      ac_reset_pso_cds ();
+      gpg_do_reset_pw_counter (PW_STATUS_PW1);
     }
   else				/* r >= 0 && who == 3 */
-    GPG_SUCCESS ();
+    {
+      gpg_do_reset_pw_counter (PW_STATUS_PW3);
+      GPG_SUCCESS ();
+    }
 }
 
 static void
@@ -245,11 +250,13 @@ cmd_reset_user_password (void)
 	  if (memcmp (ks_rc+1, old_ks, KEYSTRING_MD_SIZE) != 0)
 	    goto sec_fail;
 	  gpg_do_write_simple (GNUK_DO_KEYSTRING_PW1, new_ks0, KEYSTRING_SIZE_PW1);
-	  reset_pso_cds ();
+	  ac_reset_pso_cds ();
+	  gpg_do_reset_pw_counter (PW_STATUS_PW1);
 	}
       else
 	{
-	  reset_pso_cds ();
+	  ac_reset_pso_cds ();
+	  gpg_do_reset_pw_counter (PW_STATUS_PW1);
 	  GPG_SUCCESS ();
 	}
     }
@@ -275,11 +282,13 @@ cmd_reset_user_password (void)
 	  else if (r == 0)
 	    {
 	      gpg_do_write_simple (GNUK_DO_KEYSTRING_PW1, new_ks0, KEYSTRING_SIZE_PW1);
-	      reset_pso_cds ();
+	      ac_reset_pso_cds ();
+	      gpg_do_reset_pw_counter (PW_STATUS_PW1);
 	    }
 	  else
 	    {
-	      reset_pso_cds ();
+	      ac_reset_pso_cds ();
+	      gpg_do_reset_pw_counter (PW_STATUS_PW1);
 	      GPG_SUCCESS ();
 	    }
 	}
@@ -452,7 +461,7 @@ cmd_pso (void)
 	      res_APDU_size = RSA_SIGNATURE_LENGTH + 2;
 
 	      if (pw_status_bytes[0] == 0)
-		reset_pso_cds ();
+		ac_reset_pso_cds ();
 
 	      gpg_do_increment_digital_signature_counter ();
 	    }

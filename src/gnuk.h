@@ -48,7 +48,7 @@ extern int verify_pso_other (const uint8_t *pw, int pw_len);
 extern int verify_admin (const uint8_t *pw, int pw_len);
 extern int verify_admin_0 (const uint8_t *pw, int buf_len, int pw_len_known);
 
-extern void reset_pso_cds (void);
+extern void ac_reset_pso_cds (void);
 
 
 
@@ -164,3 +164,5 @@ extern uint32_t get_random (void);
 extern void random_init (void);
 
 extern uint32_t hardclock (void);
+
+extern void gpg_do_reset_pw_counter (uint8_t which);

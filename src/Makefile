@@ -1,5 +1,12 @@
 # Makefile for Gnuk
 
+#
+#
+ENABLE_DEBUG=1
+
+ifneq ($(ENABLE_DEBUG),)
+ENABLE_VCOMPORT=1
+endif
 
 ##############################################################################
 # Build global options
@@ -140,7 +147,11 @@ CPPWARN = -Wall -Wextra
 #
 
 # List all default C defines here, like -D_DEBUG=1
+ifeq ($(ENABLE_DEBUG),)
 DDEFS = -DCORTEX_USE_BASEPRI=TRUE
+else
+DDEFS = -DCORTEX_USE_BASEPRI=TRUE -DDEBUG
+endif
 
 # List all default ASM defines here, like -D_DEBUG=1
 DADEFS =

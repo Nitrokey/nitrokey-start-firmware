@@ -54,7 +54,7 @@ verify_pso_cds (const uint8_t *pw, int pw_len)
 }
 
 void
-reset_pso_cds (void)
+ac_reset_pso_cds (void)
 {
   auth_status &= ~AC_PSO_CDS_AUTHORIZED;
 }

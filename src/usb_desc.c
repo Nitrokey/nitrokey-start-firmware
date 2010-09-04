@@ -2,6 +2,7 @@
  *
  */
 
+#include "config.h"
 #include "usb_lib.h"
 #include "usb_desc.h"
 
@@ -28,12 +29,20 @@ static const uint8_t gnukDeviceDescriptor[] = {
   0x01    /* bNumConfigurations */
 };
 
+#ifdef ENABLE_VIRTUAL_COM_PORT
+#define W_TOTAL_LENGTH (9+9+54+7+7+9+5+5+4+5+7+9+7+7)
+#define NUM_INTERFACES 3	/* two for CDC, one for GPG */
+#else
+#define W_TOTAL_LENGTH (9+9+54+7+7)
+#define NUM_INTERFACES 1	/* GPG only */
+#endif
+
 /* Configuation Descriptor */
 static const uint8_t gnukConfigDescriptor[] = {
   9,			   /* bLength: Configuation Descriptor size */
   USB_CONFIGURATION_DESCRIPTOR_TYPE,      /* bDescriptorType: Configuration */
-  9+9+54+7+7+9+5+5+4+5+7+9+7+7, 0x00,   /* wTotalLength:no of returned bytes */
-  0x03,   /* bNumInterfaces: 3 interfaces (two for CDC, one for GPG) */
+  W_TOTAL_LENGTH, 0x00,   /* wTotalLength:no of returned bytes */
+  NUM_INTERFACES,   /* bNumInterfaces: */
   0x01,   /* bConfigurationValue: Configuration value */
   0x00,   /* iConfiguration: Index of string descriptor describing the configuration */
   0xC0,   /* bmAttributes: self powered */
@@ -73,21 +82,21 @@ static const uint8_t gnukConfigDescriptor[] = {
   0, 0,			  /* wLCDLayout: FIXED VALUE */
   0,			  /* bPinSupport: No PIN pad */
   1,			  /* bMaxCCIDBusySlots: 1 */
-  /*Endpoint 4 Descriptor*/
+  /*Endpoint 1 Descriptor*/
   7,			       /* bLength: Endpoint Descriptor size */
   USB_ENDPOINT_DESCRIPTOR_TYPE,	/* bDescriptorType: Endpoint */
-  0x84,				/* bEndpointAddress: (IN4) */
+  0x81,				/* bEndpointAddress: (IN1) */
   0x02,				/* bmAttributes: Bulk */
   USB_ICC_DATA_SIZE, 0x00,      /* wMaxPacketSize: */
   0x00,				/* bInterval */
-  /*Endpoint 5 Descriptor*/
+  /*Endpoint 2 Descriptor*/
   7,			       /* bLength: Endpoint Descriptor size */
   USB_ENDPOINT_DESCRIPTOR_TYPE,	/* bDescriptorType: Endpoint */
-  0x05,				/* bEndpointAddress: (OUT5) */
+  0x02,				/* bEndpointAddress: (OUT2) */
   0x02,				/* bmAttributes: Bulk */
   USB_ICC_DATA_SIZE, 0x00,	/* wMaxPacketSize: */
   0x00,				/* bInterval */
-
+#ifdef ENABLE_VIRTUAL_COM_PORT
   /* Interface Descriptor */
   9,			      /* bLength: Interface Descriptor size */
   USB_INTERFACE_DESCRIPTOR_TYPE, /* bDescriptorType: Interface */
@@ -121,10 +130,10 @@ static const uint8_t gnukConfigDescriptor[] = {
   0x06,		 /* bDescriptorSubtype: Union func desc */
   0x01,		 /* bMasterInterface: Communication class interface */
   0x02,		 /* bSlaveInterface0: Data Class Interface */
-  /*Endpoint 2 Descriptor*/
+  /*Endpoint 4 Descriptor*/
   7,			       /* bLength: Endpoint Descriptor size */
   USB_ENDPOINT_DESCRIPTOR_TYPE,	   /* bDescriptorType: Endpoint */
-  0x82,				   /* bEndpointAddress: (IN2) */
+  0x84,				   /* bEndpointAddress: (IN4) */
   0x03,				   /* bmAttributes: Interrupt */
   VIRTUAL_COM_PORT_INT_SIZE, 0x00, /* wMaxPacketSize: */
   0xFF,				   /* bInterval: */
@@ -139,20 +148,21 @@ static const uint8_t gnukConfigDescriptor[] = {
   0x00,			   /* bInterfaceSubClass: */
   0x00,			   /* bInterfaceProtocol: */
   0x00,			   /* iInterface: */
-  /*Endpoint 3 Descriptor*/
+  /*Endpoint 5 Descriptor*/
   7,			       /* bLength: Endpoint Descriptor size */
   USB_ENDPOINT_DESCRIPTOR_TYPE,	    /* bDescriptorType: Endpoint */
-  0x03,				    /* bEndpointAddress: (OUT3) */
+  0x05,				    /* bEndpointAddress: (OUT5) */
   0x02,				    /* bmAttributes: Bulk */
   VIRTUAL_COM_PORT_DATA_SIZE, 0x00, /* wMaxPacketSize: */
   0x00,			     /* bInterval: ignore for Bulk transfer */
-  /*Endpoint 1 Descriptor*/
+  /*Endpoint 3 Descriptor*/
   7,			       /* bLength: Endpoint Descriptor size */
   USB_ENDPOINT_DESCRIPTOR_TYPE,	    /* bDescriptorType: Endpoint */
-  0x81,				    /* bEndpointAddress: (IN1) */
+  0x83,				    /* bEndpointAddress: (IN3) */
   0x02,				    /* bmAttributes: Bulk */
   VIRTUAL_COM_PORT_DATA_SIZE, 0x00, /* wMaxPacketSize: */
   0x00				    /* bInterval */
+#endif
 };
 
 
@@ -174,7 +184,7 @@ static const uint8_t gnukStringVendor[] = {
   'n', 0
 };
 
-static const uint8_t gnukStringProduct[VIRTUAL_COM_PORT_SIZ_STRING_PRODUCT] = {
+static const uint8_t gnukStringProduct[] = {
   14*2+2,			/* bLength */
   USB_STRING_DESCRIPTOR_TYPE,	/* bDescriptorType */
   /* Product name: "FSIJ USB Token" */
@@ -182,13 +192,13 @@ static const uint8_t gnukStringProduct[VIRTUAL_COM_PORT_SIZ_STRING_PRODUCT] = {
   ' ', 0, 'T', 0, 'o', 0, 'k', 0, 'e', 0, 'n', 0
 };
 
-static uint8_t gnukStringSerial[] = {
+static const uint8_t gnukStringSerial[] = {
   8,				/* bLength */
   USB_STRING_DESCRIPTOR_TYPE,	/* bDescriptorType */
-  '2', 0, '0', 0, '0', 0
+  '2', 0, '.', 0, '0', 0
 };
 
-ONE_DESCRIPTOR Device_Descriptor = {
+const ONE_DESCRIPTOR Device_Descriptor = {
   (uint8_t*)gnukDeviceDescriptor,
   sizeof (gnukDeviceDescriptor)
 };

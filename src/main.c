@@ -127,8 +127,8 @@ STDOUTthread (void *arg)
 	      p += count_in;
 	    }
 
-	  USB_SIL_Write (EP1_IN, buffer_in, count_in);
-	  SetEPTxValid (ENDP1);
+	  USB_SIL_Write (EP3_IN, buffer_in, count_in);
+	  SetEPTxValid (ENDP3);
 
 	  while (count_in > 0)
 	    chThdSleepMilliseconds (1);
@@ -144,11 +144,6 @@ STDOUTthread (void *arg)
   return 0;
 }
 #else
-static void
-stdout_init (void)
-{
-}
-
 void
 _write (const char *s, int size)
 {
@@ -189,9 +184,9 @@ main (int argc, char **argv)
   usb_lld_init ();
   USB_Init();
 
+#ifdef DEBUG
   stdout_init ();
 
-#ifdef DEBUG
   /*
    * Creates 'stdout' thread.
    */

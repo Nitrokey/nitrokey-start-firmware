@@ -93,13 +93,13 @@ Thread *icc_thread;
  * Tx done
  */
 void
-EP4_IN_Callback (void)
+EP1_IN_Callback (void)
 {
   if (icc_tx_size == USB_BUF_SIZE)
     {
       icc_tx_size = 0;
-      USB_SIL_Write (EP4_IN, icc_tx_data, icc_tx_size);
-      SetEPTxValid (ENDP4);
+      USB_SIL_Write (EP1_IN, icc_tx_data, icc_tx_size);
+      SetEPTxValid (ENDP1);
     }
   else
     icc_tx_size = -1;
@@ -112,7 +112,7 @@ EP4_IN_Callback (void)
  *  (modify header's byte order to host order if needed)
  */
 void
-EP5_OUT_Callback (void)
+EP2_OUT_Callback (void)
 {
   int len;
 
@@ -122,7 +122,7 @@ EP5_OUT_Callback (void)
   /* nothing to do */
 #endif
 
-  len = USB_SIL_Read (EP5_OUT, icc_rcv_data);
+  len = USB_SIL_Read (EP2_OUT, icc_rcv_data);
 
   icc_header = (struct icc_header *)icc_rcv_data;
   icc_data = &icc_rcv_data[ICC_MSG_DATA_OFFSET];
@@ -131,7 +131,7 @@ EP5_OUT_Callback (void)
 
   if (icc_data_size < 0)
     /* just ignore short invalid packet, enable Rx again */
-    SetEPRxValid (ENDP5);
+    SetEPRxValid (ENDP2);
   else
     /* Notify icc_thread */
     chEvtSignalI (icc_thread, EV_RX_DATA_READY);
@@ -184,8 +184,8 @@ icc_power_on (void)
   else
     {
       icc_tx_size = ICC_MSG_DATA_OFFSET + size_atr;
-      USB_SIL_Write (EP4_IN, icc_tx_data, icc_tx_size);
-      SetEPTxValid (ENDP4);
+      USB_SIL_Write (EP1_IN, icc_tx_data, icc_tx_size);
+      SetEPTxValid (ENDP1);
       DEBUG_INFO ("ON\r\n");
     }
 
@@ -218,8 +218,8 @@ icc_send_status (void)
   else
     {
       icc_tx_size = ICC_MSG_DATA_OFFSET;
-      USB_SIL_Write (EP4_IN, icc_tx_data, icc_tx_size);
-      SetEPTxValid (ENDP4);
+      USB_SIL_Write (EP1_IN, icc_tx_data, icc_tx_size);
+      SetEPTxValid (ENDP1);
     }
   DEBUG_INFO ("St\r\n");
 }
@@ -265,8 +265,8 @@ icc_send_data_block (uint8_t status, uint8_t error, uint8_t chain,
   else
     {
       icc_tx_size = ICC_MSG_DATA_OFFSET + len;
-      USB_SIL_Write (EP4_IN, icc_tx_data, icc_tx_size);
-      SetEPTxValid (ENDP4);
+      USB_SIL_Write (EP1_IN, icc_tx_data, icc_tx_size);
+      SetEPTxValid (ENDP1);
       DEBUG_INFO ("DATA\r\n");
     }
 }
@@ -423,7 +423,7 @@ icc_handle_data (void)
       break;
     }
 
-  SetEPRxValid (ENDP5);
+  SetEPRxValid (ENDP2);
   return next_state;
 }
 

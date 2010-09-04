@@ -20,18 +20,17 @@
 #define ENDP0_RXADDR        (0x40)
 #define ENDP0_TXADDR        (0x80)
 
-/* EP1  */
-#define ENDP1_TXADDR        (0xC0)
+/* EP1 */
+#define ENDP1_TXADDR        (0xc0)
 /* EP2 */
-#define ENDP2_TXADDR        (0x100)
-/* EP3 */
-#define ENDP3_RXADDR        (0x110)
+#define ENDP2_RXADDR        (0x100)
 
-
+/* EP3  */
+#define ENDP3_TXADDR        (0x140)
 /* EP4 */
 #define ENDP4_TXADDR        (0x180)
 /* EP5 */
-#define ENDP5_RXADDR        (0x1C0)
+#define ENDP5_RXADDR        (0x190)
 
 #define IMR_MSK (CNTR_CTRM  | CNTR_SOFM  | CNTR_RESETM )
 

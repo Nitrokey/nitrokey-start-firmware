@@ -22,7 +22,6 @@
  */
 
 #include "config.h"
-
 #include "usb_lib.h"
 #include "usb_conf.h"
 #include "usb_prop.h"
@@ -76,7 +75,6 @@ gnuk_device_reset (void)
   SetEPRxCount (ENDP0, GNUK_MAX_PACKET_SIZE);
   SetEPRxValid (ENDP0);
 
-#ifdef ENABLE_VIRTUAL_COM_PORT
   /* Initialize Endpoint 1 */
   SetEPType (ENDP1, EP_BULK);
   SetEPTxAddr (ENDP1, ENDP1_TXADDR);
@@ -84,21 +82,21 @@ gnuk_device_reset (void)
   SetEPRxStatus (ENDP1, EP_RX_DIS);
 
   /* Initialize Endpoint 2 */
-  SetEPType (ENDP2, EP_INTERRUPT);
-  SetEPTxAddr (ENDP2, ENDP2_TXADDR);
-  SetEPRxStatus (ENDP2, EP_RX_DIS);
-  SetEPTxStatus (ENDP2, EP_TX_NAK);
+  SetEPType (ENDP2, EP_BULK);
+  SetEPRxAddr (ENDP2, ENDP2_RXADDR);
+  SetEPRxCount (ENDP2, GNUK_MAX_PACKET_SIZE);
+  SetEPRxStatus (ENDP2, EP_RX_VALID);
+  SetEPTxStatus (ENDP2, EP_TX_DIS);
 
+#ifdef ENABLE_VIRTUAL_COM_PORT
   /* Initialize Endpoint 3 */
   SetEPType (ENDP3, EP_BULK);
-  SetEPRxAddr (ENDP3, ENDP3_RXADDR);
-  SetEPRxCount (ENDP3, VIRTUAL_COM_PORT_DATA_SIZE);
-  SetEPRxStatus (ENDP3, EP_RX_VALID);
-  SetEPTxStatus (ENDP3, EP_TX_DIS);
-#endif
+  SetEPTxAddr (ENDP3, ENDP3_TXADDR);
+  SetEPTxStatus (ENDP3, EP_TX_NAK);
+  SetEPRxStatus (ENDP3, EP_RX_DIS);
 
   /* Initialize Endpoint 4 */
-  SetEPType (ENDP4, EP_BULK);
+  SetEPType (ENDP4, EP_INTERRUPT);
   SetEPTxAddr (ENDP4, ENDP4_TXADDR);
   SetEPTxStatus (ENDP4, EP_TX_NAK);
   SetEPRxStatus (ENDP4, EP_RX_DIS);
@@ -106,9 +104,10 @@ gnuk_device_reset (void)
   /* Initialize Endpoint 5 */
   SetEPType (ENDP5, EP_BULK);
   SetEPRxAddr (ENDP5, ENDP5_RXADDR);
-  SetEPRxCount (ENDP5, GNUK_MAX_PACKET_SIZE);
+  SetEPRxCount (ENDP5, VIRTUAL_COM_PORT_DATA_SIZE);
   SetEPRxStatus (ENDP5, EP_RX_VALID);
   SetEPTxStatus (ENDP5, EP_TX_DIS);
+#endif
 
   /* Set this device to response on default address */
   SetDeviceAddress (0);
@@ -147,13 +146,15 @@ gnuk_device_Status_Out (void)
 static uint8_t *
 gnuk_device_GetDeviceDescriptor (uint16_t Length)
 {
-  return Standard_GetDescriptorData (Length, &Device_Descriptor);
+  return Standard_GetDescriptorData (Length,
+				     (PONE_DESCRIPTOR)&Device_Descriptor);
 }
 
 static uint8_t *
 gnuk_device_GetConfigDescriptor (uint16_t Length)
 {
-  return Standard_GetDescriptorData (Length, &Config_Descriptor);
+  return Standard_GetDescriptorData (Length,
+				     (PONE_DESCRIPTOR)&Config_Descriptor);
 }
 
 static uint8_t *
@@ -164,7 +165,8 @@ gnuk_device_GetStringDescriptor (uint16_t Length)
   if (wValue0 > (sizeof (String_Descriptor) / sizeof (ONE_DESCRIPTOR)))
     return NULL;
   else
-    return Standard_GetDescriptorData (Length, &String_Descriptor[wValue0]);
+    return Standard_GetDescriptorData (Length,
+				       (PONE_DESCRIPTOR)&String_Descriptor[wValue0]);
 }
 
 static RESULT
@@ -177,6 +179,15 @@ gnuk_device_Get_Interface_Setting (uint8_t Interface, uint8_t AlternateSetting)
 
   return USB_SUCCESS;
 }
+
+#if !defined(ENABLE_VIRTUAL_COM_PORT)
+static RESULT
+gnuk_nothing_todo (uint8_t RequestNo)
+{
+  (void)RequestNo;
+  return USB_UNSUPPORT;
+}
+#endif
 
 /*
  * Interface to USB core
@@ -191,8 +202,8 @@ const DEVICE_PROP Device_Property = {
   Virtual_Com_Port_Data_Setup,
   Virtual_Com_Port_NoData_Setup,
 #else
-  NULL,
-  NULL,
+  gnuk_nothing_todo,
+  gnuk_nothing_todo,
 #endif
   gnuk_device_Get_Interface_Setting,
   gnuk_device_GetDeviceDescriptor,
