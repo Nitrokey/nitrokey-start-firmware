@@ -1,33 +1,49 @@
-Gnuk - A USB Token software implementation
+Gnuk - software for GPG USB Token 
 
-						Version 0.0	2010-09-01
+						Version 0.0	2010-09-05
 							      Niibe Yutaka
 
 What's Gnuk
 ===========
 
-Gnuk is a USB token software implementation to use with GNU privacy
-guard.  Gnuk supports OpenPGP card protocol version 2, and it runs on
-Olimex STM32-H103 board.
+Gnuk is software implementation of a USB token for GNU privacy guard.
+Gnuk supports OpenPGP card protocol version 2, and it runs on STM32
+processor.
 
 
 Release notes
 =============
 
-Initially, the development was started with a copy of the files in
-ChibiOS_2.0.2/demos/ARMCM3-STM32F103-GCC/*, Makefile, linker script,
-and header files (chconf.h, halconf.h, and mcuconf.h).
+This is initial release of Gnuk, and it is experimental yet.
+It is not yet daily use.
 
-Since this is the initial release, some garbages still remain.
+Supported and tested features are:
+
+	* Personalization of the card
+
+	  * Changing Login name, URL, Name, Sex, Language, etc.
+
+	* Password handling (PW1, RC, PW3)
+
+	* Single key import
+
+	* PSO: Digital Signature
 
 
-Target
-======
+It is known not-working:
+
+	* Multiple key import
+
+	* PSO: Decipher
+
+
+Targets
+=======
 
 We use Olimex STM32-H103 board.
 
-I think that it runs on Olimex STM32-P103 too.  We are porting to
-STM32 Primer 2.
+I think that it runs on Olimex STM32-P103, STBee, or STBee mini too.
+Besides, we are porting it to STM32 Primer 2.
 
 
 Souce code
@@ -49,35 +65,46 @@ External source code
 Gnuk is distributed with external source code.
 
 * ChibiOS_2.0.2/  -- ChibiOS/RT 2.0.2
-Taken from http://chibios.sourceforge.net/
-Note that CRLF is converted to LF in this repository.
-We use ChibiOS/RT as the kernel for Gnuk.
+
+  Taken from http://chibios.sourceforge.net/
+  Note that CRLF is converted to LF in this repository.
+  We use ChibiOS/RT as the kernel for Gnuk.
 
 * polarssl-0.14.0/  -- PolarSSL 0.14.0
-Taken from http://polarssl.org/
-We use PolarSSL for RSA computation.
 
+  Taken from http://polarssl.org/
+  We use PolarSSL for RSA computation.
 
 * STM32_USB-FS-Device_Driver/ -- a part of USB-FS-Device_Lib
 * Virtual_COM_Port/ -- a part of USB-FS-Device_Lib
 
-STM32F10x USB Full Speed Device Library (USB-FS-Device_Lib)
-is a STM32F10x library for USB functionality.
+  STM32F10x USB Full Speed Device Library (USB-FS-Device_Lib)
+  is a STM32F10x library for USB functionality.
 
-I took Libraries/STM32_USB-FS-Device_Driver and a part of
-Project/ in STM32_USB-FS-Device_Lib distribution.
-See http://www.st.com for detail.
+  I took Libraries/STM32_USB-FS-Device_Driver and a part of
+  Project/ in STM32_USB-FS-Device_Lib distribution.
+  See http://www.st.com for detail.
 
 
 How to compile
 ==============
 
-You need GNU Toolchain and newlib for 'arm-none-eabi' target.
+You need GNU toolchain and newlib for 'arm-none-eabi' target.
 
 See http://github.com/esden/summon-arm-toolchain/ for preparation of
 GNU Toolchain for 'arm-none-eabi' target.
 
   $ cd gnuk-VERSION/src
+
+Edit the Makefile.  Comment out the line:
+----------------
+ENABLE_DEBUG=1
+----------------
+
+if you don't want to debug Gnuk.
+
+Type:
+
   $ make
 
 Then, we will have "gnuk.elf".
@@ -99,6 +126,54 @@ Then, with another terminal, type following to write "gnuk.elf" to Flash ROM:
   > exit
   $ 
 
+If you compiled with ENABLE_DEBUG=1, Gnuk has two interfaces
+(one is CCID/ICCD device and another is virtual COM port).  Open
+virtual COM port by:
+
+  $ cu -l /dev/ttyACM0
+
+and you will see debug output of Gnuk.
+
+
+For libccid, we need following change:
+
+--- /etc/libccid_Info.plist.dpkg-dist	2009-07-29 06:50:20.000000000 +0900
++++ /etc/libccid_Info.plist	2010-09-05 09:09:49.000000000 +0900
+@@ -104,6 +104,7 @@
+ 
+ 	<key>ifdVendorID</key>
+ 	<array>
++		<string>0x234B</string>
+ 		<string>0x08E6</string>
+ 		<string>0x08E6</string>
+ 		<string>0x08E6</string>
+@@ -237,6 +238,7 @@
+ 
+ 	<key>ifdProductID</key>
+ 	<array>
++		<string>0x0000</string>
+ 		<string>0x2202</string>
+ 		<string>0x3437</string>
+ 		<string>0x3438</string>
+@@ -370,6 +372,7 @@
+ 
+ 	<key>ifdFriendlyName</key>
+ 	<array>
++		<string>FSIJ USB Token</string>
+ 		<string>Gemplus Gem e-Seal Pro</string>
+ 		<string>Gemplus GemPC Twin</string>
+ 		<string>Gemplus GemPC Key</string>
+------------------
+
+
+Then, try following to see Gnuk runs:
+
+  $ gpg --card-status
+
+
+For more, see doc/HOWTO_GNUK.
+
+
 
 How to debug
 ============
@@ -107,4 +182,19 @@ We can use GDB.
 
   $ arm-none-eabi-gdb gnuk.elf
 
+
+Inside GDB, we can connect OpenOCD by:
+
+  (gdb) target remote localhost:3333
+
+
+
+Development history
+===================
+
+Initially, the development was started with a copy of the files in
+ChibiOS_2.0.2/demos/ARMCM3-STM32F103-GCC/*, Makefile, linker script,
+and header files (chconf.h, halconf.h, and mcuconf.h).
+
+Since this is the initial release, some garbages may still remain.
 -- 

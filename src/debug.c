@@ -65,6 +65,20 @@ put_short (uint16_t x)
 }
 
 void
+put_word (uint32_t x)
+{
+  put_hex (x >> 28);
+  put_hex ((x >> 24)&0x0f);
+  put_hex ((x >> 20)&0x0f);
+  put_hex ((x >> 16)&0x0f);
+  put_hex ((x >> 12)&0x0f);
+  put_hex ((x >> 8)&0x0f);
+  put_hex ((x >> 4)&0x0f);
+  put_hex (x & 0x0f);
+  _write ("\r\n", 2);
+}
+
+void
 put_binary (const char *s, int len)
 {
   int i;

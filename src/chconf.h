@@ -18,14 +18,14 @@
 #define CH_USE_CONDVARS_TIMEOUT         TRUE
 #define CH_USE_EVENTS                   TRUE /* We use this! */
 #define CH_USE_EVENTS_TIMEOUT           TRUE /* We use this! */
-#define CH_USE_MESSAGES                 TRUE
+#define CH_USE_MESSAGES                 FALSE
 #define CH_USE_MESSAGES_PRIORITY        FALSE
 #define CH_USE_MAILBOXES                FALSE
 #define CH_USE_QUEUES                   FALSE
 #define CH_USE_MEMCORE                  TRUE
 #define CH_USE_HEAP                     TRUE
 #define CH_USE_MALLOC_HEAP              FALSE
-#define CH_USE_MEMPOOLS                 TRUE
+#define CH_USE_MEMPOOLS                 FALSE
 #define CH_USE_DYNAMIC                  FALSE
 
 /* Debug options */

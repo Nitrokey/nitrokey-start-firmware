@@ -1,7 +1,6 @@
 # Makefile for Gnuk
 
 #
-#
 ENABLE_DEBUG=1
 
 ifneq ($(ENABLE_DEBUG),)
@@ -88,9 +87,13 @@ CSRC = $(PORTSRC) \
        $(STMUSBSRC) \
        $(VCOMSRC) \
        $(CRYPTSRC) \
-       main.c debug.c usb_lld.c \
+       main.c usb_lld.c \
 	hw_config.c usb_desc.c usb_prop.c \
 	usb-icc.c openpgp.c ac.c openpgp-do.c flash.c hardclock.c random.c
+
+ifneq ($(ENABLE_DEBUG),)
+CSRC += debug.c
+endif
 
 # List ASM source files here
 ASMSRC = $(PORTASM) \

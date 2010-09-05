@@ -1,5 +1,5 @@
 /*
- *
+ * usb_desc.c - USB Descriptor
  */
 
 #include "config.h"
@@ -20,8 +20,8 @@ static const uint8_t gnukDeviceDescriptor[] = {
   0x00,   /* bDeviceSubClass */
   0x00,   /* bDeviceProtocol */
   0x40,   /* bMaxPacketSize0 */
-  0xff, 0xff,   /* idVendor = 0xffff */
-  0x01, 0x00,   /* idProduct = 0x0001 */
+  0x4b, 0x23,   /* idVendor = 0x234b (FSIJ) */
+  0x00, 0x00,   /* idProduct = 0x0000 (FSIJ USB Token) */
   0x00, 0x02,   /* bcdDevice = 2.00 */
   1, /* Index of string descriptor describing manufacturer */
   2, /* Index of string descriptor describing product */

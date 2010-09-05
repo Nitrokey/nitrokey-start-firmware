@@ -5,4 +5,5 @@
 #define GPG_NO_RECORD()			write_res_apdu (NULL, 0, 0x6a, 0x88)
 #define GPG_BAD_P0_P1()			write_res_apdu (NULL, 0, 0x6b, 0x00)
 #define GPG_NO_INS() 			write_res_apdu (NULL, 0, 0x6d, 0x00)
+#define GPG_ERROR()			write_res_apdu (NULL, 0, 0x6f, 0x00)
 #define GPG_SUCCESS()			write_res_apdu (NULL, 0, 0x90, 0x00)

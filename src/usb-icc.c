@@ -435,7 +435,9 @@ icc_handle_timeout (void)
   switch (icc_state)
     {
     case ICC_STATE_EXECUTE:
+#if 0
       icc_send_data_block (ICC_CMD_STATUS_TIMEEXT, 0, 0, NULL, 0);
+#endif
       break;
     case ICC_STATE_RECEIVE:
     case ICC_STATE_SEND:

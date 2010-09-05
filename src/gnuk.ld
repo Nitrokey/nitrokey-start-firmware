@@ -110,11 +110,23 @@ SECTIONS
         *(COMMON)
         . = ALIGN(4);
         _bss_end = .;
-    } > ram    
-}
+    } > ram
 
-PROVIDE(end = .);
-_end            = .;
+    PROVIDE(end = .);
+    _end            = .;
+
+    .gnuk_flash : ALIGN (1024)
+    {
+	_do_pool = .;
+	KEEP(*(.gnuk_data))
+	FILL(0xffffffff);
+	. = ALIGN(1024);
+	. += 1024*2;
+	_keystore_pool = .;
+	FILL(0xffffffff);
+	. += 1024*3;
+    } > flash
+}
 
 __heap_base__   = _end;
 __heap_end__    = __ram_end__ - __stacks_total_size__;

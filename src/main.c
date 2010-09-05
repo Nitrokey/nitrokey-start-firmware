@@ -173,12 +173,14 @@ main (int argc, char **argv)
 {
   eventmask_t m;
   int count = 0;
+  uint8_t once = 0;
 
   (void)argc;
   (void)argv;
 
   blinker_thread = chThdSelf ();
 
+  flash_init ();
   gpg_do_table_init ();
 
   usb_lld_init ();
@@ -198,7 +200,8 @@ main (int argc, char **argv)
 
   while (1)
     {
-      uint8_t once = 0;
+      uint32_t r;
+
 #if 0
       if (palReadPad(IOPORT1, GPIOA_BUTTON))
 	palSetPad (IOPORT3, GPIOC_LED);
@@ -212,14 +215,15 @@ main (int argc, char **argv)
 	{
 	  random_init ();
 	  once = 1;
+	  r = get_random ();
+	  DEBUG_WORD (r);
 	}
 
       if (bDeviceState == CONFIGURED && (count % 100) == 0)
 	{
-	  uint32_t r;
 	  r = get_random ();
 
-	  DEBUG_SHORT (r);
+	  DEBUG_WORD (r);
 	  _write ("\r\nThis is ChibiOS 2.0.2 on Olimex STM32-H103.\r\n"
 		  "Testing USB driver.\n\n"
 		  "Hello world\r\n\r\n", 47+21+15);

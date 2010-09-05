@@ -61,7 +61,7 @@ select_file_TOP_result[] __attribute__ ((aligned (1))) = {
 };
 
 static const uint8_t const
-get_data_rb_result[] __attribute__ ((aligned (1))) = {
+read_binary_result[] __attribute__ ((aligned (1))) = {
   0x5a, 0x4, 0x01, 0x02, 0x03, 0x04
 };
 
@@ -91,6 +91,7 @@ cmd_verify (void)
   int r;
 
   DEBUG_INFO (" - VERIFY\r\n");
+  DEBUG_BYTE (p2);
 
   len = cmd_APDU[4];
   if (p2 == 0x81)
@@ -101,11 +102,20 @@ cmd_verify (void)
     r = verify_admin (&cmd_APDU[5], len);
 
   if (r < 0)
-    GPG_SECURITY_FAILURE ();
+    {
+      DEBUG_INFO ("failed\r\n");
+      GPG_SECURITY_FAILURE ();
+    }
   else if (r == 0)
-    GPG_SECURITY_AUTH_BLOCKED ();
+    {
+      DEBUG_INFO ("blocked\r\n");
+      GPG_SECURITY_AUTH_BLOCKED ();
+    }
   else
-    GPG_SUCCESS ();
+    {
+      DEBUG_INFO ("good\r\n");
+      GPG_SUCCESS ();
+    }
 }
 
 int
@@ -139,14 +149,18 @@ cmd_change_password (void)
   int who = p2 - 0x80;
   int r;
 
+  DEBUG_INFO ("Change PW\r\n");
+  DEBUG_BYTE (who);
+
   if (who == 1)			/* PW1 */
     {
-      const uint8_t *pk = gpg_do_read_simple (GNUK_DO_KEYSTRING_PW1);
+      const uint8_t *pk = gpg_do_read_simple (NR_DO_KEYSTRING_PW1);
 
       if (pk == NULL)
 	{
 	  if (len < 6)
 	    {
+	      DEBUG_INFO ("permission denied.\r\n");
 	      GPG_SECURITY_FAILURE ();
 	      return;
 	    }
@@ -170,11 +184,13 @@ cmd_change_password (void)
 
       if (pw_len < 0)
 	{
+	  DEBUG_INFO ("permission denied.\r\n");
 	  GPG_SECURITY_FAILURE ();
 	  return;
 	}
       else if (pw_len == 0)
 	{
+	  DEBUG_INFO ("blocked.\r\n");
 	  GPG_SECURITY_AUTH_BLOCKED ();
 	  return;
 	}
@@ -192,24 +208,33 @@ cmd_change_password (void)
 
   r = gpg_change_keystring (who, old_ks, who, new_ks);
   if (r < -2)
-    GPG_MEMORY_FAILURE ();
+    {
+      DEBUG_INFO ("memory error.\r\n");
+      GPG_MEMORY_FAILURE ();
+    }
   else if (r < 0)
-    GPG_SECURITY_FAILURE ();
+    {
+      DEBUG_INFO ("security error.\r\n");
+      GPG_SECURITY_FAILURE ();
+    }
   else if (r == 0 && who == 1)	/* no prvkey */
     {
     no_prvkey:
-      gpg_do_write_simple (GNUK_DO_KEYSTRING_PW1, new_ks0, KEYSTRING_SIZE_PW1);
+      gpg_do_write_simple (NR_DO_KEYSTRING_PW1, new_ks0, KEYSTRING_SIZE_PW1);
       ac_reset_pso_cds ();
       gpg_do_reset_pw_counter (PW_STATUS_PW1);
+      DEBUG_INFO ("Changed DO_KEYSTRING_PW1\r\n");
     }
   else if (r > 0 && who == 1)
     {
-      gpg_do_write_simple (GNUK_DO_KEYSTRING_PW1, new_ks0, 1);
+      gpg_do_write_simple (NR_DO_KEYSTRING_PW1, new_ks0, 1);
       ac_reset_pso_cds ();
       gpg_do_reset_pw_counter (PW_STATUS_PW1);
+      DEBUG_INFO ("Removed content of DO_KEYSTRING_PW1\r\n");
     }
   else				/* r >= 0 && who == 3 */
     {
+      DEBUG_INFO ("done.\r\n");
       gpg_do_reset_pw_counter (PW_STATUS_PW3);
       GPG_SUCCESS ();
     }
@@ -225,10 +250,13 @@ cmd_reset_user_password (void)
   int pw_len, newpw_len;
   int r;
 
+  DEBUG_INFO ("Reset PW1\r\n");
+  DEBUG_BYTE (p1);
+
   if (p1 == 0x00)		/* by User with Reseting Code */
     {
-      const uint8_t *pw_status_bytes = gpg_do_read_simple (GNUK_DO_PW_STATUS);
-      const uint8_t *ks_rc = gpg_do_read_simple (GNUK_DO_KEYSTRING_RC);
+      const uint8_t *pw_status_bytes = gpg_do_read_simple (NR_DO_PW_STATUS);
+      const uint8_t *ks_rc = gpg_do_read_simple (NR_DO_KEYSTRING_RC);
       uint8_t old_ks[KEYSTRING_MD_SIZE];
       uint8_t new_ks0[KEYSTRING_MD_SIZE+1];
       uint8_t *new_ks = &new_ks0[1];
@@ -236,12 +264,14 @@ cmd_reset_user_password (void)
       if (pw_status_bytes == NULL
 	  || pw_status_bytes[PW_STATUS_PW1] == 0) /* locked */
 	{
+	  DEBUG_INFO ("blocked.\r\n");
 	  GPG_SECURITY_AUTH_BLOCKED ();
 	  return;
 	}
 
       if (ks_rc == NULL)
 	{
+	  DEBUG_INFO ("security error.\r\n");
 	  GPG_SECURITY_FAILURE ();
 	  return;
 	}
@@ -254,27 +284,33 @@ cmd_reset_user_password (void)
       new_ks0[0] = newpw_len;
       r = gpg_change_keystring (2, old_ks, 1, new_ks);
       if (r < -2)
-	GPG_MEMORY_FAILURE ();
+	{
+	  DEBUG_INFO ("memory error.\r\n");
+	  GPG_MEMORY_FAILURE ();
+	}
       else if (r < 0)
 	{
 	  uint8_t pwsb[SIZE_PW_STATUS_BYTES];
 
 	sec_fail:
+	  DEBUG_INFO ("failed.\r\n");
 	  memcpy (pwsb, pw_status_bytes, SIZE_PW_STATUS_BYTES);
 	  pwsb[PW_STATUS_RC]--;
-	  gpg_do_write_simple (GNUK_DO_PW_STATUS, pwsb, SIZE_PW_STATUS_BYTES);
+	  gpg_do_write_simple (NR_DO_PW_STATUS, pwsb, SIZE_PW_STATUS_BYTES);
 	  GPG_SECURITY_FAILURE ();
 	}
       else if (r == 0)
 	{
 	  if (memcmp (ks_rc+1, old_ks, KEYSTRING_MD_SIZE) != 0)
 	    goto sec_fail;
-	  gpg_do_write_simple (GNUK_DO_KEYSTRING_PW1, new_ks0, KEYSTRING_SIZE_PW1);
+	  gpg_do_write_simple (NR_DO_KEYSTRING_PW1, new_ks0, KEYSTRING_SIZE_PW1);
 	  ac_reset_pso_cds ();
 	  gpg_do_reset_pw_counter (PW_STATUS_PW1);
+	  DEBUG_INFO ("done (no prvkey).\r\n");
 	}
       else
 	{
+	  DEBUG_INFO ("done.\r\n");
 	  ac_reset_pso_cds ();
 	  gpg_do_reset_pw_counter (PW_STATUS_PW1);
 	  GPG_SUCCESS ();
@@ -283,7 +319,10 @@ cmd_reset_user_password (void)
   else				/* by Admin (p1 == 0x02) */
     {
       if (!ac_check_status (AC_ADMIN_AUTHORIZED))
-	GPG_SECURITY_FAILURE ();
+	{
+	  DEBUG_INFO ("permission denied.\r\n");
+	  GPG_SECURITY_FAILURE ();
+	}
       else
 	{
 	  const uint8_t *old_ks = keystring_md_pw3;
@@ -296,17 +335,25 @@ cmd_reset_user_password (void)
 	  new_ks0[0] = newpw_len;
 	  r = gpg_change_keystring (3, old_ks, 1, new_ks);
 	  if (r < -2)
-	    GPG_MEMORY_FAILURE ();
+	    {
+	      DEBUG_INFO ("memory error.\r\n");
+	      GPG_MEMORY_FAILURE ();
+	    }
 	  else if (r < 0)
-	    GPG_SECURITY_FAILURE ();
+	    {
+	      DEBUG_INFO ("security error.\r\n");
+	      GPG_SECURITY_FAILURE ();
+	    }
 	  else if (r == 0)
 	    {
-	      gpg_do_write_simple (GNUK_DO_KEYSTRING_PW1, new_ks0, KEYSTRING_SIZE_PW1);
+	      DEBUG_INFO ("done (no privkey).\r\n");
+	      gpg_do_write_simple (NR_DO_KEYSTRING_PW1, new_ks0, KEYSTRING_SIZE_PW1);
 	      ac_reset_pso_cds ();
 	      gpg_do_reset_pw_counter (PW_STATUS_PW1);
 	    }
 	  else
 	    {
+	      DEBUG_INFO ("done.\r\n");
 	      ac_reset_pso_cds ();
 	      gpg_do_reset_pw_counter (PW_STATUS_PW1);
 	      GPG_SUCCESS ();
@@ -344,6 +391,7 @@ static void
 cmd_pgp_gakp (void)
 {
   DEBUG_INFO (" - Generate Asymmetric Key Pair\r\n");
+  DEBUG_BYTE (cmd_APDU[2]);
 
   if (cmd_APDU[2] == 0x81)
     /* Get public key */
@@ -354,7 +402,7 @@ cmd_pgp_gakp (void)
 	GPG_SECURITY_FAILURE ();
 
       /* XXX: Not yet supported */
-      write_res_apdu (NULL, 0, 0x6a, 0x88); /* No record */
+      GPG_ERROR ();
     }
 }
 
@@ -369,8 +417,8 @@ cmd_read_binary (void)
 	GPG_BAD_P0_P1 ();
       else
 	/* Tag 5a, serial number */
-	write_res_apdu ((const uint8_t *)get_data_rb_result,
-			sizeof (get_data_rb_result), 0x90, 0x00);
+	write_res_apdu (read_binary_result,
+			sizeof (read_binary_result), 0x90, 0x00);
     }
   else
     GPG_NO_RECORD();
@@ -388,8 +436,6 @@ cmd_select_file (void)
        */
 
       file_selection = FILE_DF_OPENPGP;
-
-      /* XXX: Should return contents??? */
       GPG_SUCCESS ();
     }
   else if (cmd_APDU[4] == 2
@@ -445,12 +491,16 @@ cmd_get_data (void)
 static void
 cmd_pso (void)
 {
+  int len;
+  int r;
+
   DEBUG_INFO (" - PSO\r\n");
 
-  if (cmd_APDU[2] == 0x9E && cmd_APDU[3] == 0x9A)
+  if (cmd_APDU[2] == 0x9e && cmd_APDU[3] == 0x9a)
     {
       if (!ac_check_status (AC_PSO_CDS_AUTHORIZED))
 	{
+	  DEBUG_INFO ("security error.");
 	  GPG_SECURITY_FAILURE ();
 	  return;
 	}
@@ -463,18 +513,16 @@ cmd_pso (void)
 	}
       else
 	{
-	  int len = (cmd_APDU[5]<<8) | cmd_APDU[6];
-	  int r;
+	  len = (cmd_APDU[5]<<8) | cmd_APDU[6];
 
 	  DEBUG_BYTE (len);  /* Should be cmd_APDU_size - 6 */
 
 	  r = rsa_sign (&cmd_APDU[7], res_APDU, len);
 	  if (r < 0)
-	    /* XXX: fail code??? */
-	    write_res_apdu (NULL, 0, 0x69, 0x85);
+	    GPG_ERROR ();
 	  else
 	    {			/* Success */
-	      const uint8_t *pw_status_bytes = gpg_do_read_simple (GNUK_DO_PW_STATUS);
+	      const uint8_t *pw_status_bytes = gpg_do_read_simple (NR_DO_PW_STATUS);
 
 	      res_APDU[RSA_SIGNATURE_LENGTH] =  0x90;
 	      res_APDU[RSA_SIGNATURE_LENGTH+1] =  0x00;
@@ -486,8 +534,23 @@ cmd_pso (void)
 	      gpg_do_increment_digital_signature_counter ();
 	    }
 	}
+    }
+  else if (cmd_APDU[2] == 0x80 && cmd_APDU[3] == 0x86)
+    {
+      len = (cmd_APDU[5]<<8) | cmd_APDU[6];
 
-      DEBUG_INFO ("done.\r\n");
+      if (!ac_check_status (AC_PSO_OTHER_AUTHORIZED))
+	{
+	  DEBUG_INFO ("security error.");
+	  GPG_SECURITY_FAILURE ();
+	  return;
+	}
+
+      DEBUG_BYTE (len);
+
+      r = rsa_decrypt (&cmd_APDU[7], res_APDU, len);
+      if (r < 0)
+	GPG_ERROR ();
     }
   else
     {				/* XXX: not yet supported */
@@ -497,6 +560,8 @@ cmd_pso (void)
       DEBUG_BYTE (cmd_APDU[3]);
       GPG_SUCCESS ();
     }
+
+  DEBUG_INFO ("PSO done.\r\n");
 }
 
 struct command

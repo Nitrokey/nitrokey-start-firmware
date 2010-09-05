@@ -3,11 +3,16 @@ extern Thread *blinker_thread;
 extern void put_byte (uint8_t b);
 extern void put_byte_with_no_nl (uint8_t b);
 extern void put_short (uint16_t x);
+extern void put_word (uint32_t x);
 extern void put_string (const char *s);
 extern void put_binary (const char *s, int len);
 
 extern void _write (const char *, int);
 
+/*
+ * We declare some of libc functions here, because we will
+ * remove dependency on libc in future.
+ */
 extern size_t strlen (const char *s);
 extern int strncmp(const char *s1, const char *s2, size_t n);
 extern void *memcpy (void *dest, const void *src, size_t n);
@@ -68,10 +73,13 @@ enum kind_of_key {
   GPG_KEY_FOR_AUTHENTICATION,
 };
 
+extern void flash_init (void);
 extern void flash_do_release (const uint8_t *);
-extern const uint8_t *flash_do_write (uint16_t tag, const uint8_t *data, int len);
-extern uint8_t *flash_key_alloc (enum kind_of_key);
+extern const uint8_t *flash_do_write (uint8_t nr, const uint8_t *data, int len);
+extern uint8_t *flash_key_alloc (void);
 extern void flash_key_release (const uint8_t *);
+extern const uint8_t *flash_do_pool (void);
+extern void flash_set_do_pool_last (const uint8_t *p);
 
 #define KEY_MAGIC_LEN 8
 #define KEY_CONTENT_LEN 256	/* p and q */
@@ -118,11 +126,13 @@ extern struct key_data kd;
 
 #ifdef DEBUG
 #define DEBUG_INFO(msg)	    put_string (msg)
+#define DEBUG_WORD(w)	    put_word (w)
 #define DEBUG_SHORT(h)	    put_short (h)
 #define DEBUG_BYTE(b)       put_byte (b)
 #define DEBUG_BINARY(s,len) put_binary ((const char *)s,len)
 #else
 #define DEBUG_INFO(msg)
+#define DEBUG_WORD(w)
 #define DEBUG_SHORT(h)
 #define DEBUG_BYTE(b)
 #define DEBUG_BINARY(s,len)
@@ -131,11 +141,12 @@ extern struct key_data kd;
 extern int rsa_sign (const uint8_t *, uint8_t *, int);
 extern const uint8_t *modulus_calc (const uint8_t *, int);
 extern void modulus_free (const uint8_t *);
+extern int rsa_decrypt (const uint8_t *input, uint8_t *output, int msg_len);
 
-extern int gpg_do_write_privkey (enum kind_of_key kk, const uint8_t *key_data, int key_len);
+extern int gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len, const uint8_t *keystring);
 
-extern const uint8_t *gpg_do_read_simple (uint16_t);
-extern void gpg_do_write_simple (uint16_t, const uint8_t *, int);
+extern const uint8_t *gpg_do_read_simple (uint8_t);
+extern void gpg_do_write_simple (uint8_t, const uint8_t *, int);
 extern void gpg_do_increment_digital_signature_counter (void);
 
 #define PW_STATUS_PW1 4
@@ -144,21 +155,37 @@ extern void gpg_do_increment_digital_signature_counter (void);
 
 
 extern void gpg_set_pw3 (const uint8_t *newpw, int newpw_len);
-extern void fatal (void);
+extern void fatal (void) __attribute__ ((noreturn));
 
 extern uint8_t keystring_md_pw3[KEYSTRING_MD_SIZE];
 
-#define GNUK_DO_PRVKEY_SIG	0xff01
-#define GNUK_DO_PRVKEY_DEC	0xff02
-#define GNUK_DO_PRVKEY_AUT	0xff03
-#define GNUK_DO_KEYSTRING_PW1	0xff04
-#define GNUK_DO_KEYSTRING_RC    0xff05
-#define GNUK_DO_KEYSTRING_PW3   0xff06
-#define GNUK_DO_PW_STATUS	0xff07
+#define NR_DO_PRVKEY_SIG	0
+#define NR_DO_PRVKEY_DEC	1
+#define NR_DO_PRVKEY_AUT	2
+#define NR_DO_KEYSTRING_PW1	3
+#define NR_DO_KEYSTRING_RC	4
+#define NR_DO_KEYSTRING_PW3	5
+#define NR_DO_PW_STATUS		6
+#define NR_DO_DS_COUNT		7
+#define NR_DO_SEX		8
+#define NR_DO_FP_SIG		9
+#define NR_DO_FP_DEC		10
+#define NR_DO_FP_AUT		11
+#define NR_DO_CAFP_1		12
+#define NR_DO_CAFP_2		13
+#define NR_DO_CAFP_3		14
+#define NR_DO_KGTIME_SIG	15
+#define NR_DO_KGTIME_DEC	16
+#define NR_DO_KGTIME_AUT	17
+#define NR_DO_LOGIN_DATA	18
+#define NR_DO_URL		19
+#define NR_DO_NAME		20
+#define NR_DO_LANGUAGE		21
+#define NR_DO_CH_CERTIFICATE	22
+
 #define SIZE_PW_STATUS_BYTES 7
 
-/* 16-byte random bytes */
-extern uint8_t *get_data_encryption_key (void);
+extern uint8_t *get_data_encryption_key (void); /* 16-byte random bytes */
 extern void dek_free (uint8_t *);
 extern uint32_t get_random (void);
 extern void random_init (void);

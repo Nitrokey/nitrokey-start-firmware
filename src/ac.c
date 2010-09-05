@@ -26,7 +26,7 @@ int
 verify_pso_cds (const uint8_t *pw, int pw_len)
 {
   int r;
-  const uint8_t *pw_status_bytes = gpg_do_read_simple (GNUK_DO_PW_STATUS);
+  const uint8_t *pw_status_bytes = gpg_do_read_simple (NR_DO_PW_STATUS);
   uint8_t keystring[KEYSTRING_SIZE_PW1];
   uint8_t pwsb[SIZE_PW_STATUS_BYTES];
 
@@ -40,13 +40,13 @@ verify_pso_cds (const uint8_t *pw, int pw_len)
   if ((r = gpg_do_load_prvkey (GPG_KEY_FOR_SIGNATURE, 1, keystring+1)) < 0)
     {
       pwsb[PW_STATUS_PW1]--;
-      gpg_do_write_simple (GNUK_DO_PW_STATUS, pwsb, SIZE_PW_STATUS_BYTES);
+      gpg_do_write_simple (NR_DO_PW_STATUS, pwsb, SIZE_PW_STATUS_BYTES);
       return r;
     }
   else
     {
       pwsb[PW_STATUS_PW1] = 3;
-      gpg_do_write_simple (GNUK_DO_PW_STATUS, pwsb, SIZE_PW_STATUS_BYTES);
+      gpg_do_write_simple (NR_DO_PW_STATUS, pwsb, SIZE_PW_STATUS_BYTES);
     }
 
   auth_status |= AC_PSO_CDS_AUTHORIZED;
@@ -63,7 +63,7 @@ int
 verify_pso_other (const uint8_t *pw, int pw_len)
 {
   int r;
-  const uint8_t *pw_status_bytes = gpg_do_read_simple (GNUK_DO_PW_STATUS);
+  const uint8_t *pw_status_bytes = gpg_do_read_simple (NR_DO_PW_STATUS);
   uint8_t keystring[KEYSTRING_SIZE_PW1];
   uint8_t pwsb[SIZE_PW_STATUS_BYTES];
 
@@ -77,13 +77,13 @@ verify_pso_other (const uint8_t *pw, int pw_len)
   if ((r = gpg_do_load_prvkey (GPG_KEY_FOR_DECRYPT, 1, keystring+1)) < 0)
     {
       pwsb[PW_STATUS_PW1]--;
-      gpg_do_write_simple (GNUK_DO_PW_STATUS, pwsb, SIZE_PW_STATUS_BYTES);
+      gpg_do_write_simple (NR_DO_PW_STATUS, pwsb, SIZE_PW_STATUS_BYTES);
       return r;
     }
   else
     {
       pwsb[PW_STATUS_PW1] = 3;
-      gpg_do_write_simple (GNUK_DO_PW_STATUS, pwsb, SIZE_PW_STATUS_BYTES);
+      gpg_do_write_simple (NR_DO_PW_STATUS, pwsb, SIZE_PW_STATUS_BYTES);
     }
 
   auth_status |= AC_PSO_OTHER_AUTHORIZED;
@@ -131,14 +131,14 @@ int
 verify_admin_0 (const uint8_t *pw, int buf_len, int pw_len_known)
 {
   const uint8_t *pw3_keystring;
-  const uint8_t *pw_status_bytes = gpg_do_read_simple (GNUK_DO_PW_STATUS);
+  const uint8_t *pw_status_bytes = gpg_do_read_simple (NR_DO_PW_STATUS);
   int pw_len;
 
   if (pw_status_bytes == NULL
       || pw_status_bytes[PW_STATUS_PW3] == 0) /* locked */
     return 0;
 
-  pw3_keystring = gpg_do_read_simple (GNUK_DO_KEYSTRING_PW3);
+  pw3_keystring = gpg_do_read_simple (NR_DO_KEYSTRING_PW3);
   if (pw3_keystring != NULL)
     {
       int count;
@@ -159,13 +159,13 @@ verify_admin_0 (const uint8_t *pw, int buf_len, int pw_len_known)
 	{
 	failure:
 	  pwsb[PW_STATUS_PW3]--;
-	  gpg_do_write_simple (GNUK_DO_PW_STATUS, pwsb, SIZE_PW_STATUS_BYTES);
+	  gpg_do_write_simple (NR_DO_PW_STATUS, pwsb, SIZE_PW_STATUS_BYTES);
 	  return -1;
 	}
       else
 	{		       /* OK, the user is now authenticated */
 	  pwsb[PW_STATUS_PW3] = 3;
-	  gpg_do_write_simple (GNUK_DO_PW_STATUS, pwsb, SIZE_PW_STATUS_BYTES);
+	  gpg_do_write_simple (NR_DO_PW_STATUS, pwsb, SIZE_PW_STATUS_BYTES);
 	}
     }
   else
@@ -196,7 +196,7 @@ gpg_set_pw3 (const uint8_t *newpw, int newpw_len)
   ks[9] = 0x60;			/* 65536 iterations */
 
   calc_md (65536, &ks[1], newpw, newpw_len, &ks[10]);
-  gpg_do_write_simple (GNUK_DO_KEYSTRING_PW3, ks, KEYSTRING_SIZE_PW3);
+  gpg_do_write_simple (NR_DO_KEYSTRING_PW3, ks, KEYSTRING_SIZE_PW3);
 }
 
 uint8_t keystring_md_pw3[KEYSTRING_MD_SIZE];
