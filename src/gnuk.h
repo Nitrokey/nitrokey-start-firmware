@@ -185,10 +185,10 @@ extern uint8_t keystring_md_pw3[KEYSTRING_MD_SIZE];
 
 #define SIZE_PW_STATUS_BYTES 7
 
-extern uint8_t *get_data_encryption_key (void); /* 16-byte random bytes */
-extern void dek_free (uint8_t *);
+/* 32-byte random bytes */
 extern uint32_t get_random (void);
-extern void random_init (void);
+extern const uint8_t *random_bytes_get (void);
+extern void random_bytes_free (const uint8_t *);
 
 extern uint32_t hardclock (void);
 

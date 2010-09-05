@@ -42,7 +42,7 @@
 #define INS_PUT_DATA				0xda
 #define INS_PUT_DATA_ODD			0xdb	/* For key import */
 
-static const uint8_t const
+static const uint8_t
 select_file_TOP_result[] __attribute__ ((aligned (1))) = {
   0x00, 0x00,			/* unused */
   0x0b, 0x10,			/* number of bytes in this directory */
@@ -60,7 +60,7 @@ select_file_TOP_result[] __attribute__ ((aligned (1))) = {
   0x00, 0x00		/* PIN status: OK, PIN blocked?: No */
 };
 
-static const uint8_t const
+static const uint8_t
 read_binary_result[] __attribute__ ((aligned (1))) = {
   0x5a, 0x4, 0x01, 0x02, 0x03, 0x04
 };
@@ -89,17 +89,24 @@ cmd_verify (void)
   int len;
   uint8_t p2 = cmd_APDU[3];
   int r;
+  int data_start = 5;
 
   DEBUG_INFO (" - VERIFY\r\n");
   DEBUG_BYTE (p2);
 
   len = cmd_APDU[4];
+  if (len == 0)			/* extended length */
+    {
+      len = (cmd_APDU[5]<<8) | cmd_APDU[6];
+      data_start = 7;
+    }
+
   if (p2 == 0x81)
-    r = verify_pso_cds (&cmd_APDU[5], len);
+    r = verify_pso_cds (&cmd_APDU[data_start], len);
   else if (p2 == 0x82)
-    r = verify_pso_other (&cmd_APDU[5], len);
+    r = verify_pso_other (&cmd_APDU[data_start], len);
   else
-    r = verify_admin (&cmd_APDU[5], len);
+    r = verify_admin (&cmd_APDU[data_start], len);
 
   if (r < 0)
     {
@@ -152,6 +159,12 @@ cmd_change_password (void)
   DEBUG_INFO ("Change PW\r\n");
   DEBUG_BYTE (who);
 
+  if (len == 0)			/* extended length */
+    {
+      len = (cmd_APDU[5]<<8) | cmd_APDU[6];
+      pw += 2;
+    }
+
   if (who == 1)			/* PW1 */
     {
       const uint8_t *pk = gpg_do_read_simple (NR_DO_KEYSTRING_PW1);
@@ -169,6 +182,9 @@ cmd_change_password (void)
 	  pw_len = 6;
 	  newpw = pw + pw_len;
 	  newpw_len = len - pw_len;
+
+	  sha1 (newpw, newpw_len, new_ks);
+	  new_ks0[0] = newpw_len;
 	  goto no_prvkey;
 	}
       else
@@ -244,22 +260,28 @@ static void
 cmd_reset_user_password (void)
 {
   uint8_t p1 = cmd_APDU[2];
-  int len = cmd_APDU[3];
-  const uint8_t *pw = &cmd_APDU[4];
+  int len = cmd_APDU[4];
+  const uint8_t *pw = &cmd_APDU[5];
   const uint8_t *newpw;
   int pw_len, newpw_len;
   int r;
+  uint8_t new_ks0[KEYSTRING_MD_SIZE+1];
+  uint8_t *new_ks = &new_ks0[1];
 
   DEBUG_INFO ("Reset PW1\r\n");
   DEBUG_BYTE (p1);
+
+  if (len == 0)			/* extended length */
+    {
+      len = (cmd_APDU[5]<<8) | cmd_APDU[6];
+      pw += 2;
+    }
 
   if (p1 == 0x00)		/* by User with Reseting Code */
     {
       const uint8_t *pw_status_bytes = gpg_do_read_simple (NR_DO_PW_STATUS);
       const uint8_t *ks_rc = gpg_do_read_simple (NR_DO_KEYSTRING_RC);
       uint8_t old_ks[KEYSTRING_MD_SIZE];
-      uint8_t new_ks0[KEYSTRING_MD_SIZE+1];
-      uint8_t *new_ks = &new_ks0[1];
 
       if (pw_status_bytes == NULL
 	  || pw_status_bytes[PW_STATUS_PW1] == 0) /* locked */
@@ -318,46 +340,43 @@ cmd_reset_user_password (void)
     }
   else				/* by Admin (p1 == 0x02) */
     {
+      const uint8_t *old_ks = keystring_md_pw3;
+
       if (!ac_check_status (AC_ADMIN_AUTHORIZED))
 	{
 	  DEBUG_INFO ("permission denied.\r\n");
 	  GPG_SECURITY_FAILURE ();
+	  return;
+	}
+
+      newpw_len = len;
+      newpw = pw;
+      sha1 (newpw, newpw_len, new_ks);
+      new_ks0[0] = newpw_len;
+      r = gpg_change_keystring (3, old_ks, 1, new_ks);
+      if (r < -2)
+	{
+	  DEBUG_INFO ("memory error.\r\n");
+	  GPG_MEMORY_FAILURE ();
+	}
+      else if (r < 0)
+	{
+	  DEBUG_INFO ("security error.\r\n");
+	  GPG_SECURITY_FAILURE ();
+	}
+      else if (r == 0)
+	{
+	  DEBUG_INFO ("done (no privkey).\r\n");
+	  gpg_do_write_simple (NR_DO_KEYSTRING_PW1, new_ks0, KEYSTRING_SIZE_PW1);
+	  ac_reset_pso_cds ();
+	  gpg_do_reset_pw_counter (PW_STATUS_PW1);
 	}
       else
 	{
-	  const uint8_t *old_ks = keystring_md_pw3;
-	  uint8_t new_ks0[KEYSTRING_MD_SIZE+1];
-	  uint8_t *new_ks = &new_ks0[1];
-
-	  newpw_len = len;
-	  newpw = pw;
-	  sha1 (newpw, newpw_len, new_ks);
-	  new_ks0[0] = newpw_len;
-	  r = gpg_change_keystring (3, old_ks, 1, new_ks);
-	  if (r < -2)
-	    {
-	      DEBUG_INFO ("memory error.\r\n");
-	      GPG_MEMORY_FAILURE ();
-	    }
-	  else if (r < 0)
-	    {
-	      DEBUG_INFO ("security error.\r\n");
-	      GPG_SECURITY_FAILURE ();
-	    }
-	  else if (r == 0)
-	    {
-	      DEBUG_INFO ("done (no privkey).\r\n");
-	      gpg_do_write_simple (NR_DO_KEYSTRING_PW1, new_ks0, KEYSTRING_SIZE_PW1);
-	      ac_reset_pso_cds ();
-	      gpg_do_reset_pw_counter (PW_STATUS_PW1);
-	    }
-	  else
-	    {
-	      DEBUG_INFO ("done.\r\n");
-	      ac_reset_pso_cds ();
-	      gpg_do_reset_pw_counter (PW_STATUS_PW1);
-	      GPG_SUCCESS ();
-	    }
+	  DEBUG_INFO ("done.\r\n");
+	  ac_reset_pso_cds ();
+	  gpg_do_reset_pw_counter (PW_STATUS_PW1);
+	  GPG_SUCCESS ();
 	}
     }
 }
@@ -395,7 +414,7 @@ cmd_pgp_gakp (void)
 
   if (cmd_APDU[2] == 0x81)
     /* Get public key */
-    gpg_do_public_key (cmd_APDU[5]);
+    gpg_do_public_key (cmd_APDU[7]);
   else
     {					/* Generate key pair */
       if (!ac_check_status (AC_ADMIN_AUTHORIZED))

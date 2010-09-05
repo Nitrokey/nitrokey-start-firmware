@@ -2,21 +2,20 @@ USB communication
 =================
 
   * No command chaining, but extended APDU and extended Lc and Le
+
   * dwMaxCCIDMessageLength: 64
 
 
 OpenPGP card protocol implementation
 ====================================
 
-* No clear password(s)
-
-PW1
-
-* Support of Resetting code
+I try to follow "no clear password(s)" policy.
+After key import, keystrings are also removed.
+But because of this, we only support single key for this version.
 
 
-KEY
-=======
+How a private key is stored
+===========================
 
 KEYPTR
          ----> [   P   ][   Q   ][       N        ]

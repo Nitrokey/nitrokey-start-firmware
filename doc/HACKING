@@ -1,0 +1,30 @@
+* Random Number Generator
+
+RNG is needed for Data Encryption Key to encrypt private key (P and Q).
+It is important to collect enough entropy.  Perhaps, it would
+be possible to get entropy from USB traffic (of other devices).
+
+
+* RSA
+
+It would be good not to use malloc.
+
+
+* Manufacture ID
+
+Get it from FSFE.
+
+
+* Serial number
+
+Currently, aid[] in openpgp-do.c has serial number 00000001.
+It would be good to generate (random) number at compile time.
+
+
+* Flash ROM recover from shutdown
+
+
+* Flash ROM garbage collection
+
+
+* Flash ROM protection

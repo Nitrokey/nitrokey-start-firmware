@@ -34,6 +34,9 @@ verify_pso_cds (const uint8_t *pw, int pw_len)
       || pw_status_bytes[PW_STATUS_PW1] == 0) /* locked */
     return 0;
 
+  DEBUG_INFO ("verify_pso_cds\r\n");
+  DEBUG_BYTE (pw_len);
+
   keystring[0] = pw_len;
   sha1 (pw, pw_len, keystring+1);
   memcpy (pwsb, pw_status_bytes, SIZE_PW_STATUS_BYTES);
@@ -43,7 +46,7 @@ verify_pso_cds (const uint8_t *pw, int pw_len)
       gpg_do_write_simple (NR_DO_PW_STATUS, pwsb, SIZE_PW_STATUS_BYTES);
       return r;
     }
-  else
+  else if (pwsb[PW_STATUS_PW1] != 3)
     {
       pwsb[PW_STATUS_PW1] = 3;
       gpg_do_write_simple (NR_DO_PW_STATUS, pwsb, SIZE_PW_STATUS_BYTES);
@@ -80,7 +83,7 @@ verify_pso_other (const uint8_t *pw, int pw_len)
       gpg_do_write_simple (NR_DO_PW_STATUS, pwsb, SIZE_PW_STATUS_BYTES);
       return r;
     }
-  else
+  else if (pwsb[PW_STATUS_PW1] != 3)
     {
       pwsb[PW_STATUS_PW1] = 3;
       gpg_do_write_simple (NR_DO_PW_STATUS, pwsb, SIZE_PW_STATUS_BYTES);
@@ -162,7 +165,7 @@ verify_admin_0 (const uint8_t *pw, int buf_len, int pw_len_known)
 	  gpg_do_write_simple (NR_DO_PW_STATUS, pwsb, SIZE_PW_STATUS_BYTES);
 	  return -1;
 	}
-      else
+      else if (pwsb[PW_STATUS_PW3] != 3)
 	{		       /* OK, the user is now authenticated */
 	  pwsb[PW_STATUS_PW3] = 3;
 	  gpg_do_write_simple (NR_DO_PW_STATUS, pwsb, SIZE_PW_STATUS_BYTES);

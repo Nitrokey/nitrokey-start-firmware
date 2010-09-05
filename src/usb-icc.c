@@ -221,7 +221,9 @@ icc_send_status (void)
       USB_SIL_Write (EP1_IN, icc_tx_data, icc_tx_size);
       SetEPTxValid (ENDP1);
     }
+#ifdef DEBUG_MORE
   DEBUG_INFO ("St\r\n");
+#endif
 }
 
 enum icc_state
@@ -267,7 +269,9 @@ icc_send_data_block (uint8_t status, uint8_t error, uint8_t chain,
       icc_tx_size = ICC_MSG_DATA_OFFSET + len;
       USB_SIL_Write (EP1_IN, icc_tx_data, icc_tx_size);
       SetEPTxValid (ENDP1);
+#ifdef DEBUG_MORE
       DEBUG_INFO ("DATA\r\n");
+#endif
     }
 }
 

@@ -173,7 +173,6 @@ main (int argc, char **argv)
 {
   eventmask_t m;
   int count = 0;
-  uint8_t once = 0;
 
   (void)argc;
   (void)argv;
@@ -200,8 +199,6 @@ main (int argc, char **argv)
 
   while (1)
     {
-      uint32_t r;
-
 #if 0
       if (palReadPad(IOPORT1, GPIOA_BUTTON))
 	palSetPad (IOPORT3, GPIOC_LED);
@@ -211,23 +208,15 @@ main (int argc, char **argv)
       if (m == EV_LED)
 	palClearPad (IOPORT3, GPIOC_LED);
 
-      if (once == 0 && bDeviceState == CONFIGURED)
-	{
-	  random_init ();
-	  once = 1;
-	  r = get_random ();
-	  DEBUG_WORD (r);
-	}
-
+#ifdef DEBUG_MORE
       if (bDeviceState == CONFIGURED && (count % 100) == 0)
 	{
-	  r = get_random ();
-
-	  DEBUG_WORD (r);
+	  DEBUG_WORD (count / 100);
 	  _write ("\r\nThis is ChibiOS 2.0.2 on Olimex STM32-H103.\r\n"
 		  "Testing USB driver.\n\n"
 		  "Hello world\r\n\r\n", 47+21+15);
 	}
+#endif
 
       m = chEvtWaitOneTimeout (ALL_EVENTS, 100);
       if (m == EV_LED)

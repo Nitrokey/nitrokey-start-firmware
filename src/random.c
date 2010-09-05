@@ -1,59 +1,51 @@
+/*
+ * random.c -- get random bytes
+ *
+ * Copyright (C) 2010 Free Software Initiative of Japan
+ * Author: NIIBE Yutaka <gniibe@fsij.org>
+ *
+ * This file is a part of Gnuk, a GnuPG USB Token implementation.
+ *
+ * Gnuk is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Gnuk is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+ * or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+ * License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+
 #include "config.h"
 #include "ch.h"
 #include "gnuk.h"
 
-/*
- * XXX: I have tried havege_rand, but it requires too much memory...
- */
+extern void *_binary_random_bits_start;
 
-/*
- * Multiply-with-carry method by George Marsaglia
- */
-static uint32_t m_w;
-static uint32_t m_z;
+const uint8_t *
+random_bytes_get (void)
+{
+  uint32_t addr;
+
+  addr = (uint32_t)&_binary_random_bits_start + ((hardclock () << 5) & 0x3e0);
+
+  return (const uint8_t *)addr;
+}
+
+void
+random_bytes_free (const uint8_t *p)
+{
+  (void)p;
+}
 
 uint32_t
 get_random (void)
 {
-  m_z = 36969 * (m_z & 65535) + (m_z >> 16);
-  m_w = 18000 * (m_w & 65535) + (m_w >> 16);
-
-  return (m_z << 16) + m_w;
-}
-
-void
-random_init (void)
-{
-  static uint8_t s = 0;
-
- again:
-  if ((s & 1))
-    m_w = (m_w << 8) ^ hardclock ();
-  else
-    m_z = (m_z << 8) ^ hardclock ();
-
-  s++;
-  if (m_w == 0 || m_z == 0)
-    goto again;
-}
-
-uint8_t dek[16];
-uint8_t *get_data_encryption_key (void)
-{
-  uint32_t r;
-  r = get_random ();
-  memcpy (dek, &r, 4);
-  r = get_random ();
-  memcpy (dek+4, &r, 4);
-  r = get_random ();
-  memcpy (dek+8, &r, 4);
-  r = get_random ();
-  memcpy (dek+12, &r, 4);
-  return dek;
-}
-
-void
-dek_free (uint8_t *dek)
-{
-  (void)dek;
+  const uint32_t *p = (const uint32_t *)random_bytes_get ();
+  return *p;
 }

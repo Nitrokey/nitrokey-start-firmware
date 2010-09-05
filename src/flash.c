@@ -231,7 +231,7 @@ flash_do_write (uint8_t nr, const uint8_t *data, int len)
     }
   else
     {
-      hw |= data[0]<<8;
+      hw |= (data[0]<<8);
       if (flash_program_halfword (addr, hw) != FLASH_COMPLETE)
 	return NULL;
       addr += 2;

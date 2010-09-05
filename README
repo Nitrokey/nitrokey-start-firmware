@@ -1,7 +1,9 @@
 Gnuk - software for GPG USB Token 
 
-						Version 0.0	2010-09-05
-							      Niibe Yutaka
+							    Version 0.0
+							     2010-09-06
+						           Niibe Yutaka
+				      Free Software Initiative of Japan
 
 What's Gnuk
 ===========
@@ -14,8 +16,7 @@ processor.
 Release notes
 =============
 
-This is initial release of Gnuk, and it is experimental yet.
-It is not yet daily use.
+This is initial release of Gnuk, and it is experimental.
 
 Supported and tested features are:
 
@@ -25,7 +26,7 @@ Supported and tested features are:
 
 	* Password handling (PW1, RC, PW3)
 
-	* Single key import
+	* Single key import for signature.
 
 	* PSO: Digital Signature
 
@@ -107,6 +108,13 @@ Type:
 
   $ make
 
+In the make process, it takes time for the command of
+
+   dd if=/dev/random bs=1 of=random_bits count=1024
+
+Don't just wait, but do some other work on your PC.
+/dev/random needs entropy to finish.
+
 Then, we will have "gnuk.elf".
 
 
@@ -133,7 +141,6 @@ virtual COM port by:
   $ cu -l /dev/ttyACM0
 
 and you will see debug output of Gnuk.
-
 
 For libccid, we need following change:
 
@@ -171,7 +178,7 @@ Then, try following to see Gnuk runs:
   $ gpg --card-status
 
 
-For more, see doc/HOWTO_GNUK.
+For more, see doc/HOWTO-GNUK.
 
 
 

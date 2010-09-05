@@ -38,7 +38,7 @@
  */
 
 /* AID */
-static const uint8_t const aid[] __attribute__ ((aligned (1))) = {
+static const uint8_t aid[] __attribute__ ((aligned (1))) = {
   16,
   0xd2, 0x76, 0x00, 0x01, 0x24, 0x01,
   0x02, 0x00,			/* Version 2.0 */
@@ -48,7 +48,7 @@ static const uint8_t const aid[] __attribute__ ((aligned (1))) = {
 };
 
 /* Historical Bytes (template) */
-static const uint8_t const historical_bytes[] __attribute__ ((aligned (1))) = {
+static const uint8_t historical_bytes[] __attribute__ ((aligned (1))) = {
   10,
   0x00,
   0x31, 0x80,			/* Full DF name */
@@ -61,7 +61,7 @@ static const uint8_t const historical_bytes[] __attribute__ ((aligned (1))) = {
 };
 
 /* Extended Capabilities */
-static const uint8_t const extended_capabilities[] __attribute__ ((aligned (1))) = {
+static const uint8_t extended_capabilities[] __attribute__ ((aligned (1))) = {
   10,
   0x30,				/*
 				 * No SM, No get challenge,
@@ -78,7 +78,7 @@ static const uint8_t const extended_capabilities[] __attribute__ ((aligned (1)))
 };
 
 /* Algorithm Attributes */
-static const uint8_t const algorithm_attr[] __attribute__ ((aligned (1))) = {
+static const uint8_t algorithm_attr[] __attribute__ ((aligned (1))) = {
   6,
   0x01, /* RSA */
   0x08, 0x00,	      /* Length modulus (in bit): 2048 */
@@ -86,7 +86,7 @@ static const uint8_t const algorithm_attr[] __attribute__ ((aligned (1))) = {
   0x00		      /* 0: p&q , 3: CRT with N (not yet supported) */
 };
 
-static const uint8_t const do_pw_status_bytes_template[] =
+static const uint8_t do_pw_status_bytes_template[] =
 {
   7,
   1,				/* PW1 valid for several PSO:CDS commands */
@@ -543,7 +543,7 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
   const uint8_t *modulus;
   struct prvkey_data *pd;
   uint8_t *key_addr;
-  uint8_t *dek;
+  const uint8_t *dek;
   const uint8_t *ks_pw1 = gpg_do_read_simple (NR_DO_KEYSTRING_PW1);
   const uint8_t *ks_rc = gpg_do_read_simple (NR_DO_KEYSTRING_RC);
 
@@ -584,7 +584,7 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
 
   DEBUG_INFO ("enc...");
 
-  dek = get_data_encryption_key (); /* 16-byte random bytes */
+  dek = random_bytes_get (); /* 16-byte random bytes */
   encrypt (dek, (uint8_t *)&kd, sizeof (struct key_data));
 
   DEBUG_INFO ("done\r\n");
@@ -594,7 +594,7 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
 
   if (r < 0)
     {
-      dek_free (dek);
+      random_bytes_free (dek);
       free (pd);
       return r;
     }
@@ -605,10 +605,12 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
   ac_reset_pso_cds ();
   if (ks_pw1)
     {
+      uint8_t ks_pw1_len = ks_pw1[0];
+
       memcpy (pd->dek_encrypted_1, dek, DATA_ENCRYPTION_KEY_SIZE);
       encrypt (ks_pw1+1, pd->dek_encrypted_1, DATA_ENCRYPTION_KEY_SIZE);
       /* Only its length */
-      gpg_do_write_simple (NR_DO_KEYSTRING_PW1, ks_pw1, 1);
+      gpg_do_write_simple (NR_DO_KEYSTRING_PW1, &ks_pw1_len, 1);
     }
   else
     {
@@ -624,10 +626,12 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
 
   if (ks_rc)
     {
+      uint8_t ks_rc_len = ks_rc[0];
+
       memcpy (pd->dek_encrypted_2, dek, DATA_ENCRYPTION_KEY_SIZE);
       encrypt (ks_rc+1, pd->dek_encrypted_2, DATA_ENCRYPTION_KEY_SIZE);
       /* Only its length */
-      gpg_do_write_simple (NR_DO_KEYSTRING_RC, ks_rc, 1);
+      gpg_do_write_simple (NR_DO_KEYSTRING_RC, &ks_rc_len, 1);
     }
   else
     memset (pd->dek_encrypted_2, 0, DATA_ENCRYPTION_KEY_SIZE);
@@ -638,7 +642,7 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
   p = flash_do_write (nr, (const uint8_t *)pd, sizeof (struct prvkey_data));
   do_ptr[nr] = p;
 
-  dek_free (dek);
+  random_bytes_free (dek);
   free (pd);
   if (p == NULL)
     return -1;
@@ -1086,9 +1090,10 @@ void
 gpg_do_public_key (uint8_t kk_byte)
 {
   const uint8_t *do_data;
-  uint8_t *key_addr;
+  const uint8_t *key_addr;
 
   DEBUG_INFO ("Public key\r\n");
+  DEBUG_BYTE (kk_byte);
 
   if (kk_byte == 0xb6)
     do_data = do_ptr[NR_DO_PRVKEY_SIG];
@@ -1104,7 +1109,7 @@ gpg_do_public_key (uint8_t kk_byte)
       return;
     }
 
-  key_addr = *(uint8_t **)&do_data[1];
+  key_addr = *(const uint8_t **)&do_data[1];
 
   res_p = res_APDU;
 
@@ -1200,12 +1205,18 @@ gpg_do_reset_pw_counter (uint8_t which)
   if (do_data)
     {
       memcpy (pwsb, &do_data[1], SIZE_PW_STATUS_BYTES);
+      if (pwsb[which] == 3)
+	return;
+
       pwsb[which] = 3;
       flash_do_release (do_data);
     }
   else
     {
       memcpy (pwsb, PW_STATUS_BYTES_TEMPLATE, SIZE_PW_STATUS_BYTES);
+      if (pwsb[which] == 3)
+	return;
+
       pwsb[which] = 3;
     }
 

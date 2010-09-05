@@ -89,7 +89,8 @@ CSRC = $(PORTSRC) \
        $(CRYPTSRC) \
        main.c usb_lld.c \
 	hw_config.c usb_desc.c usb_prop.c \
-	usb-icc.c openpgp.c ac.c openpgp-do.c flash.c hardclock.c random.c
+	usb-icc.c openpgp.c ac.c openpgp-do.c flash.c hardclock.c \
+	random.c
 
 ifneq ($(ENABLE_DEBUG),)
 CSRC += debug.c
@@ -203,3 +204,17 @@ ifeq ($(USE_FWLIB),yes)
 endif
 
 include $(CHIBIOS)/os/ports/GCC/ARM/rules.mk
+
+OBJS += random-data.o
+OUTFILES += random_bits
+
+random_bits:
+	dd if=/dev/random bs=1 of=random_bits count=1024
+
+random-data.o: random_bits
+	$(CP) -I binary $< -O elf32-littlearm -B arm \
+	      --rename-section \
+		.data=.gnuk_random,alloc,load,readonly,data,contents \
+		$@
+
+$(PROJECT).elf: random-data.o
