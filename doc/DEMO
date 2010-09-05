@@ -1,0 +1,796 @@
+Generate RSA 2048-bit key
+=========================
+
+$ gpg --gen-key
+gpg (GnuPG) 1.4.10; Copyright (C) 2008 Free Software Foundation, Inc.
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.
+
+Please select what kind of key you want:
+   (1) RSA and RSA (default)
+   (2) DSA and Elgamal
+   (3) DSA (sign only)
+   (4) RSA (sign only)
+Your selection? 1
+RSA keys may be between 1024 and 4096 bits long.
+What keysize do you want? (2048) 
+
+Requested keysize is 2048 bits
+Please specify how long the key should be valid.
+         0 = key does not expire
+      <n>  = key expires in n days
+      <n>w = key expires in n weeks
+      <n>m = key expires in n months
+      <n>y = key expires in n years
+Key is valid for? (0) 
+
+Key does not expire at all
+Is this correct? (y/N) y
+
+You need a user ID to identify your key; the software constructs the user ID
+from the Real Name, Comment and Email Address in this form:
+    "Heinrich Heine (Der Dichter) <heinrichh@duesseldorf.de>"
+
+Real name: NIIBE Yutaka
+Email address: gniibe@fsij.org
+Comment: FSIJ USB Token version 2
+You selected this USER-ID:
+    "NIIBE Yutaka (FSIJ USB Token version 2) <gniibe@fsij.org>"
+
+Change (N)ame, (C)omment, (E)mail or (O)kay/(Q)uit? o
+You need a Passphrase to protect your secret key.
+
+We need to generate a lot of random bytes. It is a good idea to perform
+some other action (type on the keyboard, move the mouse, utilize the
+disks) during the prime generation; this gives the random number
+generator a better chance to gain enough entropy.
+..............+++++
+.+++++
+We need to generate a lot of random bytes. It is a good idea to perform
+some other action (type on the keyboard, move the mouse, utilize the
+disks) during the prime generation; this gives the random number
+generator a better chance to gain enough entropy.
++++++
+..+++++
+gpg: key 5F8F0C61 marked as ultimately trusted
+public and secret key created and signed.
+
+gpg: checking the trustdb
+gpg: 3 marginal(s) needed, 1 complete(s) needed, classic trust model
+gpg: depth: 0  valid:   4  signed:  52  trust: 0-, 0q, 0n, 0m, 0f, 4u
+gpg: depth: 1  valid:  52  signed:  35  trust: 1-, 0q, 0n, 2m, 49f, 0u
+gpg: depth: 2  valid:  11  signed:  21  trust: 0-, 0q, 0n, 0m, 11f, 0u
+gpg: depth: 3  valid:   1  signed:   1  trust: 0-, 0q, 0n, 1m, 0f, 0u
+gpg: next trustdb check due at 2010-09-06
+pub   2048R/5F8F0C61 2010-09-05
+      Key fingerprint = BFF1 63F7 C333 3910 6763  B7CF 9CB7 1D1A 5F8F 0C61
+uid                  NIIBE Yutaka (FSIJ USB Token version 2) <gniibe@fsij.org>
+sub   2048R/D7C04A6B 2010-09-05
+$
+
+
+Test Gnuk works 
+===============
+
+$ gpg --card-status
+gpg: detected reader `FSIJ USB Token (2.0) 00 00'
+gpg: invalid structure of OpenPGP card (DO 0x93)
+Application ID ...: D276000124010200F517000000010000
+Version ..........: 2.0
+Manufacturer .....: unknown
+Serial number ....: 00000001
+Name of cardholder: [not set]
+Language prefs ...: [not set]
+Sex ..............: unspecified
+URL of public key : [not set]
+Login data .......: [not set]
+Signature PIN ....: not forced
+Key attributes ...: 2048R 2048R 2048R
+Max. PIN lengths .: 127 127 127
+PIN retry counter : 3 0 3
+Signature counter : 0
+Signature key ....: [none]
+Encryption key....: [none]
+Authentication key: [none]
+General key info..: [none]
+
+$
+
+
+
+Parsonalize the card
+====================
+
+$ gpg --card-edit
+
+gpg: detected reader `FSIJ USB Token (2.0) 00 00'
+gpg: invalid structure of OpenPGP card (DO 0x93)
+Application ID ...: D276000124010200F517000000010000
+Version ..........: 2.0
+Manufacturer .....: unknown
+Serial number ....: 00000001
+Name of cardholder: [not set]
+Language prefs ...: [not set]
+Sex ..............: unspecified
+URL of public key : [not set]
+Login data .......: [not set]
+Signature PIN ....: not forced
+Key attributes ...: 2048R 2048R 2048R
+Max. PIN lengths .: 127 127 127
+PIN retry counter : 3 0 3
+Signature counter : 0
+Signature key ....: [none]
+Encryption key....: [none]
+Authentication key: [none]
+General key info..: [none]
+
+gpg/card> passwd
+gpg: invalid structure of OpenPGP card (DO 0x93)
+gpg: OpenPGP card no. D276000124010200F517000000010000 detected
+gpg: gpg-agent is not available in this session
+
+Please enter the PIN
+Enter PIN:            
+New PIN
+Enter New PIN:                
+New PIN
+Repeat this PIN:                  PIN changed.
+
+gpg/card> admin
+Admin commands are allowed
+
+gpg/card> sex
+Sex ((M)ale, (F)emale or space): m
+gpg: 3 Admin PIN attempts remaining before card is permanently locked
+
+Please enter the Admin PIN
+Enter Admin PIN:                  
+gpg/card> name
+Cardholder's surname: Niibe
+Cardholder's given name: Yutaka
+
+gpg/card> login
+Login data (account name): gniibe
+
+gpg/card> lang
+Language preferences: ja
+
+gpg/card> url
+URL to retrieve public key: http://www.gniibe.org/gniibe.pub
+
+gpg/card> passwd
+gpg: invalid structure of OpenPGP card (DO 0x93)
+gpg: OpenPGP card no. D276000124010200F517000000010000 detected
+
+1 - change PIN
+2 - unblock PIN
+3 - change Admin PIN
+4 - set the Reset Code
+Q - quit
+
+Your selection? 3
+gpg: 3 Admin PIN attempts remaining before card is permanently locked
+
+Please enter the Admin PIN
+Enter Admin PIN:                  
+New Admin PIN
+Enter New Admin PIN:                      
+New Admin PIN
+Repeat this PIN:                  Error changing the PIN: bad passphrase
+
+1 - change PIN
+2 - unblock PIN
+3 - change Admin PIN
+4 - set the Reset Code
+Q - quit
+
+Your selection? 3
+gpg: 3 Admin PIN attempts remaining before card is permanently locked
+
+Please enter the Admin PIN
+Enter Admin PIN:                  
+New Admin PIN
+Enter New Admin PIN:                      
+New Admin PIN
+Repeat this PIN:                  PIN changed.
+
+1 - change PIN
+2 - unblock PIN
+3 - change Admin PIN
+4 - set the Reset Code
+Q - quit
+
+Your selection? 4
+gpg: 3 Admin PIN attempts remaining before card is permanently locked
+
+Please enter the Admin PIN
+Enter Admin PIN:                  
+New Reset Code
+Enter New PIN:                
+New Reset Code
+Repeat this PIN:                  Reset Code set.
+
+1 - change PIN
+2 - unblock PIN
+3 - change Admin PIN
+4 - set the Reset Code
+Q - quit
+
+Your selection? q
+$
+
+
+Key import to the card
+======================
+
+$ gpg --edit-key 0xd849f25d
+gpg (GnuPG) 1.4.10; Copyright (C) 2008 Free Software Foundation, Inc.
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.
+
+Secret key is available.
+
+pub  2048R/D849F25D  created: 2010-08-26  expires: never       usage: SC  
+                     trust: ultimate      validity: ultimate
+sub  2048R/AB28AFD3  created: 2010-08-26  expires: never       usage: E   
+[ultimate] (1). Niibe Yutaka (FSIJ USB Token v2) <gniibe@fsij.org>
+
+gpg> toggle
+
+sec  2048R/D849F25D  created: 2010-08-26  expires: never     
+ssb  2048R/AB28AFD3  created: 2010-08-26  expires: never     
+(1)  Niibe Yutaka (FSIJ USB Token v2) <gniibe@fsij.org>
+
+gpg> keytocard
+Really move the primary key? (y/N) y
+gpg: detected reader `FSIJ USB Token (2.0) 00 00'
+Signature key ....: [none]
+Encryption key....: [none]
+Authentication key: [none]
+
+Please select where to store the key:
+   (1) Signature key
+   (3) Authentication key
+Your selection? 1
+
+You need a passphrase to unlock the secret key for
+user: "Niibe Yutaka (FSIJ USB Token v2) <gniibe@fsij.org>"
+2048-bit RSA key, ID D849F25D, created 2010-08-26
+
+gpg: gpg-agent is not available in this session
+Enter passphrase:                   gpg: writing new key
+gpg: 3 Admin PIN attempts remaining before card is permanently locked
+
+Please enter the Admin PIN
+Enter Admin PIN:                  
+sec  2048R/D849F25D  created: 2010-08-26  expires: never     
+                     card-no: F517 00000001
+ssb  2048R/AB28AFD3  created: 2010-08-26  expires: never     
+(1)  Niibe Yutaka (FSIJ USB Token v2) <gniibe@fsij.org>
+
+gpg> quit
+Save changes? (y/N) y
+$
+
+
+Digital signature
+=================
+
+$ gpg -u d849f25d --clearsign README
+gpg: detected reader `FSIJ USB Token (2.0) 00 00'
+gpg: invalid structure of OpenPGP card (DO 0x93)
+gpg: signatures created so far: 0
+
+Please enter the PIN
+[sigs done: 0]
+gpg: gpg-agent is not available in this session
+Enter PIN:            
+$ gpg -v -u d849f25d --clearsign README
+File `README.asc' exists. Overwrite? (y/N) y
+gpg: writing to `README.asc'
+gpg: detected reader `FSIJ USB Token (2.0) 00 00'
+gpg: reader slot 0: not connected
+gpg: reader slot 0: active protocol: T1
+gpg: slot 0: ATR=3B 84 01 46 53 49 4A 92
+gpg: AID: D2 76 00 01 24 01 02 00 F5 17 00 00 00 01 00 00
+gpg: Historical Bytes: 00 31 80 73 80 01 40 00 90 00
+gpg: Version-2 ......: yes
+gpg: Get-Challenge ..: nogpg: Key-Import .....: yes
+gpg: Change-Force-PW1: yes
+gpg: Private-DOs ....: no
+gpg: Algo-Attr-Change: no
+gpg: SM-Support .....: nogpg: Max-Cert3-Len ..: 0
+gpg: Max-Cmd-Data ...: 289
+gpg: Max-Rsp-Data ...: 272
+gpg: Cmd-Chaining ...: no
+gpg: Ext-Lc-Le ......: yes
+gpg: Status Indicator: 00
+gpg: GnuPG-No-Sync ..: no
+gpg: GnuPG-Def-PW2 ..: no
+gpg: Key-Attr-sign ..: RSA, n=2048, e=32, fmt=std
+gpg: Key-Attr-encr ..: RSA, n=2048, e=32, fmt=std
+gpg: Key-Attr-auth ..: RSA, n=2048, e=32, fmt=std
+gpg: signatures created so far: 1
+
+Please enter the PIN
+[sigs done: 1]
+gpg: gpg-agent is not available in this session
+Enter PIN:            
+gpg: RSA/SHA1 signature from: "D849F25D Niibe Yutaka (FSIJ USB Token v2) <gniibe@fsij.org>"
+$
+
+
+DEBUG output
+============
+
+$ cu -l /dev/ttyACM0
+^GConnected. 
+ON
+ON
+GPG!
+ - select DF by name
+GPG!
+ - Get Data
+   004f
+GPG!
+ - Get Data
+   5f52
+GPG!
+ - Get Data
+   00c4
+GPG!
+ - Get Data
+   006e
+GPG!
+ - Get Data
+   005e
+GPG!
+ - Get Data
+   006e
+GPG!
+ - Get Data
+   006e
+GPG!
+ - Get Data
+   006e
+GPG!
+ - Get Data
+   0065
+GPG!
+ - Get Data
+   005b
+GPG!
+ - Get Data
+   5f2d
+GPG!
+ - Get Data
+   5f35
+GPG!
+ - Get Data
+   5f50
+GPG!
+ - Get Data
+   006e
+GPG!
+ - Get Data
+   00c4
+GPG!
+ - Get Data
+   007a
+GPG!
+ - Get Data
+   0093
+GPG!
+ - select DF by name
+GPG!
+ - Get Data
+   004f
+GPG!
+ - Get Data
+   5f52
+GPG!
+ - Get Data
+   00c4
+GPG!
+ - Get Data
+   006e
+GPG!
+ - Get Data
+   005e
+GPG!
+ - Get Data
+   006e
+GPG!
+ - Get Data
+   006e
+GPG!
+ - Get Data
+   006e
+GPG!
+ - Get Data
+   0065
+GPG!
+ - Get Data
+   005b
+GPG!
+ - Get Data
+   5f2d
+GPG!
+ - Get Data
+   5f35
+GPG!
+ - Get Data
+   5f50
+GPG!
+ - Get Data
+   006e
+GPG!
+ - Get Data
+   00c4
+GPG!
+ - Get Data
+   007a
+GPG!
+ - Get Data
+   0093
+GPG!
+ - Get Data
+   00c4
+GPG!
+ - Get Data
+   007a
+GPG!
+ - Get Data
+   0093
+GPG!
+Change PW
+01
+flash DO
+flash DO...done
+Changed DO_KEYSTRING_PW1
+GPG!
+ - Get Data
+   00c4
+GPG!
+ - VERIFY
+83
+good
+GPG!
+ - PUT DATA
+   5f35
+flash DO
+flash DO...done
+GPG!
+ - PUT DATA
+   005b
+flash DO
+flash DO...done
+GPG!
+ - PUT DATA
+   005e
+flash DO
+flash DO...done
+GPG!
+ - Get Data
+   005e
+GPG!
+ - PUT DATA
+   5f2d
+flash DO
+flash DO...done
+GPG!
+ - PUT DATA
+   5f50
+flash DO
+flash DO...done
+GPG!
+ - Get Data
+   005b
+GPG!
+ - Get Data
+   5f2d
+GPG!
+ - Get Data
+   5f35
+GPG!
+ - Get Data
+   5f50
+GPG!
+ - Get Data
+   00c4
+GPG!
+ - Get Data
+   007a
+GPG!
+ - Get Data
+   0093
+GPG!
+ - Get Data
+   00c4
+GPG!
+Change PW
+03
+permission denied.
+GPG!
+ - Get Data
+   00c4
+GPG!
+Change PW
+03
+Random: 0001140e
+Random: 00011515
+flash DO
+flash DO...done
+done.
+GPG!
+ - Get Data
+   00c4
+GPG!
+ - VERIFY
+83
+good
+GPG!
+ - PUT DATA
+   00d3
+Resetting Code!
+done (no prvkey).
+flash DO
+flash DO...done
+flash DO
+flash DO...done
+GPG!
+ - select DF by name
+GPG!
+ - Get Data
+   004f
+GPG!
+ - Get Data
+   5f52
+GPG!
+ - Get Data
+   00c4
+GPG!
+ - Get Data
+   006e
+GPG!
+ - Get Data
+   005e
+GPG!
+ - Get Data
+   006e
+GPG!
+ - Get Data
+   006e
+GPG!
+ - Get Data
+   006e
+GPG!
+ - Get Data
+   006e
+GPG!
+ - Get Data
+   00c4
+GPG!
+ - Get Data
+   0065
+GPG!
+ - Get Data
+   006e
+GPG!
+ - Get Data
+   00c4
+GPG!
+ - VERIFY
+83
+good
+GPG!
+ - PUT DATA
+   3fff
+ 4d 82 01 16 b6 00 7f 48 08 91 04 92 81 80 93 81
+ 80 5f 48 82 01 04 00 01 00 01 ee 1c 56 89 bf c7
+ 78 9d b4 2b 30 2f 69 2d e4 ac 3f d8 79 83 60 02
+ c0 b4 88 7d 46 4d be c3 ad 69 77 02 c1 3a 84 a1
+ 0b 61 5c 73 79 b6 04 27 29 f7 f3 58 1d 31 45 cd
+ 7d b0 1c d4 90 f8 fa 98 45 19 52 4b f0 f2 bc 5f
+ 86 e5 2f 85 67 55 a3 3d f2 7f 57 66 c5 ce 5d ac
+ 3f 72 d8 25 35 30 a9 73 e3 8a b9 8a b5 42 95 a0
+ 73 8a 04 d7 4a 05 67 9c 8c 0b d4 56 0e 99 44 07
+ 6e f9 aa 24 ce 88 07 ff 9d 39 f8 57 33 95 bc b9
+ 96 64 cf 67 c2 bb c0 b4 a1 b0 44 ee e7 6b c9 6a
+ ea ec e0 14 8c 57 00 39 04 20 7d 99 df f8 50 23
+ 1e 80 79 ea 86 9b 2c 4d b8 4f 8c d3 7e 08 99 9b
+ 63 ca 8f 93 dd 9f ce b6 ff 81 9e 53 86 79 70 52
+ e8 5b be b0 62 ca 52 42 85 46 c0 6c 50 7d d1 9d
+ 51 b6 c3 9e 2c d3 1a 60 e9 8a 62 2e 4e 67 d7 8d
+ aa 31 f3 b3 2d 78 22 4c de fa 44 b7 6f a6 2c 08
+ 09 da 3d 51 ab 8c 83 9c 29 e7
+Key import
+0100
+Getting keystore address...
+key_addr: 0800e400
+Random: 000109a5
+enc...Random: 00011592
+ENC
+ ee 1c 56 89 bf c7 78 9d b4 2b 30 2f 69 2d e4 ac
+ 3f d8 79 83 60 02 c0 b4 88 7d 46 4d be c3 ad 69
+ 77 02 c1 3a 84 a1 0b 61 5c 73 79 b6 04 27 29 f7
+ f3 58 1d 31 45 cd 7d b0 1c d4 90 f8 fa 98 45 19
+ 52 4b f0 f2 bc 5f 86 e5 2f 85 67 55 a3 3d f2 7f
+ 57 66 c5 ce 5d ac 3f 72 d8 25 35 30 a9 73 e3 8a
+ b9 8a b5 42 95 a0 73 8a 04 d7 4a 05 67 9c 8c 0b
+ d4 56 0e 99 44 07 6e f9 aa 24 ce 88 07 ff 9d 39
+ f8 57 33 95 bc b9 96 64 cf 67 c2 bb c0 b4 a1 b0
+ 44 ee e7 6b c9 6a ea ec e0 14 8c 57 00 39 04 20
+ 7d 99 df f8 50 23 1e 80 79 ea 86 9b 2c 4d b8 4f
+ 8c d3 7e 08 99 9b 63 ca 8f 93 dd 9f ce b6 ff 81
+ 9e 53 86 79 70 52 e8 5b be b0 62 ca 52 42 85 46
+ c0 6c 50 7d d1 9d 51 b6 c3 9e 2c d3 1a 60 e9 8a
+ 62 2e 4e 67 d7 8d aa 31 f3 b3 2d 78 22 4c de fa
+ 44 b7 6f a6 2c 08 09 da 3d 51 ab 8c 83 9c 29 e7
+ 1d f5 b7 13 33 18 87 d8 47 6e 75 6b 20 4b 45 59
+
+done
+ENC
+ 09 b1 36 40 ee ac 2b 79 16 06 a0 95 c9 a4 7c a6
+
+flash DO
+flash DO...done
+ENC
+ 09 b1 36 40 ee ac 2b 79 16 06 a0 95 c9 a4 7c a6
+
+flash DO
+flash DO...done
+ENC
+ 09 b1 36 40 ee ac 2b 79 16 06 a0 95 c9 a4 7c a6
+
+flash DO
+flash DO...done
+GPG!
+ - PUT DATA
+   00c7
+flash DO
+flash DO...done
+GPG!
+ - PUT DATA
+   00ce
+flash DO
+flash DO...done
+GPG!
+ - select DF by name
+GPG!
+ - Get Data
+   004f
+GPG!
+ - Get Data
+   5f52
+GPG!
+ - Get Data
+   00c4
+GPG!
+ - Get Data
+   006e
+GPG!
+ - Get Data
+   005e
+GPG!
+ - Get Data
+   006e
+GPG!
+ - Get Data
+   006e
+GPG!
+ - Get Data
+   006e
+GPG!
+ - Get Data
+   006e
+GPG!
+ - Get Data
+   007a
+GPG!
+ - Get Data
+   0093
+GPG!
+ - VERIFY
+81
+verify_pso_cds
+06
+DEC
+ 09 b1 36 40 ee ac 2b 79 16 06 a0 95 c9 a4 7c a6
+
+DEC
+ ee 1c 56 89 bf c7 78 9d b4 2b 30 2f 69 2d e4 ac
+ 3f d8 79 83 60 02 c0 b4 88 7d 46 4d be c3 ad 69
+ 77 02 c1 3a 84 a1 0b 61 5c 73 79 b6 04 27 29 f7
+ f3 58 1d 31 45 cd 7d b0 1c d4 90 f8 fa 98 45 19
+ 52 4b f0 f2 bc 5f 86 e5 2f 85 67 55 a3 3d f2 7f
+ 57 66 c5 ce 5d ac 3f 72 d8 25 35 30 a9 73 e3 8a
+ b9 8a b5 42 95 a0 73 8a 04 d7 4a 05 67 9c 8c 0b
+ d4 56 0e 99 44 07 6e f9 aa 24 ce 88 07 ff 9d 39
+ f8 57 33 95 bc b9 96 64 cf 67 c2 bb c0 b4 a1 b0
+ 44 ee e7 6b c9 6a ea ec e0 14 8c 57 00 39 04 20
+ 7d 99 df f8 50 23 1e 80 79 ea 86 9b 2c 4d b8 4f
+ 8c d3 7e 08 99 9b 63 ca 8f 93 dd 9f ce b6 ff 81
+ 9e 53 86 79 70 52 e8 5b be b0 62 ca 52 42 85 46
+ c0 6c 50 7d d1 9d 51 b6 c3 9e 2c d3 1a 60 e9 8a
+ 62 2e 4e 67 d7 8d aa 31 f3 b3 2d 78 22 4c de fa
+ 44 b7 6f a6 2c 08 09 da 3d 51 ab 8c 83 9c 29 e7
+ 1d f5 b7 13 33 18 87 d8 47 6e 75 6b 20 4b 45 59
+
+good
+GPG!
+ - PSO
+23
+RSA...ok...done.
+flash DO
+flash DO...done
+PSO done.
+GPG!
+ - select DF by name
+GPG!
+ - Get Data
+   004f
+GPG!
+ - Get Data
+   5f52
+GPG!
+ - Get Data
+   00c4
+GPG!
+ - Get Data
+   006e
+GPG!
+ - Get Data
+   005e
+GPG!
+ - Get Data
+   006e
+GPG!
+ - Get Data
+   006e
+GPG!
+ - Get Data
+   006e
+GPG!
+ - Get Data
+   006e
+GPG!
+ - Get Data
+   007a
+GPG!
+ - VERIFY
+81
+verify_pso_cds
+06
+DEC
+ 09 b1 36 40 ee ac 2b 79 16 06 a0 95 c9 a4 7c a6
+
+DEC
+ ee 1c 56 89 bf c7 78 9d b4 2b 30 2f 69 2d e4 ac
+ 3f d8 79 83 60 02 c0 b4 88 7d 46 4d be c3 ad 69
+ 77 02 c1 3a 84 a1 0b 61 5c 73 79 b6 04 27 29 f7
+ f3 58 1d 31 45 cd 7d b0 1c d4 90 f8 fa 98 45 19
+ 52 4b f0 f2 bc 5f 86 e5 2f 85 67 55 a3 3d f2 7f
+ 57 66 c5 ce 5d ac 3f 72 d8 25 35 30 a9 73 e3 8a
+ b9 8a b5 42 95 a0 73 8a 04 d7 4a 05 67 9c 8c 0b
+ d4 56 0e 99 44 07 6e f9 aa 24 ce 88 07 ff 9d 39
+ f8 57 33 95 bc b9 96 64 cf 67 c2 bb c0 b4 a1 b0
+ 44 ee e7 6b c9 6a ea ec e0 14 8c 57 00 39 04 20
+ 7d 99 df f8 50 23 1e 80 79 ea 86 9b 2c 4d b8 4f
+ 8c d3 7e 08 99 9b 63 ca 8f 93 dd 9f ce b6 ff 81
+ 9e 53 86 79 70 52 e8 5b be b0 62 ca 52 42 85 46
+ c0 6c 50 7d d1 9d 51 b6 c3 9e 2c d3 1a 60 e9 8a
+ 62 2e 4e 67 d7 8d aa 31 f3 b3 2d 78 22 4c de fa
+ 44 b7 6f a6 2c 08 09 da 3d 51 ab 8c 83 9c 29 e7
+ 1d f5 b7 13 33 18 87 d8 47 6e 75 6b 20 4b 45 59
+
+good
+GPG!
+ - PSO
+23
+RSA...ok...done.
+flash DO
+flash DO...done
+PSO done.
+^GDisconnected.
+$ 

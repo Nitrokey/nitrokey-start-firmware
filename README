@@ -18,7 +18,7 @@ Release notes
 
 This is initial release of Gnuk, and it is experimental.
 
-Supported and tested features are:
+Tested features are:
 
 	* Personalization of the card
 
@@ -26,7 +26,7 @@ Supported and tested features are:
 
 	* Password handling (PW1, RC, PW3)
 
-	* Single key import for signature.
+	* Key import for signature only.
 
 	* PSO: Digital Signature
 
@@ -178,7 +178,7 @@ Then, try following to see Gnuk runs:
   $ gpg --card-status
 
 
-For more, see doc/HOWTO-GNUK.
+For more, see doc/DEMO.
 
 
 
