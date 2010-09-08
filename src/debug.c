@@ -79,6 +79,30 @@ put_word (uint32_t x)
 }
 
 void
+put_int (uint32_t x)
+{
+  char s[10];
+  int i;
+
+  for (i = 0; i < 10; i++)
+    {
+      s[i] = '0' + (x % 10);
+      x /= 10;
+      if (x == 0)
+	break;
+    }
+
+  while (i)
+    {
+      _write (s+i, 1);
+      i--;
+    }
+
+  _write (s, 1);
+  _write ("\r\n", 2);
+}
+
+void
 put_binary (const char *s, int len)
 {
   int i;

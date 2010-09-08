@@ -62,7 +62,7 @@ static const uint8_t gnukConfigDescriptor[] = {
   /* ICC Descriptor */
   54,			  /* bLength: */
   0x21,			  /* bDescriptorType: USBDESCR_ICC */
-  0x10, 0x01,		  /* bcdCCID: 1.1 XXX */
+  0x00, 0x01,		  /* bcdCCID: revision 1.0 */
   0,			  /* bMaxSlotIndex: */
   1,			  /* bVoltageSupport: FIXED VALUE */
   0x02, 0, 0, 0,	  /* dwProtocols: T=1 */

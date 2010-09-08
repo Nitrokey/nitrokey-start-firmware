@@ -32,9 +32,9 @@
 #define CH_DBG_ENABLE_CHECKS            FALSE
 #define CH_DBG_ENABLE_ASSERTS           FALSE
 #define CH_DBG_ENABLE_TRACE             FALSE
-#define CH_DBG_ENABLE_STACK_CHECK       FALSE
+#define CH_DBG_ENABLE_STACK_CHECK       TRUE
 #define CH_DBG_FILL_THREADS             FALSE
-#define CH_DBG_THREADS_PROFILING        TRUE
+#define CH_DBG_THREADS_PROFILING        FALSE
 
 #define THREAD_EXT_FIELDS                                               \
 struct {                                                                \

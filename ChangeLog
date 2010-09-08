@@ -1,4 +1,46 @@
+2010-09-08  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/ac.c (calc_md): Make SHA1 variable auto.
+
+	* src/debug.c (put_int): New.
+
+	* src/gnuk.ld (__process_stack_size__): Removed.
+
+	* src/main.c (STDOUTthread): Use Event.
+	(main): Make LED ON during command execution, blink usually.
+
+	* src/openpgp-do.c (encrypt, decrypt): Make AES variables auto.
+	(gpg_do_table): GPG_DO_ALG_AUT is NULL.
+
+	* src/openpgp.c (cmd_pso): Bug fix for extended Lc.
+
+	* src/usb-icc.c (icc_power_off): Make LED ON during command
+	execution.
+	(USB_ICC_TIMEOUT): Longer value (was: 1000).
+
+	* src/usb_desc.c (gnukConfigDescriptor): Fix bcdCCID value.
+
+	* src/vcomport.mk (VCOMSRC): Use our own usb_endp.c.
+
+	* src/usb_desc.c (gnukConfigDescriptor): ICC Descriptor is
+	Revision 1.0.
+
+	* polarssl-0.14.0/include/polarssl/config.h: Commend out
+	POLARSSL_SELF_TEST.
+
+	* polarssl-0.14.0/library/rsa.c (rsa_private): Don't check input,
+	so that we don't access ctx->N.
+	(rsa_pkcs1_decrypt): size of BUF is enough as 256.
+
+	* polarssl-0.14.0/library/sha1.c (sha1_file): #if-out to avoid
+	stdio of libc.
+
+	* polarssl-0.14.0/library/bignum.c (mpi_write_hlp)
+	(mpi_write_string, mpi_read_file, mpi_read_file): #if-out to avoid
+	stdio of libc.
+
+	* gnuk.svg: New file.
+
 2010-09-06  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* Initial version 0.0.
-

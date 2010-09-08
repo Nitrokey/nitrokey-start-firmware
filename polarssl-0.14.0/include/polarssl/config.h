@@ -77,8 +77,9 @@
 
 /*
  * Enable the checkup functions (*_self_test).
- */
+ *
 #define POLARSSL_SELF_TEST
+ */
 
 /*
  * Enable run-time version information functions

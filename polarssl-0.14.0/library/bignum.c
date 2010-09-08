@@ -310,6 +310,7 @@ cleanup:
     return( ret );
 }
 
+#if 0
 /*
  * Helper to write the digits high-order first
  */
@@ -466,6 +467,7 @@ cleanup:
 
     return( ret );
 }
+#endif
 
 /*
  * Import X from unsigned binary data, big endian

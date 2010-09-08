@@ -245,13 +245,13 @@ int rsa_private( rsa_context *ctx,
     mpi_init( &T, &T1, &T2, NULL );
 
     MPI_CHK( mpi_read_binary( &T, input, ctx->len ) );
-
+#if 0
     if( mpi_cmp_mpi( &T, &ctx->N ) >= 0 )
     {
         mpi_free( &T, NULL );
         return( POLARSSL_ERR_RSA_BAD_INPUT_DATA );
     }
-
+#endif
 #if 0
     MPI_CHK( mpi_exp_mod( &T, &T, &ctx->D, &ctx->N, &ctx->RN ) );
 #else
@@ -358,7 +358,7 @@ int rsa_pkcs1_decrypt( rsa_context *ctx,
 {
     int ret, ilen;
     unsigned char *p;
-    unsigned char buf[1024];
+    unsigned char buf[256];
 
     ilen = ctx->len;
 

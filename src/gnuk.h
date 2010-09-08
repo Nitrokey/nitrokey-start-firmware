@@ -1,9 +1,15 @@
 extern Thread *blinker_thread;
+#define EV_LED_ON  ((eventmask_t)1)
+#define EV_LED_OFF ((eventmask_t)2)
+
+extern Thread *stdout_thread;
+#define EV_TX_READY ((eventmask_t)1)
 
 extern void put_byte (uint8_t b);
 extern void put_byte_with_no_nl (uint8_t b);
 extern void put_short (uint16_t x);
 extern void put_word (uint32_t x);
+extern void put_int (uint32_t x);
 extern void put_string (const char *s);
 extern void put_binary (const char *s, int len);
 
@@ -17,9 +23,7 @@ extern size_t strlen (const char *s);
 extern int strncmp(const char *s1, const char *s2, size_t n);
 extern void *memcpy (void *dest, const void *src, size_t n);
 extern void *memset (void *s, int c, size_t n);
-extern void *malloc (size_t size);
 extern int memcmp (const void *s1, const void *s2, size_t n);
-extern void free (void *ptr);
 
 /*
  * Interface between ICC<-->GPG
@@ -29,7 +33,7 @@ extern Thread *gpg_thread;
 
 #define USB_BUF_SIZE 64
 
-#define EV_EXEC_FINISHED (eventmask_t)2	 /* GPG Execution finished */
+#define EV_EXEC_FINISHED ((eventmask_t)2)	 /* GPG Execution finished */
 
 /* maximum cmd apdu data is key import 22+4+128+128 (proc_key_import) */
 #define MAX_CMD_APDU_SIZE (7+282) /* header + data */

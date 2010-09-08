@@ -74,6 +74,8 @@ verify_pso_other (const uint8_t *pw, int pw_len)
       || pw_status_bytes[PW_STATUS_PW1] == 0) /* locked */
     return 0;
 
+  DEBUG_INFO ("verify_pso_other\r\n");
+
   keystring[0] = pw_len;
   sha1 (pw, pw_len, keystring+1);
   memcpy (pwsb, pw_status_bytes, SIZE_PW_STATUS_BYTES);
@@ -96,7 +98,6 @@ verify_pso_other (const uint8_t *pw, int pw_len)
 /*
  * For keystring of PW3, we use SALT+ITER+MD format
  */
-static sha1_context sha1_ctx;
 
 static uint32_t
 decode_iterate_count (uint8_t x)
@@ -108,6 +109,8 @@ static void
 calc_md (int count, const uint8_t *salt, const uint8_t *pw, int pw_len,
 	 uint8_t md[KEYSTRING_MD_SIZE])
 {
+  sha1_context sha1_ctx;
+
   sha1_starts (&sha1_ctx);
 
   while (count > pw_len + 8)

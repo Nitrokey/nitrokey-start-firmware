@@ -21,8 +21,9 @@
  *
  */
 
-#include "config.h"
+#include <stdlib.h>
 
+#include "config.h"
 #include "ch.h"
 #include "gnuk.h"
 #include "openpgp.h"
@@ -42,8 +43,8 @@ static const uint8_t aid[] __attribute__ ((aligned (1))) = {
   16,
   0xd2, 0x76, 0x00, 0x01, 0x24, 0x01,
   0x02, 0x00,			/* Version 2.0 */
-  0xf5, 0x17,			/* Manufacturer (FSIJ) */
-  0x00, 0x00, 0x00, 0x01,	/* Serial */
+  MANUFACTURER_IN_AID,
+  SERIAL_NUMBER_IN_AID,
   0x00, 0x00
 };
 
@@ -398,10 +399,6 @@ rw_pw_status (uint16_t tag, const uint8_t *data, int len, int is_write)
     }
 }
 
-static aes_context aes;
-static uint8_t iv[16];
-static int iv_offset;
-
 static void
 proc_resetting_code (const uint8_t *data, int len)
 {
@@ -450,6 +447,10 @@ proc_resetting_code (const uint8_t *data, int len)
 static void
 encrypt (const uint8_t *key_str, uint8_t *data, int len)
 {
+  aes_context aes;
+  uint8_t iv[16];
+  int iv_offset;
+
   DEBUG_INFO ("ENC\r\n");
   DEBUG_BINARY (data, len);
 
@@ -464,6 +465,10 @@ struct key_data kd;
 static void
 decrypt (const uint8_t *key_str, uint8_t *data, int len)
 {
+  aes_context aes;
+  uint8_t iv[16];
+  int iv_offset;
+
   aes_setkey_enc (&aes, key_str, 128);
   memset (iv, 0, 16);
   iv_offset = 0;
@@ -800,7 +805,7 @@ gpg_do_table[] = {
   { GPG_DO_EXTCAP, DO_FIXED, AC_ALWAYS, AC_NEVER, extended_capabilities },
   { GPG_DO_ALG_SIG, DO_FIXED, AC_ALWAYS, AC_NEVER, algorithm_attr },
   { GPG_DO_ALG_DEC, DO_FIXED, AC_ALWAYS, AC_NEVER, algorithm_attr },
-  { GPG_DO_ALG_AUT, DO_FIXED, AC_ALWAYS, AC_NEVER, algorithm_attr },
+  { GPG_DO_ALG_AUT, DO_FIXED, AC_ALWAYS, AC_NEVER, NULL },
   /* Compound data: Read access only */
   { GPG_DO_CH_DATA, DO_CN_READ, AC_ALWAYS, AC_NEVER, cn_ch_data },
   { GPG_DO_APP_DATA, DO_CN_READ, AC_ALWAYS, AC_NEVER, cn_app_data },

@@ -510,10 +510,18 @@ cmd_get_data (void)
 static void
 cmd_pso (void)
 {
-  int len;
+  int len = cmd_APDU[4];
+  int data_start = 5;
   int r;
 
-  DEBUG_INFO (" - PSO\r\n");
+  if (len == 0)
+    {
+      len = (cmd_APDU[5]<<8) | cmd_APDU[6];
+      data_start = 7;
+    }
+
+  DEBUG_INFO (" - PSO: ");
+  DEBUG_WORD ((uint32_t)&r);
 
   if (cmd_APDU[2] == 0x9e && cmd_APDU[3] == 0x9a)
     {
@@ -529,14 +537,13 @@ cmd_pso (void)
 	{
 	  DEBUG_INFO (" wrong length: ");
 	  DEBUG_SHORT (cmd_APDU_size);
+	  GPG_ERROR ();
 	}
       else
 	{
-	  len = (cmd_APDU[5]<<8) | cmd_APDU[6];
+	  DEBUG_SHORT (len);  /* Should be cmd_APDU_size - 6 */
 
-	  DEBUG_BYTE (len);  /* Should be cmd_APDU_size - 6 */
-
-	  r = rsa_sign (&cmd_APDU[7], res_APDU, len);
+	  r = rsa_sign (&cmd_APDU[data_start], res_APDU, len);
 	  if (r < 0)
 	    GPG_ERROR ();
 	  else
@@ -556,8 +563,6 @@ cmd_pso (void)
     }
   else if (cmd_APDU[2] == 0x80 && cmd_APDU[3] == 0x86)
     {
-      len = (cmd_APDU[5]<<8) | cmd_APDU[6];
-
       if (!ac_check_status (AC_PSO_OTHER_AUTHORIZED))
 	{
 	  DEBUG_INFO ("security error.");
@@ -565,9 +570,12 @@ cmd_pso (void)
 	  return;
 	}
 
-      DEBUG_BYTE (len);
+      DEBUG_SHORT (len);
 
-      r = rsa_decrypt (&cmd_APDU[7], res_APDU, len);
+      /* Skip padding 0x00 */
+      data_start++;
+      len--;
+      r = rsa_decrypt (&cmd_APDU[data_start], res_APDU, len);
       if (r < 0)
 	GPG_ERROR ();
     }
@@ -577,7 +585,7 @@ cmd_pso (void)
       DEBUG_BYTE (cmd_APDU[2]);
       DEBUG_INFO (" - ??");
       DEBUG_BYTE (cmd_APDU[3]);
-      GPG_SUCCESS ();
+      GPG_ERROR ();
     }
 
   DEBUG_INFO ("PSO done.\r\n");
@@ -639,7 +647,8 @@ GPGthread (void *arg)
 
       m = chEvtWaitOne (ALL_EVENTS);
 
-      DEBUG_INFO ("GPG!\r\n");
+      DEBUG_INFO ("GPG!: ");
+      DEBUG_WORD ((uint32_t)&m);
 
       process_command_apdu ();
 

@@ -72,16 +72,17 @@ _write (const char *s, int size)
   chMtxUnlock ();
 }
 
-extern uint32_t count_in;
-extern __IO uint32_t count_out;
-extern uint8_t buffer_in[VIRTUAL_COM_PORT_DATA_SIZE];
-extern uint8_t buffer_out[VIRTUAL_COM_PORT_DATA_SIZE];
+Thread *stdout_thread;
+uint32_t count_in;
+uint8_t buffer_in[VIRTUAL_COM_PORT_DATA_SIZE];
 
 static WORKING_AREA(waSTDOUTthread, 128);
+
 static msg_t
 STDOUTthread (void *arg)
 {
   (void)arg;
+  stdout_thread = chThdSelf ();
 
  again:
 
@@ -127,11 +128,12 @@ STDOUTthread (void *arg)
 	      p += count_in;
 	    }
 
+	  chEvtClear (EV_TX_READY);
+
 	  USB_SIL_Write (EP3_IN, buffer_in, count_in);
 	  SetEPTxValid (ENDP3);
 
-	  while (count_in > 0)
-	    chThdSleepMilliseconds (1);
+	  chEvtWaitOne (EV_TX_READY);
 	}
 
       stdout.str = NULL;
@@ -160,9 +162,11 @@ extern msg_t GPGthread (void *arg);
 
 Thread *blinker_thread;
 /*
- * Red LEDs blinker
+ * LEDs blinks.
+ * When GPGthread execute some command, LED stop blinking, but always ON.
  */
-#define EV_LED (eventmask_t)1
+#define LED_BLINKER_TIMEOUT MS2ST(200)
+
 
 /*
  * Entry point, note, the main() function is already a thread in the system
@@ -172,6 +176,7 @@ int
 main (int argc, char **argv)
 {
   eventmask_t m;
+  uint8_t led_state = 0;
   int count = 0;
 
   (void)argc;
@@ -199,30 +204,33 @@ main (int argc, char **argv)
 
   while (1)
     {
-#if 0
-      if (palReadPad(IOPORT1, GPIOA_BUTTON))
-	palSetPad (IOPORT3, GPIOC_LED);
-#endif
+      count++;
 
-      m = chEvtWaitOneTimeout (ALL_EVENTS, 100);
-      if (m == EV_LED)
+      m = chEvtWaitOneTimeout (ALL_EVENTS, LED_BLINKER_TIMEOUT);
+      if (m == EV_LED_ON)
+	led_state = 1;
+      else if (m == EV_LED_OFF)
+	led_state = 0;
+
+      if (led_state)
 	palClearPad (IOPORT3, GPIOC_LED);
+      else
+	{
+	  if ((count & 1))
+	    palClearPad (IOPORT3, GPIOC_LED);
+	  else
+	    palSetPad (IOPORT3, GPIOC_LED);
+	}
 
 #ifdef DEBUG_MORE
       if (bDeviceState == CONFIGURED && (count % 100) == 0)
 	{
-	  DEBUG_WORD (count / 100);
+	  DEBUG_SHORT (count / 100);
 	  _write ("\r\nThis is ChibiOS 2.0.2 on Olimex STM32-H103.\r\n"
 		  "Testing USB driver.\n\n"
 		  "Hello world\r\n\r\n", 47+21+15);
 	}
 #endif
-
-      m = chEvtWaitOneTimeout (ALL_EVENTS, 100);
-      if (m == EV_LED)
-	palSetPad (IOPORT3, GPIOC_LED);
-
-      count++;
     }
 
   return 0;

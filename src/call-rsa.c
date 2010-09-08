@@ -21,6 +21,7 @@
  *
  */
 
+#include <stdlib.h>
 #include "config.h"
 #include "ch.h"
 #include "gnuk.h"
@@ -52,7 +53,7 @@ rsa_sign (const uint8_t *raw_message, uint8_t *output, int msg_len)
   mpi_inv_mod (&rsa_ctx.QP, &rsa_ctx.Q, &rsa_ctx.P);
   mpi_free (&P1, &Q1, &H, NULL);
 
-  DEBUG_INFO ("RSA...");
+  DEBUG_INFO ("RSA sign...");
 
   if ((r = rsa_check_privkey (&rsa_ctx)) == 0)
     DEBUG_INFO ("ok...");
@@ -114,10 +115,15 @@ rsa_decrypt (const uint8_t *input, uint8_t *output, int msg_len)
   int r;
   int output_len;
 
+  put_string ("RSA decrypt:");
+  put_word ((uint32_t)&output_len);
+
   mpi_init (&P1, &Q1, &H, NULL);
   rsa_init (&rsa_ctx, RSA_PKCS_V15, 0);
 
   rsa_ctx.len = msg_len;
+  DEBUG_WORD (msg_len);
+
   mpi_read_string (&rsa_ctx.E, 16, "10001");
   mpi_read_binary (&rsa_ctx.P, &kd.data[0], 2048 / 8 / 2);
   mpi_read_binary (&rsa_ctx.Q, &kd.data[128], 2048 / 8 / 2);
@@ -131,8 +137,9 @@ rsa_decrypt (const uint8_t *input, uint8_t *output, int msg_len)
   mpi_inv_mod (&rsa_ctx.QP, &rsa_ctx.Q, &rsa_ctx.P);
   mpi_free (&P1, &Q1, &H, NULL);
 
-  DEBUG_INFO ("RSA...");
-
+  DEBUG_INFO ("RSA decrypt ...");
+#if 0
+  /* This consume some memory */
   if ((r = rsa_check_privkey (&rsa_ctx)) == 0)
     DEBUG_INFO ("ok...");
   else
@@ -142,6 +149,7 @@ rsa_decrypt (const uint8_t *input, uint8_t *output, int msg_len)
       rsa_free (&rsa_ctx);
       return r;
     }
+#endif
 
   r = rsa_pkcs1_decrypt (&rsa_ctx, RSA_PRIVATE, &output_len,
 			 input, output, MAX_RES_APDU_SIZE - 2);

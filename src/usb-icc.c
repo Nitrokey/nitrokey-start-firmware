@@ -229,7 +229,6 @@ icc_send_status (void)
 enum icc_state
 icc_power_off (void)
 {
-  
   icc_send_status ();
   DEBUG_INFO ("OFF\r\n");
   return ICC_STATE_START;
@@ -311,6 +310,7 @@ icc_handle_data (void)
 	      cmd_APDU_size = icc_data_size;
 	      chEvtSignal (gpg_thread, (eventmask_t)1);
 	      next_state = ICC_STATE_EXECUTE;
+	      chEvtSignal (blinker_thread, EV_LED_ON);
 	    }
 	  else if (icc_header->param == 1)
 	    {
@@ -364,6 +364,7 @@ icc_handle_data (void)
 	      if (icc_header->param == 2) /* Got final block */
 		{			/* Give this message to GPG thread */
 		  next_state = ICC_STATE_EXECUTE;
+		  chEvtSignal (blinker_thread, EV_LED_ON);
 		  cmd_APDU_size = p_cmd - cmd_APDU;
 		  chEvtSignal (gpg_thread, (eventmask_t)1);
 		}
@@ -439,9 +440,7 @@ icc_handle_timeout (void)
   switch (icc_state)
     {
     case ICC_STATE_EXECUTE:
-#if 0
       icc_send_data_block (ICC_CMD_STATUS_TIMEEXT, 0, 0, NULL, 0);
-#endif
       break;
     case ICC_STATE_RECEIVE:
     case ICC_STATE_SEND:
@@ -450,11 +449,10 @@ icc_handle_timeout (void)
       break;
     }
 
-  chEvtSignal (blinker_thread, (eventmask_t)1);
   return next_state;
 }
 
-#define USB_ICC_TIMEOUT MS2ST(1000)
+#define USB_ICC_TIMEOUT MS2ST(1950)
 
 msg_t
 USBthread (void *arg)
@@ -479,6 +477,8 @@ USBthread (void *arg)
 	{
 	  if (icc_state == ICC_STATE_EXECUTE)
 	    {
+	      chEvtSignal (blinker_thread, EV_LED_OFF);
+
 	      if (res_APDU_size <= ICC_MAX_MSG_DATA_SIZE)
 		{
 		  icc_send_data_block (0, 0, 0, res_APDU, res_APDU_size);

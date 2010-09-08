@@ -326,6 +326,7 @@ void sha1( const unsigned char *input, int ilen, unsigned char output[20] )
     memset( &ctx, 0, sizeof( sha1_context ) );
 }
 
+#if 0
 /*
  * output = SHA-1( file contents )
  */
@@ -357,6 +358,7 @@ int sha1_file( const char *path, unsigned char output[20] )
     fclose( f );
     return( 0 );
 }
+#endif
 
 /*
  * SHA-1 HMAC context setup
