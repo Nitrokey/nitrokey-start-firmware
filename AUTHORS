@@ -1,0 +1,27 @@
+Kaz Kojima:
+    Added STM32 Primer2 support:
+	boards/STM32_PRIMER2/board.c
+	boards/STM32_PRIMER2/board.h
+	boards/STM32_PRIMER2/board.mk
+	boards/STM32_PRIMER2/mcuconf.h
+	boards/STM32_PRIMER2/hw_config.c
+
+NIIBE Yutaka: wrote
+	src/ac.c
+	src/main.c
+	src/usb_lld.h
+	src/gnuk.h
+	src/usb_lld.c
+	src/usb-icc.c
+	src/openpgp-do.c
+	src/flash.c
+	src/debug.c
+	src/usb_desc.c
+	src/usb-cdc-vport.c
+	src/hardclock.c
+	src/openpgp.h
+	src/openpgp.c
+	src/call-rsa.c
+	src/random.c
+	*
+	and others.

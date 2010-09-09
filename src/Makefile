@@ -88,7 +88,7 @@ CSRC = $(PORTSRC) \
        $(VCOMSRC) \
        $(CRYPTSRC) \
        main.c usb_lld.c \
-	hw_config.c usb_desc.c usb_prop.c \
+	usb_desc.c usb_prop.c \
 	usb-icc.c openpgp.c ac.c openpgp-do.c flash.c hardclock.c \
 	random.c
 

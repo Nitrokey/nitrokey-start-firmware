@@ -23,13 +23,11 @@
 
 #include "config.h"
 
-#include "ch.h"
-#include "hal.h"
-#include "usb_lld.h"
-
-#include "gnuk.h"
-
 #include "usb_lib.h"
+
+#include "ch.h"
+#include "gnuk.h"
+#include "usb_lld.h"
 #include "usb_istr.h"
 #include "usb_desc.h"
 #include "hw_config.h"
@@ -213,13 +211,13 @@ main (int argc, char **argv)
 	led_state = 0;
 
       if (led_state)
-	palClearPad (IOPORT3, GPIOC_LED);
+	set_led (1);
       else
 	{
 	  if ((count & 1))
-	    palClearPad (IOPORT3, GPIOC_LED);
+	    set_led (1);
 	  else
-	    palSetPad (IOPORT3, GPIOC_LED);
+	    set_led (0);
 	}
 
 #ifdef DEBUG_MORE

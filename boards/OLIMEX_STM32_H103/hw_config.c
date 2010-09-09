@@ -7,7 +7,7 @@
 
 #include "ch.h"
 #include "hal.h"
-
+#include "board.h"
 #include "usb_lib.h"
 #include "usb_prop.h"
 #include "usb_desc.h"
@@ -44,4 +44,13 @@ USB_Cable_Config (FunctionalState NewState)
 void
 Get_SerialNum (void)
 {
+}
+
+void
+set_led (int value)
+{
+  if (value)
+    palClearPad (IOPORT3, GPIOC_LED);
+  else
+    palSetPad (IOPORT3, GPIOC_LED);
 }

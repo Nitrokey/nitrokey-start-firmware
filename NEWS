@@ -1,0 +1,26 @@
+Gnuk NEWS - User visible changes
+
+* Major changes in Gnuk 0.1
+
+  Released 2010-09-XX, by NIIBE Yutaka
+
+** New board support "STM32 Primer2" is added by Kaz Kojima.
+
+** Now, LED behavior is meaningful.  "ON" during execution.
+
+** Fixed bcdCCID revision number.
+
+** Logo.
+
+** Decipher is supported.
+
+
+* Major changes in Gnuk 0.0
+
+  Released 2010-09-06, by NIIBE Yutaka
+
+** This is initial release.  Only it supports digital signing.
+
+Local Variables:
+mode: outline
+End:

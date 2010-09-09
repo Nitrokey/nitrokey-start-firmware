@@ -1,3 +1,12 @@
+2010-09-09  Kaz Kojima  <kkojima@rr.iij4u.or.jp>
+
+	* boards/STM32_PRIMER2/{board.c,board.h,board.mk,hw_config.c,mcuconf.h}:
+	New files.
+
+	* boards/OLIMEX_STM32_H103/{mcuconf.h,hw_config.c}: Moved from src.
+
+	* src/main.c (main): Use set_led instead of palClearPad directly.
+
 2010-09-08  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* src/ac.c (calc_md): Make SHA1 variable auto.

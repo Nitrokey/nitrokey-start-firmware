@@ -197,3 +197,5 @@ extern void random_bytes_free (const uint8_t *);
 extern uint32_t hardclock (void);
 
 extern void gpg_do_reset_pw_counter (uint8_t which);
+
+extern void set_led (int);
