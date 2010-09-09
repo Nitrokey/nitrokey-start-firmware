@@ -31,12 +31,14 @@
 #include "hw_config.h"
 #include "usb_istr.h"
 
+#define ICC_SET_PARAMS		0x61
 #define ICC_POWER_ON		0x62
 #define ICC_POWER_OFF		0x63
 #define ICC_SLOT_STATUS		0x65
 #define ICC_XFR_BLOCK		0x6F
 #define ICC_DATA_BLOCK_RET	0x80
 #define ICC_SLOT_STATUS_RET	0x81
+#define ICC_SET_PARAMS_RET	0x82
 
 #define ICC_MSG_SEQ_OFFSET	6
 #define ICC_MSG_STATUS_OFFSET	7
@@ -153,9 +155,25 @@ enum icc_state
 
 static enum icc_state icc_state;
 
-/* Direct conversion, T=1, "FSIJ" */
-static const char ATR[] = { '\x3B', '\x84', '\x01', 'F', 'S', 'I', 'J',
-			    ('\x84'^'F'^'S'^'I'^'J') };
+/*
+ * ATR (Answer To Reset) string
+ *
+ * TS = 0x3B: Direct conversion
+ * T0 = 0x94: TA1 and TD1 follow, 4 historical bytes
+ * TA1 = 0x11: FI=1, DI=1
+ * TD1 = 0x81: TD2 follows, T=1
+ * TD2 = 0x31: TA3 and TB3 follow, T=1
+ * TA3 = 0xFE: IFSC = 254 bytes
+ * TB3 = 0x55: BWI = 5, CWI = 5   (BWT timeout 3.2 sec)
+ * Historical bytes: "FSIJ"
+ * XOR check
+ *
+ */
+static const char ATR[] = {
+  0x3B, 0x94, 0x11, 0x81, 0x31, 0xFE, 0x55,
+ 'F', 'S', 'I', 'J',
+ (0x94^0x11^0x81^0x31^0xFE^0x55^'F'^'S'^'I'^'J')
+};
 
 /* Send back ATR (Answer To Reset) */
 enum icc_state
@@ -183,7 +201,7 @@ icc_power_on (void)
     }
   else
     {
-      icc_tx_size = ICC_MSG_DATA_OFFSET + size_atr;
+      icc_tx_size = ICC_MSG_HEADER_SIZE + size_atr;
       USB_SIL_Write (EP1_IN, icc_tx_data, icc_tx_size);
       SetEPTxValid (ENDP1);
       DEBUG_INFO ("ON\r\n");
@@ -217,7 +235,7 @@ icc_send_status (void)
     }
   else
     {
-      icc_tx_size = ICC_MSG_DATA_OFFSET;
+      icc_tx_size = ICC_MSG_HEADER_SIZE;
       USB_SIL_Write (EP1_IN, icc_tx_data, icc_tx_size);
       SetEPTxValid (ENDP1);
     }
@@ -265,7 +283,7 @@ icc_send_data_block (uint8_t status, uint8_t error, uint8_t chain,
     }
   else
     {
-      icc_tx_size = ICC_MSG_DATA_OFFSET + len;
+      icc_tx_size = ICC_MSG_HEADER_SIZE + len;
       USB_SIL_Write (EP1_IN, icc_tx_data, icc_tx_size);
       SetEPTxValid (ENDP1);
 #ifdef DEBUG_MORE
@@ -273,6 +291,33 @@ icc_send_data_block (uint8_t status, uint8_t error, uint8_t chain,
 #endif
     }
 }
+
+
+static void
+icc_send_params (void)
+{
+  memcpy (icc_tx_data, icc_rcv_data,
+	  ICC_MSG_HEADER_SIZE + icc_header->data_len);
+  icc_tx_data[0] = ICC_SET_PARAMS_RET;
+  icc_tx_data[ICC_MSG_STATUS_OFFSET] = 0;
+  icc_tx_data[ICC_MSG_ERROR_OFFSET] = 0;
+  icc_tx_data[ICC_MSG_CHAIN_OFFSET] = icc_rcv_data[7];
+
+  if (!icc_tx_ready ())
+    {				/* not ready to send */
+      DEBUG_INFO ("ERR09\r\n");
+    }
+  else
+    {
+      icc_tx_size = ICC_MSG_HEADER_SIZE + icc_header->data_len;
+      USB_SIL_Write (EP1_IN, icc_tx_data, icc_tx_size);
+      SetEPTxValid (ENDP1);
+#ifdef DEBUG_MORE
+      DEBUG_INFO ("DATA\r\n");
+#endif
+    }
+}
+
 
 static enum icc_state
 icc_handle_data (void)
@@ -295,7 +340,7 @@ icc_handle_data (void)
       break;
     case ICC_STATE_WAIT:
       if (icc_header->msg_type == ICC_POWER_ON)
-	/* Not in the spec., but GPG 2 */
+	/* Not in the spec., but pcscd/libccid */
 	next_state = icc_power_on ();
       else if (icc_header->msg_type == ICC_POWER_OFF)
 	next_state = icc_power_off ();
@@ -326,6 +371,8 @@ icc_handle_data (void)
 	      DEBUG_INFO ("ERR02\r\n");
 	    }
 	}
+      else if (icc_header->msg_type == ICC_SET_PARAMS)
+	icc_send_params ();
       else
 	{			/* XXX: error */
 	  DEBUG_INFO ("ERR03\r\n");

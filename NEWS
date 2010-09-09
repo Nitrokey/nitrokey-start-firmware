@@ -1,5 +1,14 @@
 Gnuk NEWS - User visible changes
 
+* Major changes in Gnuk 0.2
+
+  Released 2010-09-10, by NIIBE Yutaka
+
+** With DEBUG=1, timeout is more than 3 seconds.
+
+** Flash ROM entries for random numbers are cleared after use. 
+
+
 * Major changes in Gnuk 0.1
 
   Released 2010-09-10, by NIIBE Yutaka

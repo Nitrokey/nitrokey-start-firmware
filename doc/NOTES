@@ -11,7 +11,7 @@ OpenPGP card protocol implementation
 
 I try to follow "no clear password(s)" policy.
 After key import, keystrings are also removed.
-But because of this, we only support single key for this version.
+But because of this, it is not that easy to overwrite key(s).
 
 
 How a private key is stored

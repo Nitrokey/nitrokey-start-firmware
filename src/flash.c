@@ -307,3 +307,10 @@ flash_key_release (const uint8_t *key_addr)
 {
   (void)key_addr;
 }
+
+void
+flash_clear_halfword (uint32_t addr)
+{
+  flash_program_halfword (addr, 0);
+}
+

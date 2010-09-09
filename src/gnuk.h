@@ -84,6 +84,7 @@ extern uint8_t *flash_key_alloc (void);
 extern void flash_key_release (const uint8_t *);
 extern const uint8_t *flash_do_pool (void);
 extern void flash_set_do_pool_last (const uint8_t *p);
+extern void flash_clear_halfword (uint32_t addr);
 
 #define KEY_MAGIC_LEN 8
 #define KEY_CONTENT_LEN 256	/* p and q */

@@ -75,7 +75,18 @@ static const uint8_t gnukConfigDescriptor[] = {
   0xfe, 0, 0, 0,	  /* dwMaxIFSD:  */
   0, 0, 0, 0,		  /* dwSynchProtocols: FIXED VALUE */
   0, 0, 0, 0,		  /* dwMechanical: FIXED VALUE */
-  0x40, 0x08, 0x04, 0x00, /* dwFeatures: Short and extended APDU level */
+#ifdef DEBUG
+  0x80, 0x04, 0x04, 0x00, /* dwFeatures:
+			   *  Short and extended APDU level: 0x40000
+			   *  Automatic IFSD               : 0x00400
+			   *  Automatic PPS CUR            : 0x00080
+			   */
+#else
+  0x40, 0x00, 0x04, 0x00, /* dwFeatures:
+			   *  Short and extended APDU level: 0x40000
+			   *  Automatic PPS PROP           : 0x00040
+			   */
+#endif
   0x40, 0x00, 0, 0,	  /* dwMaxCCIDMessageLength: 64 */
   0xff,			  /* bClassGetResponse: */
   0xff,			  /* bClassEnvelope: */

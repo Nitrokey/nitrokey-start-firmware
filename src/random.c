@@ -30,9 +30,23 @@ extern void *_binary_random_bits_start;
 const uint8_t *
 random_bytes_get (void)
 {
-  uint32_t addr;
+  uint32_t addr, addr0;
 
   addr = (uint32_t)&_binary_random_bits_start + ((hardclock () << 5) & 0x3e0);
+  addr0 = addr; 
+
+  while (1)
+    {
+      if (*(uint32_t *)addr != 0)
+	break;
+
+      addr += 32;
+      if (addr >= ((uint32_t)&_binary_random_bits_start) + 1024)
+	addr = ((uint32_t)&_binary_random_bits_start);
+
+      if (addr == addr0)
+	fatal ();
+    }
 
   return (const uint8_t *)addr;
 }
@@ -40,12 +54,19 @@ random_bytes_get (void)
 void
 random_bytes_free (const uint8_t *p)
 {
-  (void)p;
+  int i;
+  uint32_t addr = (uint32_t)p;
+
+  for (i = 0; i < 16; i++)
+    flash_clear_halfword (addr+i*2);
 }
 
 uint32_t
 get_random (void)
 {
   const uint32_t *p = (const uint32_t *)random_bytes_get ();
-  return *p;
+  uint32_t r = *p;
+
+  random_bytes_free ((const uint8_t *)p);
+  return r;
 }

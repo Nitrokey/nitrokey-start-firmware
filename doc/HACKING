@@ -1,3 +1,17 @@
+* configure support
+
+configure script would be good to select a board and to generate
+serial number.
+
+
+* Random number update
+
+Currently, Gnuk doesn't have random number generator, but use random
+bytes calculated by hosts.  When Gnuk uses random number, the entry in
+Flash ROM will be cleared.  Some scheme to update random number bytes
+is needed.  Possibly, private Data Objects.
+
+
 * Random Number Generator
 
 RNG is needed for Data Encryption Key to encrypt private key (P and Q).
@@ -10,7 +24,7 @@ be possible to get entropy from USB traffic (of other devices).
 It would be good not to use malloc.
 
 
-* Manufacture ID
+* [DONE] Manufacture ID
 
 Get it from FSFE.
 
@@ -19,6 +33,7 @@ Get it from FSFE.
 
 Currently, aid[] in openpgp-do.c has serial number 00000001.
 It would be good to generate (random) number at compile time.
+Use same serial number for OpenPGPcard and USB serial number.
 
 
 * Flash ROM recover from shutdown
