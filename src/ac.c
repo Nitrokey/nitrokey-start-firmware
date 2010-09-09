@@ -22,6 +22,18 @@ ac_check_status (uint8_t ac_flag)
     return (ac_flag & auth_status)? 1 : 0;
 }
 
+void
+ac_reset_pso_cds (void)
+{
+  auth_status &= ~AC_PSO_CDS_AUTHORIZED;
+}
+
+void
+ac_reset_pso_other (void)
+{
+  auth_status &= ~AC_PSO_OTHER_AUTHORIZED;
+}
+
 int
 verify_pso_cds (const uint8_t *pw, int pw_len)
 {
@@ -40,7 +52,7 @@ verify_pso_cds (const uint8_t *pw, int pw_len)
   keystring[0] = pw_len;
   sha1 (pw, pw_len, keystring+1);
   memcpy (pwsb, pw_status_bytes, SIZE_PW_STATUS_BYTES);
-  if ((r = gpg_do_load_prvkey (GPG_KEY_FOR_SIGNATURE, 1, keystring+1)) < 0)
+  if ((r = gpg_do_load_prvkey (GPG_KEY_FOR_SIGNING, 1, keystring+1)) < 0)
     {
       pwsb[PW_STATUS_PW1]--;
       gpg_do_write_simple (NR_DO_PW_STATUS, pwsb, SIZE_PW_STATUS_BYTES);
@@ -54,12 +66,6 @@ verify_pso_cds (const uint8_t *pw, int pw_len)
 
   auth_status |= AC_PSO_CDS_AUTHORIZED;
   return 1;
-}
-
-void
-ac_reset_pso_cds (void)
-{
-  auth_status &= ~AC_PSO_CDS_AUTHORIZED;
 }
 
 int
@@ -79,7 +85,7 @@ verify_pso_other (const uint8_t *pw, int pw_len)
   keystring[0] = pw_len;
   sha1 (pw, pw_len, keystring+1);
   memcpy (pwsb, pw_status_bytes, SIZE_PW_STATUS_BYTES);
-  if ((r = gpg_do_load_prvkey (GPG_KEY_FOR_DECRYPT, 1, keystring+1)) < 0)
+  if ((r = gpg_do_load_prvkey (GPG_KEY_FOR_DECRYPTION, 1, keystring+1)) < 0)
     {
       pwsb[PW_STATUS_PW1]--;
       gpg_do_write_simple (NR_DO_PW_STATUS, pwsb, SIZE_PW_STATUS_BYTES);

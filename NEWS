@@ -2,17 +2,21 @@ Gnuk NEWS - User visible changes
 
 * Major changes in Gnuk 0.1
 
-  Released 2010-09-XX, by NIIBE Yutaka
+  Released 2010-09-10, by NIIBE Yutaka
+
+** Enabled force_chv1 (in the pw_status_bytes), so that the decipher works.
+
+** Support both of key for digital signing and key for decryption.
+
+** Decipher is supported.
 
 ** New board support "STM32 Primer2" is added by Kaz Kojima.
 
-** Now, LED behavior is meaningful.  "ON" during execution.
+** LED behavior is meaningful now.  "ON" during execution.
 
 ** Fixed bcdCCID revision number.
 
 ** Logo.
-
-** Decipher is supported.
 
 
 * Major changes in Gnuk 0.0

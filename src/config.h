@@ -2,9 +2,6 @@
 #define ENABLE_VIRTUAL_COM_PORT 1
 #endif
 
-/* Packet size of USB Bulk transfer for full speed */
-#define GNUK_MAX_PACKET_SIZE 64
-
 #if 0
 /* FSIJ */
 #define MANUFACTURER_IN_AID		0xf5, 0x17

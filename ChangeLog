@@ -1,3 +1,30 @@
+2010-09-10  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/usb_desc.c (gnukStringSerial): Change the value so that
+	libccid doesn't get confused.
+
+	* src/openpgp.c (gpg_change_keystring): Support key for decryption
+	as well.
+	(cmd_read_binary): Use openpgpcard_aid.
+	(cmd_pso): call ac_reset_pso_other.
+
+	* src/openpgp-do.c (openpgpcard_aid): Renamed from aid, and exported.
+	(do_ds_count_initial_value): New const variable.
+	(num_prv_keys): New variable.
+	(gpg_do_write_prvkey): Remove contents of keystring only if
+	++num_prv_keys == NUM_ALL_PRV_KEYS.
+	(gpg_do_chks_prvkey): Call flash_do_release.
+	(gpg_do_table_init): Initialize with do_ds_count_initial_value.
+	Initialize num_prv_keys.
+	(gpg_do_write_simple): Support removing DO.
+	(gpg_do_increment_digital_signature_counter): Call flash_do_release.
+
+	* src/gnuk.h (NUM_ALL_PRV_KEYS): New definition.
+	(OPENPGP_CARD_INITIAL_PW1): New definition.
+	(enum kind_of_key): Rename.
+
+	* src/ac.c (ac_reset_pso_cds): New function.
+
 2010-09-09  Kaz Kojima  <kkojima@rr.iij4u.or.jp>
 
 	* boards/STM32_PRIMER2/{board.c,board.h,board.mk,hw_config.c,mcuconf.h}:
@@ -47,6 +74,8 @@
 	* polarssl-0.14.0/library/bignum.c (mpi_write_hlp)
 	(mpi_write_string, mpi_read_file, mpi_read_file): #if-out to avoid
 	stdio of libc.
+
+2010-09-07  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* gnuk.svg: New file.
 

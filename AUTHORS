@@ -6,7 +6,9 @@ Kaz Kojima:
 	boards/STM32_PRIMER2/mcuconf.h
 	boards/STM32_PRIMER2/hw_config.c
 
-NIIBE Yutaka: wrote
+NIIBE Yutaka:
+    Founder of the project
+    Wrote
 	src/ac.c
 	src/main.c
 	src/usb_lld.h

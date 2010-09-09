@@ -1,22 +1,31 @@
-Gnuk - software for GPG USB Token 
+Gnuk - software for GPG USB Token
 
-							    Version 0.0
-							     2010-09-06
+							    Version 0.1
+							     2010-09-10
 						           Niibe Yutaka
 				      Free Software Initiative of Japan
 
-What's Gnuk
-===========
+What's Gnuk?
+============
 
 Gnuk is software implementation of a USB token for GNU privacy guard.
 Gnuk supports OpenPGP card protocol version 2, and it runs on STM32
 processor.
 
+Please look at the graphics of "gnuk.svg" for the software name.
+
+I wish that Gnuk will be a developer's soother who uses GnuPG.  I have
+been nervous of storing secret key(s) on usual secondary storage.
+While I want to work at different places, but it is not the choice for
+me to bring a card reader all the time.  With Gnuk, this issue will be
+solved by a USB token which is small enough.
+
 
 Release notes
 =============
 
-This is initial release of Gnuk, and it is experimental.
+This is second release of Gnuk.  While it works somehow, it is still
+experimental.
 
 Tested features are:
 
@@ -26,16 +35,18 @@ Tested features are:
 
 	* Password handling (PW1, RC, PW3)
 
-	* Key import for signature only.
+	* Key import for both of key for digital signing and key for
+          decryption.
 
 	* PSO: Digital Signature
 
-
-It is known not-working:
-
-	* Multiple key import
-
 	* PSO: Decipher
+
+It is known not-working well:
+
+	* Key import multiple times
+
+	* Changing value of password status bytes (0x00C4).
 
 
 Targets
@@ -193,6 +204,16 @@ We can use GDB.
 Inside GDB, we can connect OpenOCD by:
 
   (gdb) target remote localhost:3333
+
+
+You can see output of PCSCD:
+
+  # /etc/init.d/pcscd stop
+  # LIBCCID_ifdLogLevel=7 /usr/sbin/pcscd --debug --foreground
+
+
+You can observe the traffic of USB using "usbmon".  See the file:
+linux/Documentation/usb/usbmon.txt
 
 
 

@@ -58,7 +58,7 @@ extern int verify_admin (const uint8_t *pw, int pw_len);
 extern int verify_admin_0 (const uint8_t *pw, int buf_len, int pw_len_known);
 
 extern void ac_reset_pso_cds (void);
-
+extern void ac_reset_pso_other (void);
 
 
 extern void write_res_apdu (const uint8_t *p, int len,
@@ -72,8 +72,8 @@ extern void gpg_do_public_key (uint8_t kk_byte);
 
 
 enum kind_of_key {
-  GPG_KEY_FOR_SIGNATURE,
-  GPG_KEY_FOR_DECRYPT,
+  GPG_KEY_FOR_SIGNING,
+  GPG_KEY_FOR_DECRYPTION,
   GPG_KEY_FOR_AUTHENTICATION,
 };
 
@@ -199,3 +199,9 @@ extern uint32_t hardclock (void);
 extern void gpg_do_reset_pw_counter (uint8_t which);
 
 extern void set_led (int);
+
+#define NUM_ALL_PRV_KEYS 2	/* SIG and DEC *//* we don't support AUT yet */
+
+#define OPENPGP_CARD_INITIAL_PW1 "123456"
+
+const uint8_t openpgpcard_aid[17] __attribute__ ((aligned (1)));

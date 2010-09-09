@@ -193,9 +193,10 @@ static const uint8_t gnukStringProduct[] = {
 };
 
 static const uint8_t gnukStringSerial[] = {
-  8,				/* bLength */
+  8*2+2,			/* bLength */
   USB_STRING_DESCRIPTOR_TYPE,	/* bDescriptorType */
-  '2', 0, '.', 0, '0', 0
+  '2', 0, '0', 0, '1', 0, '0', 0,
+  '0', 0, '9', 0, '1', 0, '0', 0
 };
 
 const ONE_DESCRIPTOR Device_Descriptor = {

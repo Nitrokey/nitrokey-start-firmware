@@ -60,11 +60,6 @@ select_file_TOP_result[] __attribute__ ((aligned (1))) = {
   0x00, 0x00		/* PIN status: OK, PIN blocked?: No */
 };
 
-static const uint8_t
-read_binary_result[] __attribute__ ((aligned (1))) = {
-  0x5a, 0x4, 0x01, 0x02, 0x03, 0x04
-};
-
 void
 write_res_apdu (const uint8_t *p, int len, uint8_t sw1, uint8_t sw2)
 {
@@ -129,17 +124,37 @@ int
 gpg_change_keystring (int who_old, const uint8_t *old_ks,
 		      int who_new, const uint8_t *new_ks)
 {
-  int r = gpg_do_load_prvkey (GPG_KEY_FOR_SIGNATURE, who_old, old_ks);
+  int r;
+  int prv_keys_exist = 0;
 
-  if (r <= 0)
+  r = gpg_do_load_prvkey (GPG_KEY_FOR_SIGNING, who_old, old_ks);
+  if (r < 0)
     return r;
 
-  r = gpg_do_chks_prvkey (GPG_KEY_FOR_SIGNATURE, who_old, old_ks,
+  if (r > 0)
+    prv_keys_exist++;
+
+  r = gpg_do_chks_prvkey (GPG_KEY_FOR_SIGNING, who_old, old_ks,
 			  who_new, new_ks);
   if (r < 0)
     return -2;
 
-  return r;
+  r = gpg_do_load_prvkey (GPG_KEY_FOR_DECRYPTION, who_old, old_ks);
+  if (r < 0)
+    return r;
+
+  if (r > 0)
+    prv_keys_exist++;
+
+  r = gpg_do_chks_prvkey (GPG_KEY_FOR_DECRYPTION, who_old, old_ks,
+			  who_new, new_ks);
+  if (r < 0)
+    return -2;
+
+  if (prv_keys_exist)
+    return 1;
+  else
+    return 0;
 }
 
 static void
@@ -171,21 +186,16 @@ cmd_change_password (void)
 
       if (pk == NULL)
 	{
-	  if (len < 6)
+	  if (len < (int)strlen (OPENPGP_CARD_INITIAL_PW1))
 	    {
 	      DEBUG_INFO ("permission denied.\r\n");
 	      GPG_SECURITY_FAILURE ();
 	      return;
 	    }
 
-	  /* pk==NULL implies we have no prvkey */
-	  pw_len = 6;
+	  pw_len = strlen (OPENPGP_CARD_INITIAL_PW1);
 	  newpw = pw + pw_len;
 	  newpw_len = len - pw_len;
-
-	  sha1 (newpw, newpw_len, new_ks);
-	  new_ks0[0] = newpw_len;
-	  goto no_prvkey;
 	}
       else
 	{
@@ -235,18 +245,17 @@ cmd_change_password (void)
     }
   else if (r == 0 && who == 1)	/* no prvkey */
     {
-    no_prvkey:
       gpg_do_write_simple (NR_DO_KEYSTRING_PW1, new_ks0, KEYSTRING_SIZE_PW1);
       ac_reset_pso_cds ();
       gpg_do_reset_pw_counter (PW_STATUS_PW1);
-      DEBUG_INFO ("Changed DO_KEYSTRING_PW1\r\n");
+      DEBUG_INFO ("Changed DO_KEYSTRING_PW1.\r\n");
     }
   else if (r > 0 && who == 1)
     {
       gpg_do_write_simple (NR_DO_KEYSTRING_PW1, new_ks0, 1);
       ac_reset_pso_cds ();
       gpg_do_reset_pw_counter (PW_STATUS_PW1);
-      DEBUG_INFO ("Removed content of DO_KEYSTRING_PW1\r\n");
+      DEBUG_INFO ("Changed length of DO_KEYSTRING_PW1.\r\n");
     }
   else				/* r >= 0 && who == 3 */
     {
@@ -435,9 +444,15 @@ cmd_read_binary (void)
       if (cmd_APDU[3] >= 6)
 	GPG_BAD_P0_P1 ();
       else
-	/* Tag 5a, serial number */
-	write_res_apdu (read_binary_result,
-			sizeof (read_binary_result), 0x90, 0x00);
+	{
+	  int len = openpgpcard_aid[0];
+
+	  res_APDU[0] = 0x5a;
+	  memcpy (res_APDU+1, openpgpcard_aid, len);
+	  res_APDU[len+1] = 0x90;
+	  res_APDU[len+2] = 0x00;
+	  res_APDU_size = len + 3;
+	}
     }
   else
     GPG_NO_RECORD();
@@ -545,7 +560,10 @@ cmd_pso (void)
 
 	  r = rsa_sign (&cmd_APDU[data_start], res_APDU, len);
 	  if (r < 0)
-	    GPG_ERROR ();
+	    {
+	      ac_reset_pso_cds ();
+	      GPG_ERROR ();
+	    }
 	  else
 	    {			/* Success */
 	      const uint8_t *pw_status_bytes = gpg_do_read_simple (NR_DO_PW_STATUS);
@@ -571,6 +589,8 @@ cmd_pso (void)
 	}
 
       DEBUG_SHORT (len);
+
+      ac_reset_pso_other ();
 
       /* Skip padding 0x00 */
       data_start++;

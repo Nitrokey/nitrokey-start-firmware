@@ -21,6 +21,9 @@
  *
  */
 
+/* Packet size of USB Bulk transfer for full speed */
+#define GNUK_MAX_PACKET_SIZE 64
+
 #include "config.h"
 #include "usb_lib.h"
 #include "usb_conf.h"
