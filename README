@@ -12,13 +12,16 @@ Gnuk is software implementation of a USB token for GNU privacy guard.
 Gnuk supports OpenPGP card protocol version 2, and it runs on STM32
 processor.
 
-Please look at the graphics of "gnuk.svg" for the software name.
-
 I wish that Gnuk will be a developer's soother who uses GnuPG.  I have
 been nervous of storing secret key(s) on usual secondary storage.
 While I want to work at different places, but it is not the choice for
 me to bring a card reader all the time.  With Gnuk, this issue will be
 solved by a USB token which is small enough.
+
+Please look at the graphics of "gnuk.svg" for the software name.  In
+the past, my son was with his Nuk, always, everywhere.  I will be with
+a USB Token by Gnuk.
+
 
 
 Release notes

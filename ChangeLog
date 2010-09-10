@@ -1,4 +1,19 @@
+2010-09-11  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* Version 0.2.
+
+	* src/usb-icc.c (ATR): Fixed.
+	(icc_send_params): New function.
+	(icc_handle_data): Handle ICC_SET_PARAMS request.
+
+	* src/random.c (random_bytes_get, random_bytes_free, get_random):
+	Clear used random bytes.
+
+	* src/flash.c (flash_clear_halfword): New function.
+
 2010-09-10  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* Version 0.1.
 
 	* src/usb_desc.c (gnukStringSerial): Change the value so that
 	libccid doesn't get confused.

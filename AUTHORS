@@ -7,8 +7,9 @@ Kaz Kojima:
 	boards/STM32_PRIMER2/hw_config.c
 
 NIIBE Yutaka:
-    Founder of the project
-    Wrote
+    Founder of the project.
+    Wrote:
+	gnuk.svg
 	src/ac.c
 	src/main.c
 	src/usb_lld.h
