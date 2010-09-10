@@ -1,7 +1,7 @@
 Gnuk - software for GPG USB Token
 
 							    Version 0.2
-							     2010-09-10
+							     2010-09-11
 						           Niibe Yutaka
 				      Free Software Initiative of Japan
 
@@ -18,10 +18,9 @@ While I want to work at different places, but it is not the choice for
 me to bring a card reader all the time.  With Gnuk, this issue will be
 solved by a USB token which is small enough.
 
-Please look at the graphics of "gnuk.svg" for the software name.  In
-the past, my son was with his Nuk, always, everywhere.  I will be with
-a USB Token by Gnuk.
-
+Please look at the graphics of "gnuk.svg" for the software name.  My
+son used to be with his Nuk, always, everywhere.  I will be with a USB
+Token by Gnuk everywhere.
 
 
 Release notes
@@ -215,7 +214,7 @@ Inside GDB, we can connect OpenOCD by:
   (gdb) target remote localhost:3333
 
 
-You can see output of PCSCD:
+You can see the output of PCSCD:
 
   # /etc/init.d/pcscd stop
   # LIBCCID_ifdLogLevel=7 /usr/sbin/pcscd --debug --foreground
@@ -224,6 +223,26 @@ You can see output of PCSCD:
 You can observe the traffic of USB using "usbmon".  See the file:
 linux/Documentation/usb/usbmon.txt
 
+
+Read-only Git Repository
+========================
+
+You can get it by:
+
+  $ git clone http://www.gniibe.org/git/gnuk.git/
+
+
+Information on the Web
+======================
+
+Please see: http://www.fsij.org/gnuk/
+
+
+Your Contributions
+==================
+
+FSIJ is welcome to your contributions.  Please assign your copyright
+to FSIJ.
 
 
 Development history
