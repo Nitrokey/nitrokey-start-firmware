@@ -115,8 +115,10 @@ rsa_decrypt (const uint8_t *input, uint8_t *output, int msg_len)
   int r;
   int output_len;
 
+#ifdef DEBUG
   put_string ("RSA decrypt:");
   put_word ((uint32_t)&output_len);
+#endif
 
   mpi_init (&P1, &Q1, &H, NULL);
   rsa_init (&rsa_ctx, RSA_PKCS_V15, 0);

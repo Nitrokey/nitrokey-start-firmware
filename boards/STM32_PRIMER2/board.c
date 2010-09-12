@@ -53,4 +53,10 @@ void hwinit1(void) {
    * ChibiOS/RT initialization.
    */
   chSysInit();
+
+  /*
+   * Clear LED and SHUTDOWN output.
+   */
+  palClearPad (IOPORT5, GPIOE_LED);
+  palClearPad (IOPORT3, GPIOC_SHUTDOWN);
 }

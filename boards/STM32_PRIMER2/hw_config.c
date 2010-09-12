@@ -36,9 +36,9 @@ void
 USB_Cable_Config (FunctionalState NewState)
 {
   if (NewState != DISABLE)
-    palClearPad (IOPORT4, GPIOC_DISC);
+    palClearPad (IOPORT4, GPIOD_DISC);
   else
-    palSetPad (IOPORT4, GPIOC_DISC);
+    palSetPad (IOPORT4, GPIOD_DISC);
 }
 
 void
@@ -50,7 +50,7 @@ void
 set_led (int value)
 {
   if (value)
-    palClearPad (IOPORT5, GPIOC_LEDR);
+    palClearPad (IOPORT5, GPIOE_LEDR);
   else
-    palSetPad (IOPORT5, GPIOC_LEDR);
+    palSetPad (IOPORT5, GPIOE_LEDR);
 }
