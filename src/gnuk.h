@@ -64,6 +64,8 @@ extern void ac_reset_pso_other (void);
 extern void write_res_apdu (const uint8_t *p, int len,
 			    uint8_t sw1, uint8_t sw2);
 
+uint16_t data_objects_number_of_bytes;
+
 extern int gpg_do_table_init (void);
 extern void gpg_do_get_data (uint16_t tag);
 extern void gpg_do_put_data (uint16_t tag, const uint8_t *data, int len);
@@ -187,6 +189,7 @@ extern uint8_t keystring_md_pw3[KEYSTRING_MD_SIZE];
 #define NR_DO_NAME		20
 #define NR_DO_LANGUAGE		21
 #define NR_DO_CH_CERTIFICATE	22
+#define NR_DO_LAST		23
 
 #define SIZE_PW_STATUS_BYTES 7
 

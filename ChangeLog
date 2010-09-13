@@ -1,6 +1,22 @@
-2010-09-11  NIIBE Yutaka  <gniibe@fsij.org>
+2010-09-13  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* Version 0.2.
+
+	* src/openpgp.c (cmd_select_file): Override data of number_of_bytes.
+
+	* src/openpgp-do.c (gpg_do_table_init): Calculate number of byte
+	which Data Objects consumes.
+
+2010-09-12  Kaz Kojima <kkojima@rr.iij4u.or.jp>
+
+	* src/call-rsa.c (rsa_decrypt): Debug output only when DEBUG.
+
+	* boards/STM32_PRIMER2/hw_config.c (USB_Cable_Config): Fix GPIO.
+	(set_led): Ditto.
+
+	* boards/STM32_PRIMER2/board.c (hwinit1): Added LED initialization.
+
+2010-09-11  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* src/usb-icc.c (ATR): Fixed.
 	(icc_send_params): New function.

@@ -1,15 +1,15 @@
 * configure support
 
 configure script would be good to select a board and to generate
-serial number.
+random serial number.
 
 
 * Random number update
 
 Currently, Gnuk doesn't have random number generator, but use random
-bytes calculated by hosts.  When Gnuk uses random number, the entry in
+bytes calculated by hosts.  After Gnuk uses random number, the entry in
 Flash ROM will be cleared.  Some scheme to update random number bytes
-is needed.  Possibly, private Data Objects.
+is needed.  Possibly, private Data Objects, or by another SELECT FILE.
 
 
 * Random Number Generator

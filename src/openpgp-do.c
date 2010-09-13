@@ -32,6 +32,8 @@
 #include "polarssl/aes.h"
 #include "polarssl/sha1.h"
 
+uint16_t data_objects_number_of_bytes;
+
 /*
  * Compile time vars:
  *   AID, Historical Bytes (template), Extended Capabilities,
@@ -866,7 +868,7 @@ int
 gpg_do_table_init (void)
 {
   const uint8_t *p, *p_start;
-  int len;
+  int i, len;
 
   do_ptr[NR_DO_DS_COUNT] = do_ds_count_initial_value;
   do_ptr[NR_DO_PW_STATUS] = do_pw_status_bytes_template;
@@ -910,6 +912,12 @@ gpg_do_table_init (void)
     num_prv_keys++;
   if (do_ptr[NR_DO_PRVKEY_AUT] != NULL)
     num_prv_keys++;
+
+  data_objects_number_of_bytes = 0;
+  for (i = 0; i < NR_DO_LAST; i++)
+    if (do_ptr[i] != NULL)
+      data_objects_number_of_bytes += *do_ptr[i];
+
   return 0;
 }
 

@@ -496,6 +496,8 @@ cmd_select_file (void)
 	{
 	  write_res_apdu (select_file_TOP_result,
 			  sizeof (select_file_TOP_result), 0x90, 0x00);
+	  res_APDU[2] = (data_objects_number_of_bytes & 0xff);
+	  res_APDU[3] = (data_objects_number_of_bytes >> 8);
 	}
 
       file_selection = FILE_MF;

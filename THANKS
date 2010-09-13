@@ -1,8 +1,12 @@
+We would like to express our gratitudes to Werner Koch for GnuPG, and
+Giovanni Di Sirio for ChibiOS/RT.
+
 Gnuk was originally written by NIIBE Yutaka.  People contributed by
 encouraging the development, testing the implementation, suggesting
 improvements, or fixing bugs.  Here is a list of those people.
 
 Jan Sur			jan@suhr.info
+NAGAMI Takeshi		nagami-takeshi@aist.go.jp
 Kaz Kojima		kkojima@rr.iij4u.or.jp
 Shane Coughlan		scoughlan@openinventionnetwork.com
 Werner Koch		wk@gnupg.org

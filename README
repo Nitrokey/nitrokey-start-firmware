@@ -1,7 +1,7 @@
 Gnuk - software for GPG USB Token
 
 							    Version 0.2
-							     2010-09-11
+							     2010-09-13
 						           Niibe Yutaka
 				      Free Software Initiative of Japan
 
@@ -19,14 +19,14 @@ me to bring a card reader all the time.  With Gnuk, this issue will be
 solved by a USB token which is small enough.
 
 Please look at the graphics of "gnuk.svg" for the software name.  My
-son used to be with his Nuk, always, everywhere.  I will be with a USB
-Token by Gnuk everywhere.
+son used to be with his NUK(R), always, everywhere.  I will be with a
+USB Token by Gnuk everywhere.
 
 
 Release notes
 =============
 
-This is second release of Gnuk.  While it works somehow, it is still
+This is third release of Gnuk.  While it works somehow, it is still
 experimental.
 
 Tested features are:
@@ -50,14 +50,17 @@ It is known not-working well:
 
 	* Changing value of password status bytes (0x00C4).
 
+	* For some version of kernel and libccid, ENABLE_DEBUG=1 can't
+          work well.  Please disable DEBUG option if it doesn't work well.
+
 
 Targets
 =======
 
 We use Olimex STM32-H103 board.
 
-I think that it could run on Olimex STM32-P103, STBee, or STBee mini
-too.  Besides, we are porting it to STM32 Primer 2.
+I think that it could run on Olimex STM32-P103, STBee, STBee mini, or
+CQ-STARM too.  Besides, we are porting it to STM32 Primer 2.
 
 
 Souce code
@@ -70,7 +73,16 @@ License
 =======
 
 It is distributed under GNU General Public Licence version 3 or later
-(GPLv3+).
+(GPLv3+).  Please see src/COPYING.
+
+Please note that it is distributed with external source code too.
+Please read relevant licenses for external source code, too.
+
+The author(s) of Gnuk expect users of Gnuk will be able to access the
+source code of Gnuk.  This doesn't mean person who has a USB Token by
+Gnuk should be able to acess everything on the Token, regardless of
+its protections.  Private keys, random bytes, and other information
+should be protected properly.
 
 
 External source code
@@ -87,7 +99,8 @@ Gnuk is distributed with external source code.
 * polarssl-0.14.0/  -- PolarSSL 0.14.0
 
   Taken from http://polarssl.org/
-  We use PolarSSL for RSA computation.
+  We use PolarSSL for RSA computation, AES encryption/decryption
+  and SHA-1 computation.
 
 * STM32_USB-FS-Device_Driver/ -- a part of USB-FS-Device_Lib
 * Virtual_COM_Port/ -- a part of USB-FS-Device_Lib
@@ -105,6 +118,12 @@ Host Requirements
 
 For GNU/Linux, libccid version >= 1.3.11 is required.
 libccid version == 1.3.9 is known not working well by the issue [r4235].
+
+I think that it should not be requirment but the kernel version of my use is:
+Linux version 2.6.32-5-686 (Debian 2.6.32-18) (ben@decadent.org.uk) (gcc version 4.3.5 (Debian 4.3.5-2) ) #1 SMP Sat Jul 24 02:27:10 UTC 2010
+
+Linux 2.6.30 is known *NOT* working well with DEBUG option.
+Linux 2.6.24 is known working well with DEBUG option.
 
 
 How to compile
@@ -242,7 +261,7 @@ Your Contributions
 ==================
 
 FSIJ welcomes your contributions.  Please assign your copyright
-to FSIJ, if possible.
+to FSIJ (if possible).
 
 
 Development history
@@ -253,4 +272,9 @@ ChibiOS_2.0.2/demos/ARMCM3-STM32F103-GCC/*, Makefile, linker script,
 and header files (chconf.h, halconf.h, and mcuconf.h).
 
 Since this is the initial release, some garbages may still remain.
+
+
+Foot note
+==========
+* NUK(R) is a registered trademark owend by MAPA GmbH, Germany.
 -- 

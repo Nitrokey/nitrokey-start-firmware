@@ -2,12 +2,14 @@ Gnuk NEWS - User visible changes
 
 * Major changes in Gnuk 0.2
 
-  Released 2010-09-10, by NIIBE Yutaka
+  Released 2010-09-13, by NIIBE Yutaka
 
 ** With DEBUG=1, timeout is more than 3 seconds.
 
 ** Flash ROM entries for random numbers are cleared after use. 
 
+** Board support "STM32 Primer 2" now works.
+ 
 
 * Major changes in Gnuk 0.1
 
@@ -19,7 +21,7 @@ Gnuk NEWS - User visible changes
 
 ** Decipher is supported.
 
-** New board support "STM32 Primer2" is added by Kaz Kojima.
+** New board support "STM32 Primer 2" is added by Kaz Kojima.
 
 ** LED behavior is meaningful now.  "ON" during execution.
 
