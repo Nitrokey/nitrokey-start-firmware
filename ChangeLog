@@ -1,3 +1,9 @@
+2010-09-16  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/usb-icc.c (icc_error): New function.
+	(icc_handle_data): Call icc_error.
+	Don't go to STATE_START on errors.
+
 2010-09-13  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* Version 0.2.

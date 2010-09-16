@@ -57,6 +57,12 @@
 
 #define ICC_ERROR_XFR_OVERRUN	0xFC
 
+/*
+ * Since command-byte is at offset 0,
+ * error with offset 0 means "command not supported".
+ */
+#define ICC_OFFSET_CMD_NOT_SUPPORTED 0
+#define ICC_OFFSET_PARAM 8
 
 struct icc_header {
   uint8_t msg_type;
@@ -174,6 +180,41 @@ static const char ATR[] = {
  'F', 'S', 'I', 'J',
  (0x94^0x11^0x81^0x31^0xFE^0x55^'F'^'S'^'I'^'J')
 };
+
+/*
+ * Send back error
+ */
+void
+icc_error (int offset)
+{
+  icc_tx_data[0] = ICC_SLOT_STATUS_RET; /* Any value should be OK */
+  icc_tx_data[1] = 0x00;
+  icc_tx_data[2] = 0x00;
+  icc_tx_data[3] = 0x00;
+  icc_tx_data[4] = 0x00;
+  icc_tx_data[5] = 0x00;	/* Slot */
+  icc_tx_data[ICC_MSG_SEQ_OFFSET] = icc_seq;
+  if (icc_state == ICC_STATE_START)
+    /* 1: ICC present but not activated 2: No ICC present */
+    icc_tx_data[ICC_MSG_STATUS_OFFSET] = 1;
+  else
+    /* An ICC is present and active */
+    icc_tx_data[ICC_MSG_STATUS_OFFSET] = 0;
+  icc_tx_data[ICC_MSG_STATUS_OFFSET] |= ICC_CMD_STATUS_ERROR; /* Failed */
+  icc_tx_data[ICC_MSG_ERROR_OFFSET] = offset;
+  icc_tx_data[ICC_MSG_CHAIN_OFFSET] = 0x00;
+
+  if (!icc_tx_ready ())
+    {
+      DEBUG_INFO ("ERR0D\r\n");
+    }
+  else
+    {
+      icc_tx_size = ICC_MSG_HEADER_SIZE;
+      USB_SIL_Write (EP1_IN, icc_tx_data, icc_tx_size);
+      SetEPTxValid (ENDP1);
+    }
+}
 
 /* Send back ATR (Answer To Reset) */
 enum icc_state
@@ -334,8 +375,9 @@ icc_handle_data (void)
       else if (icc_header->msg_type == ICC_SLOT_STATUS)
 	icc_send_status ();
       else
-	{			/* XXX: error */
+	{
 	  DEBUG_INFO ("ERR01\r\n");
+	  icc_error (ICC_OFFSET_CMD_NOT_SUPPORTED);
 	}
       break;
     case ICC_STATE_WAIT:
@@ -367,17 +409,18 @@ icc_handle_data (void)
 	      next_state = ICC_STATE_RECEIVE;
 	    }
 	  else
-	    {				/* XXX: error */;
+	    {
 	      DEBUG_INFO ("ERR02\r\n");
+	      icc_error (ICC_OFFSET_PARAM);
 	    }
 	}
       else if (icc_header->msg_type == ICC_SET_PARAMS)
 	icc_send_params ();
       else
-	{			/* XXX: error */
+	{
 	  DEBUG_INFO ("ERR03\r\n");
 	  DEBUG_BYTE (icc_header->msg_type);
-	  next_state = ICC_STATE_START;
+	  icc_error (ICC_OFFSET_CMD_NOT_SUPPORTED);
 	}
       break;
     case ICC_STATE_EXECUTE:
@@ -389,10 +432,10 @@ icc_handle_data (void)
       else if (icc_header->msg_type == ICC_SLOT_STATUS)
 	icc_send_status ();
       else
-	{			/* XXX: error */
+	{
 	  DEBUG_INFO ("ERR04\r\n");
 	  DEBUG_BYTE (icc_header->msg_type);
-	  next_state = ICC_STATE_START;
+	  icc_error (ICC_OFFSET_CMD_NOT_SUPPORTED);
 	}
       break;
     case ICC_STATE_RECEIVE:
@@ -418,8 +461,9 @@ icc_handle_data (void)
 	      else if (icc_header->param == 3)
 		icc_send_data_block (0, 0, 0x10, NULL, 0);
 	      else
-		{			/* XXX: error */
+		{
 		  DEBUG_INFO ("ERR08\r\n");
+		  icc_error (ICC_OFFSET_PARAM);
 		}
 	    }
 	  else			/* Overrun */
@@ -430,10 +474,11 @@ icc_handle_data (void)
 	    }
 	}
       else
-	{			/* XXX: error */
+	{
 	  DEBUG_INFO ("ERR05\r\n");
 	  DEBUG_BYTE (icc_header->msg_type);
-	  next_state = ICC_STATE_START;
+	  icc_error (ICC_OFFSET_CMD_NOT_SUPPORTED);
+	  next_state = ICC_STATE_WAIT;
 	}
       break;
     case ICC_STATE_SEND:
@@ -459,18 +504,20 @@ icc_handle_data (void)
 		}
 	    }
 	  else
-	    {			/* XXX: error */
+	    {
 	      DEBUG_INFO ("ERR0A\r\n");
 	      DEBUG_BYTE (icc_header->param >> 8);
 	      DEBUG_BYTE (icc_header->param & 0xff);
+	      icc_error (ICC_OFFSET_PARAM);
 	      next_state = ICC_STATE_WAIT;
 	    }
 	}
       else
-	{			/* XXX: error */
+	{
 	  DEBUG_INFO ("ERR06\r\n");
 	  DEBUG_BYTE (icc_header->msg_type);
-	  next_state = ICC_STATE_START;
+	  icc_error (ICC_OFFSET_CMD_NOT_SUPPORTED);
+	  next_state = ICC_STATE_WAIT;
 	}
       break;
     }
