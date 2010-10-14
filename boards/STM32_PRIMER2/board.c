@@ -24,6 +24,7 @@
     for full details of how and when the exception can be applied.
 */
 
+#include "config.h"
 #include "ch.h"
 #include "hal.h"
 
@@ -33,8 +34,7 @@
  * segments initialization.
  */
 void hwinit0(void) {
-
-  stm32_clock_init();
+#include "../common/hwinit0.c"
 }
 
 /*
@@ -43,16 +43,7 @@ void hwinit0(void) {
  * and before invoking the main() function.
  */
 void hwinit1(void) {
-
-  /*
-   * HAL initialization.
-   */
-  halInit();
-
-  /*
-   * ChibiOS/RT initialization.
-   */
-  chSysInit();
+#include "../common/hwinit1.c"
 
   /*
    * Clear LED and SHUTDOWN output.

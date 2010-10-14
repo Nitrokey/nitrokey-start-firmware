@@ -1,3 +1,4 @@
+@DEBUG_DEFINE@
 #ifdef DEBUG
 #define ENABLE_VIRTUAL_COM_PORT 1
 #endif
@@ -11,3 +12,5 @@
 #endif
 
 #define SERIAL_NUMBER_IN_AID  0x00, 0x00, 0x00, 0x01
+
+@DFU_DEFINE@

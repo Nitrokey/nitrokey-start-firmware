@@ -1,8 +1,6 @@
 # Makefile for Gnuk
 
-#
-ENABLE_DEBUG=1
-
+@DEBUG_MAKE_OPTION@
 ifneq ($(ENABLE_DEBUG),)
 ENABLE_VCOMPORT=1
 endif
@@ -73,7 +71,7 @@ include $(CHIBIOS)/os/kernel/kernel.mk
 include stmusb.mk
 include vcomport.mk
 include crypt.mk
-include ../boards/OLIMEX_STM32_H103/board.mk
+include @BOARD_MAKEFILE@
 
 # C sources that can be compiled in ARM or THUMB mode depending on the global
 # setting.
@@ -151,11 +149,7 @@ CPPWARN = -Wall -Wextra
 #
 
 # List all default C defines here, like -D_DEBUG=1
-ifeq ($(ENABLE_DEBUG),)
 DDEFS = -DCORTEX_USE_BASEPRI=TRUE
-else
-DDEFS = -DCORTEX_USE_BASEPRI=TRUE -DDEBUG
-endif
 
 # List all default ASM defines here, like -D_DEBUG=1
 DADEFS =
@@ -218,3 +212,6 @@ random-data.o: random_bits
 		$@
 
 $(PROJECT).elf: random-data.o
+
+distclean: clean
+	-rm -f Makefile gnuk.ld config.h

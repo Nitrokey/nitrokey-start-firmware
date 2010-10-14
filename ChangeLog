@@ -1,3 +1,18 @@
+2010-10-14  NIIBE Yutaka  <gniibe@fsij.org>
+
+	Adding 'configure' support.
+	* src/configure: New file.
+	* src/Makefile.in: Renamed from src/Makefile.
+	* src/config.h: Renamed from src/config.h.
+	* src/gnuk.ld: Renamed from src/gnuk.ld.
+
+	Adding DFU_SUPPORT.
+	* boards/common/hwinit0.c: New file adding DFU_SUPPORT.
+	* boards/common/hwinit1.c: New file.
+	* boards/OLIMEX_STM32_H103/board.c: Include config.h.
+	Use common/hwinit0.c and common/hwinit1.c.
+	* boards/STM32_PRIMER2/board.c: Likewise.
+
 2010-09-16  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* src/usb-icc.c (icc_error): New function.

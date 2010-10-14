@@ -1,5 +1,16 @@
 Gnuk NEWS - User visible changes
 
+* Major changes in Gnuk 0.3
+
+  Released 2010-10-XX, by NIIBE Yutaka
+
+** Now we have 'configure' script to select target.
+
+** Support system with DFU (Device Firmware Upgrade) downloader.
+
+** Improved USB-ICCD implementation.  Works fine with GPG's protocol stack.
+
+
 * Major changes in Gnuk 0.2
 
   Released 2010-09-13, by NIIBE Yutaka

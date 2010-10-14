@@ -50,7 +50,7 @@ It is known not-working well:
 
 	* Changing value of password status bytes (0x00C4).
 
-	* For some version of kernel and libccid, ENABLE_DEBUG=1 can't
+	* For some version of kernel and libccid, --enable-debug can't
           work well.  Please disable DEBUG option if it doesn't work well.
 
 
@@ -134,14 +134,13 @@ You need GNU toolchain and newlib for 'arm-none-eabi' target.
 See http://github.com/esden/summon-arm-toolchain/ for preparation of
 GNU Toolchain for 'arm-none-eabi' target.
 
+Change directory to `src':
+
   $ cd gnuk-VERSION/src
 
-Edit the Makefile.  Comment out the line:
-----------------
-ENABLE_DEBUG=1
-----------------
+Then, run `configure':
 
-if you don't want to debug Gnuk.
+  $ ./configure
 
 Type:
 
@@ -173,7 +172,7 @@ Then, with another terminal, type following to write "gnuk.elf" to Flash ROM:
   > exit
   $ 
 
-If you compiled with ENABLE_DEBUG=1, Gnuk has two interfaces
+If you compiled with --enable-debug option, Gnuk has two interfaces
 (one is CCID/ICCD device and another is virtual COM port).  Open
 virtual COM port by:
 

@@ -32,7 +32,7 @@ __stacks_total_size__   = __main_stack_size__;
 
 MEMORY
 {
-    flash : org = 0x08000000, len = 128k
+    flash : org = @ORIGIN@, len = @FLASH_SIZE@
     ram : org = 0x20000000, len = 20k
 }
 
