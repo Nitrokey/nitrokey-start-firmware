@@ -104,11 +104,22 @@ struct key_data {
 #define DATA_ENCRYPTION_KEY_SIZE 16
 struct prvkey_data {
   const uint8_t *key_addr;
+  /*
+   * CRM: [C]heck, [R]andom, and [M]agic in struct key_data
+   *
+   */
   uint8_t crm_encrypted[ADDITIONAL_DATA_SIZE];
-  uint8_t dek_encrypted_1[DATA_ENCRYPTION_KEY_SIZE];
-  uint8_t dek_encrypted_2[DATA_ENCRYPTION_KEY_SIZE];
-  uint8_t dek_encrypted_3[DATA_ENCRYPTION_KEY_SIZE];
+  /*
+   * DEK: Data Encryption Key
+   */
+  uint8_t dek_encrypted_1[DATA_ENCRYPTION_KEY_SIZE]; /* For user */
+  uint8_t dek_encrypted_2[DATA_ENCRYPTION_KEY_SIZE]; /* For resetcode */
+  uint8_t dek_encrypted_3[DATA_ENCRYPTION_KEY_SIZE]; /* For admin */
 };
+
+#define BY_USER		1
+#define BY_RESETCODE	2
+#define BY_ADMIN	3
 
 extern int flash_key_write (uint8_t *key_addr, const uint8_t *key_data, const uint8_t *modulus);
 
@@ -204,7 +215,9 @@ extern void gpg_do_reset_pw_counter (uint8_t which);
 
 extern void set_led (int);
 
-#define NUM_ALL_PRV_KEYS 2	/* SIG and DEC *//* we don't support AUT yet */
+#define NUM_ALL_PRV_KEYS 3	/* SIG, DEC and AUT */
+
+extern uint8_t pw1_keystring[KEYSTRING_SIZE_PW1];
 
 #define OPENPGP_CARD_INITIAL_PW1 "123456"
 

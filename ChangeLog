@@ -1,3 +1,26 @@
+2010-10-16  NIIBE Yutaka  <gniibe@fsij.org>
+
+	Implement "INTERNAL AUTHENTICATE" command.
+
+	* src/gnuk.h (BY_USER, BY_RESETCODE, BY_ADMIN): New defines.
+	(NUM_ALL_PRV_KEYS): Now it's 3 (was: 2).
+
+	* src/openpgp.c (INS_INTERNAL_AUTHENTICATE): New define.
+	(cmd_internal_authenticate): New function.
+	(cmds): Added INS_INTERNAL_AUTHENTICATE.
+	(cmd_change_password): Use BY_USER.
+	(cmd_reset_user_password): Use BY_USER, BY_RESETCODE, BY_ADMIN.
+	(cmd_pso): Load GPG_KEY_FOR_DECRYPTION here.
+	(cmd_pso): Removed adding status word into res_APDU...
+	* src/call-rsa.c (rsa_sign): and moved adding status word into
+	res_APDU here.
+
+	* src/ac.c (pw1_keystring): New variable.
+	(ac_reset_pso_other): Clear pw1_keystring.
+	(verify_pso_cds): Use BY_USER.
+	(verify_pso_other): Just check the length of password here, and
+	defer real check to cmd_pso or cmd_internal_authenticate.
+
 2010-10-14  NIIBE Yutaka  <gniibe@fsij.org>
 
 	Adding 'configure' support.

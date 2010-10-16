@@ -28,9 +28,12 @@ ac_reset_pso_cds (void)
   auth_status &= ~AC_PSO_CDS_AUTHORIZED;
 }
 
+uint8_t pw1_keystring[KEYSTRING_SIZE_PW1];
+
 void
 ac_reset_pso_other (void)
 {
+  memset (pw1_keystring, 0, KEYSTRING_SIZE_PW1);
   auth_status &= ~AC_PSO_OTHER_AUTHORIZED;
 }
 
@@ -52,7 +55,7 @@ verify_pso_cds (const uint8_t *pw, int pw_len)
   keystring[0] = pw_len;
   sha1 (pw, pw_len, keystring+1);
   memcpy (pwsb, pw_status_bytes, SIZE_PW_STATUS_BYTES);
-  if ((r = gpg_do_load_prvkey (GPG_KEY_FOR_SIGNING, 1, keystring+1)) < 0)
+  if ((r = gpg_do_load_prvkey (GPG_KEY_FOR_SIGNING, BY_USER, keystring+1)) < 0)
     {
       pwsb[PW_STATUS_PW1]--;
       gpg_do_write_simple (NR_DO_PW_STATUS, pwsb, SIZE_PW_STATUS_BYTES);
@@ -71,34 +74,41 @@ verify_pso_cds (const uint8_t *pw, int pw_len)
 int
 verify_pso_other (const uint8_t *pw, int pw_len)
 {
-  int r;
   const uint8_t *pw_status_bytes = gpg_do_read_simple (NR_DO_PW_STATUS);
-  uint8_t keystring[KEYSTRING_SIZE_PW1];
   uint8_t pwsb[SIZE_PW_STATUS_BYTES];
+  const uint8_t *ks_pw1;
+
+  DEBUG_INFO ("verify_pso_other\r\n");
 
   if (pw_status_bytes == NULL
       || pw_status_bytes[PW_STATUS_PW1] == 0) /* locked */
     return 0;
 
-  DEBUG_INFO ("verify_pso_other\r\n");
-
-  keystring[0] = pw_len;
-  sha1 (pw, pw_len, keystring+1);
   memcpy (pwsb, pw_status_bytes, SIZE_PW_STATUS_BYTES);
-  if ((r = gpg_do_load_prvkey (GPG_KEY_FOR_DECRYPTION, 1, keystring+1)) < 0)
+
+  /*
+   * We check only the length of password string now.
+   * Real check is defered to decrypt/authenticate routines.
+   */
+  ks_pw1 = gpg_do_read_simple (NR_DO_KEYSTRING_PW1);
+  if ((ks_pw1 == NULL && pw_len == strlen (OPENPGP_CARD_INITIAL_PW1))
+      || (ks_pw1 != NULL && pw_len == ks_pw1[0]))
+    {				/* No problem */
+      /*
+       * We don't reset pwsb[PW_STATUS_PW1] here.
+       * Because password may be wrong.
+       */
+      pw1_keystring[0] = pw_len;
+      sha1 (pw, pw_len, pw1_keystring+1);
+      auth_status |= AC_PSO_OTHER_AUTHORIZED;
+      return 1;
+    }
+  else
     {
       pwsb[PW_STATUS_PW1]--;
       gpg_do_write_simple (NR_DO_PW_STATUS, pwsb, SIZE_PW_STATUS_BYTES);
-      return r;
+      return 0;
     }
-  else if (pwsb[PW_STATUS_PW1] != 3)
-    {
-      pwsb[PW_STATUS_PW1] = 3;
-      gpg_do_write_simple (NR_DO_PW_STATUS, pwsb, SIZE_PW_STATUS_BYTES);
-    }
-
-  auth_status |= AC_PSO_OTHER_AUTHORIZED;
-  return 1;
 }
 
 /*

@@ -28,6 +28,8 @@
 #include "polarssl/config.h"
 #include "polarssl/rsa.h"
 
+#define RSA_SIGNATURE_LENGTH 256 /* 256 byte == 2048-bit */
+
 static rsa_context rsa_ctx;
 
 int
@@ -76,6 +78,9 @@ rsa_sign (const uint8_t *raw_message, uint8_t *output, int msg_len)
     }
   else
     {
+      res_APDU[RSA_SIGNATURE_LENGTH] =  0x90;
+      res_APDU[RSA_SIGNATURE_LENGTH+1] =  0x00;
+      res_APDU_size = RSA_SIGNATURE_LENGTH + 2;
       DEBUG_INFO ("done.\r\n");
       return 0;
     }
@@ -165,7 +170,6 @@ rsa_decrypt (const uint8_t *input, uint8_t *output, int msg_len)
       res_APDU[output_len] = 0x90;
       res_APDU[output_len+1] = 0x00;
       res_APDU_size = output_len + 2;
-
       DEBUG_INFO ("done.\r\n");
       return 0;
     }

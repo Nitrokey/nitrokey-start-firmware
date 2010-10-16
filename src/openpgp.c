@@ -29,13 +29,12 @@
 #include "polarssl/config.h"
 #include "polarssl/sha1.h"
 
-#define RSA_SIGNATURE_LENGTH 256 /* 256 byte == 2048-bit */
-
 #define INS_VERIFY        			0x20
 #define INS_CHANGE_REFERENCE_DATA		0x24
 #define INS_PSO		  			0x2a
 #define INS_RESET_RETRY_COUNTER			0x2c
 #define INS_PGP_GENERATE_ASYMMETRIC_KEY_PAIR	0x47
+#define INS_INTERNAL_AUTHENTICATE		0x88
 #define INS_SELECT_FILE				0xa4
 #define INS_READ_BINARY				0xb0
 #define INS_GET_DATA				0xca
@@ -180,7 +179,7 @@ cmd_change_password (void)
       pw += 2;
     }
 
-  if (who == 1)			/* PW1 */
+  if (who == BY_USER)			/* PW1 */
     {
       const uint8_t *pk = gpg_do_read_simple (NR_DO_KEYSTRING_PW1);
 
@@ -243,21 +242,21 @@ cmd_change_password (void)
       DEBUG_INFO ("security error.\r\n");
       GPG_SECURITY_FAILURE ();
     }
-  else if (r == 0 && who == 1)	/* no prvkey */
+  else if (r == 0 && who == BY_USER)	/* no prvkey */
     {
       gpg_do_write_simple (NR_DO_KEYSTRING_PW1, new_ks0, KEYSTRING_SIZE_PW1);
       ac_reset_pso_cds ();
       gpg_do_reset_pw_counter (PW_STATUS_PW1);
       DEBUG_INFO ("Changed DO_KEYSTRING_PW1.\r\n");
     }
-  else if (r > 0 && who == 1)
+  else if (r > 0 && who == BY_USER)
     {
       gpg_do_write_simple (NR_DO_KEYSTRING_PW1, new_ks0, 1);
       ac_reset_pso_cds ();
       gpg_do_reset_pw_counter (PW_STATUS_PW1);
       DEBUG_INFO ("Changed length of DO_KEYSTRING_PW1.\r\n");
     }
-  else				/* r >= 0 && who == 3 */
+  else				/* r >= 0 && who == BY_ADMIN */
     {
       DEBUG_INFO ("done.\r\n");
       gpg_do_reset_pw_counter (PW_STATUS_PW3);
@@ -313,7 +312,7 @@ cmd_reset_user_password (void)
       sha1 (pw, pw_len, old_ks);
       sha1 (newpw, newpw_len, new_ks);
       new_ks0[0] = newpw_len;
-      r = gpg_change_keystring (2, old_ks, 1, new_ks);
+      r = gpg_change_keystring (BY_RESETCODE, old_ks, BY_USER, new_ks);
       if (r < -2)
 	{
 	  DEBUG_INFO ("memory error.\r\n");
@@ -362,7 +361,7 @@ cmd_reset_user_password (void)
       newpw = pw;
       sha1 (newpw, newpw_len, new_ks);
       new_ks0[0] = newpw_len;
-      r = gpg_change_keystring (3, old_ks, 1, new_ks);
+      r = gpg_change_keystring (BY_ADMIN, old_ks, BY_USER, new_ks);
       if (r < -2)
 	{
 	  DEBUG_INFO ("memory error.\r\n");
@@ -570,10 +569,6 @@ cmd_pso (void)
 	    {			/* Success */
 	      const uint8_t *pw_status_bytes = gpg_do_read_simple (NR_DO_PW_STATUS);
 
-	      res_APDU[RSA_SIGNATURE_LENGTH] =  0x90;
-	      res_APDU[RSA_SIGNATURE_LENGTH+1] =  0x00;
-	      res_APDU_size = RSA_SIGNATURE_LENGTH + 2;
-
 	      if (pw_status_bytes[0] == 0)
 		ac_reset_pso_cds ();
 
@@ -583,14 +578,34 @@ cmd_pso (void)
     }
   else if (cmd_APDU[2] == 0x80 && cmd_APDU[3] == 0x86)
     {
-      if (!ac_check_status (AC_PSO_OTHER_AUTHORIZED))
+      const uint8_t *pw_status_bytes = gpg_do_read_simple (NR_DO_PW_STATUS);
+      uint8_t pwsb[SIZE_PW_STATUS_BYTES];
+
+      DEBUG_SHORT (len);
+
+      if (pw_status_bytes == NULL
+	  || pw_status_bytes[PW_STATUS_PW1] == 0 /* locked */
+	  || !ac_check_status (AC_PSO_OTHER_AUTHORIZED))
 	{
 	  DEBUG_INFO ("security error.");
 	  GPG_SECURITY_FAILURE ();
 	  return;
 	}
 
-      DEBUG_SHORT (len);
+      memcpy (pwsb, pw_status_bytes, SIZE_PW_STATUS_BYTES);
+      if ((r = gpg_do_load_prvkey (GPG_KEY_FOR_DECRYPTION, BY_USER,
+				   pw1_keystring + 1)) < 0)
+	{
+	  pwsb[PW_STATUS_PW1]--;
+	  gpg_do_write_simple (NR_DO_PW_STATUS, pwsb, SIZE_PW_STATUS_BYTES);
+	  GPG_SECURITY_FAILURE ();
+	  return;
+	}
+      else if (pwsb[PW_STATUS_PW1] != 3) /* Failure in the past? */
+	{		       /* Reset counter as it's success now */
+	  pwsb[PW_STATUS_PW1] = 3;
+	  gpg_do_write_simple (NR_DO_PW_STATUS, pwsb, SIZE_PW_STATUS_BYTES);
+	}
 
       ac_reset_pso_other ();
 
@@ -613,6 +628,69 @@ cmd_pso (void)
   DEBUG_INFO ("PSO done.\r\n");
 }
 
+static void
+cmd_internal_authenticate (void)
+{
+  int len = cmd_APDU[4];
+  int data_start = 5;
+  int r;
+  const uint8_t *pw_status_bytes = gpg_do_read_simple (NR_DO_PW_STATUS);
+  uint8_t pwsb[SIZE_PW_STATUS_BYTES];
+
+  if (len == 0)
+    {
+      len = (cmd_APDU[5]<<8) | cmd_APDU[6];
+      data_start = 7;
+    }
+
+  DEBUG_INFO (" - INTERNAL AUTHENTICATE\r\n");
+
+  if (cmd_APDU[2] == 0x00 && cmd_APDU[3] == 0x00)
+    {
+      DEBUG_SHORT (len);
+
+        if (pw_status_bytes == NULL
+	  || pw_status_bytes[PW_STATUS_PW1] == 0 /* locked */
+	  || !ac_check_status (AC_PSO_OTHER_AUTHORIZED))
+	{
+	  DEBUG_INFO ("security error.");
+	  GPG_SECURITY_FAILURE ();
+	  return;
+	}
+
+      memcpy (pwsb, pw_status_bytes, SIZE_PW_STATUS_BYTES);
+      if ((r = gpg_do_load_prvkey (GPG_KEY_FOR_AUTHENTICATION, BY_USER,
+				   pw1_keystring + 1)) < 0)
+	{
+	  pwsb[PW_STATUS_PW1]--;
+	  gpg_do_write_simple (NR_DO_PW_STATUS, pwsb, SIZE_PW_STATUS_BYTES);
+	  GPG_SECURITY_FAILURE ();
+	  return;
+	}
+      else if (pwsb[PW_STATUS_PW1] != 3) /* Failure in the past? */
+	{		       /* Reset counter as it's success now */
+	  pwsb[PW_STATUS_PW1] = 3;
+	  gpg_do_write_simple (NR_DO_PW_STATUS, pwsb, SIZE_PW_STATUS_BYTES);
+	}
+
+      ac_reset_pso_other ();
+
+      r = rsa_sign (&cmd_APDU[data_start], res_APDU, len);
+      if (r < 0)
+	GPG_ERROR ();
+    }
+  else
+    {
+      DEBUG_INFO (" - ??");
+      DEBUG_BYTE (cmd_APDU[2]);
+      DEBUG_INFO (" - ??");
+      DEBUG_BYTE (cmd_APDU[3]);
+      GPG_ERROR ();
+    }
+
+  DEBUG_INFO ("INTERNAL AUTHENTICATE done.\r\n");
+}
+
 struct command
 {
   uint8_t command;
@@ -625,6 +703,7 @@ const struct command cmds[] = {
   { INS_PSO, cmd_pso },
   { INS_RESET_RETRY_COUNTER, cmd_reset_user_password },
   { INS_PGP_GENERATE_ASYMMETRIC_KEY_PAIR, cmd_pgp_gakp },
+  { INS_INTERNAL_AUTHENTICATE, cmd_internal_authenticate },
   { INS_SELECT_FILE, cmd_select_file },
   { INS_READ_BINARY, cmd_read_binary },
   { INS_GET_DATA, cmd_get_data },

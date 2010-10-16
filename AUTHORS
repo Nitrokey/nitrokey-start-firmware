@@ -10,6 +10,7 @@ NIIBE Yutaka:
     Founder of the project.
     Wrote:
 	gnuk.svg
+	src/configure
 	src/ac.c
 	src/main.c
 	src/usb_lld.h
