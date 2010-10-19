@@ -1,0 +1,4 @@
+# generated files by 'configure'
+src/Makefile
+src/config.h
+src/gnuk.ld

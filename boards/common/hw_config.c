@@ -33,24 +33,6 @@ Leave_LowPowerMode (void)
 }
 
 void
-USB_Cable_Config (FunctionalState NewState)
-{
-  if (NewState != DISABLE)
-    palClearPad (IOPORT4, GPIOD_DISC);
-  else
-    palSetPad (IOPORT4, GPIOD_DISC);
-}
-
-void
 Get_SerialNum (void)
 {
-}
-
-void
-set_led (int value)
-{
-  if (value)
-    palClearPad (IOPORT5, GPIOE_LEDR);
-  else
-    palSetPad (IOPORT5, GPIOE_LEDR);
 }
