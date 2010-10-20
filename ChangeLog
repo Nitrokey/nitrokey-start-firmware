@@ -1,3 +1,11 @@
+2010-10-20  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/configure: Added CQ STARM target.
+	* boards/CQ_STARM/mcuconf.h: New.
+	* boards/CQ_STARM/board.mk: New.
+	* boards/CQ_STARM/board.h: New.
+	* boards/CQ_STARM/board.c: New.
+
 2010-10-19  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* boards/STM32_PRIMER2/board.mk (BOARDSRC): Use common/hw_config.c.

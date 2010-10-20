@@ -23,7 +23,7 @@
 help=no
 target=OLIMEX_STM32_H103
 verbose=no
-with_dfu=no
+with_dfu=default
 debug=no
 
 # Process each option
@@ -68,6 +68,7 @@ Configuration:
 			supported targes are:
 			   OLIMEX_STM32_H103
 			   STM32_PRIMER2
+			   CQ_STARM
   --enable-debug	debug with virtual COM port	[no]
   --with-dfu		build image for DFU 		[<target specific>]
 EOF
@@ -81,6 +82,18 @@ else
   echo "Unsupported target \`$target'" >&2
   exit 1
 fi
+
+# --with-dfu option
+case $target in
+CQ_STARM)
+  if test "$with_dfu" = "default"; then
+    with_dfu=yes;
+  fi  ;;
+*)
+  if test "$with_dfu" = "default"; then
+    with_dfu=no;
+  fi  ;;
+esac
 
 if test "$debug" = "yes"; then
   DEBUG_MAKE_OPTION="ENABLE_DEBUG=1"
