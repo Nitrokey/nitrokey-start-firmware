@@ -3,7 +3,8 @@
 #define ENABLE_VIRTUAL_COM_PORT 1
 #endif
 
-#if 0
+@FSIJ_DEFINE@
+#ifdef WITH_FSIJ_SERIAL_NUMBER
 /* FSIJ */
 #define MANUFACTURER_IN_AID		0xf5, 0x17
 #else
@@ -11,6 +12,6 @@
 #define MANUFACTURER_IN_AID		0xff, 0xfe
 #endif
 
-#define SERIAL_NUMBER_IN_AID  0x00, 0x00, 0x00, 0x01
+#define SERIAL_NUMBER_IN_AID  @SERIAL_NUMBER_FOUR_BYTES@
 
 @DFU_DEFINE@

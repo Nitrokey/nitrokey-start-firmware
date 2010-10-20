@@ -24,7 +24,14 @@ help=no
 target=OLIMEX_STM32_H103
 verbose=no
 with_dfu=default
+with_fsij=no
 debug=no
+
+# check /dev/random
+if test ! -e /dev/random; then
+  echo "/dev/random is required." >&2
+  exit 1
+fi
 
 # Process each option
 for option; do
@@ -48,6 +55,10 @@ for option; do
     with_dfu=yes ;;
   --without-dfu)
     with_dfu=no ;;
+  --with-fsij)
+    with_fsij=yes ;;
+  --without-fsij)
+    with_fsij=no ;;
   *)
     echo "Unrecognized option \`$option'" >&2
     echo "Try \`$0 --help' for more information." >&2
@@ -71,6 +82,7 @@ Configuration:
 			   CQ_STARM
   --enable-debug	debug with virtual COM port	[no]
   --with-dfu		build image for DFU 		[<target specific>]
+  --with-fsij		Use FSIJ serial number		[no: random number]
 EOF
   exit 0
 fi
@@ -94,6 +106,19 @@ CQ_STARM)
     with_dfu=no;
   fi  ;;
 esac
+
+# --with-fsij option
+if test "$with_fsij" = "no"; then
+  FSIJ_DEFINE="#undef WITH_FSIJ_SERIAL_NUMBER"
+  SERIAL_NUMBER_FOUR_BYTES=`od -t u1 -N 4 /dev/random | sed -n -e '/^0000000/s/^0000000  *//' -e 's/  */,/gp'`
+else
+  if test "x$MAIL" = "x"; then
+    echo "Please set MAIL shell variable to select FSIJ serial number." >&2
+    exit 1
+  fi
+  FSIJ_DEFINE="#define WITH_FSIJ_SERIAL_NUMBER 1"
+  SERIAL_NUMBER_FOUR_BYTES=`sed -n -e "/^$MAIL/s/^.* \(..\):\(..\):\(..\):\(..\)/0x\1, 0x\2, 0x\3, 0x\4/p" ../FSIJ_SERIAL_NUMBER`
+fi
 
 if test "$debug" = "yes"; then
   DEBUG_MAKE_OPTION="ENABLE_DEBUG=1"
@@ -122,5 +147,7 @@ sed -e "s/@ORIGIN@/$ORIGIN/" -e "s/@FLASH_SIZE@/$FLASH_SIZE/" \
 	< gnuk.ld.in > gnuk.ld
 sed -e "s/@DEBUG_DEFINE@/$DEBUG_DEFINE/" \
     -e "s/@DFU_DEFINE@/$DFU_DEFINE/" \
+    -e "s/@FSIJ_DEFINE@/$FSIJ_DEFINE/" \
+    -e "s/@SERIAL_NUMBER_FOUR_BYTES@/$SERIAL_NUMBER_FOUR_BYTES/" \
 	< config.h.in > config.h
 exit 0

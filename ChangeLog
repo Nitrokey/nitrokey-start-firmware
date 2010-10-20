@@ -1,5 +1,9 @@
 2010-10-20  NIIBE Yutaka  <gniibe@fsij.org>
 
+	* FSIJ_SERIAL_NUMBER: New.
+	* src/configure (with_fsij): Added FSIJ serial number support.
+	* src/config.h.in (@FSIJ_DEFINE@, @SERIAL_NUMBER_FOUR_BYTES@): New.
+
 	* src/configure: Added CQ STARM target.
 	* boards/CQ_STARM/mcuconf.h: New.
 	* boards/CQ_STARM/board.mk: New.
