@@ -1,7 +1,7 @@
 Gnuk - software for GPG USB Token
 
-							    Version 0.2
-							     2010-09-13
+							    Version 0.3
+							     2010-10-21
 						           Niibe Yutaka
 				      Free Software Initiative of Japan
 
@@ -44,6 +44,8 @@ Tested features are:
 
 	* PSO: Decipher
 
+	* INTERNAL AUTHENTICATE
+
 It is known not-working well:
 
 	* Key import multiple times
@@ -57,10 +59,12 @@ It is known not-working well:
 Targets
 =======
 
-We use Olimex STM32-H103 board.
+We use Olimex STM32-H103 board.  CQ STARM with DFU support is added,
+but not tested, because we don't have a tool to write DFU which is
+Free Software.
 
-I think that it could run on Olimex STM32-P103, STBee, STBee mini, or
-CQ-STARM too.  Besides, we are porting it to STM32 Primer 2.
+I think that it could run on Olimex STM32-P103, STBee, or STBee mini
+too.  Besides, we are porting it to STM32 Primer 2.
 
 
 Souce code

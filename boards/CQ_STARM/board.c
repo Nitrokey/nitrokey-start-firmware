@@ -24,6 +24,7 @@ USB_Cable_Config (FunctionalState NewState)
    * It seems that users can add the functionality with USB_DC (PD9)
    * though
    */
+  (void)NewState;
 }
 
 void

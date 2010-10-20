@@ -8,6 +8,8 @@ Gnuk NEWS - User visible changes
 
 ** Support system with DFU (Device Firmware Upgrade) downloader.
 
+** New board support "CQ STARM".
+
 ** Improved USB-ICCD implementation.  Works fine with GPG's protocol stack.
 
 
