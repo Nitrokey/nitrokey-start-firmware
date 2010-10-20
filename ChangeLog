@@ -1,3 +1,17 @@
+2010-10-19  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* boards/STM32_PRIMER2/board.mk (BOARDSRC): Use common/hw_config.c.
+	* boards/OLIMEX_STM32_H103/board.mk (BOARDSRC): Likewise.
+
+	* boards/common/hw_config.c: Move board specific functions to ...
+	* boards/STM32_PRIMER2/board.c (USB_Cable_Config, set_led): ... here.
+	* boards/OLIMEX_STM32_H103/board.c (USB_Cable_Config, set_led): Ditto.
+
+	* boards/{OLIMEX_STM32_H103,STM32_PRIMER2}/hw_config.c: Removed.
+	* boards/common/hw_config.c: New file (was: boards/*/hw_config.c).
+
+	* .gitignore: New file.
+
 2010-10-16  NIIBE Yutaka  <gniibe@fsij.org>
 
 	Implement "INTERNAL AUTHENTICATE" command.
