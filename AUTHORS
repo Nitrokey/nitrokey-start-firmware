@@ -7,6 +7,11 @@ Kaz Kojima:
 
 NIIBE Yutaka:
     Founder of the project.
+    Added STBee Mini support:
+	boards/STBEE_MINI/board.c
+	boards/STBEE_MINI/board.h
+	boards/STBEE_MINI/board.mk
+	boards/STBEE_MINI/mcuconf.h
     Added CQ STARM support:
 	boards/CQ_STARM/board.c
 	boards/CQ_STARM/board.h

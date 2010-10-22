@@ -1,3 +1,15 @@
+2010-10-22  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/configure: Added STBee Mini support.
+	* boards/STBEE_MINI/mcuconf.h: New.
+	* boards/STBEE_MINI/board.mk: New.
+	* boards/STBEE_MINI/board.h: New.
+	* boards/STBEE_MINI/board.c: New.
+
+	* ChibiOS_2.0.2/os/hal/platforms/STM32/hal_lld.c
+	(pal_default_config): STBee Mini uses STM32F103CBT6 which expose
+	no GPIO E port.
+
 2010-10-21  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* boards/common/hw_config.c (Get_SerialNum): Removed.
