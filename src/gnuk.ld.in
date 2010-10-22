@@ -114,10 +114,11 @@ SECTIONS
     PROVIDE(end = .);
     _end            = .;
 
-    .gnuk_random : ALIGN (1024)
+    .gnuk_random :
     {
+        . = ALIGN (1024);
 	*(.gnuk_random)
-    } > flash
+    } > flash =0xffffffff
 
     .gnuk_flash : ALIGN (1024)
     {

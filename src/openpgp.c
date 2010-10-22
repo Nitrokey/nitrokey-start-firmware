@@ -69,13 +69,13 @@ write_res_apdu (const uint8_t *p, int len, uint8_t sw1, uint8_t sw2)
   res_APDU[len+1] = sw2;
 }
 
-#define FILE_NONE	-1
-#define FILE_DF_OPENPGP	0
-#define FILE_MF		1
-#define FILE_EF_DIR	2
-#define FILE_EF_SERIAL	3
+#define FILE_NONE	0
+#define FILE_DF_OPENPGP	1
+#define FILE_MF		2
+#define FILE_EF_DIR	3
+#define FILE_EF_SERIAL	4
 
-static int file_selection = FILE_NONE;
+static uint8_t file_selection = FILE_NONE;
 
 static void
 cmd_verify (void)

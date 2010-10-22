@@ -1,5 +1,11 @@
 2010-10-22  NIIBE Yutaka  <gniibe@fsij.org>
 
+	* src/gnuk.ld.in (.gnuk_random): Fix description so that
+	padding with 0xffffffff will be in gnuk.hex.
+
+	* src/openpgp.c (file_selection): Change type (was: int).
+	(FILE_NONE..FILE_EF_SERIAL): Change the values.
+
 	* src/configure: Added STBee Mini support.
 	* boards/STBEE_MINI/mcuconf.h: New.
 	* boards/STBEE_MINI/board.mk: New.
