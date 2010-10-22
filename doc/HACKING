@@ -1,4 +1,4 @@
-* configure support
+* [DONE] configure support
 
 configure script would be good to select a board and to generate
 random serial number.
@@ -29,7 +29,7 @@ It would be good not to use malloc.
 Get it from FSFE.
 
 
-* Serial number
+* [Partially DONE] Serial number
 
 Currently, aid[] in openpgp-do.c has serial number 00000001.
 It would be good to generate (random) number at compile time.

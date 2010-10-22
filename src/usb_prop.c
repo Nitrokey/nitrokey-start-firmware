@@ -39,11 +39,6 @@
 static void
 gnuk_device_init (void)
 {
-  /*
-   * Update the serial number string descriptor (if needed)
-   */
-  Get_SerialNum ();
-
   pInformation->Current_Configuration = 0;
 
   /* Connect the device */

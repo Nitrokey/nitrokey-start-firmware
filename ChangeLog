@@ -1,3 +1,10 @@
+2010-10-21  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* boards/common/hw_config.c (Get_SerialNum): Removed.
+	* src/usb_prop.c (gnuk_device_init): Remove calling Get_SerialNum.
+	* src/usb_desc.c (gnukStringSerial): Updated.
+	* boards/CQ_STARM/board.c (set_led): Fix polarity.
+
 2010-10-20  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* FSIJ_SERIAL_NUMBER: New.

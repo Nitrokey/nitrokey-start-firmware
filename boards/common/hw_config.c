@@ -31,8 +31,3 @@ Leave_LowPowerMode (void)
   else
     bDeviceState = ATTACHED;
 }
-
-void
-Get_SerialNum (void)
-{
-}

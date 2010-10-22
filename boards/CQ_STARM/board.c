@@ -31,7 +31,7 @@ void
 set_led (int value)
 {
   if (value)
-    palClearPad (IOPORT3, GPIOC_LED);
-  else
     palSetPad (IOPORT3, GPIOC_LED);
+  else
+    palClearPad (IOPORT3, GPIOC_LED);
 }

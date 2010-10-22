@@ -4,10 +4,14 @@ Kaz Kojima:
 	boards/STM32_PRIMER2/board.h
 	boards/STM32_PRIMER2/board.mk
 	boards/STM32_PRIMER2/mcuconf.h
-	boards/STM32_PRIMER2/hw_config.c
 
 NIIBE Yutaka:
     Founder of the project.
+    Added CQ STARM support:
+	boards/CQ_STARM/board.c
+	boards/CQ_STARM/board.h
+	boards/CQ_STARM/board.mk
+	boards/CQ_STARM/mcuconf.h
     Wrote:
 	gnuk.svg
 	src/configure
