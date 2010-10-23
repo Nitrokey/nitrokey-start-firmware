@@ -1,7 +1,7 @@
 Gnuk - software for GPG USB Token
 
 							    Version 0.3
-							     2010-10-21
+							     2010-10-23
 						           Niibe Yutaka
 				      Free Software Initiative of Japan
 
@@ -26,8 +26,8 @@ USB Token by Gnuk everywhere.
 Release notes
 =============
 
-This is third release of Gnuk.  While it works somehow, it is still
-experimental.
+This is fourth release of Gnuk.  While it works well for specific
+usages, it is still experimental.
 
 Tested features are:
 
@@ -59,12 +59,13 @@ It is known not-working well:
 Targets
 =======
 
-We use Olimex STM32-H103 board.  CQ STARM with DFU support is added,
-but not tested, because we don't have a tool to write DFU which is
-Free Software.
+We use Olimex STM32-H103 board.  DFU support is added, it's mainly for
+CQ STARM and STBee Mini but those targets are not tested extensively.
+That's because we don't have a Free Software tool to write through
+DFU.
 
-I think that it could run on Olimex STM32-P103, STBee, or STBee mini
-too.  Besides, we are porting it to STM32 Primer 2.
+I think that it could run on Olimex STM32-P103, or STBee too.
+Besides, we are porting it to STM32 Primer 2.
 
 
 Souce code
@@ -265,16 +266,6 @@ Your Contributions
 
 FSIJ welcomes your contributions.  Please assign your copyright
 to FSIJ (if possible).
-
-
-Development history
-===================
-
-Initially, the development was started with a copy of the files in
-ChibiOS_2.0.2/demos/ARMCM3-STM32F103-GCC/*, Makefile, linker script,
-and header files (chconf.h, halconf.h, and mcuconf.h).
-
-Since this is the initial release, some garbages may still remain.
 
 
 Foot note

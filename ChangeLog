@@ -1,3 +1,9 @@
+2010-10-23  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* Version 0.3.
+
+	* src/usb_desc.c (gnukStringSerial): Updated.
+
 2010-10-22  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* src/gnuk.ld.in (.gnuk_random): Fix description so that
