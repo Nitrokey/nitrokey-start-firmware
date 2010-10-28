@@ -219,6 +219,12 @@ extern void set_led (int);
 
 extern uint8_t pw1_keystring[KEYSTRING_SIZE_PW1];
 
+#if !defined(OPENPGP_CARD_INITIAL_PW1)
 #define OPENPGP_CARD_INITIAL_PW1 "123456"
+#endif
+
+#if !defined(OPENPGP_CARD_INITIAL_PW3)
+#define OPENPGP_CARD_INITIAL_PW3 "12345678"
+#endif
 
 const uint8_t openpgpcard_aid[17] __attribute__ ((aligned (1)));

@@ -191,10 +191,11 @@ verify_admin_0 (const uint8_t *pw, int buf_len, int pw_len_known)
 	}
     }
   else
-    /* For empty PW3, pass phrase should be "12345678" */
+    /* For empty PW3, pass phrase should be OPENPGP_CARD_INITIAL_PW3 */
     {
-      if ((pw_len_known >=0 && pw_len_known != 8)
-	  || buf_len < 8 || strncmp ((const char *)pw, "12345678", 8) != 0)
+      if ((pw_len_known >=0 && pw_len_known != strlen (OPENPGP_CARD_INITIAL_PW3))
+	  || buf_len < strlen (OPENPGP_CARD_INITIAL_PW3)
+	  || strncmp ((const char *)pw, OPENPGP_CARD_INITIAL_PW3, 8) != 0)
 	/* It is failure, but we don't try to lock for the case of empty PW3 */
 	return -1;
 
