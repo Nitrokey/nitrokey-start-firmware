@@ -1,3 +1,8 @@
+2010-11-01  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* tool/intel_hex.py: New file.
+	* tool/dfu_stmicroelectronics_extention.py: New file.
+
 2010-10-28  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* src/gnuk.h (OPENPGP_CARD_INITIAL_PW3): New.
