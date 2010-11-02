@@ -107,7 +107,7 @@ class DFU_STM32:
             raise ValueError, "Wrong interface class"
         if interface.interfaceSubClass != DFU_SUBCLASS:
             raise ValueError, "Wrong interface sub class"
-
+        self.__protocol = interface.interfaceProtocol
         self.__devhandle = device.open()
         self.__devhandle.setConfiguration(configuration)
         self.__devhandle.claimInterface(interface)
@@ -248,19 +248,23 @@ class DFU_STM32:
                     sys.stdout.flush()
                 addr += 1024
                 i += 1
-        # 0-length write at the end
-        self.ll_download_block(self.__blocknum, None)
-        s = self.ll_get_status()
-        if s[4] == STATE_DFU_MANIFEST:
-            time.sleep(1)
-            try:
-                s = self.ll_get_status()
-            except:
+        if self.__protocol == DFU_STM32PROTOCOL_0:
+            # 0-length write at the end
+            self.ll_download_block(self.__blocknum, None)
+            s = self.ll_get_status()
+            if s[4] == STATE_DFU_MANIFEST:
+                time.sleep(1)
+                try:
+                    s = self.ll_get_status()
+                except:
+                    self.__devhandle.reset()
+            elif s[4] == STATE_DFU_MANIFEST_WAIT_RESET:
                 self.__devhandle.reset()
-        elif s[4] == STATE_DFU_MANIFEST_WAIT_RESET:
-            self.__devhandle.reset()
-        elif s[4] != STATE_DFU_IDLE:
-            raise ValueError, "write failed (%d)." % s[4]
+            elif s[4] != STATE_DFU_IDLE:
+                raise ValueError, "write failed (%d)." % s[4]
+        else:
+            self.ll_clear_status()
+            self.ll_clear_status()
         sys.stdout.write("\n")
         sys.stdout.flush()
 
