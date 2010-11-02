@@ -1,8 +1,15 @@
 Gnuk NEWS - User visible changes
 
+* Major changes in Gnuk 0.4
+
+  Released 2010-11-XX, by NIIBE Yutaka
+
+** Flash writing tool for "DfuSe" is included now.
+
+
 * Major changes in Gnuk 0.3
 
-  Released 2010-10-XX, by NIIBE Yutaka
+  Released 2010-10-23, by NIIBE Yutaka
 
 ** Now we have 'configure' script to select target.
 

@@ -1,14 +1,14 @@
 Gnuk - software for GPG USB Token
 
-							    Version 0.3
-							     2010-10-23
+							    Version 0.4
+							     2010-11-XX
 						           Niibe Yutaka
 				      Free Software Initiative of Japan
 
 What's Gnuk?
 ============
 
-Gnuk is software implementation of a USB token for GNU privacy guard.
+Gnuk is software implementation of a USB token for GNU Privacy Guard.
 Gnuk supports OpenPGP card protocol version 2, and it runs on STM32
 processor.
 
@@ -164,6 +164,9 @@ Then, we will have "gnuk.elf".
 How to run
 ==========
 
+Olimex STM32-H103 board
+-----------------------
+
 If you are using Olimex JTAG-Tiny, type following to invoke OpenOCD:
 
   $ openocd -f interface/olimex-jtag-tiny.cfg -f board/olimex_stm32_h103.cfg
@@ -177,6 +180,33 @@ Then, with another terminal, type following to write "gnuk.elf" to Flash ROM:
   > exit
   $ 
 
+
+CQ STARM
+--------
+
+Put jumper for J6 to enable DfuSe.  Connecting the board, and type:
+
+  # cd ../tool
+  # ./dfuse.py ../src/gnuk.hex
+
+Then, remove the jumper and reset the board.
+
+
+STBee Mini
+----------
+
+Reset the board with "USER" switch pushed.  Type following to write
+to flash:
+
+  # cd ../tool
+  # ./dfuse.py ../src/gnuk.hex
+
+Then, reset the board.
+
+
+Debug enabled
+-------------
+
 If you compiled with --enable-debug option, Gnuk has two interfaces
 (one is CCID/ICCD device and another is virtual COM port).  Open
 virtual COM port by:
@@ -184,6 +214,10 @@ virtual COM port by:
   $ cu -l /dev/ttyACM0
 
 and you will see debug output of Gnuk.
+
+
+Libccid fix needed
+------------------
 
 For libccid, we need following change:
 
@@ -215,7 +249,11 @@ For libccid, we need following change:
  		<string>Gemplus GemPC Key</string>
 ------------------
 
-Then, try following to see Gnuk runs:
+
+Testing Gnuk
+------------
+
+Try following to see Gnuk runs:
 
   $ gpg --card-status
 
