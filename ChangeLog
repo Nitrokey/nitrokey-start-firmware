@@ -1,3 +1,15 @@
+2010-11-02  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* tool/dfuse.py (DFU_STM32.download): Put '#' for each 4-KiB.
+	Added 0-length write to finish download.
+	Take intel_hex object as argument.
+	(DFU_STM32.ll_upload_block): New method.
+	(DFU_STM32.dfuse_read_memory): New method.
+	(DFU_STM32.verify): New method.
+	(get_device): Support DFU_STM32PROTOCOL_0 too (for CQ STARM).
+
+	* tool/dfuse.py: Renamed from dfu_stmicroelectronics_extention.py.
+
 2010-11-01  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* tool/intel_hex.py: New file.

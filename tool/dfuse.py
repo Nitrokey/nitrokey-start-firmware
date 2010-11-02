@@ -1,16 +1,37 @@
 #! /usr/bin/python
 
+"""
+dfuse.py - DFU (Device Firmware Upgrade) tool for STM32 Processor.
+"SE" in DfuSe stands for "STmicroelectronics Extention".
+
+Copyright (C) 2010 Free Software Initiative of Japan
+Author: NIIBE Yutaka <gniibe@fsij.org>
+
+This file is a part of Gnuk, a GnuPG USB Token implementation.
+
+Gnuk is free software: you can redistribute it and/or modify it
+under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+Gnuk is distributed in the hope that it will be useful, but WITHOUT
+ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+"""
+
 from intel_hex import *
 import sys, time, struct
 
-"""
-DFU tool for STM32 Processor.
-"""
-
 # INPUT: intel hex file
 
-# Seems that following is not supported current DfuSe implementation on
+# As of October 2010 (DfuSe V3.0.1 - 06/18/2010), it seems that
+# following features are not supported by DfuSe implementation on
 # target:
+#
 #     unprotect
 #     leave_dfu_mode
 #     write to option bytes
@@ -26,7 +47,8 @@ import usb
 # USB DFU class, subclass, protocol
 DFU_CLASS = 0xFE
 DFU_SUBCLASS = 0x01
-DFU_STM32PROTOCOL = 2
+DFU_STM32PROTOCOL_0 = 0
+DFU_STM32PROTOCOL_2 = 2
 
 # DFU request
 DFU_DETACH    = 0x00
@@ -77,14 +99,14 @@ class DFU_STM32:
         """
         __init__(device, configuration, interface) -> None
         Initialize the device.
-        device: printer usb.Device object.
+        device: usb.Device object.
         configuration: configuration number.
-        interface: printer usb.Interface object representing the interface and altenate setting.
+        interface: usb.Interface object representing the interface and altenate setting.
         """
         if interface.interfaceClass != DFU_CLASS:
-            raise TypeError, "Wrong interface class"
+            raise ValueError, "Wrong interface class"
         if interface.interfaceSubClass != DFU_SUBCLASS:
-            raise TypeError, "Wrong interface sub class"
+            raise ValueError, "Wrong interface sub class"
 
         self.__devhandle = device.open()
         self.__devhandle.setConfiguration(configuration)
@@ -127,12 +149,35 @@ class DFU_STM32:
                                            index = self.__intf,
                                            buffer = None)
 
+    # Upload: TARGET -> HOST
+    def ll_upload_block(self, block_num):
+        return self.__devhandle.controlMsg(requestType = 0xa1,
+                                           request = DFU_UPLOAD,
+                                           value = block_num,
+                                           index = self.__intf,
+                                           buffer = 1024,
+                                           timeout = 3000000)
+
+    # Download: HOST -> TARGET
     def ll_download_block(self, block_num, block):
         return self.__devhandle.controlMsg(requestType = 0x21,
                                            request = DFU_DNLOAD,
                                            value = block_num,
                                            index = self.__intf,
                                            buffer = block)
+
+    def dfuse_read_memory(self):
+        blocknum = self.__blocknum
+        self.__blocknum = self.__blocknum + 1
+        try:
+            block = self.ll_upload_block(blocknum)
+            return block
+        except:
+            s = self.ll_get_status()
+            while s[4] == STATE_DFU_DOWNLOAD_BUSY:
+                time.sleep(0.1)
+                s = self.ll_get_status()
+            raise ValueError, "Read memory failed (%d)" % s[0]
 
     def dfuse_set_address_pointer(self, address):
         bytes = get_four_bytes (address)
@@ -156,10 +201,9 @@ class DFU_STM32:
             raise ValueError, "Erase failed"
 
     def dfuse_write_memory(self, block):
-        data_block = [(ord(b) & 0xff) for b in block]
         blocknum = self.__blocknum
         self.__blocknum = self.__blocknum + 1
-        self.ll_download_block(blocknum, data_block)
+        self.ll_download_block(blocknum, block)
         s = self.ll_get_status()
         while s[4] == STATE_DFU_DOWNLOAD_BUSY:
             time.sleep(0.1)
@@ -167,40 +211,90 @@ class DFU_STM32:
         if s[4] != STATE_DFU_DOWNLOAD_IDLE:
             raise ValueError, "Write memory failed"
 
-    def download(self, filename):
-        ih = intel_hex(filename)
+    def download(self, ih):
         # First, erase pages
-        sys.stdout.write("Erasing ...")
+        sys.stdout.write("Erasing: ")
         sys.stdout.flush()
         for start_addr in sorted(ih.memory.keys()):
             data = ih.memory[start_addr]
             end_addr = start_addr + len(data)
             addr = start_addr & 0xfffffc00
+            i = 0
             while addr < end_addr:
                 self.dfuse_erase(addr)
-                sys.stdout.write("#")
-                sys.stdout.flush()
+                if i & 0x03 == 0x03:
+                    sys.stdout.write("#")
+                    sys.stdout.flush()
                 addr += 1024
+                i += 1
         sys.stdout.write("\n")
         sys.stdout.flush()
         # Then, write pages
-        sys.stdout.write("Writing ...")
+        sys.stdout.write("Writing: ")
         sys.stdout.flush()
         for start_addr in sorted(ih.memory.keys()):
             data = ih.memory[start_addr]
             end_addr = start_addr + len(data)
             addr = start_addr & 0xfffffc00
-            #
+            # XXX: data should be 1-KiB aligned and size should be just KiB.
             if addr != start_addr:
                 raise ValueError, "padding is not supported yet"
             self.dfuse_set_address_pointer(addr)
             i = 0
             while addr < end_addr:
                 self.dfuse_write_memory(data[i*1024:(i+1)*1024])
-                sys.stdout.write("#")
-                sys.stdout.flush()
+                if i & 0x03 == 0x03:
+                    sys.stdout.write("#")
+                    sys.stdout.flush()
                 addr += 1024
                 i += 1
+        # 0-length write at the end
+        self.ll_download_block(self.__blocknum, None)
+        s = self.ll_get_status()
+        if s[4] == STATE_DFU_MANIFEST:
+            time.sleep(1)
+            try:
+                s = self.ll_get_status()
+            except:
+                self.__devhandle.reset()
+        elif s[4] == STATE_DFU_MANIFEST_WAIT_RESET:
+            self.__devhandle.reset()
+        elif s[4] != STATE_DFU_IDLE:
+            raise ValueError, "write failed (%d)." % s[4]
+        sys.stdout.write("\n")
+        sys.stdout.flush()
+
+    def verify(self, ih):
+        s = self.ll_get_status()
+        if s[4] != STATE_DFU_IDLE:
+            self.ll_clear_status()
+        # Read pages
+        sys.stdout.write("Reading: ")
+        sys.stdout.flush()
+        for start_addr in sorted(ih.memory.keys()):
+            data = ih.memory[start_addr]
+            end_addr = start_addr + len(data)
+            addr = start_addr & 0xfffffc00
+            # XXX: data should be 1-KiB aligned and size should be just KiB.
+            if addr != start_addr:
+                raise ValueError, "padding is not supported yet"
+            self.dfuse_set_address_pointer(addr)
+            self.ll_clear_status()
+            self.ll_clear_status()
+            i = 0
+            while addr < end_addr:
+                block = self.dfuse_read_memory()
+                j = 0
+                for d in block:
+                    if d != (ord(data[i*1024+j])&0xff):
+                        raise ValueError, "verify failed at %08x" % (addr + i*1024+j)
+                    j += 1
+                if i & 0x03 == 0x03:
+                    sys.stdout.write("#")
+                    sys.stdout.flush()
+                addr += 1024
+                i += 1
+        self.ll_clear_status()
         sys.stdout.write("\n")
         sys.stdout.flush()
 
@@ -215,7 +309,8 @@ def get_device():
                     for alt in intf:
                         if alt.interfaceClass == DFU_CLASS and \
                                 alt.interfaceSubClass == DFU_SUBCLASS and \
-                                alt.interfaceProtocol == DFU_STM32PROTOCOL:
+                                (alt.interfaceProtocol == DFU_STM32PROTOCOL_0 or \
+                                     alt.interfaceProtocol == DFU_STM32PROTOCOL_2):
                             return dev, config, alt
     raise ValueError, "Device not found"
 
@@ -230,14 +325,16 @@ def main(filename):
     if s[4] == STATE_DFU_ERROR:
         dfu.ll_clear_status()
     s = dfu.ll_get_status()
+    print s
     if s[4] == STATE_DFU_IDLE:
-        print s
         exit
     transfer_size = 1024
     if s[0] != DFU_STATUS_OK:
         print s
         exit
-    dfu.download(filename)
+    ih = intel_hex(filename)
+    dfu.download(ih)
+    dfu.verify(ih)
 
 if __name__ == '__main__':
     main(sys.argv[1])

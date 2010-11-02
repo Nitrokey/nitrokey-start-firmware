@@ -1,3 +1,12 @@
+"""
+intel_hex.py - Intel Hex file reader.
+
+Copyright (C) 2010 Free Software Initiative of Japan
+Author: NIIBE Yutaka <gniibe@fsij.org>
+
+You can use/distribute/modify/etc. this for any purpose.
+"""
+
 import binascii
 
 class intel_hex:
