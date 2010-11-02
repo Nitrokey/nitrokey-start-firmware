@@ -1,5 +1,24 @@
 /*
  * ac.c -- Check access condition
+ *
+ * Copyright (C) 2010 Free Software Initiative of Japan
+ * Author: NIIBE Yutaka <gniibe@fsij.org>
+ *
+ * This file is a part of Gnuk, a GnuPG USB Token implementation.
+ *
+ * Gnuk is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Gnuk is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+ * or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+ * License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
  */
 
 #include "config.h"
@@ -194,8 +213,9 @@ verify_admin_0 (const uint8_t *pw, int buf_len, int pw_len_known)
     /* For empty PW3, pass phrase should be OPENPGP_CARD_INITIAL_PW3 */
     {
       if ((pw_len_known >=0 && pw_len_known != strlen (OPENPGP_CARD_INITIAL_PW3))
-	  || buf_len < strlen (OPENPGP_CARD_INITIAL_PW3)
-	  || strncmp ((const char *)pw, OPENPGP_CARD_INITIAL_PW3, 8) != 0)
+	  || buf_len < (int)strlen (OPENPGP_CARD_INITIAL_PW3)
+	  || strncmp ((const char *)pw, OPENPGP_CARD_INITIAL_PW3,
+		      strlen (OPENPGP_CARD_INITIAL_PW3)) != 0)
 	/* It is failure, but we don't try to lock for the case of empty PW3 */
 	return -1;
 
