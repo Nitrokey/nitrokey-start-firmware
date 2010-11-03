@@ -944,7 +944,7 @@ copy_do_1 (uint16_t tag, const uint8_t *do_data)
 
       if (do_data[0] < 127)
 	len = do_data[0] + 1;
-      else if (do_data[1] == 0x81)
+      else if (do_data[0] == 0x81)
 	len = do_data[1] + 2;
       else				/* 0x82 */
 	len = ((do_data[1] << 8) | do_data[2]) + 3;
@@ -956,7 +956,7 @@ copy_do_1 (uint16_t tag, const uint8_t *do_data)
 	  len = do_data[0];
 	  do_data++;
 	}
-      else if (do_data[1] == 0x81)
+      else if (do_data[0] == 0x81)
 	{
 	  len = do_data[1];
 	  do_data += 2;

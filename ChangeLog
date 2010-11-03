@@ -1,5 +1,12 @@
+2010-11-03  NIIBE Yutaka  <gniibe@fsij.org>
+
+	Bug fixes.
+	* src/ac.c (verify_admin_0): Initialize pwsb earlier.
+	* src/openpgp-do.c (copy_do_1): Access do_data[0] (was: do_data[1]).
+
 2010-11-02  NIIBE Yutaka  <gniibe@fsij.org>
 
+	DfuSe support.
 	* tool/dfuse.py (DFU_STM32.download): Put '#' for each 4-KiB.
 	Added 0-length write to finish download.
 	Take intel_hex object as argument.

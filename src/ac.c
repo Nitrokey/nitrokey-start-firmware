@@ -187,6 +187,7 @@ verify_admin_0 (const uint8_t *pw, int buf_len, int pw_len_known)
       const uint8_t *salt;
       uint8_t pwsb[SIZE_PW_STATUS_BYTES];
 
+      memcpy (pwsb, pw_status_bytes, SIZE_PW_STATUS_BYTES);
       pw_len = pw3_keystring[0];
       if ((pw_len_known >= 0 && pw_len_known != pw_len) || pw_len < buf_len)
 	goto failure;
@@ -194,7 +195,6 @@ verify_admin_0 (const uint8_t *pw, int buf_len, int pw_len_known)
       salt = &pw3_keystring[1];
       count = decode_iterate_count (pw3_keystring[1+8]);
       calc_md (count, salt, pw, pw_len, md);
-      memcpy (pwsb, pw_status_bytes, SIZE_PW_STATUS_BYTES);
 
       if (memcmp (md, &pw3_keystring[1+8+1], KEYSTRING_MD_SIZE) != 0)
 	{
@@ -219,7 +219,7 @@ verify_admin_0 (const uint8_t *pw, int buf_len, int pw_len_known)
 	/* It is failure, but we don't try to lock for the case of empty PW3 */
 	return -1;
 
-      pw_len = 8;
+      pw_len = strlen (OPENPGP_CARD_INITIAL_PW3);
     }
 
   return pw_len;

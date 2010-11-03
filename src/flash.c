@@ -260,9 +260,9 @@ flash_do_write (uint8_t nr, const uint8_t *data, int len)
 }
 
 void
-flash_do_release (const uint8_t *data_p)
+flash_do_release (const uint8_t *do_data)
 {
-  (void)data_p;
+  (void)do_data;
 }
 
 uint8_t *
