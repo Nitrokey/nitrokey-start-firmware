@@ -111,7 +111,7 @@ static const uint8_t do_pw_status_bytes_template[] __attribute__ ((aligned (1)))
 enum do_type {
   DO_FIXED,
   DO_VAR,
-  DO_CN_READ,
+  DO_CMP_READ,
   DO_PROC_READ,
   DO_PROC_WRITE,
   DO_PROC_READWRITE,
@@ -126,9 +126,8 @@ struct do_table_entry {
 };
 
 static uint8_t *res_p;
-static int with_tag;
 
-static void copy_do_1 (uint16_t tag, const uint8_t *do_data);
+static void copy_do_1 (uint16_t tag, const uint8_t *do_data, int with_tag);
 static const struct do_table_entry *get_do_entry (uint16_t tag);
 
 #define GNUK_DO_PRVKEY_SIG	0xff01
@@ -243,11 +242,11 @@ copy_tag (uint16_t tag)
 }
 
 static int
-do_hist_bytes (uint16_t tag)
+do_hist_bytes (uint16_t tag, int with_tag)
 {
   /* XXX: For now, no life cycle management, just return template as is. */
   /* XXX: Supporing TERMINATE DF / ACTIVATE FILE, we need to fix here */
-  copy_do_1 (tag, historical_bytes);
+  copy_do_1 (tag, historical_bytes, with_tag);
   return 0;
 }
 
@@ -255,7 +254,7 @@ do_hist_bytes (uint16_t tag)
 #define SIZE_KGTIME 4
 
 static int
-do_fp_all (uint16_t tag)
+do_fp_all (uint16_t tag, int with_tag)
 {
   const uint8_t *data;
 
@@ -290,7 +289,7 @@ do_fp_all (uint16_t tag)
 }
 
 static int
-do_cafp_all (uint16_t tag)
+do_cafp_all (uint16_t tag, int with_tag)
 {
   const uint8_t *data;
 
@@ -325,7 +324,7 @@ do_cafp_all (uint16_t tag)
 }
 
 static int
-do_kgtime_all (uint16_t tag)
+do_kgtime_all (uint16_t tag, int with_tag)
 {
   const uint8_t *data;
 
@@ -359,7 +358,8 @@ do_kgtime_all (uint16_t tag)
 }
 
 static int
-rw_pw_status (uint16_t tag, const uint8_t *data, int len, int is_write)
+rw_pw_status (uint16_t tag, int with_tag,
+	      const uint8_t *data, int len, int is_write)
 {
   const uint8_t *do_data = do_ptr[NR_DO_PW_STATUS];
 
@@ -784,14 +784,14 @@ proc_key_import (const uint8_t *data, int len)
     GPG_SUCCESS ();
 }
 
-static const uint16_t const cn_ch_data[] = {
+static const uint16_t const cmp_ch_data[] = {
   3,
   GPG_DO_NAME,
   GPG_DO_LANGUAGE,
   GPG_DO_SEX,
 };
 
-static const uint16_t const cn_app_data[] = {
+static const uint16_t const cmp_app_data[] = {
   10,
   GPG_DO_AID,
   GPG_DO_HIST_BYTES,
@@ -802,7 +802,7 @@ static const uint16_t const cn_app_data[] = {
   GPG_DO_FP_ALL, GPG_DO_CAFP_ALL, GPG_DO_KGTIME_ALL
 };
 
-static const uint16_t const cn_ss_temp[] = { 1, GPG_DO_DS_COUNT };
+static const uint16_t const cmp_ss_temp[] = { 1, GPG_DO_DS_COUNT };
 
 static const struct do_table_entry
 gpg_do_table[] = {
@@ -848,9 +848,9 @@ gpg_do_table[] = {
   { GPG_DO_ALG_DEC, DO_FIXED, AC_ALWAYS, AC_NEVER, algorithm_attr },
   { GPG_DO_ALG_AUT, DO_FIXED, AC_ALWAYS, AC_NEVER, algorithm_attr },
   /* Compound data: Read access only */
-  { GPG_DO_CH_DATA, DO_CN_READ, AC_ALWAYS, AC_NEVER, cn_ch_data },
-  { GPG_DO_APP_DATA, DO_CN_READ, AC_ALWAYS, AC_NEVER, cn_app_data },
-  { GPG_DO_SS_TEMP, DO_CN_READ, AC_ALWAYS, AC_NEVER, cn_ss_temp },
+  { GPG_DO_CH_DATA, DO_CMP_READ, AC_ALWAYS, AC_NEVER, cmp_ch_data },
+  { GPG_DO_APP_DATA, DO_CMP_READ, AC_ALWAYS, AC_NEVER, cmp_app_data },
+  { GPG_DO_SS_TEMP, DO_CMP_READ, AC_ALWAYS, AC_NEVER, cmp_ss_temp },
   /* Simple data: write access only */
   { GPG_DO_RESETTING_CODE, DO_PROC_WRITE, AC_NEVER, AC_ADMIN_AUTHORIZED,
     proc_resetting_code },
@@ -934,7 +934,7 @@ get_do_entry (uint16_t tag)
 }
 
 static void
-copy_do_1 (uint16_t tag, const uint8_t *do_data)
+copy_do_1 (uint16_t tag, const uint8_t *do_data, int with_tag)
 {
   int len;
 
@@ -973,7 +973,7 @@ copy_do_1 (uint16_t tag, const uint8_t *do_data)
 }
 
 static int
-copy_do (const struct do_table_entry *do_p)
+copy_do (const struct do_table_entry *do_p, int with_tag)
 {
   if (do_p == NULL)
     return 0;
@@ -989,7 +989,7 @@ copy_do (const struct do_table_entry *do_p)
 	if (do_data == NULL)
 	  return 0;
 	else
-	  copy_do_1 (do_p->tag, do_data);
+	  copy_do_1 (do_p->tag, do_data, with_tag);
 	break;
       }
     case DO_VAR:
@@ -998,30 +998,29 @@ copy_do (const struct do_table_entry *do_p)
 	if (do_data == NULL)
 	  return 0;
 	else
-	  copy_do_1 (do_p->tag, do_data);
+	  copy_do_1 (do_p->tag, do_data, with_tag);
 	break;
       }
-    case DO_CN_READ:
+    case DO_CMP_READ:
       {
 	int i;
-	const uint16_t *cn_data = (const uint16_t *)do_p->obj;
-	int num_components = cn_data[0];
+	const uint16_t *cmp_data = (const uint16_t *)do_p->obj;
+	int num_components = cmp_data[0];
 	uint8_t *len_p;
 
 	copy_tag (do_p->tag);
-	*res_p++ = 0x81;
+	*res_p++ = 0x81;	/* Assume it's less than 256 */
 	len_p = res_p;
 	*res_p++ = 0;		/* for now */
-	with_tag = 1;
 
 	for (i = 0; i < num_components; i++)
 	  {
 	    uint16_t tag0;
 	    const struct do_table_entry *do0_p;
 
-	    tag0 = cn_data[i+1];
+	    tag0 = cmp_data[i+1];
 	    do0_p = get_do_entry (tag0);
-	    if (copy_do (do0_p) < 0)
+	    if (copy_do (do0_p, 1) < 0)
 	      return -1;
 	  }
 
@@ -1030,16 +1029,16 @@ copy_do (const struct do_table_entry *do_p)
       }
     case DO_PROC_READ:
       {
-	int (*do_func)(uint16_t) = (int (*)(uint16_t))do_p->obj;
+	int (*do_func)(uint16_t, int) = (int (*)(uint16_t, int))do_p->obj;
 
-	return do_func (do_p->tag);
+	return do_func (do_p->tag, with_tag);
       }
     case DO_PROC_READWRITE:
       {
-	int (*rw_func)(uint16_t, uint8_t *, int, int)
-	  = (int (*)(uint16_t, uint8_t *, int, int))do_p->obj;
+	int (*rw_func)(uint16_t, int, uint8_t *, int, int)
+	  = (int (*)(uint16_t, int, uint8_t *, int, int))do_p->obj;
 
-	return rw_func (do_p->tag, NULL, 0, 0);
+	return rw_func (do_p->tag, with_tag, NULL, 0, 0);
       }
     case DO_PROC_WRITE:
       return -1;
@@ -1058,14 +1057,13 @@ gpg_do_get_data (uint16_t tag)
   const struct do_table_entry *do_p = get_do_entry (tag);
 
   res_p = res_APDU;
-  with_tag = 0;
 
   DEBUG_INFO ("   ");
   DEBUG_SHORT (tag);
 
   if (do_p)
     {
-      if (copy_do (do_p) < 0)
+      if (copy_do (do_p, 0) < 0)
 	/* Overwriting partially written result  */
 	GPG_SECURITY_FAILURE ();
       else
@@ -1098,7 +1096,7 @@ gpg_do_put_data (uint16_t tag, const uint8_t *data, int len)
       switch (do_p->do_type)
 	{
 	case DO_FIXED:
-	case DO_CN_READ:
+	case DO_CMP_READ:
 	case DO_PROC_READ:
 	  GPG_SECURITY_FAILURE ();
 	  break;
@@ -1112,6 +1110,8 @@ gpg_do_put_data (uint16_t tag, const uint8_t *data, int len)
 	    if (len == 0)
 	      /* make DO empty */
 	      *do_data_p = NULL;
+	    else if (len > 255)
+	      GPG_MEMORY_FAILURE();
 	    else
 	      {
 		uint8_t nr = do_tag_to_nr (tag);
@@ -1126,10 +1126,10 @@ gpg_do_put_data (uint16_t tag, const uint8_t *data, int len)
 	  }
 	case DO_PROC_READWRITE:
 	  {
-	    int (*rw_func)(uint16_t, const uint8_t *, int, int)
-	      = (int (*)(uint16_t, const uint8_t *, int, int))do_p->obj;
+	    int (*rw_func)(uint16_t, int, const uint8_t *, int, int)
+	      = (int (*)(uint16_t, int, const uint8_t *, int, int))do_p->obj;
 
-	    rw_func (tag, data, len, 1);
+	    rw_func (tag, 0, data, len, 1);
 	    break;
 	  }
 	case DO_PROC_WRITE:

@@ -1,3 +1,15 @@
+2010-11-04  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/openpgp-do.c (DO_CMP_READ): Renamed.
+	(cmp_ch_data, cmp_app_data, cmp_ss_temp): Likewise.
+	(with_tag): Removed static global variable.
+	(do_hist_bytes, do_fp_all, do_cafp_all, do_kgtime_all)
+	(rw_pw_status, copy_do_1, copy_do, gpg_do_get_data): Added
+	with_tag argument.
+	(gpg_do_put_data): length > 255 will be error.
+
+	* src/flash.c (flash_do_release): Fill zero.
+
 2010-11-03  NIIBE Yutaka  <gniibe@fsij.org>
 
 	Bug fixes.

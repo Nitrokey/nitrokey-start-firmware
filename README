@@ -55,6 +55,10 @@ It is known not-working well:
 	* For some version of kernel and libccid, --enable-debug can't
           work well.  Please disable DEBUG option if it doesn't work well.
 
+Not (yet) supported feature(s):
+
+	* card holder certificate (its size matters (> 1KiB?), if we support)
+
 
 Targets
 =======

@@ -262,7 +262,45 @@ flash_do_write (uint8_t nr, const uint8_t *data, int len)
 void
 flash_do_release (const uint8_t *do_data)
 {
-  (void)do_data;
+  uint32_t addr = (uint32_t)do_data;
+  int state = 0;
+  int i;
+  int len;
+
+  /* Fill 0x0000 for "tag and check" word */
+  if (flash_program_halfword (addr - 2, 0) != FLASH_COMPLETE)
+    return;
+
+  if (do_data[0] < 127)
+    {
+      len = do_data[0] - 1;
+      addr += 2;
+    }
+  else if (do_data[0] == 0x81)
+    {
+      len = do_data[1];
+      addr += 2;
+    }
+  else				/* 0x82 */
+    {
+      len = ((do_data[1] << 8) | do_data[2]) - 1;
+      addr += 4;
+    }
+
+  /* Fill zero */
+  for (i = 0; i < len/2; i ++)
+    {
+      if (flash_program_halfword (addr, 0) != FLASH_COMPLETE)
+	return;
+      addr += 2;
+    }
+
+  if ((len & 1))
+    {
+      if (flash_program_halfword (addr, 0) != FLASH_COMPLETE)
+	return;
+      addr += 2;
+    }
 }
 
 uint8_t *
