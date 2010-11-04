@@ -1,5 +1,12 @@
 2010-11-04  NIIBE Yutaka  <gniibe@fsij.org>
 
+	* src/flash.c 	(flash_warning): New.
+	(flash_do_pool): Added header for DO pool.
+	(flash_do_release): Fill zero.
+	(flash_do_write): Change DO format in flash.
+	* src/openpgp-do.c (gpg_do_table_init, copy_do_1)
+	(gpg_do_read_simple): Follow the change of DO format in flash.
+
 	* src/openpgp-do.c (DO_CMP_READ): Renamed.
 	(cmp_ch_data, cmp_app_data, cmp_ss_temp): Likewise.
 	(with_tag): Removed static global variable.
@@ -7,8 +14,6 @@
 	(rw_pw_status, copy_do_1, copy_do, gpg_do_get_data): Added
 	with_tag argument.
 	(gpg_do_put_data): length > 255 will be error.
-
-	* src/flash.c (flash_do_release): Fill zero.
 
 2010-11-03  NIIBE Yutaka  <gniibe@fsij.org>
 

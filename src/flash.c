@@ -22,6 +22,13 @@
  */
 
 /*
+ * We assume single DO size is less than 256.
+ *
+ * NOTE: When we will support "Card holder certificate"
+ * (which size is larger than 256), it will not be put into DO pool.
+ */
+
+/*
  * Note: Garbage collection and page management with flash erase
  *       is *NOT YET* implemented
  */
@@ -136,11 +143,13 @@ const uint8_t const flash_data[4] __attribute__ ((section (".gnuk_data"))) = {
   0xff, 0xff, 0xff, 0xff
 };
 
+/* Linker set this symbol */
+extern uint8_t _do_pool;
+
 void
 flash_init (void)
 {
   const uint8_t *p;
-  extern uint8_t _do_pool;
   extern uint8_t _keystore_pool;
 
   do_pool = &_do_pool;
@@ -156,10 +165,27 @@ flash_init (void)
   flash_unlock ();
 }
 
+/*
+ * DO pool managenent
+ *
+ * DO pool consists of two part:
+ *   2-byte header
+ *   contents
+ *
+ * Format of a DO pool content:
+ *    NR:   8-bit tag_number
+ *    LEN:  8-bit length
+ *    DATA: data * LEN
+ *    PAD:  optional byte for 16-bit alignment
+ */
+#define FLASH_DO_POOL_HEADER_SIZE 2
+#define FLASH_DO_POOL_SIZE	  1024*3
+#define FLASH_PAGE_SIZE		  1024
+
 const uint8_t *
 flash_do_pool (void)
 {
-  return do_pool;
+  return do_pool + FLASH_DO_POOL_HEADER_SIZE;
 }
 
 void
@@ -174,133 +200,82 @@ flash_do_write (uint8_t nr, const uint8_t *data, int len)
   const uint8_t *p = last_p;
   uint16_t hw;
   uint32_t addr;
-  int state = 0;
   int i;
 
-  if (last_p - do_pool + len + 2 + 3 > 1024*3)
-    return NULL;
+  if (last_p - do_pool + len + FLASH_DO_POOL_HEADER_SIZE + 2 > FLASH_PAGE_SIZE)
+    return NULL;		/* gc/erase/.../ */
 
   DEBUG_INFO ("flash DO\r\n");
 
   addr = (uint32_t)last_p;
-  hw = nr | (0xff << 8);
+  hw = nr | (len << 8);
   if (flash_program_halfword (addr, hw) != FLASH_COMPLETE)
     return NULL;
   addr += 2;
 
-  if (len < 128)
+  for (i = 0; i < len/2; i ++)
     {
-      hw = len;
-      state = 1;
-    }
-  else if (len < 256)
-    {
-      hw = 0x81 | (len << 8);
+      hw = data[i*2] | (data[i*2+1]<<8);
       if (flash_program_halfword (addr, hw) != FLASH_COMPLETE)
 	return NULL;
       addr += 2;
-      state = 0;
     }
-  else
+
+  if ((len & 1))
     {
-      hw = 0x82 | ((len >> 8) << 8);
+      hw = data[i*2] | 0xff00;
       if (flash_program_halfword (addr, hw) != FLASH_COMPLETE)
 	return NULL;
       addr += 2;
-      hw = (len & 0xff);
-      state = 1;
-    }
-
-  if (state == 0)
-    {
-      for (i = 0; i < len/2; i ++)
-	{
-	  hw = data[i*2] | (data[i*2+1]<<8);
-	  if (flash_program_halfword (addr, hw) != FLASH_COMPLETE)
-	    return NULL;
-	  addr += 2;
-	}
-
-      if ((len & 1))
-	{
-	  hw = data[i*2] | 0xff00;
-	  if (flash_program_halfword (addr, hw) != FLASH_COMPLETE)
-	    return NULL;
-	  addr += 2;
-	}
-    }
-  else
-    {
-      hw |= (data[0]<<8);
-      if (flash_program_halfword (addr, hw) != FLASH_COMPLETE)
-	return NULL;
-      addr += 2;
-
-      for (i = 0; i < (len - 1)/2; i ++)
-	{
-	  hw = data[i*2+1] | (data[i*2+2]<<8);
-	  if (flash_program_halfword (addr, hw) != FLASH_COMPLETE)
-	    return NULL;
-	  addr += 2;
-	}
-
-      if (((len - 1) & 1))
-	{
-	  hw = data[i*2+1] | 0xff00;
-	  if (flash_program_halfword (addr, hw) != FLASH_COMPLETE)
-	    return NULL;
-	  addr += 2;
-	}
     }
 
   last_p = (const uint8_t *)addr;
 
   DEBUG_INFO ("flash DO...done\r\n");
-  return p + 2;
+  return p + 1;
+}
+
+static void
+flash_warning (const char *msg)
+{
+  (void)msg;
+  DEBUG_INFO ("FLASH: ");
+  DEBUG_INFO (msg);
+  DEBUG_INFO ("\r\n");
 }
 
 void
 flash_do_release (const uint8_t *do_data)
 {
-  uint32_t addr = (uint32_t)do_data;
-  int state = 0;
+  uint32_t addr = (uint32_t)do_data - 1;
+  uint32_t addr_tag = addr;
   int i;
-  int len;
+  int len = do_data[0];
 
-  /* Fill 0x0000 for "tag and check" word */
-  if (flash_program_halfword (addr - 2, 0) != FLASH_COMPLETE)
+  /* Don't filling zero for data in code (such as ds_count_initial_value) */
+  if (do_data < &_do_pool || do_data > &_do_pool + FLASH_DO_POOL_SIZE)
     return;
 
-  if (do_data[0] < 127)
-    {
-      len = do_data[0] - 1;
-      addr += 2;
-    }
-  else if (do_data[0] == 0x81)
-    {
-      len = do_data[1];
-      addr += 2;
-    }
-  else				/* 0x82 */
-    {
-      len = ((do_data[1] << 8) | do_data[2]) - 1;
-      addr += 4;
-    }
+  addr += 2;
 
-  /* Fill zero */
+  /* Fill zero for content and pad */
   for (i = 0; i < len/2; i ++)
     {
       if (flash_program_halfword (addr, 0) != FLASH_COMPLETE)
-	return;
+	flash_warning ("fill-zero failure");
       addr += 2;
     }
 
   if ((len & 1))
     {
       if (flash_program_halfword (addr, 0) != FLASH_COMPLETE)
-	return;
+	flash_warning ("fill-zero pad failure");
       addr += 2;
     }
+
+  /* Fill 0x0000 for "tag_number and length" word */
+  if (flash_program_halfword (addr_tag, 0) != FLASH_COMPLETE)
+    flash_warning ("fill-zero tag_nr failure");
 }
 
 uint8_t *

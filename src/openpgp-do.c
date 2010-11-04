@@ -421,7 +421,7 @@ proc_resetting_code (const uint8_t *data, int len)
   newpw = data;
   sha1 (newpw, newpw_len, new_ks);
   new_ks0[0] = newpw_len;
-  r = gpg_change_keystring (3, old_ks, 2, new_ks);
+  r = gpg_change_keystring (BY_ADMIN, old_ks, BY_RESETCODE, new_ks);
   if (r < -2)
     {
       DEBUG_INFO ("memory error.\r\n");
@@ -868,7 +868,7 @@ int
 gpg_do_table_init (void)
 {
   const uint8_t *p, *p_start;
-  int i, len;
+  int i;
 
   do_ptr[NR_DO_DS_COUNT] = do_ds_count_initial_value;
   do_ptr[NR_DO_PW_STATUS] = do_pw_status_bytes_template;
@@ -879,28 +879,18 @@ gpg_do_table_init (void)
   while (*p != 0xff)
     {
       uint8_t nr = *p++;
-      uint8_t check = *p++;
+      uint8_t len = *p;
 
-      if (check == 0xff)
-	do_ptr[nr] = p;
-
-      if (*p < 128)
-	len = *p++;
-      else if (*p == 0x81)
-	{
-	  p++;
-	  len = *p++;
-	}
-      else			/* 0x82 */
-	{
-	  p++;
-	  len = (*p << 8) + *(p+1);
-	  p += 2;
-	}
-
-      p += len;
-      if (((uint32_t)p & 1))
+      if (len == 0x00)
 	p++;
+      else
+	{
+	  do_ptr[nr] = p;
+	  p += len + 1;
+
+	  if (((uint32_t)p & 1))
+	    p++;
+	}
     }
 
   flash_set_do_pool_last (p);
@@ -942,30 +932,15 @@ copy_do_1 (uint16_t tag, const uint8_t *do_data, int with_tag)
     {
       copy_tag (tag);
 
-      if (do_data[0] < 127)
-	len = do_data[0] + 1;
-      else if (do_data[0] == 0x81)
-	len = do_data[1] + 2;
-      else				/* 0x82 */
-	len = ((do_data[1] << 8) | do_data[2]) + 3;
+      if (do_data[0] >= 128)
+	*res_p++ = 0x81;
+
+      len = do_data[0] + 1;
     }
   else
     {
-      if (do_data[0] < 127)
-	{
-	  len = do_data[0];
-	  do_data++;
-	}
-      else if (do_data[0] == 0x81)
-	{
-	  len = do_data[1];
-	  do_data += 2;
-	}
-      else				/* 0x82 */
-	{
-	  len = ((do_data[1] << 8) | do_data[2]);
-	  do_data += 3;
-	}
+      len = do_data[0];
+      do_data++;
     }
 
   memcpy (res_p, do_data, len);
@@ -1209,12 +1184,7 @@ gpg_do_read_simple (uint8_t nr)
   if (do_data == NULL)
     return NULL;
 
-  if (do_data[0] < 128)
-    return do_data+1;
-  else if (do_data[0] == 0x81)
-    return do_data+2;
-  else				/* 0x82 */
-    return do_data+3;
+  return do_data+1;
 }
 
 void
@@ -1259,7 +1229,8 @@ gpg_do_increment_digital_signature_counter (void)
   count_data[1] = (count >> 8) & 0xff;
   count_data[2] = count & 0xff;
 
-  flash_do_release (do_data);
+  if (do_data)
+    flash_do_release (do_data);
   do_ptr[NR_DO_DS_COUNT] = flash_do_write (NR_DO_DS_COUNT, count_data,
 					   SIZE_DIGITAL_SIGNATURE_COUNTER);
 }
