@@ -122,7 +122,7 @@ SECTIONS
 
     .gnuk_flash : ALIGN (1024)
     {
-	_do_pool = .;
+	_data_pool = .;
 	KEEP(*(.gnuk_data))
 	FILL(0xffffffff);
 	. = ALIGN(1024);

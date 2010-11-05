@@ -32,6 +32,67 @@
 #include "polarssl/aes.h"
 #include "polarssl/sha1.h"
 
+static uint32_t digital_signature_counter;
+
+void
+gpg_increment_digital_signature_counter (void)
+{
+  uint16_t hw0, hw1;
+
+  digital_signature_counter++;
+  digital_signature_counter &= 0x00ffffff;
+
+  if ((digital_signature_counter & 0x03ff) == 0)
+    { /* carry occurs from l10 to h14 */
+      hw0 = NR_COUNTER_DS
+	| ((digital_signature_counter & 0x00fc0000) >> 18)
+	| ((digital_signature_counter & 0x0003fc00) >> 2);
+      hw1 = NR_COUNTER_DS_LSB;
+      flash_put_data (hw0);
+      flash_put_data (hw1);
+    }
+  else
+    {
+      hw1 = NR_COUNTER_DS_LSB
+	| ((digital_signature_counter & 0x0300) >> 8)
+	| ((digital_signature_counter & 0x00ff) << 8);
+      flash_put_data (hw1);
+    }
+}
+
+#define PASSWORD_ERRORS_MAX 3	/* >= errors, it will be locked */
+const uint8_t *pw_err_counter_p[3];
+
+static int
+gpg_get_pw_err_counter (uint8_t which)
+{
+  return flash_cnt123_get_value (pw_err_counter_p[which]);
+}
+
+int
+gpg_passwd_locked (uint8_t which)
+{
+  if (gpg_get_pw_err_counter (which) >= PASSWORD_ERRORS_MAX)
+    return 1;
+  else
+    return 0;
+}
+
+void
+gpg_reset_pw_err_counter (uint8_t which)
+{
+  flash_cnt123_clear (&pw_err_counter_p[which]);
+  if (pw_err_counter_p[which] != NULL)
+    GPG_MEMORY_FAILURE ();
+}
+
+void
+gpg_increment_pw_err_counter (uint8_t which)
+{
+  flash_cnt123_increment (which, &pw_err_counter_p[which]);
+}
+
+
 uint16_t data_objects_number_of_bytes;
 
 /*
@@ -89,21 +150,24 @@ static const uint8_t algorithm_attr[] __attribute__ ((aligned (1))) = {
   0x00		      /* 0: p&q , 3: CRT with N (not yet supported) */
 };
 
-static const uint8_t do_ds_count_initial_value[] __attribute__ ((aligned (1))) = {
-  3,
-  0, 0, 0
-};
-
-static const uint8_t do_pw_status_bytes_template[] __attribute__ ((aligned (1))) = {
-  7,
-  0,				/* PW1 is valid for single PSO:CDS command */
-  127, 127, 127,		/* max length of PW1, RC, and PW3 */
-  3, 0, 3			/* Error counter of PW1, RC, and PW3 */
-};
-#define PW_STATUS_BYTES_TEMPLATE (do_pw_status_bytes_template+1)
-
-#define SIZE_DIGITAL_SIGNATURE_COUNTER 3
-/* 3-byte binary (big endian) */
+#define PW_LEN_MAX 127
+/*
+ * Representation of PW1_LIFETIME:
+ *    0: PW1_LIEFTIME_P == NULL : PW1 is valid for single PSO:CDS command
+ *    1: PW1_LIEFTIME_P != NULL : PW1 is valid for several PSO:CDS commands
+ *
+ * The address in the variable PW1_LIEFTIME_P is used when filling zero
+ * in flash memory
+ */
+static const uint8_t *pw1_lifetime_p;
+int
+gpg_get_pw1_lifetime (void)
+{
+  if (pw1_lifetime_p == NULL)
+    return 0;
+  else
+    return 1;
+}
 
 #define SIZE_FINGER_PRINT 20
 #define SIZE_KEYGEN_TIME 4	/* RFC4880 */
@@ -130,13 +194,6 @@ static uint8_t *res_p;
 static void copy_do_1 (uint16_t tag, const uint8_t *do_data, int with_tag);
 static const struct do_table_entry *get_do_entry (uint16_t tag);
 
-#define GNUK_DO_PRVKEY_SIG	0xff01
-#define GNUK_DO_PRVKEY_DEC	0xff02
-#define GNUK_DO_PRVKEY_AUT	0xff03
-#define GNUK_DO_KEYSTRING_PW1	0xff04
-#define GNUK_DO_KEYSTRING_RC    0xff05
-#define GNUK_DO_KEYSTRING_PW3   0xff06
-#define GNUK_DO_PW_STATUS	0xff07
 #define GPG_DO_AID		0x004f
 #define GPG_DO_NAME		0x005b
 #define GPG_DO_LOGIN_DATA	0x005e
@@ -170,30 +227,13 @@ static const struct do_table_entry *get_do_entry (uint16_t tag);
 #define GPG_DO_HIST_BYTES	0x5f52
 #define GPG_DO_CH_CERTIFICATE	0x7f21
 
-#define NUM_DO_OBJS 23
-static const uint8_t *do_ptr[NUM_DO_OBJS];
+static const uint8_t *do_ptr[NR_DO__LAST__];
 
 static uint8_t
 do_tag_to_nr (uint16_t tag)
 {
   switch (tag)
     {
-    case GNUK_DO_PRVKEY_SIG:
-      return NR_DO_PRVKEY_SIG;
-    case GNUK_DO_PRVKEY_DEC:
-      return NR_DO_PRVKEY_DEC;
-    case GNUK_DO_PRVKEY_AUT:
-      return NR_DO_PRVKEY_AUT;
-    case GNUK_DO_KEYSTRING_PW1:
-      return NR_DO_KEYSTRING_PW1;
-    case GNUK_DO_KEYSTRING_RC:
-      return NR_DO_KEYSTRING_RC;
-    case GNUK_DO_KEYSTRING_PW3:
-      return NR_DO_KEYSTRING_PW3;
-    case GNUK_DO_PW_STATUS:
-      return NR_DO_PW_STATUS;
-    case GPG_DO_DS_COUNT:
-      return NR_DO_DS_COUNT;
     case GPG_DO_SEX:
       return NR_DO_SEX;
     case GPG_DO_FP_SIG:
@@ -222,8 +262,6 @@ do_tag_to_nr (uint16_t tag)
       return NR_DO_NAME;
     case GPG_DO_LANGUAGE:
       return NR_DO_LANGUAGE;
-    case GPG_DO_CH_CERTIFICATE:
-      return NR_DO_CH_CERTIFICATE;
     default:
       fatal ();
     }
@@ -358,50 +396,64 @@ do_kgtime_all (uint16_t tag, int with_tag)
 }
 
 static int
+do_ds_count (uint16_t tag, int with_tag)
+{
+  if (with_tag)
+    {
+      copy_tag (tag);
+      *res_p++ = 3;
+    }
+
+  *res_p++ = (digital_signature_counter >> 16) & 0xff;
+  *res_p++ = (digital_signature_counter >> 8) & 0xff;
+  *res_p++ = digital_signature_counter & 0xff;
+  return 0;
+}
+
+static int
 rw_pw_status (uint16_t tag, int with_tag,
 	      const uint8_t *data, int len, int is_write)
 {
-  const uint8_t *do_data = do_ptr[NR_DO_PW_STATUS];
-
   if (is_write)
     {
-      uint8_t pwsb[SIZE_PW_STATUS_BYTES];
+      (void)len;		/* Should be SIZE_PW_STATUS_BYTES */
 
-      (void)len;
-      if (do_data)
+      /* Only the first byte of DATA is checked */
+      if (data[0] == 0)
 	{
-	  memcpy (pwsb, &do_data[1], SIZE_PW_STATUS_BYTES);
-	  flash_do_release (do_data);
+	  flash_bool_clear (&pw1_lifetime_p);
+	  if (pw1_lifetime_p == NULL)
+	    GPG_SUCCESS ();
+	  else
+	    GPG_MEMORY_FAILURE();
 	}
       else
-	memcpy (pwsb, PW_STATUS_BYTES_TEMPLATE, SIZE_PW_STATUS_BYTES);
-
-      pwsb[0] = data[0];
-      do_ptr[NR_DO_PW_STATUS]
-	= flash_do_write (NR_DO_PW_STATUS, pwsb, SIZE_PW_STATUS_BYTES);
-      if (do_ptr[NR_DO_PW_STATUS])
-	GPG_SUCCESS ();
-      else
-	GPG_MEMORY_FAILURE();
+	{
+	  pw1_lifetime_p = flash_bool_write (NR_BOOL_PW1_LIFETIME);
+	  if (pw1_lifetime_p != NULL)
+	    GPG_SUCCESS ();
+	  else
+	    GPG_MEMORY_FAILURE();
+	}
 
       return 0;
     }
   else
     {
-      if (do_data)
+      if (with_tag)
 	{
-	  if (with_tag)
-	    {
-	      copy_tag (tag);
-	      *res_p++ = SIZE_PW_STATUS_BYTES;
-	    }
-
-	  memcpy (res_p, &do_data[1], SIZE_PW_STATUS_BYTES);
-	  res_p += SIZE_PW_STATUS_BYTES;
-	  return 1;
+	  copy_tag (tag);
+	  *res_p++ = SIZE_PW_STATUS_BYTES;
 	}
-      else
-	return 0;
+
+      *res_p++ = gpg_get_pw1_lifetime ();
+      *res_p++ = PW_LEN_MAX;
+      *res_p++ = PW_LEN_MAX;
+      *res_p++ = PW_LEN_MAX;
+      *res_p++ = PASSWORD_ERRORS_MAX - gpg_get_pw_err_counter (PW_ERR_PW1);
+      *res_p++ = PASSWORD_ERRORS_MAX - gpg_get_pw_err_counter (PW_ERR_RC);
+      *res_p++ = PASSWORD_ERRORS_MAX - gpg_get_pw_err_counter (PW_ERR_PW3);
+      return 1;
     }
 }
 
@@ -446,8 +498,7 @@ proc_resetting_code (const uint8_t *data, int len)
       GPG_SUCCESS ();
     }
 
-  /* Reset RC counter in GNUK_DO_PW_STATUS */
-  gpg_do_reset_pw_counter (PW_STATUS_RC);
+  gpg_reset_pw_err_counter (PW_ERR_RC);
 }
 
 static void
@@ -508,7 +559,7 @@ int
 gpg_do_load_prvkey (enum kind_of_key kk, int who, const uint8_t *keystring)
 {
   uint8_t nr = get_do_ptr_nr_for_kk (kk);
-  const uint8_t *do_data = do_ptr[nr];
+  const uint8_t *do_data = do_ptr[nr - NR_DO__FIRST__];
   uint8_t *key_addr;
   uint8_t dek[DATA_ENCRYPTION_KEY_SIZE];
 
@@ -557,7 +608,7 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
   struct prvkey_data *pd;
   uint8_t *key_addr;
   const uint8_t *dek;
-  const uint8_t *do_data = do_ptr[nr];
+  const uint8_t *do_data = do_ptr[nr - NR_DO__FIRST__];
   const uint8_t *ks_pw1;
   const uint8_t *ks_rc;
 
@@ -659,7 +710,7 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
   encrypt (keystring, pd->dek_encrypted_3, DATA_ENCRYPTION_KEY_SIZE);
 
   p = flash_do_write (nr, (const uint8_t *)pd, sizeof (struct prvkey_data));
-  do_ptr[nr] = p;
+  do_ptr[nr - NR_DO__FIRST__] = p;
 
   if (do_data == NULL)
     random_bytes_free (dek);
@@ -693,7 +744,7 @@ gpg_do_chks_prvkey (enum kind_of_key kk,
 		    int who_new, const uint8_t *new_ks)
 {
   uint8_t nr = get_do_ptr_nr_for_kk (kk);
-  const uint8_t *do_data = do_ptr[nr];
+  const uint8_t *do_data = do_ptr[nr - NR_DO__FIRST__];
   uint8_t dek[DATA_ENCRYPTION_KEY_SIZE];
   struct prvkey_data *pd;
   const uint8_t *p;
@@ -715,7 +766,7 @@ gpg_do_chks_prvkey (enum kind_of_key kk,
   memcpy (dek_p, dek, DATA_ENCRYPTION_KEY_SIZE);
 
   p = flash_do_write (nr, (const uint8_t *)pd, sizeof (struct prvkey_data));
-  do_ptr[nr] = p;
+  do_ptr[nr - NR_DO__FIRST__] = p;
 
   flash_do_release (do_data);
   free (pd);
@@ -752,7 +803,7 @@ proc_key_import (const uint8_t *data, int len)
   if (len <= 22)
     {					    /* Deletion of the key */
       uint8_t nr = get_do_ptr_nr_for_kk (kk);
-      const uint8_t *do_data = do_ptr[nr];
+      const uint8_t *do_data = do_ptr[nr - NR_DO__FIRST__];
 
       /* Delete the key */
       if (do_data)
@@ -762,7 +813,7 @@ proc_key_import (const uint8_t *data, int len)
 	  flash_key_release (key_addr);
 	  flash_do_release (do_data);
 	}
-      do_ptr[nr] = NULL;
+      do_ptr[nr - NR_DO__FIRST__] = NULL;
 
       if (--num_prv_keys == 0)
 	{
@@ -779,7 +830,7 @@ proc_key_import (const uint8_t *data, int len)
   /* Skip E, 4-byte */
   r = gpg_do_write_prvkey (kk, &data[26], len - 26, keystring_md_pw3);
   if (r < 0)
-    GPG_MEMORY_FAILURE();
+    GPG_MEMORY_FAILURE ();
   else
     GPG_SUCCESS ();
 }
@@ -806,38 +857,29 @@ static const uint16_t const cmp_ss_temp[] = { 1, GPG_DO_DS_COUNT };
 
 static const struct do_table_entry
 gpg_do_table[] = {
-  /* Pseudo DO (private): not directly user accessible */
-  { GNUK_DO_PRVKEY_SIG, DO_VAR, AC_NEVER, AC_NEVER, &do_ptr[0] },
-  { GNUK_DO_PRVKEY_DEC, DO_VAR, AC_NEVER, AC_NEVER, &do_ptr[1] },
-  { GNUK_DO_PRVKEY_AUT, DO_VAR, AC_NEVER, AC_NEVER, &do_ptr[2] },
-  { GNUK_DO_KEYSTRING_PW1, DO_VAR, AC_NEVER, AC_NEVER, &do_ptr[3] },
-  { GNUK_DO_KEYSTRING_RC, DO_VAR, AC_NEVER, AC_NEVER, &do_ptr[4] },
-  { GNUK_DO_KEYSTRING_PW3, DO_VAR, AC_NEVER, AC_NEVER, &do_ptr[5] },
-  { GNUK_DO_PW_STATUS, DO_VAR, AC_NEVER, AC_NEVER, &do_ptr[6] },
-  /* Variable(s): Fixed size, not changeable by user */
-  { GPG_DO_DS_COUNT, DO_VAR, AC_ALWAYS, AC_NEVER, &do_ptr[7] },
   /* Variables: Fixed size */
-  { GPG_DO_SEX, DO_VAR, AC_ALWAYS, AC_ADMIN_AUTHORIZED, &do_ptr[8] },
-  { GPG_DO_FP_SIG, DO_VAR, AC_ALWAYS, AC_ADMIN_AUTHORIZED, &do_ptr[9] },
-  { GPG_DO_FP_DEC, DO_VAR, AC_ALWAYS, AC_ADMIN_AUTHORIZED, &do_ptr[10] },
-  { GPG_DO_FP_AUT, DO_VAR, AC_ALWAYS, AC_ADMIN_AUTHORIZED, &do_ptr[11] },
-  { GPG_DO_CAFP_1, DO_VAR, AC_ALWAYS, AC_ADMIN_AUTHORIZED, &do_ptr[12] },
-  { GPG_DO_CAFP_2, DO_VAR, AC_ALWAYS, AC_ADMIN_AUTHORIZED, &do_ptr[13] },
-  { GPG_DO_CAFP_3, DO_VAR, AC_ALWAYS, AC_ADMIN_AUTHORIZED, &do_ptr[14] },
-  { GPG_DO_KGTIME_SIG, DO_VAR, AC_ALWAYS, AC_ADMIN_AUTHORIZED, &do_ptr[15] },
-  { GPG_DO_KGTIME_DEC, DO_VAR, AC_ALWAYS, AC_ADMIN_AUTHORIZED, &do_ptr[16] },
-  { GPG_DO_KGTIME_AUT, DO_VAR, AC_ALWAYS, AC_ADMIN_AUTHORIZED, &do_ptr[17] },
+  { GPG_DO_SEX, DO_VAR, AC_ALWAYS, AC_ADMIN_AUTHORIZED, &do_ptr[0] },
+  { GPG_DO_FP_SIG, DO_VAR, AC_ALWAYS, AC_ADMIN_AUTHORIZED, &do_ptr[1] },
+  { GPG_DO_FP_DEC, DO_VAR, AC_ALWAYS, AC_ADMIN_AUTHORIZED, &do_ptr[2] },
+  { GPG_DO_FP_AUT, DO_VAR, AC_ALWAYS, AC_ADMIN_AUTHORIZED, &do_ptr[3] },
+  { GPG_DO_CAFP_1, DO_VAR, AC_ALWAYS, AC_ADMIN_AUTHORIZED, &do_ptr[4] },
+  { GPG_DO_CAFP_2, DO_VAR, AC_ALWAYS, AC_ADMIN_AUTHORIZED, &do_ptr[5] },
+  { GPG_DO_CAFP_3, DO_VAR, AC_ALWAYS, AC_ADMIN_AUTHORIZED, &do_ptr[6] },
+  { GPG_DO_KGTIME_SIG, DO_VAR, AC_ALWAYS, AC_ADMIN_AUTHORIZED, &do_ptr[7] },
+  { GPG_DO_KGTIME_DEC, DO_VAR, AC_ALWAYS, AC_ADMIN_AUTHORIZED, &do_ptr[8] },
+  { GPG_DO_KGTIME_AUT, DO_VAR, AC_ALWAYS, AC_ADMIN_AUTHORIZED, &do_ptr[9] },
   /* Variables: Variable size */
-  { GPG_DO_LOGIN_DATA, DO_VAR, AC_ALWAYS, AC_ADMIN_AUTHORIZED, &do_ptr[18] },
-  { GPG_DO_URL, DO_VAR, AC_ALWAYS, AC_ADMIN_AUTHORIZED, &do_ptr[19] },
-  { GPG_DO_NAME, DO_VAR, AC_ALWAYS, AC_ADMIN_AUTHORIZED, &do_ptr[20] },
-  { GPG_DO_LANGUAGE, DO_VAR, AC_ALWAYS, AC_ADMIN_AUTHORIZED, &do_ptr[21] },
-  { GPG_DO_CH_CERTIFICATE, DO_VAR, AC_ALWAYS, AC_ADMIN_AUTHORIZED, &do_ptr[22] },
+  { GPG_DO_LOGIN_DATA, DO_VAR, AC_ALWAYS, AC_ADMIN_AUTHORIZED, &do_ptr[10] },
+  { GPG_DO_URL, DO_VAR, AC_ALWAYS, AC_ADMIN_AUTHORIZED, &do_ptr[11] },
+  { GPG_DO_NAME, DO_VAR, AC_ALWAYS, AC_ADMIN_AUTHORIZED, &do_ptr[12] },
+  { GPG_DO_LANGUAGE, DO_VAR, AC_ALWAYS, AC_ADMIN_AUTHORIZED, &do_ptr[13] },
   /* Pseudo DO READ: calculated */
   { GPG_DO_HIST_BYTES, DO_PROC_READ, AC_ALWAYS, AC_NEVER, do_hist_bytes },
   { GPG_DO_FP_ALL, DO_PROC_READ, AC_ALWAYS, AC_NEVER, do_fp_all },
   { GPG_DO_CAFP_ALL, DO_PROC_READ, AC_ALWAYS, AC_NEVER, do_cafp_all },
   { GPG_DO_KGTIME_ALL, DO_PROC_READ, AC_ALWAYS, AC_NEVER, do_kgtime_all },
+  /* Pseudo DO READ: calculated, not changeable by user */
+  { GPG_DO_DS_COUNT, DO_PROC_READ, AC_ALWAYS, AC_NEVER, do_ds_count },
   /* Pseudo DO READ/WRITE: calculated */
   { GPG_DO_PW_STATUS, DO_PROC_READWRITE, AC_ALWAYS, AC_ADMIN_AUTHORIZED,
     rw_pw_status },
@@ -854,60 +896,116 @@ gpg_do_table[] = {
   /* Simple data: write access only */
   { GPG_DO_RESETTING_CODE, DO_PROC_WRITE, AC_NEVER, AC_ADMIN_AUTHORIZED,
     proc_resetting_code },
-  /* Compound data: Write access only*/
+  /* Compound data: Write access only */
   { GPG_DO_KEY_IMPORT, DO_PROC_WRITE, AC_NEVER, AC_ADMIN_AUTHORIZED,
     proc_key_import },
+  /* Card holder certificate: Not supported yet */
+  { GPG_DO_CH_CERTIFICATE, DO_PROC_READWRITE, AC_NEVER, AC_NEVER, NULL },
 };
 
 #define NUM_DO_ENTRIES (int)(sizeof (gpg_do_table) / sizeof (struct do_table_entry))
 
 /*
- * Initialize DO_PTR reading from Flash ROM
+ * Reading data from Flash ROM, initialize DO_PTR, PW_ERR_COUNTERS, etc. 
  */
 int
 gpg_do_table_init (void)
 {
   const uint8_t *p, *p_start;
   int i;
+  const uint8_t *dsc_h14_p, *dsc_l10_p;
+  int dsc_h14, dsc_l10;
 
-  do_ptr[NR_DO_DS_COUNT] = do_ds_count_initial_value;
-  do_ptr[NR_DO_PW_STATUS] = do_pw_status_bytes_template;
-  p_start = flash_do_pool ();
+  p_start = flash_data_pool ();
 
-  /* Traverse DO pool */
+  dsc_h14_p = dsc_l10_p = NULL;
+  pw1_lifetime_p = NULL;
+  pw_err_counter_p[PW_ERR_PW1] = NULL;
+  pw_err_counter_p[PW_ERR_RC] = NULL;
+  pw_err_counter_p[PW_ERR_PW3] = NULL;
+
+  /* Traverse DO and counters in DO pool */
   p = p_start;
-  while (*p != 0xff)
+  while (*p != NR_EMPTY)
     {
       uint8_t nr = *p++;
-      uint8_t len = *p;
+      uint8_t second_byte = *p;
 
-      if (len == 0x00)
-	p++;
+      if (nr == 0x00 && second_byte == 0x00)
+	p++;			/* Skip released word */
       else
 	{
-	  do_ptr[nr] = p;
-	  p += len + 1;
+	  if (nr < 0x80)
+	    {
+	      /* It's Data Object */
+	      do_ptr[nr - NR_DO__FIRST__] = p;
+	      p += second_byte + 1;
 
-	  if (((uint32_t)p & 1))
-	    p++;
+	      if (((uint32_t)p & 1))
+		p++;
+	    }
+	  else if (nr >= 0x80 && nr <= 0xbf)
+	    /* Encoded data of Digital Signature Counter: upper 14-bit */
+	    {
+	      dsc_h14_p = p - 1;
+	      p++;
+	    }
+	  else if (nr >= 0xc0 && nr <= 0xc3)
+	    /* Encoded data of Digital Signature Counter: lower 10-bit */
+	    {
+	      dsc_l10_p = p - 1;
+	      p++;
+	    }
+	  else
+	    switch (nr)
+	    {
+	    case NR_BOOL_PW1_LIFETIME:
+	      pw1_lifetime_p = p - 1;
+	      p++;
+	      continue;
+	    case NR_COUNTER_123:
+	      if (second_byte <= PW_ERR_PW3)
+		pw_err_counter_p[second_byte] = ++p;
+	      p += 2;
+	      break;
+	    }
 	}
     }
 
-  flash_set_do_pool_last (p);
+  flash_set_data_pool_last (p);
 
   num_prv_keys = 0;
-  if (do_ptr[NR_DO_PRVKEY_SIG] != NULL)
+  if (do_ptr[NR_DO_PRVKEY_SIG - NR_DO__FIRST__] != NULL)
     num_prv_keys++;
-  if (do_ptr[NR_DO_PRVKEY_DEC] != NULL)
+  if (do_ptr[NR_DO_PRVKEY_DEC - NR_DO__FIRST__] != NULL)
     num_prv_keys++;
-  if (do_ptr[NR_DO_PRVKEY_AUT] != NULL)
+  if (do_ptr[NR_DO_PRVKEY_AUT - NR_DO__FIRST__] != NULL)
     num_prv_keys++;
 
   data_objects_number_of_bytes = 0;
-  for (i = 0; i < NR_DO_LAST; i++)
-    if (do_ptr[i] != NULL)
-      data_objects_number_of_bytes += *do_ptr[i];
+  for (i = NR_DO__FIRST__; i < NR_DO__LAST__; i++)
+    if (do_ptr[i - NR_DO__FIRST__] != NULL)
+      data_objects_number_of_bytes += *do_ptr[i - NR_DO__FIRST__];
 
+
+  if (dsc_l10_p == NULL)
+    dsc_l10 = 0;
+  else
+    dsc_l10 = ((*dsc_l10_p - 0xc0) << 8) | *(dsc_l10_p + 1);
+
+  if (dsc_h14_p == NULL)
+    dsc_h14 = 0;
+  else
+    {
+      dsc_h14 = ((*dsc_h14_p - 0x80) << 8) | *(dsc_h14_p + 1);
+      if (dsc_l10_p == NULL)
+	DEBUG_INFO ("something wrong in DSC\r\n"); /* weird??? */
+      else if (dsc_l10_p < dsc_h14_p)
+	/* Possibly, power off during writing dsc_l10 */
+	dsc_l10 = 0;
+    }
+
+  digital_signature_counter = (dsc_h14 << 10) | dsc_l10;
   return 0;
 }
 
@@ -1086,7 +1184,7 @@ gpg_do_put_data (uint16_t tag, const uint8_t *data, int len)
 	      /* make DO empty */
 	      *do_data_p = NULL;
 	    else if (len > 255)
-	      GPG_MEMORY_FAILURE();
+	      GPG_MEMORY_FAILURE ();
 	    else
 	      {
 		uint8_t nr = do_tag_to_nr (tag);
@@ -1095,7 +1193,7 @@ gpg_do_put_data (uint16_t tag, const uint8_t *data, int len)
 		if (*do_data_p)
 		  GPG_SUCCESS ();
 		else
-		  GPG_MEMORY_FAILURE();
+		  GPG_MEMORY_FAILURE ();
 	      }
 	    break;
 	  }
@@ -1131,11 +1229,11 @@ gpg_do_public_key (uint8_t kk_byte)
   DEBUG_BYTE (kk_byte);
 
   if (kk_byte == 0xb6)
-    do_data = do_ptr[NR_DO_PRVKEY_SIG];
+    do_data = do_ptr[NR_DO_PRVKEY_SIG - NR_DO__FIRST__];
   else if (kk_byte == 0xb8)
-    do_data = do_ptr[NR_DO_PRVKEY_DEC];
+    do_data = do_ptr[NR_DO_PRVKEY_DEC - NR_DO__FIRST__];
   else				/* 0xa4 */
-    do_data = do_ptr[NR_DO_PRVKEY_AUT];
+    do_data = do_ptr[NR_DO_PRVKEY_AUT - NR_DO__FIRST__];
 
   if (do_data == NULL)
     {
@@ -1180,7 +1278,7 @@ gpg_do_read_simple (uint8_t nr)
 {
   const uint8_t *do_data;
 
-  do_data = do_ptr[nr];
+  do_data = do_ptr[nr - NR_DO__FIRST__];
   if (do_data == NULL)
     return NULL;
 
@@ -1192,7 +1290,7 @@ gpg_do_write_simple (uint8_t nr, const uint8_t *data, int size)
 {
   const uint8_t **do_data_p;
 
-  do_data_p = (const uint8_t **)&do_ptr[nr];
+  do_data_p = (const uint8_t **)&do_ptr[nr - NR_DO__FIRST__];
   if (*do_data_p)
     flash_do_release (*do_data_p);
 
@@ -1202,63 +1300,11 @@ gpg_do_write_simple (uint8_t nr, const uint8_t *data, int size)
       if (*do_data_p)
 	GPG_SUCCESS ();
       else
-	GPG_MEMORY_FAILURE();
+	GPG_MEMORY_FAILURE ();
     }
   else
     {
       *do_data_p = NULL;
       GPG_SUCCESS ();
     }
-}
-
-void
-gpg_do_increment_digital_signature_counter (void)
-{
-  const uint8_t *do_data;
-  uint32_t count;
-  uint8_t count_data[SIZE_DIGITAL_SIGNATURE_COUNTER];
-
-  do_data = do_ptr[NR_DO_DS_COUNT];
-  if (do_data == NULL)		/* No object means count 0 */
-    count = 0; 
-  else
-    count = (do_data[1]<<16) | (do_data[2]<<8) | do_data[3];
-
-  count++;
-  count_data[0] = (count >> 16) & 0xff;
-  count_data[1] = (count >> 8) & 0xff;
-  count_data[2] = count & 0xff;
-
-  if (do_data)
-    flash_do_release (do_data);
-  do_ptr[NR_DO_DS_COUNT] = flash_do_write (NR_DO_DS_COUNT, count_data,
-					   SIZE_DIGITAL_SIGNATURE_COUNTER);
-}
-
-void
-gpg_do_reset_pw_counter (uint8_t which)
-{
-  uint8_t pwsb[SIZE_PW_STATUS_BYTES];
-  const uint8_t *do_data = do_ptr[NR_DO_PW_STATUS];
-
-  /* Reset PW1/RC/PW3 counter in GNUK_DO_PW_STATUS */
-  if (do_data)
-    {
-      memcpy (pwsb, &do_data[1], SIZE_PW_STATUS_BYTES);
-      if (pwsb[which] == 3)
-	return;
-
-      pwsb[which] = 3;
-      flash_do_release (do_data);
-    }
-  else
-    {
-      memcpy (pwsb, PW_STATUS_BYTES_TEMPLATE, SIZE_PW_STATUS_BYTES);
-      if (pwsb[which] == 3)
-	return;
-
-      pwsb[which] = 3;
-    }
-
-  gpg_do_write_simple (NR_DO_PW_STATUS, pwsb, SIZE_PW_STATUS_BYTES);
 }

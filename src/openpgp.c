@@ -246,20 +246,20 @@ cmd_change_password (void)
     {
       gpg_do_write_simple (NR_DO_KEYSTRING_PW1, new_ks0, KEYSTRING_SIZE_PW1);
       ac_reset_pso_cds ();
-      gpg_do_reset_pw_counter (PW_STATUS_PW1);
+      gpg_reset_pw_err_counter (PW_ERR_PW1);
       DEBUG_INFO ("Changed DO_KEYSTRING_PW1.\r\n");
     }
   else if (r > 0 && who == BY_USER)
     {
       gpg_do_write_simple (NR_DO_KEYSTRING_PW1, new_ks0, 1);
       ac_reset_pso_cds ();
-      gpg_do_reset_pw_counter (PW_STATUS_PW1);
+      gpg_reset_pw_err_counter (PW_ERR_PW1);
       DEBUG_INFO ("Changed length of DO_KEYSTRING_PW1.\r\n");
     }
   else				/* r >= 0 && who == BY_ADMIN */
     {
       DEBUG_INFO ("done.\r\n");
-      gpg_do_reset_pw_counter (PW_STATUS_PW3);
+      gpg_reset_pw_err_counter (PW_ERR_PW3);
       GPG_SUCCESS ();
     }
 }
@@ -287,12 +287,10 @@ cmd_reset_user_password (void)
 
   if (p1 == 0x00)		/* by User with Reseting Code */
     {
-      const uint8_t *pw_status_bytes = gpg_do_read_simple (NR_DO_PW_STATUS);
       const uint8_t *ks_rc = gpg_do_read_simple (NR_DO_KEYSTRING_RC);
       uint8_t old_ks[KEYSTRING_MD_SIZE];
 
-      if (pw_status_bytes == NULL
-	  || pw_status_bytes[PW_STATUS_PW1] == 0) /* locked */
+      if (gpg_passwd_locked (PW_ERR_RC))
 	{
 	  DEBUG_INFO ("blocked.\r\n");
 	  GPG_SECURITY_AUTH_BLOCKED ();
@@ -320,29 +318,27 @@ cmd_reset_user_password (void)
 	}
       else if (r < 0)
 	{
-	  uint8_t pwsb[SIZE_PW_STATUS_BYTES];
-
 	sec_fail:
 	  DEBUG_INFO ("failed.\r\n");
-	  memcpy (pwsb, pw_status_bytes, SIZE_PW_STATUS_BYTES);
-	  pwsb[PW_STATUS_RC]--;
-	  gpg_do_write_simple (NR_DO_PW_STATUS, pwsb, SIZE_PW_STATUS_BYTES);
+	  gpg_increment_pw_err_counter (PW_ERR_RC);
 	  GPG_SECURITY_FAILURE ();
 	}
       else if (r == 0)
 	{
 	  if (memcmp (ks_rc+1, old_ks, KEYSTRING_MD_SIZE) != 0)
 	    goto sec_fail;
+	  DEBUG_INFO ("done (no prvkey).\r\n");
 	  gpg_do_write_simple (NR_DO_KEYSTRING_PW1, new_ks0, KEYSTRING_SIZE_PW1);
 	  ac_reset_pso_cds ();
-	  gpg_do_reset_pw_counter (PW_STATUS_PW1);
-	  DEBUG_INFO ("done (no prvkey).\r\n");
+	  gpg_reset_pw_err_counter (PW_ERR_RC);
+	  gpg_reset_pw_err_counter (PW_ERR_PW1);
 	}
       else
 	{
 	  DEBUG_INFO ("done.\r\n");
 	  ac_reset_pso_cds ();
-	  gpg_do_reset_pw_counter (PW_STATUS_PW1);
+	  gpg_reset_pw_err_counter (PW_ERR_RC);
+	  gpg_reset_pw_err_counter (PW_ERR_PW1);
 	  GPG_SUCCESS ();
 	}
     }
@@ -377,13 +373,13 @@ cmd_reset_user_password (void)
 	  DEBUG_INFO ("done (no privkey).\r\n");
 	  gpg_do_write_simple (NR_DO_KEYSTRING_PW1, new_ks0, KEYSTRING_SIZE_PW1);
 	  ac_reset_pso_cds ();
-	  gpg_do_reset_pw_counter (PW_STATUS_PW1);
+	  gpg_reset_pw_err_counter (PW_ERR_PW1);
 	}
       else
 	{
 	  DEBUG_INFO ("done.\r\n");
 	  ac_reset_pso_cds ();
-	  gpg_do_reset_pw_counter (PW_STATUS_PW1);
+	  gpg_reset_pw_err_counter (PW_ERR_PW1);
 	  GPG_SUCCESS ();
 	}
     }
@@ -567,24 +563,18 @@ cmd_pso (void)
 	    }
 	  else
 	    {			/* Success */
-	      const uint8_t *pw_status_bytes = gpg_do_read_simple (NR_DO_PW_STATUS);
-
-	      if (pw_status_bytes[0] == 0)
+	      if (gpg_get_pw1_lifetime ())
 		ac_reset_pso_cds ();
 
-	      gpg_do_increment_digital_signature_counter ();
+	      gpg_increment_digital_signature_counter ();
 	    }
 	}
     }
   else if (cmd_APDU[2] == 0x80 && cmd_APDU[3] == 0x86)
     {
-      const uint8_t *pw_status_bytes = gpg_do_read_simple (NR_DO_PW_STATUS);
-      uint8_t pwsb[SIZE_PW_STATUS_BYTES];
-
       DEBUG_SHORT (len);
 
-      if (pw_status_bytes == NULL
-	  || pw_status_bytes[PW_STATUS_PW1] == 0 /* locked */
+      if (gpg_passwd_locked (PW_ERR_PW1)
 	  || !ac_check_status (AC_PSO_OTHER_AUTHORIZED))
 	{
 	  DEBUG_INFO ("security error.");
@@ -592,20 +582,16 @@ cmd_pso (void)
 	  return;
 	}
 
-      memcpy (pwsb, pw_status_bytes, SIZE_PW_STATUS_BYTES);
       if ((r = gpg_do_load_prvkey (GPG_KEY_FOR_DECRYPTION, BY_USER,
 				   pw1_keystring + 1)) < 0)
 	{
-	  pwsb[PW_STATUS_PW1]--;
-	  gpg_do_write_simple (NR_DO_PW_STATUS, pwsb, SIZE_PW_STATUS_BYTES);
+	  gpg_increment_pw_err_counter (PW_ERR_PW1);
 	  GPG_SECURITY_FAILURE ();
 	  return;
 	}
-      else if (pwsb[PW_STATUS_PW1] != 3) /* Failure in the past? */
-	{		       /* Reset counter as it's success now */
-	  pwsb[PW_STATUS_PW1] = 3;
-	  gpg_do_write_simple (NR_DO_PW_STATUS, pwsb, SIZE_PW_STATUS_BYTES);
-	}
+      else
+	/* Reset counter as it's success now */
+	gpg_reset_pw_err_counter (PW_ERR_PW1);
 
       ac_reset_pso_other ();
 
@@ -634,8 +620,6 @@ cmd_internal_authenticate (void)
   int len = cmd_APDU[4];
   int data_start = 5;
   int r;
-  const uint8_t *pw_status_bytes = gpg_do_read_simple (NR_DO_PW_STATUS);
-  uint8_t pwsb[SIZE_PW_STATUS_BYTES];
 
   if (len == 0)
     {
@@ -649,8 +633,7 @@ cmd_internal_authenticate (void)
     {
       DEBUG_SHORT (len);
 
-        if (pw_status_bytes == NULL
-	  || pw_status_bytes[PW_STATUS_PW1] == 0 /* locked */
+      if (gpg_passwd_locked (PW_ERR_PW1)
 	  || !ac_check_status (AC_PSO_OTHER_AUTHORIZED))
 	{
 	  DEBUG_INFO ("security error.");
@@ -658,20 +641,16 @@ cmd_internal_authenticate (void)
 	  return;
 	}
 
-      memcpy (pwsb, pw_status_bytes, SIZE_PW_STATUS_BYTES);
       if ((r = gpg_do_load_prvkey (GPG_KEY_FOR_AUTHENTICATION, BY_USER,
 				   pw1_keystring + 1)) < 0)
 	{
-	  pwsb[PW_STATUS_PW1]--;
-	  gpg_do_write_simple (NR_DO_PW_STATUS, pwsb, SIZE_PW_STATUS_BYTES);
+	  gpg_increment_pw_err_counter (PW_ERR_PW1);
 	  GPG_SECURITY_FAILURE ();
 	  return;
 	}
-      else if (pwsb[PW_STATUS_PW1] != 3) /* Failure in the past? */
-	{		       /* Reset counter as it's success now */
-	  pwsb[PW_STATUS_PW1] = 3;
-	  gpg_do_write_simple (NR_DO_PW_STATUS, pwsb, SIZE_PW_STATUS_BYTES);
-	}
+      else
+	/* Reset counter as it's success now */
+	gpg_reset_pw_err_counter (PW_ERR_PW1);
 
       ac_reset_pso_other ();
 

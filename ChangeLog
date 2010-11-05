@@ -1,6 +1,45 @@
+2010-11-05  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/flash.c, src/gnuk.ld.in: Rename "Flash DO Pool" to "Flash
+	Data Pool", because it's not only DO.
+	* src/gnuk.h, src/opengpg-do.c: Cleanup.
+
+	Digital Signature Counter implementation improvement.
+	* src/gnuk.h (NR_DO_DS_COUNT): Removed.
+	(NR_COUNTER_DS, NR_COUNTER_DS_LSB): New.
+	* src/openpgp-do.c (do_ds_count_initial_value): Removed.
+	(gpg_do_increment_digital_signature_counter): Removed.
+	(digital_signature_counter): New variable.
+	(do_ds_count, gpg_increment_digital_signature_counter): New functions.
+	(gpg_do_table): Change the entry for GPG_DO_DS_COUNT as DO_PROC_READ.
+	(gpg_do_table_init): Handle digital_signature_counter.
+	* src/flash.c (flash_data_pool_allocate, flash_put_data): New.
+
+	Password status implementation improvement.
+	* src/gnuk.h (PW_STATUS_PW1, PW_STATUS_RC, PW_STATUS_PW3): Removed.
+	(PW_ERR_PW1, PW_ERR_RC, PW_ERR_PW3): New define.
+	(NR_COUNTER_123, NR_BOOL_PW1_LIFETIME): New define.
+	(NR_NONE, NR_EMPTY): New define.
+	* src/flash.c (flash_bool_clear, flash_bool_write)
+	(flash_cnt123_get_value, flash_cnt123_increment)
+	(flash_cnt123_clear): New functions.
+	* src/openpgp-do.c (do_pw_status_bytes_template): Removed.
+	(PW_STATUS_BYTES_TEMPLATE, gpg_do_reset_pw_counter): Removed.
+	(PASSWORD_ERRORS_MAX, PW_LEN_MAX): New define.
+	(pw1_lifetime_p, pw_err_counter_p): New variables.
+	(gpg_get_pw1_lifetime): New function.
+	(gpg_get_pw_err_counter, gpg_passwd_locked, gpg_reset_pw_counter)
+	(gpg_increment_pw_counter): New functions.
+	(rw_pw_status): Use pw1_lifetime_p and pw_err_counter_p.
+	(gpg_do_table_init): Handle NR_COUNTER_123 and NR_BOOL_PW1_LIFETIME.
+	* src/ac.c (verify_pso_cds, verify_pso_other, verify_admin_0):
+	Follow the changes.
+	* src/openpgp.c (cmd_change_password, cmd_reset_user_password)
+	(cmd_pso, cmd_internal_authenticate): Likewise.
+
 2010-11-04  NIIBE Yutaka  <gniibe@fsij.org>
 
-	* src/flash.c 	(flash_warning): New.
+	* src/flash.c (flash_warning): New.
 	(flash_do_pool): Added header for DO pool.
 	(flash_do_release): Fill zero.
 	(flash_do_write): Change DO format in flash.

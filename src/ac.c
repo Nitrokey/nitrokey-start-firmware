@@ -56,16 +56,16 @@ ac_reset_pso_other (void)
   auth_status &= ~AC_PSO_OTHER_AUTHORIZED;
 }
 
+/*
+ * Verify for "Perform Security Operation : Compute Digital Signature"
+ */
 int
 verify_pso_cds (const uint8_t *pw, int pw_len)
 {
   int r;
-  const uint8_t *pw_status_bytes = gpg_do_read_simple (NR_DO_PW_STATUS);
   uint8_t keystring[KEYSTRING_SIZE_PW1];
-  uint8_t pwsb[SIZE_PW_STATUS_BYTES];
 
-  if (pw_status_bytes == NULL
-      || pw_status_bytes[PW_STATUS_PW1] == 0) /* locked */
+  if (gpg_passwd_locked (PW_ERR_PW1))
     return 0;
 
   DEBUG_INFO ("verify_pso_cds\r\n");
@@ -73,18 +73,13 @@ verify_pso_cds (const uint8_t *pw, int pw_len)
 
   keystring[0] = pw_len;
   sha1 (pw, pw_len, keystring+1);
-  memcpy (pwsb, pw_status_bytes, SIZE_PW_STATUS_BYTES);
   if ((r = gpg_do_load_prvkey (GPG_KEY_FOR_SIGNING, BY_USER, keystring+1)) < 0)
     {
-      pwsb[PW_STATUS_PW1]--;
-      gpg_do_write_simple (NR_DO_PW_STATUS, pwsb, SIZE_PW_STATUS_BYTES);
+      gpg_increment_pw_err_counter (PW_ERR_PW1);
       return r;
     }
-  else if (pwsb[PW_STATUS_PW1] != 3)
-    {
-      pwsb[PW_STATUS_PW1] = 3;
-      gpg_do_write_simple (NR_DO_PW_STATUS, pwsb, SIZE_PW_STATUS_BYTES);
-    }
+  else
+    gpg_reset_pw_err_counter (PW_ERR_PW1);
 
   auth_status |= AC_PSO_CDS_AUTHORIZED;
   return 1;
@@ -93,20 +88,15 @@ verify_pso_cds (const uint8_t *pw, int pw_len)
 int
 verify_pso_other (const uint8_t *pw, int pw_len)
 {
-  const uint8_t *pw_status_bytes = gpg_do_read_simple (NR_DO_PW_STATUS);
-  uint8_t pwsb[SIZE_PW_STATUS_BYTES];
   const uint8_t *ks_pw1;
 
   DEBUG_INFO ("verify_pso_other\r\n");
 
-  if (pw_status_bytes == NULL
-      || pw_status_bytes[PW_STATUS_PW1] == 0) /* locked */
+  if (gpg_passwd_locked (PW_ERR_PW1))
     return 0;
 
-  memcpy (pwsb, pw_status_bytes, SIZE_PW_STATUS_BYTES);
-
   /*
-   * We check only the length of password string now.
+   * We check only the length of password string here.
    * Real check is defered to decrypt/authenticate routines.
    */
   ks_pw1 = gpg_do_read_simple (NR_DO_KEYSTRING_PW1);
@@ -114,8 +104,8 @@ verify_pso_other (const uint8_t *pw, int pw_len)
       || (ks_pw1 != NULL && pw_len == ks_pw1[0]))
     {				/* No problem */
       /*
-       * We don't reset pwsb[PW_STATUS_PW1] here.
-       * Because password may be wrong.
+       * We don't call gpg_reset_pw_err_counters here, because
+       * password may be wrong.
        */
       pw1_keystring[0] = pw_len;
       sha1 (pw, pw_len, pw1_keystring+1);
@@ -124,8 +114,7 @@ verify_pso_other (const uint8_t *pw, int pw_len)
     }
   else
     {
-      pwsb[PW_STATUS_PW1]--;
-      gpg_do_write_simple (NR_DO_PW_STATUS, pwsb, SIZE_PW_STATUS_BYTES);
+      gpg_increment_pw_err_counter (PW_ERR_PW1);
       return 0;
     }
 }
@@ -172,11 +161,9 @@ int
 verify_admin_0 (const uint8_t *pw, int buf_len, int pw_len_known)
 {
   const uint8_t *pw3_keystring;
-  const uint8_t *pw_status_bytes = gpg_do_read_simple (NR_DO_PW_STATUS);
   int pw_len;
 
-  if (pw_status_bytes == NULL
-      || pw_status_bytes[PW_STATUS_PW3] == 0) /* locked */
+  if (gpg_passwd_locked (PW_ERR_PW3))
     return 0;
 
   pw3_keystring = gpg_do_read_simple (NR_DO_KEYSTRING_PW3);
@@ -185,9 +172,7 @@ verify_admin_0 (const uint8_t *pw, int buf_len, int pw_len_known)
       int count;
       uint8_t md[KEYSTRING_MD_SIZE];
       const uint8_t *salt;
-      uint8_t pwsb[SIZE_PW_STATUS_BYTES];
 
-      memcpy (pwsb, pw_status_bytes, SIZE_PW_STATUS_BYTES);
       pw_len = pw3_keystring[0];
       if ((pw_len_known >= 0 && pw_len_known != pw_len) || pw_len < buf_len)
 	goto failure;
@@ -199,15 +184,12 @@ verify_admin_0 (const uint8_t *pw, int buf_len, int pw_len_known)
       if (memcmp (md, &pw3_keystring[1+8+1], KEYSTRING_MD_SIZE) != 0)
 	{
 	failure:
-	  pwsb[PW_STATUS_PW3]--;
-	  gpg_do_write_simple (NR_DO_PW_STATUS, pwsb, SIZE_PW_STATUS_BYTES);
+	  gpg_increment_pw_err_counter (PW_ERR_PW3);
 	  return -1;
 	}
-      else if (pwsb[PW_STATUS_PW3] != 3)
-	{		       /* OK, the user is now authenticated */
-	  pwsb[PW_STATUS_PW3] = 3;
-	  gpg_do_write_simple (NR_DO_PW_STATUS, pwsb, SIZE_PW_STATUS_BYTES);
-	}
+      else
+	/* OK, the user is now authenticated */
+	gpg_reset_pw_err_counter (PW_ERR_PW3);
     }
   else
     /* For empty PW3, pass phrase should be OPENPGP_CARD_INITIAL_PW3 */

@@ -24,8 +24,9 @@
 /*
  * We assume single DO size is less than 256.
  *
- * NOTE: When we will support "Card holder certificate"
- * (which size is larger than 256), it will not be put into DO pool.
+ * NOTE: When we will support "Card holder certificate" (which size is
+ *       larger than 256), it will not be put into data pool, but will
+ *       be implemented by its own flash page.
  */
 
 /*
@@ -128,15 +129,15 @@ flash_program_halfword (uint32_t addr, uint16_t data)
  *
  * 1-KiB align padding
  *
- * 1-KiB DO pool  * 3
+ * 1-KiB data pool  * 3
  *
  * 3-KiB Key store (512-byte (p, q and N) key-store * 6)
  */
 
-static const uint8_t *do_pool;
+static const uint8_t *data_pool;
 static const uint8_t *keystore_pool;
 
-static const uint8_t *last_p;
+static uint8_t *last_p;
 static const uint8_t *keystore;
 
 const uint8_t const flash_data[4] __attribute__ ((section (".gnuk_data"))) = {
@@ -144,7 +145,7 @@ const uint8_t const flash_data[4] __attribute__ ((section (".gnuk_data"))) = {
 };
 
 /* Linker set this symbol */
-extern uint8_t _do_pool;
+extern uint8_t _data_pool;
 
 void
 flash_init (void)
@@ -152,7 +153,7 @@ flash_init (void)
   const uint8_t *p;
   extern uint8_t _keystore_pool;
 
-  do_pool = &_do_pool;
+  data_pool = &_data_pool;
   keystore_pool = &_keystore_pool;
 
   /* Seek empty keystore */
@@ -166,48 +167,74 @@ flash_init (void)
 }
 
 /*
- * DO pool managenent
+ * Flash data pool managenent
  *
- * DO pool consists of two part:
+ * Flash data pool consists of two parts:
  *   2-byte header
  *   contents
  *
- * Format of a DO pool content:
+ * Flash data pool objects:
+ *   Data Object (DO) (of smart card)
+ *   Internal objects:
+ *     NONE (0x0000)
+ *     123-counter
+ *     14-bit counter
+ *     bool object
+ *
+ * Format of a Data Object:
  *    NR:   8-bit tag_number
  *    LEN:  8-bit length
  *    DATA: data * LEN
  *    PAD:  optional byte for 16-bit alignment
  */
-#define FLASH_DO_POOL_HEADER_SIZE 2
-#define FLASH_DO_POOL_SIZE	  1024*3
-#define FLASH_PAGE_SIZE		  1024
+#define FLASH_DATA_POOL_HEADER_SIZE	2
+#define FLASH_DATA_POOL_SIZE		(1024*3)
+#define FLASH_PAGE_SIZE			1024
 
 const uint8_t *
-flash_do_pool (void)
+flash_data_pool (void)
 {
-  return do_pool + FLASH_DO_POOL_HEADER_SIZE;
+  return data_pool + FLASH_DATA_POOL_HEADER_SIZE;
 }
 
 void
-flash_set_do_pool_last (const uint8_t *p)
+flash_set_data_pool_last (const uint8_t *p)
 {
-  last_p = p;
+  last_p = (uint8_t *)p;
+}
+
+static uint8_t *
+flash_data_pool_allocate (size_t size)
+{
+  uint8_t *p = last_p;
+
+  size = (size + 1) & ~1;	/* allocation unit is 1-word (2-byte) */
+
+  if (last_p + size > data_pool - FLASH_DATA_POOL_HEADER_SIZE + FLASH_PAGE_SIZE)
+    return NULL;		/* gc/erase/.../ */
+
+  last_p += size;
+  return p;
 }
 
 const uint8_t *
 flash_do_write (uint8_t nr, const uint8_t *data, int len)
 {
-  const uint8_t *p = last_p;
+  const uint8_t *p;
   uint16_t hw;
   uint32_t addr;
   int i;
 
-  if (last_p - do_pool + len + FLASH_DO_POOL_HEADER_SIZE + 2 > FLASH_PAGE_SIZE)
-    return NULL;		/* gc/erase/.../ */
-
   DEBUG_INFO ("flash DO\r\n");
 
-  addr = (uint32_t)last_p;
+  p = flash_data_pool_allocate (2 + len);
+  if (p == NULL)
+    {
+      DEBUG_INFO ("flash data pool allocation failure.\r\n");
+      return NULL;
+    }
+
+  addr = (uint32_t)p;
   hw = nr | (len << 8);
   if (flash_program_halfword (addr, hw) != FLASH_COMPLETE)
     return NULL;
@@ -228,8 +255,6 @@ flash_do_write (uint8_t nr, const uint8_t *data, int len)
 	return NULL;
       addr += 2;
     }
-
-  last_p = (const uint8_t *)addr;
 
   DEBUG_INFO ("flash DO...done\r\n");
   return p + 1;
@@ -253,7 +278,7 @@ flash_do_release (const uint8_t *do_data)
   int len = do_data[0];
 
   /* Don't filling zero for data in code (such as ds_count_initial_value) */
-  if (do_data < &_do_pool || do_data > &_do_pool + FLASH_DO_POOL_SIZE)
+  if (do_data < &_data_pool || do_data > &_data_pool + FLASH_DATA_POOL_SIZE)
     return;
 
   addr += 2;
@@ -327,3 +352,121 @@ flash_clear_halfword (uint32_t addr)
   flash_program_halfword (addr, 0);
 }
 
+
+void
+flash_put_data (uint16_t hw)
+{
+  uint8_t *p;
+
+  p = flash_data_pool_allocate (2);
+  if (p == NULL)
+    {
+      DEBUG_INFO ("data allocation failure.\r\n");
+    }
+
+  flash_program_halfword ((uint32_t)p, hw);
+}
+
+
+void
+flash_bool_clear (const uint8_t **addr_p)
+{
+  const uint8_t *p;
+
+  if ((p = *addr_p) == NULL)
+    return;
+
+  flash_program_halfword ((uint32_t)p, 0);
+  *addr_p = NULL;
+}
+
+const uint8_t *
+flash_bool_write (uint8_t nr)
+{
+  uint8_t *p;
+  uint16_t hw = nr;
+
+  p = flash_data_pool_allocate (2);
+  if (p == NULL)
+    {
+      DEBUG_INFO ("bool allocation failure.\r\n");
+      return NULL;
+    }
+
+  flash_program_halfword ((uint32_t)p, hw);
+  return p;
+}
+
+
+int
+flash_cnt123_get_value (const uint8_t *p)
+{
+  if (p == NULL)
+    return 0;
+  else
+    {
+      uint8_t v = *p;
+
+      /*
+       * After erase, a word in flash memory becomes 0xffff.
+       * The word can be programmed to any value.
+       * Then, the word can be programmed to zero.
+       *
+       * Thus, we can represent value 1, 2, and 3.
+       */
+      if (v == 0xff)
+	return 1;
+      else if (v == 0x00)
+	return 3;
+      else
+	return 2;
+    }
+}
+
+void
+flash_cnt123_increment (uint8_t which, const uint8_t **addr_p)
+{
+  const uint8_t *p;
+  uint16_t hw;
+
+  if ((p = *addr_p) == NULL)
+    {
+      p = flash_data_pool_allocate (4);
+      if (p == NULL)
+	{
+	  DEBUG_INFO ("cnt123 allocation failure.\r\n");
+	  return;
+	}
+      hw = NR_COUNTER_123 | (which << 8);
+      flash_program_halfword ((uint32_t)p, hw);
+      *addr_p = p + 2;
+    }
+  else
+    {
+      uint8_t v = *p;
+
+      if (v == 0)
+	return;
+
+      if (v == 0xff)
+	hw = 0xc3c3;
+      else
+	hw = 0;
+
+      flash_program_halfword ((uint32_t)p, hw);
+    }
+}
+
+void
+flash_cnt123_clear (const uint8_t **addr_p)
+{
+  const uint8_t *p;
+
+  if ((p = *addr_p) == NULL)
+    return;
+
+  flash_program_halfword ((uint32_t)p, 0);
+  p -= 2;
+  flash_program_halfword ((uint32_t)p, 0);
+  *addr_p = NULL;
+}

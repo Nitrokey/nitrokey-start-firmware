@@ -51,6 +51,13 @@ extern int res_APDU_size;
 #define AC_NEVER		0x80
 #define AC_ALWAYS		0xFF
 
+#define PW_ERR_PW1 0
+#define PW_ERR_RC  1
+#define PW_ERR_PW3 2
+extern int gpg_passwd_locked (uint8_t which);
+extern void gpg_reset_pw_err_counter (uint8_t which);
+extern void gpg_increment_pw_err_counter (uint8_t which);
+
 extern int ac_check_status (uint8_t ac_flag);
 extern int verify_pso_cds (const uint8_t *pw, int pw_len);
 extern int verify_pso_other (const uint8_t *pw, int pw_len);
@@ -63,7 +70,6 @@ extern void ac_reset_pso_other (void);
 
 extern void write_res_apdu (const uint8_t *p, int len,
 			    uint8_t sw1, uint8_t sw2);
-
 uint16_t data_objects_number_of_bytes;
 
 extern int gpg_do_table_init (void);
@@ -84,9 +90,11 @@ extern void flash_do_release (const uint8_t *);
 extern const uint8_t *flash_do_write (uint8_t nr, const uint8_t *data, int len);
 extern uint8_t *flash_key_alloc (void);
 extern void flash_key_release (const uint8_t *);
-extern const uint8_t *flash_do_pool (void);
-extern void flash_set_do_pool_last (const uint8_t *p);
+extern const uint8_t *flash_data_pool (void);
+extern void flash_set_data_pool_last (const uint8_t *p);
 extern void flash_clear_halfword (uint32_t addr);
+extern void flash_increment_counter (uint8_t counter_tag_nr);
+extern void flash_reset_counter (uint8_t counter_tag_nr);
 
 #define KEY_MAGIC_LEN 8
 #define KEY_CONTENT_LEN 256	/* p and q */
@@ -165,11 +173,7 @@ extern int gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, in
 
 extern const uint8_t *gpg_do_read_simple (uint8_t);
 extern void gpg_do_write_simple (uint8_t, const uint8_t *, int);
-extern void gpg_do_increment_digital_signature_counter (void);
-
-#define PW_STATUS_PW1 4
-#define PW_STATUS_RC  5
-#define PW_STATUS_PW3 6
+extern void gpg_increment_digital_signature_counter (void);
 
 
 extern void gpg_set_pw3 (const uint8_t *newpw, int newpw_len);
@@ -177,30 +181,76 @@ extern void fatal (void) __attribute__ ((noreturn));
 
 extern uint8_t keystring_md_pw3[KEYSTRING_MD_SIZE];
 
-#define NR_DO_PRVKEY_SIG	0
-#define NR_DO_PRVKEY_DEC	1
-#define NR_DO_PRVKEY_AUT	2
-#define NR_DO_KEYSTRING_PW1	3
-#define NR_DO_KEYSTRING_RC	4
-#define NR_DO_KEYSTRING_PW3	5
-#define NR_DO_PW_STATUS		6
-#define NR_DO_DS_COUNT		7
-#define NR_DO_SEX		8
-#define NR_DO_FP_SIG		9
-#define NR_DO_FP_DEC		10
-#define NR_DO_FP_AUT		11
-#define NR_DO_CAFP_1		12
-#define NR_DO_CAFP_2		13
-#define NR_DO_CAFP_3		14
-#define NR_DO_KGTIME_SIG	15
-#define NR_DO_KGTIME_DEC	16
-#define NR_DO_KGTIME_AUT	17
-#define NR_DO_LOGIN_DATA	18
-#define NR_DO_URL		19
-#define NR_DO_NAME		20
-#define NR_DO_LANGUAGE		21
-#define NR_DO_CH_CERTIFICATE	22
-#define NR_DO_LAST		23
+/*** Flash memory tag values ***/
+#define NR_NONE			0x00
+/* Data objects */
+/*
+ * Representation of data object:
+ *
+ *   <-1 word-> <--len/2 words->
+ *   <tag><len> <-data content->
+ */
+#define NR_DO__FIRST__		0x01
+#define NR_DO_SEX		0x01
+#define NR_DO_FP_SIG		0x02
+#define NR_DO_FP_DEC		0x03
+#define NR_DO_FP_AUT		0x04
+#define NR_DO_CAFP_1		0x05
+#define NR_DO_CAFP_2		0x06
+#define NR_DO_CAFP_3		0x07
+#define NR_DO_KGTIME_SIG	0x08
+#define NR_DO_KGTIME_DEC	0x09
+#define NR_DO_KGTIME_AUT	0x0a
+#define NR_DO_LOGIN_DATA	0x0b
+#define NR_DO_URL		0x0c
+#define NR_DO_NAME		0x0d
+#define NR_DO_LANGUAGE		0x0e
+#define NR_DO_PRVKEY_SIG	0x0f
+#define NR_DO_PRVKEY_DEC	0x10
+#define NR_DO_PRVKEY_AUT	0x11
+#define NR_DO_KEYSTRING_PW1	0x12
+#define NR_DO_KEYSTRING_RC	0x13
+#define NR_DO_KEYSTRING_PW3	0x14
+#define NR_DO__LAST__		21   /* == 0x15 */
+/* 14-bit counter for DS: Recorded in flash memory by 1-word (2-byte).  */
+/*
+ * Representation of 14-bit counter:
+ *      0: 0x8000
+ *      1: 0x8001
+ *     ...
+ *  16383: 0xbfff
+ */
+#define NR_COUNTER_DS		0x80 /* ..0xbf */
+/* 10-bit counter for DS: Recorded in flash memory by 1-word (2-byte).  */
+/*
+ * Representation of 10-bit counter:
+ *      0: 0xc000
+ *      1: 0xc001
+ *     ...
+ *   1023: 0xc3ff
+ */
+#define NR_COUNTER_DS_LSB	0xc0 /* ..0xc3 */
+/* 8-bit int or Boolean objects: Recorded in flash memory by 1-word (2-byte) */
+/*
+ * Representation of Boolean object:
+ *   0: No record in flash memory
+ *   1: 0xc?00
+ */
+#define NR_BOOL_PW1_LIFETIME	0xf0
+/*
+ * NR_BOOL_SOMETHING, NR_UINT_SOMETHING could be here...  Use 0xf?
+ */
+/* 123-counters: Recorded in flash memory by 2-word (4-byte).  */
+/*
+ * Representation of 123-counters:
+ *   0: No record in flash memory 
+ *   1: 0xfe?? 0xffff
+ *   2: 0xfe?? 0xc3c3
+ *   3: 0xfe?? 0x0000
+ *                    where <counter_id> is placed at second byte <??>
+ */
+#define NR_COUNTER_123		0xfe
+#define NR_EMPTY		0xff
 
 #define SIZE_PW_STATUS_BYTES 7
 
@@ -210,8 +260,6 @@ extern const uint8_t *random_bytes_get (void);
 extern void random_bytes_free (const uint8_t *);
 
 extern uint32_t hardclock (void);
-
-extern void gpg_do_reset_pw_counter (uint8_t which);
 
 extern void set_led (int);
 
@@ -227,4 +275,13 @@ extern uint8_t pw1_keystring[KEYSTRING_SIZE_PW1];
 #define OPENPGP_CARD_INITIAL_PW3 "12345678"
 #endif
 
-const uint8_t openpgpcard_aid[17] __attribute__ ((aligned (1)));
+extern const uint8_t openpgpcard_aid[17] __attribute__ ((aligned (1)));
+
+extern int gpg_get_pw1_lifetime (void);
+
+extern void flash_bool_clear (const uint8_t **addr_p);
+extern const uint8_t *flash_bool_write (uint8_t nr);
+extern int flash_cnt123_get_value (const uint8_t *p);
+extern void flash_cnt123_increment (uint8_t which, const uint8_t **addr_p);
+extern void flash_cnt123_clear (const uint8_t **addr_p);
+extern void flash_put_data (uint16_t hw);
