@@ -698,7 +698,8 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
       uint8_t ks123_pw1[KEYSTRING_SIZE_PW1];
 
       ks123_pw1[0] = strlen (OPENPGP_CARD_INITIAL_PW1);
-      sha1 ((uint8_t *)OPENPGP_CARD_INITIAL_PW1, 6, ks123_pw1+1);
+      sha1 ((uint8_t *)OPENPGP_CARD_INITIAL_PW1, 
+	    strlen (OPENPGP_CARD_INITIAL_PW1), ks123_pw1+1);
       encrypt (ks123_pw1+1, pd->dek_encrypted_1, DATA_ENCRYPTION_KEY_SIZE);
     }
 

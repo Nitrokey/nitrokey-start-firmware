@@ -211,7 +211,7 @@ flash_data_pool_allocate (size_t size)
   size = (size + 1) & ~1;	/* allocation unit is 1-word (2-byte) */
 
   if (last_p + size > data_pool - FLASH_DATA_POOL_HEADER_SIZE + FLASH_PAGE_SIZE)
-    return NULL;		/* gc/erase/.../ */
+    return NULL;		/* XXX: here invoke gc/erase page/.../ */
 
   last_p += size;
   return p;
@@ -343,7 +343,7 @@ flash_key_write (uint8_t *key_addr, const uint8_t *key_data,
 void
 flash_key_release (const uint8_t *key_addr)
 {
-  (void)key_addr;
+  (void)key_addr;		/* Not yet */
 }
 
 void
