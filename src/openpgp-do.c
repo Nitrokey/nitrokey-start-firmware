@@ -925,7 +925,7 @@ gpg_do_table_init (void)
   pw_err_counter_p[PW_ERR_RC] = NULL;
   pw_err_counter_p[PW_ERR_PW3] = NULL;
 
-  /* Traverse DO and counters in DO pool */
+  /* Traverse DO, counters, etc. in DATA pool */
   p = p_start;
   while (*p != NR_EMPTY)
     {
@@ -940,7 +940,7 @@ gpg_do_table_init (void)
 	    {
 	      /* It's Data Object */
 	      do_ptr[nr - NR_DO__FIRST__] = p;
-	      p += second_byte + 1;
+	      p += second_byte + 1; /* second_byte has length */
 
 	      if (((uint32_t)p & 1))
 		p++;
@@ -965,8 +965,9 @@ gpg_do_table_init (void)
 	      p++;
 	      continue;
 	    case NR_COUNTER_123:
+	      p++;
 	      if (second_byte <= PW_ERR_PW3)
-		pw_err_counter_p[second_byte] = ++p;
+		pw_err_counter_p[second_byte] = p;
 	      p += 2;
 	      break;
 	    }
@@ -987,7 +988,6 @@ gpg_do_table_init (void)
   for (i = NR_DO__FIRST__; i < NR_DO__LAST__; i++)
     if (do_ptr[i - NR_DO__FIRST__] != NULL)
       data_objects_number_of_bytes += *do_ptr[i - NR_DO__FIRST__];
-
 
   if (dsc_l10_p == NULL)
     dsc_l10 = 0;
