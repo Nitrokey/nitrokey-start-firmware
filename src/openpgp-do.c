@@ -656,7 +656,6 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
       dek = pd->dek_encrypted_3;
       memcpy (pd->dek_encrypted_1, dek, DATA_ENCRYPTION_KEY_SIZE);
       memset (pd->dek_encrypted_2, 0, DATA_ENCRYPTION_KEY_SIZE);
-      flash_do_release (do_data);
       gpg_do_write_simple (NR_DO_KEYSTRING_PW1, NULL, 0);
       gpg_do_write_simple (NR_DO_KEYSTRING_RC, NULL, 0);
       flash_key_release (pd->key_addr);

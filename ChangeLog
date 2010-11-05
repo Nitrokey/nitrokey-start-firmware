@@ -1,8 +1,10 @@
 2010-11-05  NIIBE Yutaka  <gniibe@fsij.org>
 
-	Bug fix.
+	Bug fixes.
 	* src/openpgp.c (gpg_change_keystring): Handle
 	GPG_KEY_FOR_AUTHENTICATION.
+	* src/openpgp-do.c (gpg_do_write_prvkey): Remove multiple call
+	of flash_do_release.
 
 	Bug fixes.
 	* src/openpgp-do.c (gpg_do_write_prvkey): compare with != operator.
