@@ -1,5 +1,9 @@
 2010-11-05  NIIBE Yutaka  <gniibe@fsij.org>
 
+	Bug fix.
+	* src/openpgp.c (gpg_change_keystring): Handle
+	GPG_KEY_FOR_AUTHENTICATION.
+
 	Bug fixes.
 	* src/openpgp-do.c (gpg_do_write_prvkey): compare with != operator.
 	* src/ac.c (verify_admin_0): Don't hardcode 6, but use strlen.

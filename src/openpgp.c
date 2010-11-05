@@ -150,6 +150,18 @@ gpg_change_keystring (int who_old, const uint8_t *old_ks,
   if (r < 0)
     return -2;
 
+  r = gpg_do_load_prvkey (GPG_KEY_FOR_AUTHENTICATION, who_old, old_ks);
+  if (r < 0)
+    return r;
+
+  if (r > 0)
+    prv_keys_exist++;
+
+  r = gpg_do_chks_prvkey (GPG_KEY_FOR_AUTHENTICATION, who_old, old_ks,
+			  who_new, new_ks);
+  if (r < 0)
+    return -2;
+
   if (prv_keys_exist)
     return 1;
   else
