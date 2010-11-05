@@ -37,8 +37,13 @@ Tested features are:
 
 	* Password handling (PW1, RC, PW3)
 
-	* Key import for both of key for digital signing and key for
-          decryption.
+	* Key import for three types:
+
+	  * key for digital signing
+
+	  * key for decryption
+
+	  * key for authentication
 
 	* PSO: Digital Signature
 
