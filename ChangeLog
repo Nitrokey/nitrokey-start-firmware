@@ -38,9 +38,9 @@
 	* src/openpgp-do.c (gpg_do_write_prvkey): Remove multiple call
 	of flash_do_release.
 
-	Bug fixes.
-	* src/openpgp-do.c (gpg_do_write_prvkey): compare with != operator.
-	* src/ac.c (verify_admin_0): Don't hardcode 6, but use strlen.
+	Bug fix.
+	* src/openpgp-do.c (gpg_do_write_prvkey): Don't hardcode 6, but
+	use strlen.
 
 	* src/flash.c, src/gnuk.ld.in: Rename "Flash DO Pool" to "Flash
 	Data Pool", because it's not only DO.
