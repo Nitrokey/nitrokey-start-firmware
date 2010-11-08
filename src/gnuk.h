@@ -285,3 +285,4 @@ extern int flash_cnt123_get_value (const uint8_t *p);
 extern void flash_cnt123_increment (uint8_t which, const uint8_t **addr_p);
 extern void flash_cnt123_clear (const uint8_t **addr_p);
 extern void flash_put_data (uint16_t hw);
+extern void flash_warning (const char *msg);

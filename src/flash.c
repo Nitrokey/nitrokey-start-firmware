@@ -260,7 +260,7 @@ flash_do_write (uint8_t nr, const uint8_t *data, int len)
   return p + 1;
 }
 
-static void
+void
 flash_warning (const char *msg)
 {
   (void)msg;

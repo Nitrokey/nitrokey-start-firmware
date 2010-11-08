@@ -1296,14 +1296,9 @@ gpg_do_write_simple (uint8_t nr, const uint8_t *data, int size)
   if (data != NULL)
     {
       *do_data_p = flash_do_write (nr, data, size);
-      if (*do_data_p)
-	GPG_SUCCESS ();
-      else
-	GPG_MEMORY_FAILURE ();
+      if (*do_data_p == NULL)
+	flash_warning ("DO WRITE ERROR");
     }
   else
-    {
-      *do_data_p = NULL;
-      GPG_SUCCESS ();
-    }
+    *do_data_p = NULL;
 }

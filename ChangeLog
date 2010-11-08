@@ -1,11 +1,17 @@
 2010-11-08  NIIBE Yutaka  <gniibe@fsij.org>
 
+	* src/openpgp.c (cmd_change_password, cmd_reset_user_password):
+	Write to APDU correctly.
+
+	* src/flash.c (flash_warning): Make it public.
+
 	* src/openpgp-do.c (do_hist_bytes, do_fp_all, do_cafp_all)
 	(do_kgtime_all, do_ds_count): Fix return value.
 	(rw_pw_status): Correctly return value.
 	(proc_resetting_code): Change func proto. to return success/failure.
 	(proc_key_import): Ditto.
 	(gpg_do_put_data): Handle return values.
+	(gpg_do_write_simple): Don't write to APDU.
 
 2010-11-05  NIIBE Yutaka  <gniibe@fsij.org>
 

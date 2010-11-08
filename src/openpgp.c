@@ -260,6 +260,7 @@ cmd_change_password (void)
       ac_reset_pso_cds ();
       gpg_reset_pw_err_counter (PW_ERR_PW1);
       DEBUG_INFO ("Changed DO_KEYSTRING_PW1.\r\n");
+      GPG_SUCCESS ();
     }
   else if (r > 0 && who == BY_USER)
     {
@@ -267,6 +268,7 @@ cmd_change_password (void)
       ac_reset_pso_cds ();
       gpg_reset_pw_err_counter (PW_ERR_PW1);
       DEBUG_INFO ("Changed length of DO_KEYSTRING_PW1.\r\n");
+      GPG_SUCCESS ();
     }
   else				/* r >= 0 && who == BY_ADMIN */
     {
@@ -344,6 +346,7 @@ cmd_reset_user_password (void)
 	  ac_reset_pso_cds ();
 	  gpg_reset_pw_err_counter (PW_ERR_RC);
 	  gpg_reset_pw_err_counter (PW_ERR_PW1);
+	  GPG_SUCCESS ();
 	}
       else
 	{
@@ -386,6 +389,7 @@ cmd_reset_user_password (void)
 	  gpg_do_write_simple (NR_DO_KEYSTRING_PW1, new_ks0, KEYSTRING_SIZE_PW1);
 	  ac_reset_pso_cds ();
 	  gpg_reset_pw_err_counter (PW_ERR_PW1);
+	  GPG_SUCCESS ();
 	}
       else
 	{
