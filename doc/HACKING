@@ -39,7 +39,7 @@ Use same serial number for OpenPGPcard and USB serial number.
 * Flash ROM recover from shutdown
 
 
-* Flash ROM garbage collection
+* [DONE] Flash ROM garbage collection
 
 
 * Flash ROM protection
