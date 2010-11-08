@@ -29,11 +29,6 @@
  *       be implemented by its own flash page.
  */
 
-/*
- * Note: Garbage collection and page management with flash erase
- *       is *NOT YET* implemented
- */
-
 #include "config.h"
 #include "ch.h"
 #include "hal.h"
@@ -90,7 +85,8 @@ flash_wait_for_last_operation (uint32_t timeout)
   return status;
 }
 
-#define FLASH_PROGRAM_TIMEOUT 0x10000
+#define FLASH_PROGRAM_TIMEOUT 0x00010000
+#define FLASH_ERASE_TIMEOUT   0x01000000
 
 static int
 flash_program_halfword (uint32_t addr, uint16_t data)
@@ -115,6 +111,29 @@ flash_program_halfword (uint32_t addr, uint16_t data)
   return status;
 }
 
+static int
+flash_erase_page (uint32_t addr)
+{
+  int status;
+
+  status = flash_wait_for_last_operation (FLASH_ERASE_TIMEOUT);
+
+  chSysLock ();
+  if (status == FLASH_COMPLETE)
+    {
+      FLASH->CR |= FLASH_CR_PER;
+      FLASH->AR = addr; 
+      FLASH->CR |= FLASH_CR_STRT;
+
+      status = flash_wait_for_last_operation (FLASH_ERASE_TIMEOUT);
+      if (status != FLASH_TIMEOUT)
+	FLASH->CR &= ~FLASH_CR_PER;
+    }
+  chSysUnlock ()
+
+  return status;
+}
+
 /*
  * Flash memory map
  *
@@ -129,10 +148,13 @@ flash_program_halfword (uint32_t addr, uint16_t data)
  *
  * 1-KiB align padding
  *
- * 1-KiB data pool  * 3
+ * 1-KiB data pool  * 2
  *
  * 3-KiB Key store (512-byte (p, q and N) key-store * 6)
  */
+#define FLASH_DATA_POOL_HEADER_SIZE	2
+#define FLASH_DATA_POOL_SIZE		(1024*2)
+#define FLASH_PAGE_SIZE			1024
 
 static const uint8_t *data_pool;
 static const uint8_t *keystore_pool;
@@ -140,20 +162,35 @@ static const uint8_t *keystore_pool;
 static uint8_t *last_p;
 static const uint8_t *keystore;
 
+/* The first halfward is generation for the data page (little endian) */
 const uint8_t const flash_data[4] __attribute__ ((section (".gnuk_data"))) = {
-  0xff, 0xff, 0xff, 0xff
+  0x01, 0x00, 0xff, 0xff
 };
 
 /* Linker set this symbol */
 extern uint8_t _data_pool;
 
-void
+const uint8_t *
 flash_init (void)
 {
   const uint8_t *p;
   extern uint8_t _keystore_pool;
+  uint16_t gen0, gen1;
+  uint16_t *gen0_p = (uint16_t *)&_data_pool;
+  uint16_t *gen1_p = (uint16_t *)(&_data_pool + FLASH_PAGE_SIZE);
 
-  data_pool = &_data_pool;
+  /* Check data pool generation and choose the page */
+  gen0 = *gen0_p;
+  gen1 = *gen1_p;
+  if (gen0 == 0xffff)
+    data_pool = &_data_pool + FLASH_PAGE_SIZE;
+  else if (gen1 == 0xffff)
+    data_pool = &_data_pool;
+  else if (gen1 > gen0)
+    data_pool = &_data_pool + FLASH_PAGE_SIZE;
+  else
+    data_pool = &_data_pool;
+
   keystore_pool = &_keystore_pool;
 
   /* Seek empty keystore */
@@ -164,6 +201,7 @@ flash_init (void)
   keystore = p;
 
   flash_unlock ();
+  return data_pool + FLASH_DATA_POOL_HEADER_SIZE;
 }
 
 /*
@@ -187,15 +225,6 @@ flash_init (void)
  *    DATA: data * LEN
  *    PAD:  optional byte for 16-bit alignment
  */
-#define FLASH_DATA_POOL_HEADER_SIZE	2
-#define FLASH_DATA_POOL_SIZE		(1024*3)
-#define FLASH_PAGE_SIZE			1024
-
-const uint8_t *
-flash_data_pool (void)
-{
-  return data_pool + FLASH_DATA_POOL_HEADER_SIZE;
-}
 
 void
 flash_set_data_pool_last (const uint8_t *p)
@@ -203,27 +232,90 @@ flash_set_data_pool_last (const uint8_t *p)
   last_p = (uint8_t *)p;
 }
 
+/*
+ * We use two pages
+ */
+static int
+flash_copying_gc (void)
+{
+  uint8_t *src, *dst;
+  uint16_t generation;
+
+  if (data_pool == &_data_pool)
+    {
+      src = &_data_pool;
+      dst = &_data_pool + FLASH_PAGE_SIZE;
+    }
+  else
+    {
+      src = &_data_pool + FLASH_PAGE_SIZE;
+      dst = &_data_pool;
+    }
+
+  generation = *(uint16_t *)src;
+  data_pool = dst;
+  gpg_data_copy (data_pool + FLASH_DATA_POOL_HEADER_SIZE);
+  flash_erase_page ((uint32_t)src);
+  flash_program_halfword ((uint32_t)dst, generation);
+  return 0;
+}
+
+static int
+is_data_pool_full (size_t size)
+{
+  return last_p + size > data_pool + FLASH_PAGE_SIZE;
+}
+
 static uint8_t *
 flash_data_pool_allocate (size_t size)
 {
-  uint8_t *p = last_p;
+  uint8_t *p;
 
   size = (size + 1) & ~1;	/* allocation unit is 1-halfword (2-byte) */
 
-  if (last_p + size > data_pool - FLASH_DATA_POOL_HEADER_SIZE + FLASH_PAGE_SIZE)
-    return NULL;		/* XXX: here invoke gc/erase page/.../ */
+  if (is_data_pool_full (size))
+    if (flash_copying_gc () < 0 || /*still*/ is_data_pool_full (size))
+      fatal ();
 
+  p = last_p;
   last_p += size;
   return p;
+}
+
+void
+flash_do_write_internal (const uint8_t *p, int nr, const uint8_t *data, int len)
+{
+  uint16_t hw;
+  uint32_t addr;
+  int i;
+
+  addr = (uint32_t)p;
+  hw = nr | (len << 8);
+  if (flash_program_halfword (addr, hw) != FLASH_COMPLETE)
+    flash_warning ("DO WRITE ERROR");
+  addr += 2;
+
+  for (i = 0; i < len/2; i ++)
+    {
+      hw = data[i*2] | (data[i*2+1]<<8);
+      if (flash_program_halfword (addr, hw) != FLASH_COMPLETE)
+	flash_warning ("DO WRITE ERROR");
+      addr += 2;
+    }
+
+  if ((len & 1))
+    {
+      hw = data[i*2] | 0xff00;
+      if (flash_program_halfword (addr, hw) != FLASH_COMPLETE)
+	flash_warning ("DO WRITE ERROR");
+      addr += 2;
+    }
 }
 
 const uint8_t *
 flash_do_write (uint8_t nr, const uint8_t *data, int len)
 {
   const uint8_t *p;
-  uint16_t hw;
-  uint32_t addr;
-  int i;
 
   DEBUG_INFO ("flash DO\r\n");
 
@@ -234,28 +326,7 @@ flash_do_write (uint8_t nr, const uint8_t *data, int len)
       return NULL;
     }
 
-  addr = (uint32_t)p;
-  hw = nr | (len << 8);
-  if (flash_program_halfword (addr, hw) != FLASH_COMPLETE)
-    return NULL;
-  addr += 2;
-
-  for (i = 0; i < len/2; i ++)
-    {
-      hw = data[i*2] | (data[i*2+1]<<8);
-      if (flash_program_halfword (addr, hw) != FLASH_COMPLETE)
-	return NULL;
-      addr += 2;
-    }
-
-  if ((len & 1))
-    {
-      hw = data[i*2] | 0xff00;
-      if (flash_program_halfword (addr, hw) != FLASH_COMPLETE)
-	return NULL;
-      addr += 2;
-    }
-
+  flash_do_write_internal (p, nr, data, len);
   DEBUG_INFO ("flash DO...done\r\n");
   return p + 1;
 }
@@ -354,6 +425,12 @@ flash_clear_halfword (uint32_t addr)
 
 
 void
+flash_put_data_internal (const uint8_t *p, uint16_t hw)
+{
+  flash_program_halfword ((uint32_t)p, hw);
+}
+
+void
 flash_put_data (uint16_t hw)
 {
   uint8_t *p;
@@ -378,6 +455,12 @@ flash_bool_clear (const uint8_t **addr_p)
 
   flash_program_halfword ((uint32_t)p, 0);
   *addr_p = NULL;
+}
+
+void
+flash_bool_write_internal (const uint8_t *p, int nr)
+{
+  flash_program_halfword ((uint32_t)p, nr);
 }
 
 const uint8_t *
@@ -421,6 +504,22 @@ flash_cnt123_get_value (const uint8_t *p)
       else
 	return 2;
     }
+}
+
+void
+flash_cnt123_write_internal (const uint8_t *p, int which, int v)
+{
+  uint16_t hw;
+
+  hw = NR_COUNTER_123 | (which << 8);
+  flash_program_halfword ((uint32_t)p, hw);
+
+  if (v == 1)
+    return;
+  else if (v == 2)
+    flash_program_halfword ((uint32_t)p+2, 0xc3c3);
+  else				/* v == 3 */
+    flash_program_halfword ((uint32_t)p+2, 0);
 }
 
 void

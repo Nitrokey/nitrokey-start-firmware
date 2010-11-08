@@ -126,7 +126,7 @@ SECTIONS
 	KEEP(*(.gnuk_data))
 	FILL(0xffffffff);
 	. = ALIGN(1024);
-	. += 1024*2;
+	. += 1024;
 	_keystore_pool = .;
 	FILL(0xffffffff);
 	. += 1024*3;

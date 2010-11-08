@@ -176,14 +176,15 @@ main (int argc, char **argv)
   eventmask_t m;
   uint8_t led_state = 0;
   int count = 0;
+  const uint8_t *flash_data_start;
 
   (void)argc;
   (void)argv;
 
   blinker_thread = chThdSelf ();
 
-  flash_init ();
-  gpg_do_table_init ();
+  flash_data_start = flash_init ();
+  gpg_data_scan (flash_data_start);
 
   usb_lld_init ();
   USB_Init();

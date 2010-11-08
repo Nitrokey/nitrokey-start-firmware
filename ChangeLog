@@ -1,10 +1,27 @@
 2010-11-08  NIIBE Yutaka  <gniibe@fsij.org>
 
+	Implement GC for data pool in flash memory.
+	* src/openpgp-do.c (gpg_write_digital_signature_counter): New.
+	(gpg_increment_digital_signature_counter): Fix for GC.
+	(gpg_data_scan): Rename from gpg_do_table_init.
+	(gpg_data_copy): New function for copying GC.
+	* src/main.c (main): Call gpg_data_scan with the address which
+	flash_init returns.
+	* src/flash.c (flash_erase_page): New function.
+	(FLASH_DATA_POOL_SIZE): data_pool is 2KiB now.
+	(flash_data): Put a header (GC generation).
+	(flash_init): Implement choosing a data pool page.
+	(flash_data_pool): Removed.
+	(flash_copying_gc): New function.
+	(flash_data_pool_allocate): Call flash_copying_gc when full.
+	(flash_do_write_internal, flash_put_data_internal)
+	(flash_bool_write_internal, flash_cnt123_write_internal): New
+	* src/gnuk.ld.in (gnuk_flash): data_pool is 2KiB now.
+
+	Bug fixes.
 	* src/openpgp.c (cmd_change_password, cmd_reset_user_password):
 	Write to APDU correctly.
-
 	* src/flash.c (flash_warning): Make it public.
-
 	* src/openpgp-do.c (do_hist_bytes, do_fp_all, do_cafp_all)
 	(do_kgtime_all, do_ds_count): Fix return value.
 	(rw_pw_status): Correctly return value.

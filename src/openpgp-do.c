@@ -34,30 +34,47 @@
 
 static uint32_t digital_signature_counter;
 
+static const uint8_t *
+gpg_write_digital_signature_counter (const uint8_t *p, uint32_t dsc)
+{
+  uint16_t hw0, hw1;
+
+  if ((dsc >> 10) == 0)
+    { /* no upper bits */
+      hw1 = NR_COUNTER_DS_LSB | ((dsc & 0x0300) >> 8) | ((dsc & 0x00ff) << 8);
+      flash_put_data_internal (p, hw1);
+      return p+2;
+    }
+  else
+    {
+      hw0 = NR_COUNTER_DS | ((dsc & 0xfc0000) >> 18) | ((dsc & 0x03fc00) >> 2);
+      hw1 = NR_COUNTER_DS_LSB;
+      flash_put_data_internal (p, hw0);
+      flash_put_data_internal (p+2, hw1);
+      return p+4;
+    }
+}
+
 void
 gpg_increment_digital_signature_counter (void)
 {
   uint16_t hw0, hw1;
+  uint32_t dsc = (digital_signature_counter + 1) & 0x00ffffff;
 
-  digital_signature_counter++;
-  digital_signature_counter &= 0x00ffffff;
-
-  if ((digital_signature_counter & 0x03ff) == 0)
+  if ((dsc & 0x03ff) == 0)
     { /* carry occurs from l10 to h14 */
-      hw0 = NR_COUNTER_DS
-	| ((digital_signature_counter & 0x00fc0000) >> 18)
-	| ((digital_signature_counter & 0x0003fc00) >> 2);
-      hw1 = NR_COUNTER_DS_LSB;
+      hw0 = NR_COUNTER_DS | ((dsc & 0xfc0000) >> 18) | ((dsc & 0x03fc00) >> 2);
+      hw1 = NR_COUNTER_DS_LSB;	/* zero */
       flash_put_data (hw0);
       flash_put_data (hw1);
     }
   else
     {
-      hw1 = NR_COUNTER_DS_LSB
-	| ((digital_signature_counter & 0x0300) >> 8)
-	| ((digital_signature_counter & 0x00ff) << 8);
+      hw1 = NR_COUNTER_DS_LSB | ((dsc & 0x0300) >> 8) | ((dsc & 0x00ff) << 8);
       flash_put_data (hw1);
     }
+
+  digital_signature_counter = dsc;
 }
 
 #define PASSWORD_ERRORS_MAX 3	/* >= errors, it will be locked */
@@ -901,15 +918,13 @@ gpg_do_table[] = {
 /*
  * Reading data from Flash ROM, initialize DO_PTR, PW_ERR_COUNTERS, etc. 
  */
-int
-gpg_do_table_init (void)
+void
+gpg_data_scan (const uint8_t *p_start)
 {
-  const uint8_t *p, *p_start;
+  const uint8_t *p;
   int i;
   const uint8_t *dsc_h14_p, *dsc_l10_p;
   int dsc_h14, dsc_l10;
-
-  p_start = flash_data_pool ();
 
   dsc_h14_p = dsc_l10_p = NULL;
   pw1_lifetime_p = NULL;
@@ -999,7 +1014,46 @@ gpg_do_table_init (void)
     }
 
   digital_signature_counter = (dsc_h14 << 10) | dsc_l10;
-  return 0;
+}
+
+void
+gpg_data_copy (const uint8_t *p_start)
+{
+  const uint8_t *p;
+  int i;
+  int v;
+
+  p = gpg_write_digital_signature_counter (p_start, digital_signature_counter);
+
+  if (pw1_lifetime_p != NULL)
+    {
+      flash_bool_write_internal (p, NR_BOOL_PW1_LIFETIME);
+      pw1_lifetime_p = p;
+      p += 2;
+    }
+
+  for (i = 0; i < 3; i++)
+    if ((v = flash_cnt123_get_value (pw_err_counter_p[i])) != 0)
+      {
+	flash_cnt123_write_internal (p, i, v);
+	pw_err_counter_p[i] = p + 2;
+	p += 4;
+      }
+
+  data_objects_number_of_bytes = 0;
+  for (i = NR_DO__FIRST__; i < NR_DO__LAST__; i++)
+    if (do_ptr[i - NR_DO__FIRST__] != NULL)
+      {
+	const uint8_t *do_data = do_ptr[i - NR_DO__FIRST__];
+	int len = do_data[0];
+
+	flash_do_write_internal (p, i, &do_data[1], len);
+	do_ptr[i - NR_DO__FIRST__] = p + 1;
+	p += 2 + ((len + 1) & ~1);
+	data_objects_number_of_bytes += len;
+      }
+
+  flash_set_data_pool_last (p);
 }
 
 static const struct do_table_entry *

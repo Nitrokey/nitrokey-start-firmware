@@ -72,7 +72,8 @@ extern void write_res_apdu (const uint8_t *p, int len,
 			    uint8_t sw1, uint8_t sw2);
 uint16_t data_objects_number_of_bytes;
 
-extern int gpg_do_table_init (void);
+extern void gpg_data_scan (const uint8_t *p);
+extern void gpg_data_copy (const uint8_t *p);
 extern void gpg_do_get_data (uint16_t tag);
 extern void gpg_do_put_data (uint16_t tag, const uint8_t *data, int len);
 extern void gpg_do_public_key (uint8_t kk_byte);
@@ -85,12 +86,11 @@ enum kind_of_key {
   GPG_KEY_FOR_AUTHENTICATION,
 };
 
-extern void flash_init (void);
+extern const uint8_t *flash_init (void);
 extern void flash_do_release (const uint8_t *);
 extern const uint8_t *flash_do_write (uint8_t nr, const uint8_t *data, int len);
 extern uint8_t *flash_key_alloc (void);
 extern void flash_key_release (const uint8_t *);
-extern const uint8_t *flash_data_pool (void);
 extern void flash_set_data_pool_last (const uint8_t *p);
 extern void flash_clear_halfword (uint32_t addr);
 extern void flash_increment_counter (uint8_t counter_tag_nr);
@@ -286,3 +286,8 @@ extern void flash_cnt123_increment (uint8_t which, const uint8_t **addr_p);
 extern void flash_cnt123_clear (const uint8_t **addr_p);
 extern void flash_put_data (uint16_t hw);
 extern void flash_warning (const char *msg);
+
+extern void flash_put_data_internal (const uint8_t *p, uint16_t hw);
+extern void flash_bool_write_internal (const uint8_t *p, int nr);
+extern void flash_cnt123_write_internal (const uint8_t *p, int which, int v);
+extern void flash_do_write_internal (const uint8_t *p, int nr, const uint8_t *data, int len);
