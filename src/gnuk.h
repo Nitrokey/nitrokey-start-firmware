@@ -187,8 +187,8 @@ extern uint8_t keystring_md_pw3[KEYSTRING_MD_SIZE];
 /*
  * Representation of data object:
  *
- *   <-1 word-> <--len/2 words->
- *   <tag><len> <-data content->
+ *   <-1 halfword-> <--len/2 halfwords->
+ *   <-tag-><-len-> <---data content--->
  */
 #define NR_DO__FIRST__		0x01
 #define NR_DO_SEX		0x01
@@ -212,7 +212,7 @@ extern uint8_t keystring_md_pw3[KEYSTRING_MD_SIZE];
 #define NR_DO_KEYSTRING_RC	0x13
 #define NR_DO_KEYSTRING_PW3	0x14
 #define NR_DO__LAST__		21   /* == 0x15 */
-/* 14-bit counter for DS: Recorded in flash memory by 1-word (2-byte).  */
+/* 14-bit counter for DS: Recorded in flash memory by 1-halfword (2-byte).  */
 /*
  * Representation of 14-bit counter:
  *      0: 0x8000
@@ -221,7 +221,7 @@ extern uint8_t keystring_md_pw3[KEYSTRING_MD_SIZE];
  *  16383: 0xbfff
  */
 #define NR_COUNTER_DS		0x80 /* ..0xbf */
-/* 10-bit counter for DS: Recorded in flash memory by 1-word (2-byte).  */
+/* 10-bit counter for DS: Recorded in flash memory by 1-halfword (2-byte).  */
 /*
  * Representation of 10-bit counter:
  *      0: 0xc000
@@ -230,7 +230,7 @@ extern uint8_t keystring_md_pw3[KEYSTRING_MD_SIZE];
  *   1023: 0xc3ff
  */
 #define NR_COUNTER_DS_LSB	0xc0 /* ..0xc3 */
-/* 8-bit int or Boolean objects: Recorded in flash memory by 1-word (2-byte) */
+/* 8-bit int or Boolean objects: Recorded in flash memory by 1-halfword (2-byte) */
 /*
  * Representation of Boolean object:
  *   0: No record in flash memory
@@ -240,7 +240,7 @@ extern uint8_t keystring_md_pw3[KEYSTRING_MD_SIZE];
 /*
  * NR_BOOL_SOMETHING, NR_UINT_SOMETHING could be here...  Use 0xf?
  */
-/* 123-counters: Recorded in flash memory by 2-word (4-byte).  */
+/* 123-counters: Recorded in flash memory by 2-halfword (4-byte).  */
 /*
  * Representation of 123-counters:
  *   0: No record in flash memory 

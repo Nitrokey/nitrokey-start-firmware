@@ -208,7 +208,7 @@ flash_data_pool_allocate (size_t size)
 {
   uint8_t *p = last_p;
 
-  size = (size + 1) & ~1;	/* allocation unit is 1-word (2-byte) */
+  size = (size + 1) & ~1;	/* allocation unit is 1-halfword (2-byte) */
 
   if (last_p + size > data_pool - FLASH_DATA_POOL_HEADER_SIZE + FLASH_PAGE_SIZE)
     return NULL;		/* XXX: here invoke gc/erase page/.../ */
@@ -408,9 +408,9 @@ flash_cnt123_get_value (const uint8_t *p)
       uint8_t v = *p;
 
       /*
-       * After erase, a word in flash memory becomes 0xffff.
-       * The word can be programmed to any value.
-       * Then, the word can be programmed to zero.
+       * After erase, a halfword in flash memory becomes 0xffff.
+       * The halfword can be programmed to any value.
+       * Then, the halfword can be programmed to zero.
        *
        * Thus, we can represent value 1, 2, and 3.
        */
