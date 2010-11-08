@@ -285,7 +285,7 @@ do_hist_bytes (uint16_t tag, int with_tag)
   /* XXX: For now, no life cycle management, just return template as is. */
   /* XXX: Supporing TERMINATE DF / ACTIVATE FILE, we need to fix here */
   copy_do_1 (tag, historical_bytes, with_tag);
-  return 0;
+  return 1;
 }
 
 #define SIZE_FP 20
@@ -322,8 +322,7 @@ do_fp_all (uint16_t tag, int with_tag)
   else
     memset (res_p, 0, SIZE_FP);
   res_p += SIZE_FP;
-
-  return 0;
+  return 1;
 }
 
 static int
@@ -357,8 +356,7 @@ do_cafp_all (uint16_t tag, int with_tag)
   else
     memset (res_p, 0, SIZE_FP);
   res_p += SIZE_FP;
-
-  return 0;
+  return 1;
 }
 
 static int
@@ -392,7 +390,7 @@ do_kgtime_all (uint16_t tag, int with_tag)
   else
     memset (res_p, 0, SIZE_KGTIME);
   res_p += SIZE_KGTIME;
-  return 0;
+  return 1;
 }
 
 static int
@@ -407,7 +405,7 @@ do_ds_count (uint16_t tag, int with_tag)
   *res_p++ = (digital_signature_counter >> 16) & 0xff;
   *res_p++ = (digital_signature_counter >> 8) & 0xff;
   *res_p++ = digital_signature_counter & 0xff;
-  return 0;
+  return 1;
 }
 
 static int

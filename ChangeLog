@@ -1,3 +1,8 @@
+2010-11-08  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/openpgp-do.c (do_hist_bytes, do_fp_all, do_cafp_all)
+	(do_kgtime_all, do_ds_count): Fix return value.
+
 2010-11-05  NIIBE Yutaka  <gniibe@fsij.org>
 
 	Bug fixes.
