@@ -421,20 +421,18 @@ rw_pw_status (uint16_t tag, int with_tag,
 	{
 	  flash_bool_clear (&pw1_lifetime_p);
 	  if (pw1_lifetime_p == NULL)
-	    GPG_SUCCESS ();
+	    return 1;
 	  else
-	    GPG_MEMORY_FAILURE();
+	    return 0;
 	}
       else
 	{
 	  pw1_lifetime_p = flash_bool_write (NR_BOOL_PW1_LIFETIME);
 	  if (pw1_lifetime_p != NULL)
-	    GPG_SUCCESS ();
+	    return 1;
 	  else
-	    GPG_MEMORY_FAILURE();
+	    return 0;
 	}
-
-      return 0;
     }
   else
     {
@@ -455,7 +453,7 @@ rw_pw_status (uint16_t tag, int with_tag,
     }
 }
 
-static void
+static int
 proc_resetting_code (const uint8_t *data, int len)
 {
   const uint8_t *old_ks = keystring_md_pw3;
@@ -475,14 +473,12 @@ proc_resetting_code (const uint8_t *data, int len)
   if (r < -2)
     {
       DEBUG_INFO ("memory error.\r\n");
-      GPG_MEMORY_FAILURE ();
-      return;
+      return 0;
     }
   else if (r < 0)
     {
       DEBUG_INFO ("security error.\r\n");
-      GPG_SECURITY_FAILURE ();
-      return;
+      return 0;
     }
   else if (r == 0)
     {
@@ -493,10 +489,10 @@ proc_resetting_code (const uint8_t *data, int len)
     {
       DEBUG_INFO ("done.\r\n");
       gpg_do_write_simple (NR_DO_KEYSTRING_RC, new_ks0, 1);
-      GPG_SUCCESS ();
     }
 
   gpg_reset_pw_err_counter (PW_ERR_RC);
+  return 1;
 }
 
 static void
@@ -783,7 +779,7 @@ gpg_do_chks_prvkey (enum kind_of_key kk,
  *       93 xx
  *   5f48, xx: cardholder private key
  */
-static void
+static int
 proc_key_import (const uint8_t *data, int len)
 {
   int r;
@@ -820,17 +816,16 @@ proc_key_import (const uint8_t *data, int len)
 	  gpg_do_write_simple (NR_DO_KEYSTRING_RC, NULL, 0);
 	}
 
-      GPG_SUCCESS ();
-      return;
+      return 1;
     }
 
   /* It should starts with 00 01 00 01 (E) */
   /* Skip E, 4-byte */
   r = gpg_do_write_prvkey (kk, &data[26], len - 26, keystring_md_pw3);
   if (r < 0)
-    GPG_MEMORY_FAILURE ();
+    return 0;
   else
-    GPG_SUCCESS ();
+    return 1;
 }
 
 static const uint16_t const cmp_ch_data[] = {
@@ -1200,15 +1195,21 @@ gpg_do_put_data (uint16_t tag, const uint8_t *data, int len)
 	    int (*rw_func)(uint16_t, int, const uint8_t *, int, int)
 	      = (int (*)(uint16_t, int, const uint8_t *, int, int))do_p->obj;
 
-	    rw_func (tag, 0, data, len, 1);
+	    if (rw_func (tag, 0, data, len, 1))
+	      GPG_SUCCESS ();
+	    else
+	      GPG_ERROR ();
 	    break;
 	  }
 	case DO_PROC_WRITE:
 	  {
-	    void (*proc_func)(const uint8_t *, int)
-	      = (void (*)(const uint8_t *, int))do_p->obj;
+	    int (*proc_func)(const uint8_t *, int)
+	      = (int (*)(const uint8_t *, int))do_p->obj;
 
-	    proc_func (data, len);
+	    if (proc_func (data, len))
+	      GPG_SUCCESS ();
+	    else
+	      GPG_ERROR ();
 	    break;
 	  }
 	}

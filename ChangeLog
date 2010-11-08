@@ -2,6 +2,10 @@
 
 	* src/openpgp-do.c (do_hist_bytes, do_fp_all, do_cafp_all)
 	(do_kgtime_all, do_ds_count): Fix return value.
+	(rw_pw_status): Correctly return value.
+	(proc_resetting_code): Change func proto. to return success/failure.
+	(proc_key_import): Ditto.
+	(gpg_do_put_data): Handle return values.
 
 2010-11-05  NIIBE Yutaka  <gniibe@fsij.org>
 
