@@ -256,7 +256,7 @@ flash_copying_gc (void)
   data_pool = dst;
   gpg_data_copy (data_pool + FLASH_DATA_POOL_HEADER_SIZE);
   flash_erase_page ((uint32_t)src);
-  flash_program_halfword ((uint32_t)dst, generation);
+  flash_program_halfword ((uint32_t)dst, generation+1);
   return 0;
 }
 
