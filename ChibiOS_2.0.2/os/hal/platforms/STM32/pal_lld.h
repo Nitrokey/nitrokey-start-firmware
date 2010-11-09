@@ -83,7 +83,7 @@ typedef struct {
   stm32_gpio_setup_t    PCData;
   /** @brief Port D setup data.*/
   stm32_gpio_setup_t    PDData;
-#if !defined(STM32F10X_LD) || defined(__DOXYGEN__)
+#if !(defined(STM32F10X_LD) || defined(BOARD_STBEE_MINI)) || defined(__DOXYGEN__)
   /** @brief Port E setup data.*/
   stm32_gpio_setup_t    PEData;
 #endif

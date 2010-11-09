@@ -2,9 +2,13 @@ Gnuk NEWS - User visible changes
 
 * Major changes in Gnuk 0.4
 
-  Released 2010-11-XX, by NIIBE Yutaka
+  Released 2010-11-09, by NIIBE Yutaka
+
+** New board support "STBee Mini".
 
 ** Flash writing tool for "DfuSe" is included now.
+
+** Since Flash GC is now implemented, it can be used longer.
 
 
 * Major changes in Gnuk 0.3

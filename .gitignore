@@ -2,3 +2,13 @@
 src/Makefile
 src/config.h
 src/gnuk.ld
+*.lst
+*.o
+*.pyc
+src/.dep
+src/gnuk.bin
+src/gnuk.dmp
+src/gnuk.elf
+src/gnuk.hex
+src/gnuk.map
+src/random_bits

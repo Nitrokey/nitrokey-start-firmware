@@ -1,4 +1,17 @@
+2010-11-09  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* Version 0.4.
+
+	* src/usb_desc.c (gnukStringSerial): Updated.
+
+	* ChibiOS_2.0.2/os/hal/platforms/STM32/pal_lld.h (PALConfig):
+	STBee Mini uses STM32F103CBT6 which expose no GPIO E port.
+	* ChibiOS_2.0.2/os/hal/platforms/STM32/pal_lld.c (_pal_lld_init):
+	Likewise.
+
 2010-11-08  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* tool/dump_mem.py: New tool.
 
 	Implement GC for data pool in flash memory.
 	* src/openpgp-do.c (gpg_write_digital_signature_counter): New.
