@@ -45,7 +45,11 @@ static const uint8_t gnukConfigDescriptor[] = {
   NUM_INTERFACES,   /* bNumInterfaces: */
   0x01,   /* bConfigurationValue: Configuration value */
   0x00,   /* iConfiguration: Index of string descriptor describing the configuration */
+#if defined(USB_SELF_POWERED)
   0xC0,   /* bmAttributes: self powered */
+#else
+  0x80,   /* bmAttributes: bus powered */
+#endif
   50,	  /* MaxPower 100 mA */
 
   /* Interface Descriptor */
@@ -76,15 +80,19 @@ static const uint8_t gnukConfigDescriptor[] = {
   0, 0, 0, 0,		  /* dwSynchProtocols: FIXED VALUE */
   0, 0, 0, 0,		  /* dwMechanical: FIXED VALUE */
 #ifdef DEBUG
-  0x80, 0x04, 0x04, 0x00, /* dwFeatures:
+  0x82, 0x04, 0x04, 0x00, /* dwFeatures:
 			   *  Short and extended APDU level: 0x40000
 			   *  Automatic IFSD               : 0x00400
 			   *  Automatic PPS CUR            : 0x00080
+			   *
+			   *  Automatic conf. based on ATR : 0x00002
 			   */
 #else
-  0x40, 0x00, 0x04, 0x00, /* dwFeatures:
+  0x42, 0x00, 0x04, 0x00, /* dwFeatures:
 			   *  Short and extended APDU level: 0x40000
 			   *  Automatic PPS PROP           : 0x00040
+			   *
+			   *  Automatic conf. based on ATR : 0x00002
 			   */
 #endif
   0x40, 0x00, 0, 0,	  /* dwMaxCCIDMessageLength: 64 */
@@ -207,7 +215,7 @@ static const uint8_t gnukStringSerial[] = {
   8*2+2,			/* bLength */
   USB_STRING_DESCRIPTOR_TYPE,	/* bDescriptorType */
   '2', 0, '0', 0, '1', 0, '0', 0,
-  '1', 0, '1', 0, '0', 0, '9', 0
+  '1', 0, '1', 0, '1', 0, '2', 0
 };
 
 const ONE_DESCRIPTOR Device_Descriptor = {

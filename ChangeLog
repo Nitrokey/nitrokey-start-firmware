@@ -1,3 +1,14 @@
+2010-11-12  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/usb_desc.c (gnukConfigDescriptor): Change dwFeatures.
+
+	* src/usb-icc.c (icc_send_params): Always return fixed result.
+	(icc_handle_data): Support ICC_GET_PARAMS.
+
+2010-11-10  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/usb_desc.c (gnukConfigDescriptor): Fix bmAttributes.
+
 2010-11-09  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* Version 0.4.

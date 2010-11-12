@@ -31,14 +31,15 @@
 #include "hw_config.h"
 #include "usb_istr.h"
 
-#define ICC_SET_PARAMS		0x61
+#define ICC_SET_PARAMS		0x61 /* non-ICCD command  */
 #define ICC_POWER_ON		0x62
 #define ICC_POWER_OFF		0x63
-#define ICC_SLOT_STATUS		0x65
+#define ICC_SLOT_STATUS		0x65 /* non-ICCD command */
+#define ICC_GET_PARAMS		0x6C /* non-ICCD command */
 #define ICC_XFR_BLOCK		0x6F
 #define ICC_DATA_BLOCK_RET	0x80
-#define ICC_SLOT_STATUS_RET	0x81
-#define ICC_SET_PARAMS_RET	0x82
+#define ICC_SLOT_STATUS_RET	0x81 /* non-ICCD result */
+#define ICC_PARAMS_RET		0x82 /* non-ICCD result */
 
 #define ICC_MSG_SEQ_OFFSET	6
 #define ICC_MSG_STATUS_OFFSET	7
@@ -337,12 +338,23 @@ icc_send_data_block (uint8_t status, uint8_t error, uint8_t chain,
 static void
 icc_send_params (void)
 {
-  memcpy (icc_tx_data, icc_rcv_data,
-	  ICC_MSG_HEADER_SIZE + icc_header->data_len);
-  icc_tx_data[0] = ICC_SET_PARAMS_RET;
+  icc_tx_data[0] = ICC_PARAMS_RET;
+  icc_tx_data[1] = 0x07;	/* Length = 0x00000007 */
+  icc_tx_data[2] = 0;
+  icc_tx_data[3] = 0;
+  icc_tx_data[4] = 0;
+  icc_tx_data[5] = 0x00;	/* Slot */
+  icc_tx_data[ICC_MSG_SEQ_OFFSET] = icc_seq;
   icc_tx_data[ICC_MSG_STATUS_OFFSET] = 0;
   icc_tx_data[ICC_MSG_ERROR_OFFSET] = 0;
-  icc_tx_data[ICC_MSG_CHAIN_OFFSET] = icc_rcv_data[7];
+  icc_tx_data[ICC_MSG_CHAIN_OFFSET] = 0x01; /* ProtocolNum: T=1 */
+  icc_tx_data[ICC_MSG_DATA_OFFSET] = 0x11;   /* bmFindexDindex */
+  icc_tx_data[ICC_MSG_DATA_OFFSET+1] = 0x11; /* bmTCCKST1 */
+  icc_tx_data[ICC_MSG_DATA_OFFSET+2] = 0xFE; /* bGuardTimeT1 */
+  icc_tx_data[ICC_MSG_DATA_OFFSET+3] = 0x55; /* bmWaitingIntegersT1 */
+  icc_tx_data[ICC_MSG_DATA_OFFSET+4] = 0x03; /* bClockStop */
+  icc_tx_data[ICC_MSG_DATA_OFFSET+5] = 0xFE; /* bIFSC */
+  icc_tx_data[ICC_MSG_DATA_OFFSET+6] = 0; /* bNadValue */
 
   if (!icc_tx_ready ())
     {				/* not ready to send */
@@ -414,7 +426,8 @@ icc_handle_data (void)
 	      icc_error (ICC_OFFSET_PARAM);
 	    }
 	}
-      else if (icc_header->msg_type == ICC_SET_PARAMS)
+      else if (icc_header->msg_type == ICC_SET_PARAMS
+	       || icc_header->msg_type == ICC_GET_PARAMS)
 	icc_send_params ();
       else
 	{
