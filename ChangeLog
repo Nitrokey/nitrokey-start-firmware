@@ -1,3 +1,7 @@
+2010-11-14  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/openpgp.c (cmd_pso): DigestInfo by SHA256 is supported.
+
 2010-11-12  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* src/usb_desc.c (gnukConfigDescriptor): Change dwFeatures.

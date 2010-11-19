@@ -560,7 +560,9 @@ cmd_pso (void)
 	  return;
 	}
 
-      if (cmd_APDU_size != 8 + 35 && cmd_APDU_size != 8 + 35 + 1)
+      if ((cmd_APDU_size != 8 + 35 && cmd_APDU_size != 8 + 35 + 1) /* SHA1 */
+	  /* or SHA256 */
+	  && (cmd_APDU_size != 8 + 51 && cmd_APDU_size != 8 + 51 + 1))
 	/* Extended Lc: 3-byte */
 	{
 	  DEBUG_INFO (" wrong length: ");
@@ -569,7 +571,7 @@ cmd_pso (void)
 	}
       else
 	{
-	  DEBUG_SHORT (len);  /* Should be cmd_APDU_size - 6 */
+	  DEBUG_SHORT (len);  /* Should be cmd_APDU_size - 8 [- 1] */
 
 	  r = rsa_sign (&cmd_APDU[data_start], res_APDU, len);
 	  if (r < 0)
