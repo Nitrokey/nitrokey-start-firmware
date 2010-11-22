@@ -1,3 +1,46 @@
+2010-11-22  NIIBE Yutaka  <gniibe@fsij.org>
+
+	Import changes of ChibiOS_2.0.6.
+	* ChibiOS_2.0.6/demos/ARM7-AT91SAM7X-LWIP-GCC/chconf.h
+	* ChibiOS_2.0.6/os/hal/include/can.h
+	* ChibiOS_2.0.6/os/hal/platforms/AT91SAM7/hal_lld.c
+	* ChibiOS_2.0.6/os/hal/platforms/AT91SAM7/serial_lld.c
+	* ChibiOS_2.0.6/os/hal/platforms/LPC214x/serial_lld.c
+	* ChibiOS_2.0.6/os/hal/platforms/STM32/hal_lld_f103.h
+	* ChibiOS_2.0.6/os/hal/platforms/STM32/hal_lld_f105_f107.h
+	* ChibiOS_2.0.6/os/hal/platforms/STM32/pwm_lld.c
+	* ChibiOS_2.0.6/os/hal/platforms/STM32/serial_lld.h
+	* ChibiOS_2.0.6/os/hal/platforms/STM32/spi_lld.h
+	* ChibiOS_2.0.6/os/hal/src/adc.c
+	* ChibiOS_2.0.6/os/hal/src/spi.c
+	* ChibiOS_2.0.6/os/kernel/include/ch.h
+	* ChibiOS_2.0.6/os/kernel/include/chinline.h
+	* ChibiOS_2.0.6/os/kernel/include/chioch.h
+	* ChibiOS_2.0.6/os/kernel/include/chstreams.h
+	* ChibiOS_2.0.6/os/kernel/include/chthreads.h
+	* ChibiOS_2.0.6/os/kernel/src/chlists.c
+	* ChibiOS_2.0.6/os/kernel/src/chschd.c
+	* ChibiOS_2.0.6/os/kernel/src/chthreads.c
+	* ChibiOS_2.0.6/os/ports/GCC/ARM/rules.mk
+	* ChibiOS_2.0.6/os/ports/GCC/ARM7/chcore.h
+	* ChibiOS_2.0.6/os/ports/GCC/ARM7/port.dox
+	* ChibiOS_2.0.6/os/ports/GCC/ARMCMx/chcore_v6m.c
+	* ChibiOS_2.0.6/os/ports/GCC/ARMCMx/chcore_v6m.h
+	* ChibiOS_2.0.6/os/ports/GCC/ARMCMx/chcore_v7m.c
+	* ChibiOS_2.0.6/os/ports/GCC/ARMCMx/chcore_v7m.h
+	* ChibiOS_2.0.6/os/ports/GCC/ARMCMx/old/chcore_v7m.h
+	* ChibiOS_2.0.6/os/ports/GCC/AVR/chcore.h
+	* ChibiOS_2.0.6/os/ports/GCC/AVR/port.dox
+	* ChibiOS_2.0.6/os/ports/GCC/MSP430/chcore.c
+	* ChibiOS_2.0.6/os/ports/GCC/MSP430/chcore.h
+	* ChibiOS_2.0.6/os/ports/GCC/MSP430/port.dox
+	* ChibiOS_2.0.6/os/ports/GCC/PPC/chcore.h
+	* ChibiOS_2.0.6/os/ports/GCC/PPC/port.dox
+	* ChibiOS_2.0.6/os/ports/RC/STM8/port.dox
+	* ChibiOS_2.0.6/os/various/memstreams.h
+	* ChibiOS_2.0.6/readme.txt
+	* ChibiOS_2.0.6/docs/*/*: Updated
+
 2010-11-14  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* src/openpgp.c (cmd_pso): DigestInfo by SHA256 is supported.
