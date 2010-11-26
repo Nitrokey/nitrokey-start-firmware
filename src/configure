@@ -139,7 +139,11 @@ if test "$with_dfu" = "yes"; then
 else
   echo "Configured for bare system (no-DFU)"
   ORIGIN=0x08000000
-  FLASH_SIZE=128k
+  if test "$target" = "STM8S_DISCOVERY"; then
+    FLASH_SIZE=64k
+  else
+    FLASH_SIZE=128k
+  fi
   DFU_DEFINE="#undef DFU_SUPPORT"
 fi
 

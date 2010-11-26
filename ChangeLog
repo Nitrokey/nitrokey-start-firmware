@@ -1,5 +1,8 @@
 2010-11-26  NIIBE Yutaka  <gniibe@fsij.org>
 
+	* boards/STM8S_DISCOVERY/*: New.
+	* src/configure: STM8S_DISCOVERY only has 64KB flash memory.
+
 	* boards/STBEE_MINI/board.h (CPU_WITH_NO_GPIOE): New define.
 	* ChibiOS_2.0.6/os/hal/platforms/STM32/hal_lld.c: Use it.
 	* ChibiOS_2.0.6/os/hal/platforms/STM32/pal_lld.c: Likewise.
