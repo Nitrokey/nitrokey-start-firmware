@@ -560,9 +560,11 @@ cmd_pso (void)
 	  return;
 	}
 
-      if ((cmd_APDU_size != 8 + 35 && cmd_APDU_size != 8 + 35 + 1) /* SHA1 */
-	  /* or SHA256 */
-	  && (cmd_APDU_size != 8 + 51 && cmd_APDU_size != 8 + 51 + 1))
+      if ((cmd_APDU_size != 8 + 35 && cmd_APDU_size != 8 + 35 + 1) /* SHA1 / RIPEMD-160 */
+	  && (cmd_APDU_size != 8 + 47 && cmd_APDU_size != 8 + 47 + 1) /* SHA224 */
+	  && (cmd_APDU_size != 8 + 51 && cmd_APDU_size != 8 + 51 + 1) /* SHA256 */
+	  && (cmd_APDU_size != 8 + 67 && cmd_APDU_size != 8 + 67 + 1) /* SHA384 */
+	  && (cmd_APDU_size != 8 + 83 && cmd_APDU_size != 8 + 83 + 1) /* SHA512 */)
 	/* Extended Lc: 3-byte */
 	{
 	  DEBUG_INFO (" wrong length: ");

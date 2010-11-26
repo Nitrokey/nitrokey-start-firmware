@@ -104,7 +104,7 @@ External source code
 
 Gnuk is distributed with external source code.
 
-* ChibiOS_2.0.2/  -- ChibiOS/RT 2.0.2
+* ChibiOS_2.0.6/  -- ChibiOS/RT 2.0.6
 
   Taken from http://chibios.sourceforge.net/
   Note that CRLF is converted to LF in this repository.

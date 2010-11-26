@@ -1,3 +1,7 @@
+2010-11-26  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/openpgp.c (cmd_pso): DigestInfo by SHA224/SHA384/SHA512 is supported.
+
 2010-11-22  NIIBE Yutaka  <gniibe@fsij.org>
 
 	Import changes of ChibiOS_2.0.6.
