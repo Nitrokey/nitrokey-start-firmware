@@ -36,6 +36,7 @@
  */
 #define BOARD_STBEE_MINI
 #define BOARD_NAME "STBee Mini"
+#define CPU_WITH_NO_GPIOE	1
 
 /*
  * Board frequencies.

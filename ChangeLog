@@ -1,5 +1,10 @@
 2010-11-26  NIIBE Yutaka  <gniibe@fsij.org>
 
+	* boards/STBEE_MINI/board.h (CPU_WITH_NO_GPIOE): New define.
+	* ChibiOS_2.0.6/os/hal/platforms/STM32/hal_lld.c: Use it.
+	* ChibiOS_2.0.6/os/hal/platforms/STM32/pal_lld.c: Likewise.
+	* ChibiOS_2.0.6/os/hal/platforms/STM32/pal_lld.h: Likewise.
+
 	* src/openpgp.c (cmd_pso): DigestInfo by SHA224/SHA384/SHA512 is supported.
 
 2010-11-22  NIIBE Yutaka  <gniibe@fsij.org>

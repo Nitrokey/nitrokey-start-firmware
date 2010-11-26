@@ -114,7 +114,7 @@ void _pal_lld_init(const PALConfig *config) {
   IOPORT4->ODR = config->PDData.odr;
   IOPORT4->CRH = config->PDData.crh;
   IOPORT4->CRL = config->PDData.crl;
-#if !(defined(STM32F10X_LD) || defined(BOARD_STBEE_MINI)) || defined(__DOXYGEN__)
+#if !(defined(STM32F10X_LD) || defined(CPU_WITH_NO_GPIOE)) || defined(__DOXYGEN__)
   IOPORT5->ODR = config->PEData.odr;
   IOPORT5->CRH = config->PEData.crh;
   IOPORT5->CRL = config->PEData.crl;
