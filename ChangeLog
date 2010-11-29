@@ -1,3 +1,7 @@
+2010-11-30  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/stdlib.h (malloc, free): Use chHeapAlloc and chHeapFree.
+
 2010-11-26  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* boards/STM8S_DISCOVERY/*: New.
@@ -8,7 +12,8 @@
 	* ChibiOS_2.0.6/os/hal/platforms/STM32/pal_lld.c: Likewise.
 	* ChibiOS_2.0.6/os/hal/platforms/STM32/pal_lld.h: Likewise.
 
-	* src/openpgp.c (cmd_pso): DigestInfo by SHA224/SHA384/SHA512 is supported.
+	* src/openpgp.c (cmd_pso): DigestInfo by SHA224/SHA384/SHA512 is
+	supported.
 
 2010-11-22  NIIBE Yutaka  <gniibe@fsij.org>
 

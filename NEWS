@@ -1,5 +1,20 @@
 Gnuk NEWS - User visible changes
 
+* Major changes in Gnuk 0.5
+
+  Released 2010-12-XX, by NIIBE Yutaka
+
+** New board support "STM8S Discovery".
+ST-Link part (with STM32F103C8T6) of STM8S Discovery board is now supported.
+
+** Digital signing for SHA224/SHA256/SHA384/SHA512 digestInfo is now possible.
+
+** More improved USB-CCID/ICCD implementation.
+Gnuk works better with GPG's in-stock protocol stack.  Still, 
+changes are needed for GPG (scd/ccid-driver.c) to support the case
+of bChainParameter == 1.
+
+
 * Major changes in Gnuk 0.4
 
   Released 2010-11-09, by NIIBE Yutaka
