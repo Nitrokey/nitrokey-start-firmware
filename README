@@ -1,7 +1,7 @@
 Gnuk - software for GPG USB Token
 
-							    Version 0.4
-							     2010-11-09
+							    Version 0.5
+							     2010-12-XX
 						           Niibe Yutaka
 				      Free Software Initiative of Japan
 
@@ -26,7 +26,7 @@ USB Token by Gnuk everywhere.
 Release notes
 =============
 
-This is fifth release of Gnuk.  While it works well for specific
+This is sixth release of Gnuk.  While it works well for specific
 usages, it is still experimental.
 
 Tested features are:
@@ -51,11 +51,11 @@ Tested features are:
 
 	* INTERNAL AUTHENTICATE
 
+	* Changing value of password status bytes (0x00C4).
+
 It is known not-working well:
 
 	* Key import multiple times
-
-	* Changing value of password status bytes (0x00C4).
 
 	* For some version of kernel and libccid, --enable-debug can't
           work well.  Please disable DEBUG option if it doesn't work well.
@@ -68,10 +68,14 @@ Not (yet) supported feature(s):
 Targets
 =======
 
-We use Olimex STM32-H103 board.  DFU support is added, it's mainly for
-CQ STARM and STBee Mini but those targets are not tested extensively.
-That's because we don't have a Free Software tool to write through
-DFU.
+We use Olimex STM32-H103 board.  We also use STM32 part of STM8S
+Discovery Kit.
+
+With DfuSe support, CQ STARM and STBee Mini are also our targets.  But
+those target with DfuSe are basically not for normal use but for
+experiment, because it would be impossible for DfuSe to disable read
+from flash.  For real use, kill DfuSe and enable read protect using
+JTAG debugger.
 
 I think that it could run on Olimex STM32-P103, or STBee too.
 Besides, we are porting it to STM32 Primer 2.

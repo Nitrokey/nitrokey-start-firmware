@@ -9,6 +9,8 @@ ST-Link part (with STM32F103C8T6) of STM8S Discovery board is now supported.
 
 ** Digital signing for SHA224/SHA256/SHA384/SHA512 digestInfo is now possible.
 
+** Fixes for password management.
+
 ** More improved USB-CCID/ICCD implementation.
 Gnuk works better with GPG's in-stock protocol stack.  Still, 
 changes are needed for GPG (scd/ccid-driver.c) to support the case

@@ -1,5 +1,19 @@
 2010-11-30  NIIBE Yutaka  <gniibe@fsij.org>
 
+	New private key management.
+	* src/ac.c (ac_reset_pso_cds, ac_reset_pso_other): Call
+	gpg_do_clear_prvkey.
+	(verify_pso_other): load private keys here.
+	* src/openpgp-do.c (kd): Keydata for Signing, Decryption, and
+	Authentication.
+	(gpg_do_load_prvkey, gpg_do_write_prvkey): Use kd[].
+	(gpg_do_clear_prvkey): New function.
+	* src/openpgp.c (cmd_pso, cmd_internal_authenticate): Use new API
+	of rsa_sign and rsa_decrypt.
+	* src/call-rsa.c (rsa_sign): New argument KD.
+	(rsa_decrypt): Likewise.
+
+	Don't use malloc/free in C library.
 	* src/stdlib.h (malloc, free): Use chHeapAlloc and chHeapFree.
 
 2010-11-26  NIIBE Yutaka  <gniibe@fsij.org>

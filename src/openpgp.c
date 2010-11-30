@@ -258,6 +258,7 @@ cmd_change_password (void)
     {
       gpg_do_write_simple (NR_DO_KEYSTRING_PW1, new_ks0, KEYSTRING_SIZE_PW1);
       ac_reset_pso_cds ();
+      ac_reset_pso_other ();
       gpg_reset_pw_err_counter (PW_ERR_PW1);
       DEBUG_INFO ("Changed DO_KEYSTRING_PW1.\r\n");
       GPG_SUCCESS ();
@@ -266,6 +267,7 @@ cmd_change_password (void)
     {
       gpg_do_write_simple (NR_DO_KEYSTRING_PW1, new_ks0, 1);
       ac_reset_pso_cds ();
+      ac_reset_pso_other ();
       gpg_reset_pw_err_counter (PW_ERR_PW1);
       DEBUG_INFO ("Changed length of DO_KEYSTRING_PW1.\r\n");
       GPG_SUCCESS ();
@@ -344,6 +346,7 @@ cmd_reset_user_password (void)
 	  DEBUG_INFO ("done (no prvkey).\r\n");
 	  gpg_do_write_simple (NR_DO_KEYSTRING_PW1, new_ks0, KEYSTRING_SIZE_PW1);
 	  ac_reset_pso_cds ();
+	  ac_reset_pso_other ();
 	  gpg_reset_pw_err_counter (PW_ERR_RC);
 	  gpg_reset_pw_err_counter (PW_ERR_PW1);
 	  GPG_SUCCESS ();
@@ -352,6 +355,7 @@ cmd_reset_user_password (void)
 	{
 	  DEBUG_INFO ("done.\r\n");
 	  ac_reset_pso_cds ();
+	  ac_reset_pso_other ();
 	  gpg_reset_pw_err_counter (PW_ERR_RC);
 	  gpg_reset_pw_err_counter (PW_ERR_PW1);
 	  GPG_SUCCESS ();
@@ -388,6 +392,7 @@ cmd_reset_user_password (void)
 	  DEBUG_INFO ("done (no privkey).\r\n");
 	  gpg_do_write_simple (NR_DO_KEYSTRING_PW1, new_ks0, KEYSTRING_SIZE_PW1);
 	  ac_reset_pso_cds ();
+	  ac_reset_pso_other ();
 	  gpg_reset_pw_err_counter (PW_ERR_PW1);
 	  GPG_SUCCESS ();
 	}
@@ -395,6 +400,7 @@ cmd_reset_user_password (void)
 	{
 	  DEBUG_INFO ("done.\r\n");
 	  ac_reset_pso_cds ();
+	  ac_reset_pso_other ();
 	  gpg_reset_pw_err_counter (PW_ERR_PW1);
 	  GPG_SUCCESS ();
 	}
@@ -575,7 +581,8 @@ cmd_pso (void)
 	{
 	  DEBUG_SHORT (len);  /* Should be cmd_APDU_size - 8 [- 1] */
 
-	  r = rsa_sign (&cmd_APDU[data_start], res_APDU, len);
+	  r = rsa_sign (&cmd_APDU[data_start], res_APDU, len,
+			&kd[GPG_KEY_FOR_SIGNING]);
 	  if (r < 0)
 	    {
 	      ac_reset_pso_cds ();
@@ -602,23 +609,11 @@ cmd_pso (void)
 	  return;
 	}
 
-      if ((r = gpg_do_load_prvkey (GPG_KEY_FOR_DECRYPTION, BY_USER,
-				   pw1_keystring + 1)) < 0)
-	{
-	  gpg_increment_pw_err_counter (PW_ERR_PW1);
-	  GPG_SECURITY_FAILURE ();
-	  return;
-	}
-      else
-	/* Reset counter as it's success now */
-	gpg_reset_pw_err_counter (PW_ERR_PW1);
-
-      ac_reset_pso_other ();
-
       /* Skip padding 0x00 */
       data_start++;
       len--;
-      r = rsa_decrypt (&cmd_APDU[data_start], res_APDU, len);
+      r = rsa_decrypt (&cmd_APDU[data_start], res_APDU, len,
+		       &kd[GPG_KEY_FOR_DECRYPTION]);
       if (r < 0)
 	GPG_ERROR ();
     }
@@ -661,20 +656,8 @@ cmd_internal_authenticate (void)
 	  return;
 	}
 
-      if ((r = gpg_do_load_prvkey (GPG_KEY_FOR_AUTHENTICATION, BY_USER,
-				   pw1_keystring + 1)) < 0)
-	{
-	  gpg_increment_pw_err_counter (PW_ERR_PW1);
-	  GPG_SECURITY_FAILURE ();
-	  return;
-	}
-      else
-	/* Reset counter as it's success now */
-	gpg_reset_pw_err_counter (PW_ERR_PW1);
-
-      ac_reset_pso_other ();
-
-      r = rsa_sign (&cmd_APDU[data_start], res_APDU, len);
+      r = rsa_sign (&cmd_APDU[data_start], res_APDU, len,
+		    &kd[GPG_KEY_FOR_AUTHENTICATION]);
       if (r < 0)
 	GPG_ERROR ();
     }

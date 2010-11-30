@@ -33,7 +33,8 @@
 static rsa_context rsa_ctx;
 
 int
-rsa_sign (const uint8_t *raw_message, uint8_t *output, int msg_len)
+rsa_sign (const uint8_t *raw_message, uint8_t *output, int msg_len,
+	  struct key_data *kd)
 {
   mpi P1, Q1, H;
   int r;
@@ -43,8 +44,8 @@ rsa_sign (const uint8_t *raw_message, uint8_t *output, int msg_len)
 
   rsa_ctx.len = 2048 / 8;
   mpi_read_string (&rsa_ctx.E, 16, "10001");
-  mpi_read_binary (&rsa_ctx.P, &kd.data[0], rsa_ctx.len / 2);
-  mpi_read_binary (&rsa_ctx.Q, &kd.data[128], rsa_ctx.len / 2);
+  mpi_read_binary (&rsa_ctx.P, &kd->data[0], rsa_ctx.len / 2);
+  mpi_read_binary (&rsa_ctx.Q, &kd->data[128], rsa_ctx.len / 2);
   mpi_mul_mpi (&rsa_ctx.N, &rsa_ctx.P, &rsa_ctx.Q);
   mpi_sub_int (&P1, &rsa_ctx.P, 1);
   mpi_sub_int (&Q1, &rsa_ctx.Q, 1);
@@ -114,7 +115,8 @@ modulus_free (const uint8_t *p)
 }
 
 int
-rsa_decrypt (const uint8_t *input, uint8_t *output, int msg_len)
+rsa_decrypt (const uint8_t *input, uint8_t *output, int msg_len,
+	     struct key_data *kd)
 {
   mpi P1, Q1, H;
   int r;
@@ -130,8 +132,8 @@ rsa_decrypt (const uint8_t *input, uint8_t *output, int msg_len)
   DEBUG_WORD (msg_len);
 
   mpi_read_string (&rsa_ctx.E, 16, "10001");
-  mpi_read_binary (&rsa_ctx.P, &kd.data[0], 2048 / 8 / 2);
-  mpi_read_binary (&rsa_ctx.Q, &kd.data[128], 2048 / 8 / 2);
+  mpi_read_binary (&rsa_ctx.P, &kd->data[0], 2048 / 8 / 2);
+  mpi_read_binary (&rsa_ctx.Q, &kd->data[128], 2048 / 8 / 2);
   mpi_mul_mpi (&rsa_ctx.N, &rsa_ctx.P, &rsa_ctx.Q);
   mpi_sub_int (&P1, &rsa_ctx.P, 1);
   mpi_sub_int (&Q1, &rsa_ctx.Q, 1);

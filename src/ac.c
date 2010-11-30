@@ -44,15 +44,15 @@ ac_check_status (uint8_t ac_flag)
 void
 ac_reset_pso_cds (void)
 {
+  gpg_do_clear_prvkey (GPG_KEY_FOR_SIGNING);
   auth_status &= ~AC_PSO_CDS_AUTHORIZED;
 }
-
-uint8_t pw1_keystring[KEYSTRING_SIZE_PW1];
 
 void
 ac_reset_pso_other (void)
 {
-  memset (pw1_keystring, 0, KEYSTRING_SIZE_PW1);
+  gpg_do_clear_prvkey (GPG_KEY_FOR_DECRYPTION);
+  gpg_do_clear_prvkey (GPG_KEY_FOR_AUTHENTICATION);
   auth_status &= ~AC_PSO_OTHER_AUTHORIZED;
 }
 
@@ -89,31 +89,35 @@ int
 verify_pso_other (const uint8_t *pw, int pw_len)
 {
   const uint8_t *ks_pw1;
+  uint8_t pw1_keystring[KEYSTRING_SIZE_PW1];
 
   DEBUG_INFO ("verify_pso_other\r\n");
 
   if (gpg_passwd_locked (PW_ERR_PW1))
     return 0;
 
-  /*
-   * We check only the length of password string here.
-   * Real check is defered to decrypt/authenticate routines.
-   */
   ks_pw1 = gpg_do_read_simple (NR_DO_KEYSTRING_PW1);
   if ((ks_pw1 == NULL && pw_len == strlen (OPENPGP_CARD_INITIAL_PW1))
       || (ks_pw1 != NULL && pw_len == ks_pw1[0]))
     {				/* No problem */
-      /*
-       * We don't call gpg_reset_pw_err_counters here, because
-       * password may be wrong.
-       */
       pw1_keystring[0] = pw_len;
       sha1 (pw, pw_len, pw1_keystring+1);
+      if (gpg_do_load_prvkey (GPG_KEY_FOR_DECRYPTION, BY_USER,
+			      pw1_keystring + 1) < 0)
+	goto error;
+
+      if (gpg_do_load_prvkey (GPG_KEY_FOR_AUTHENTICATION, BY_USER,
+			      pw1_keystring + 1) < 0)
+	goto error;
+
+      /* Reset counter as it's success now */
+      gpg_reset_pw_err_counter (PW_ERR_PW1);
       auth_status |= AC_PSO_OTHER_AUTHORIZED;
       return 1;
     }
   else
     {
+    error:
       gpg_increment_pw_err_counter (PW_ERR_PW1);
       return 0;
     }

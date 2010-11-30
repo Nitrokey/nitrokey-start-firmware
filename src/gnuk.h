@@ -81,7 +81,7 @@ extern void gpg_do_public_key (uint8_t kk_byte);
 
 
 enum kind_of_key {
-  GPG_KEY_FOR_SIGNING,
+  GPG_KEY_FOR_SIGNING = 0,
   GPG_KEY_FOR_DECRYPTION,
   GPG_KEY_FOR_AUTHENTICATION,
 };
@@ -140,6 +140,7 @@ extern int flash_key_write (uint8_t *key_addr, const uint8_t *key_data, const ui
 #define KEYSTRING_SIZE_PW3 (KEYSTRING_PASSLEN_SIZE+KEYSTRING_SALT_SIZE \
   				+KEYSTRING_ITER_SIZE+KEYSTRING_MD_SIZE)
 
+extern void gpg_do_clear_prvkey (enum kind_of_key kk);
 extern int gpg_do_load_prvkey (enum kind_of_key kk, int who, const uint8_t *keystring);
 extern int gpg_do_chks_prvkey (enum kind_of_key kk,
 			       int who_old, const uint8_t *old_ks,
@@ -148,7 +149,7 @@ extern int gpg_do_chks_prvkey (enum kind_of_key kk,
 extern int gpg_change_keystring (int who_old, const uint8_t *old_ks,
 				 int who_new, const uint8_t *new_ks);
 
-extern struct key_data kd;
+extern struct key_data kd[3];
 
 #ifdef DEBUG
 #define DEBUG_INFO(msg)	    put_string (msg)
@@ -164,10 +165,10 @@ extern struct key_data kd;
 #define DEBUG_BINARY(s,len)
 #endif
 
-extern int rsa_sign (const uint8_t *, uint8_t *, int);
+extern int rsa_sign (const uint8_t *, uint8_t *, int, struct key_data *);
 extern const uint8_t *modulus_calc (const uint8_t *, int);
 extern void modulus_free (const uint8_t *);
-extern int rsa_decrypt (const uint8_t *input, uint8_t *output, int msg_len);
+extern int rsa_decrypt (const uint8_t *, uint8_t *, int, struct key_data *);
 
 extern int gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len, const uint8_t *keystring);
 

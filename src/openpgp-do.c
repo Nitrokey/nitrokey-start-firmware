@@ -528,7 +528,8 @@ encrypt (const uint8_t *key_str, uint8_t *data, int len)
   aes_crypt_cfb128 (&aes, AES_ENCRYPT, len, &iv_offset, iv, data, data);
 }
 
-struct key_data kd;
+/* Signing, Decryption, and Authentication */
+struct key_data kd[3];
 
 static void
 decrypt (const uint8_t *key_str, uint8_t *data, int len)
@@ -561,6 +562,12 @@ get_do_ptr_nr_for_kk (enum kind_of_key kk)
   return NR_DO_PRVKEY_SIG;
 }
 
+void
+gpg_do_clear_prvkey (enum kind_of_key kk)
+{
+  memset ((void *)&kd[kk], 0, sizeof (struct key_data));
+}
+
 /*
  * Return  1 on success,
  *         0 if none,
@@ -578,13 +585,13 @@ gpg_do_load_prvkey (enum kind_of_key kk, int who, const uint8_t *keystring)
     return 0;
 
   key_addr = *(uint8_t **)&(do_data)[1];
-  memcpy (kd.data, key_addr, KEY_CONTENT_LEN);
-  memcpy (((uint8_t *)&kd.check), do_data+5, ADDITIONAL_DATA_SIZE);
+  memcpy (kd[kk].data, key_addr, KEY_CONTENT_LEN);
+  memcpy (((uint8_t *)&kd[kk].check), do_data+5, ADDITIONAL_DATA_SIZE);
   memcpy (dek, do_data+5+16*who, DATA_ENCRYPTION_KEY_SIZE);
 
   decrypt (keystring, dek, DATA_ENCRYPTION_KEY_SIZE);
-  decrypt (dek, (uint8_t *)&kd, sizeof (struct key_data));
-  if (memcmp (kd.magic, GNUK_MAGIC, KEY_MAGIC_LEN) != 0)
+  decrypt (dek, (uint8_t *)&kd[kk], sizeof (struct key_data));
+  if (memcmp (kd[kk].magic, GNUK_MAGIC, KEY_MAGIC_LEN) != 0)
     {
       DEBUG_INFO ("gpg_do_load_prvkey failed.\r\n");
       return -1;
@@ -653,10 +660,10 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
   DEBUG_INFO ("key_addr: ");
   DEBUG_WORD ((uint32_t)key_addr);
 
-  memcpy (kd.data, key_data, KEY_CONTENT_LEN);
-  kd.check = calc_check32 (key_data, KEY_CONTENT_LEN);
-  kd.random = get_random ();
-  memcpy (kd.magic, GNUK_MAGIC, KEY_MAGIC_LEN);
+  memcpy (kd[kk].data, key_data, KEY_CONTENT_LEN);
+  kd[kk].check = calc_check32 (key_data, KEY_CONTENT_LEN);
+  kd[kk].random = get_random ();
+  memcpy (kd[kk].magic, GNUK_MAGIC, KEY_MAGIC_LEN);
 
   if (do_data)			/* We have old prvkey */
     {
@@ -684,9 +691,9 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
       ks_rc = gpg_do_read_simple (NR_DO_KEYSTRING_RC);
     }
 
-  encrypt (dek, (uint8_t *)&kd, sizeof (struct key_data));
+  encrypt (dek, (uint8_t *)&kd[kk], sizeof (struct key_data));
 
-  r = flash_key_write (key_addr, kd.data, modulus);
+  r = flash_key_write (key_addr, kd[kk].data, modulus);
   modulus_free (modulus);
 
   if (r < 0)
@@ -698,9 +705,13 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
     }
 
   pd->key_addr = key_addr;
-  memcpy (pd->crm_encrypted, (uint8_t *)&kd.check, ADDITIONAL_DATA_SIZE);
+  memcpy (pd->crm_encrypted, (uint8_t *)&kd[kk].check, ADDITIONAL_DATA_SIZE);
 
-  ac_reset_pso_cds ();
+  if (kk == GPG_KEY_FOR_SIGNING)
+    ac_reset_pso_cds ();
+  else
+    ac_reset_pso_other ();
+
   if (ks_pw1)
     encrypt (ks_pw1+1, pd->dek_encrypted_1, DATA_ENCRYPTION_KEY_SIZE);
   else
