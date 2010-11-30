@@ -10,6 +10,8 @@
 	(gpg_do_clear_prvkey): New function.
 	* src/openpgp.c (cmd_pso, cmd_internal_authenticate): Use new API
 	of rsa_sign and rsa_decrypt.
+	(cmd_pso): Fixed bug of checking return value of gpg_get_pw1_lifetime.
+
 	* src/call-rsa.c (rsa_sign): New argument KD.
 	(rsa_decrypt): Likewise.
 

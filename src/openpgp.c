@@ -590,7 +590,7 @@ cmd_pso (void)
 	    }
 	  else
 	    {			/* Success */
-	      if (gpg_get_pw1_lifetime ())
+	      if (gpg_get_pw1_lifetime () == 0)
 		ac_reset_pso_cds ();
 
 	      gpg_increment_digital_signature_counter ();
