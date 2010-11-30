@@ -1,5 +1,20 @@
 2010-11-30  NIIBE Yutaka  <gniibe@fsij.org>
 
+	Import changes of ChibiOS_2.0.8.
+	* ChibiOS_2.0.8/os/hal/include/pwm.h
+	* ChibiOS_2.0.8/os/hal/platforms/STM32/pwm_lld.c
+	* ChibiOS_2.0.8/os/hal/platforms/STM32/pwm_lld.h
+	* ChibiOS_2.0.8/os/hal/src/pwm.c
+	* ChibiOS_2.0.8/os/hal/templates/pwm_lld.c
+	* ChibiOS_2.0.8/os/hal/templates/pwm_lld.h
+	* ChibiOS_2.0.8/os/kernel/include/ch.h
+	* ChibiOS_2.0.8/os/kernel/src/chevents.c
+	* ChibiOS_2.0.8/os/kernel/src/chthreads.c
+	* ChibiOS_2.0.8/boards/OLIMEX_LPC_P2148/board.h
+	* ChibiOS_2.0.8/readme.txt
+	* ChibiOS_2.0.8/test/testdyn.c
+	* ChibiOS_2.0.8/docs/*
+
 	New private key management.
 	* src/ac.c (ac_reset_pso_cds, ac_reset_pso_other): Call
 	gpg_do_clear_prvkey.
