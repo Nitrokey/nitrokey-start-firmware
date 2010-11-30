@@ -1,5 +1,11 @@
 2010-11-30  NIIBE Yutaka  <gniibe@fsij.org>
 
+	Flash ROM fixes for STM32F10X_HD.
+	* src/gnuk.ld.in (.gnuk_flash): Use FLASH_PAGE_SIZE.
+	* src/configure (FLASH_PAGE_SIZE): Defined for gnuk.ld.
+	* src/flash.c (FLASH_PAGE_SIZE): New define.
+	(FLASH_DATA_POOL_SIZE): Use FLASH_PAGE_SIZE.
+
 	Import changes of ChibiOS_2.0.8.
 	* ChibiOS_2.0.8/os/hal/include/pwm.h
 	* ChibiOS_2.0.8/os/hal/platforms/STM32/pwm_lld.c

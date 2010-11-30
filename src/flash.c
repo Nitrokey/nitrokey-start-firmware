@@ -146,15 +146,19 @@ flash_erase_page (uint32_t addr)
  *         ...
  * _etext + (_edata - _data)
  *
- * 1-KiB align padding
+ * flash-page-size align padding
  *
- * 1-KiB data pool  * 2
+ * flash-page-size data pool  * 2
  *
  * 3-KiB Key store (512-byte (p, q and N) key-store * 6)
  */
 #define FLASH_DATA_POOL_HEADER_SIZE	2
-#define FLASH_DATA_POOL_SIZE		(1024*2)
+#if defined(STM32F10X_HD)
+#define FLASH_PAGE_SIZE			2048
+#else
 #define FLASH_PAGE_SIZE			1024
+#endif
+#define FLASH_DATA_POOL_SIZE		(FLASH_PAGE_SIZE*2)
 
 static const uint8_t *data_pool;
 static const uint8_t *keystore_pool;

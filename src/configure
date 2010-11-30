@@ -139,6 +139,11 @@ if test "$with_dfu" = "yes"; then
 else
   echo "Configured for bare system (no-DFU)"
   ORIGIN=0x08000000
+  if test "$target" = "STM32_PRIMER2"; then
+    FLASH_PAGE_SIZE=2048
+  else
+    FLASH_PAGE_SIZE=1024
+  fi
   if test "$target" = "STM8S_DISCOVERY"; then
     FLASH_SIZE=64k
   else
@@ -151,6 +156,7 @@ sed -e "s%@BOARD_MAKEFILE@%$BOARD_MAKEFILE%" \
     -e "s%@DEBUG_MAKE_OPTION@%$DEBUG_MAKE_OPTION%" \
 	< Makefile.in > Makefile
 sed -e "s/@ORIGIN@/$ORIGIN/" -e "s/@FLASH_SIZE@/$FLASH_SIZE/" \
+    -e "s/@FLASH_PAGE_SIZE@/$FLASH_PAGE_SIZE/" \
 	< gnuk.ld.in > gnuk.ld
 sed -e "s/@DEBUG_DEFINE@/$DEBUG_DEFINE/" \
     -e "s/@DFU_DEFINE@/$DFU_DEFINE/" \

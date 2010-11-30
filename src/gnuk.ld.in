@@ -116,17 +116,17 @@ SECTIONS
 
     .gnuk_random :
     {
-        . = ALIGN (1024);
+        . = ALIGN (@FLASH_PAGE_SIZE@);
 	*(.gnuk_random)
     } > flash =0xffffffff
 
-    .gnuk_flash : ALIGN (1024)
+    .gnuk_flash : ALIGN (@FLASH_PAGE_SIZE@)
     {
 	_data_pool = .;
 	KEEP(*(.gnuk_data))
 	FILL(0xffffffff);
-	. = ALIGN(1024);
-	. += 1024;
+	. = ALIGN(@FLASH_PAGE_SIZE@);
+	. += @FLASH_PAGE_SIZE@;
 	_keystore_pool = .;
 	FILL(0xffffffff);
 	. += 1024*3;
