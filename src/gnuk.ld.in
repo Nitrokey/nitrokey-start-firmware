@@ -129,7 +129,7 @@ SECTIONS
 	. += @FLASH_PAGE_SIZE@;
 	_keystore_pool = .;
 	FILL(0xffffffff);
-	. += 1024*3;
+	. += 512*3;
     } > flash
 }
 

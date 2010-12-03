@@ -90,7 +90,7 @@ extern const uint8_t *flash_init (void);
 extern void flash_do_release (const uint8_t *);
 extern const uint8_t *flash_do_write (uint8_t nr, const uint8_t *data, int len);
 extern uint8_t *flash_key_alloc (void);
-extern void flash_key_release (const uint8_t *);
+extern void flash_keystore_release (void);
 extern void flash_set_data_pool_last (const uint8_t *p);
 extern void flash_clear_halfword (uint32_t addr);
 extern void flash_increment_counter (uint8_t counter_tag_nr);
@@ -169,8 +169,6 @@ extern int rsa_sign (const uint8_t *, uint8_t *, int, struct key_data *);
 extern const uint8_t *modulus_calc (const uint8_t *, int);
 extern void modulus_free (const uint8_t *);
 extern int rsa_decrypt (const uint8_t *, uint8_t *, int, struct key_data *);
-
-extern int gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len, const uint8_t *keystring);
 
 extern const uint8_t *gpg_do_read_simple (uint8_t);
 extern void gpg_do_write_simple (uint8_t, const uint8_t *, int);

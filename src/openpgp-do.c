@@ -615,7 +615,7 @@ calc_check32 (const uint8_t *p, int len)
 
 static int8_t num_prv_keys;
 
-int
+static int
 gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
 		     const uint8_t *keystring)
 {
@@ -636,6 +636,10 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
 
   DEBUG_INFO ("Key import\r\n");
   DEBUG_SHORT (key_len);
+
+  if (do_data)
+    /* No replace support, you need to remove it first.  */
+    return -1;
 
   pd = (struct prvkey_data *)malloc (sizeof (struct prvkey_data));
   if (pd == NULL)
@@ -665,31 +669,12 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
   kd[kk].random = get_random ();
   memcpy (kd[kk].magic, GNUK_MAGIC, KEY_MAGIC_LEN);
 
-  if (do_data)			/* We have old prvkey */
-    {
-      /* Write new prvkey resetting PW1 and RC */
-      /* Note: if you have other prvkey(s), it becomes bogus */
-      memcpy (pd, do_data+1, sizeof (struct prvkey_data));
-      decrypt (keystring_md_pw3, pd->dek_encrypted_3, DATA_ENCRYPTION_KEY_SIZE);
-      dek = pd->dek_encrypted_3;
-      memcpy (pd->dek_encrypted_1, dek, DATA_ENCRYPTION_KEY_SIZE);
-      memset (pd->dek_encrypted_2, 0, DATA_ENCRYPTION_KEY_SIZE);
-      gpg_do_write_simple (NR_DO_KEYSTRING_PW1, NULL, 0);
-      gpg_do_write_simple (NR_DO_KEYSTRING_RC, NULL, 0);
-      flash_key_release (pd->key_addr);
-      flash_do_release (do_data);
-      ks_pw1 = NULL;
-      ks_rc = NULL;
-    }
-  else
-    {
-      dek = random_bytes_get (); /* 16-byte random bytes */
-      memcpy (pd->dek_encrypted_1, dek, DATA_ENCRYPTION_KEY_SIZE);
-      memcpy (pd->dek_encrypted_2, dek, DATA_ENCRYPTION_KEY_SIZE);
-      memcpy (pd->dek_encrypted_3, dek, DATA_ENCRYPTION_KEY_SIZE);
-      ks_pw1 = gpg_do_read_simple (NR_DO_KEYSTRING_PW1);
-      ks_rc = gpg_do_read_simple (NR_DO_KEYSTRING_RC);
-    }
+  dek = random_bytes_get (); /* 16-byte random bytes */
+  memcpy (pd->dek_encrypted_1, dek, DATA_ENCRYPTION_KEY_SIZE);
+  memcpy (pd->dek_encrypted_2, dek, DATA_ENCRYPTION_KEY_SIZE);
+  memcpy (pd->dek_encrypted_3, dek, DATA_ENCRYPTION_KEY_SIZE);
+  ks_pw1 = gpg_do_read_simple (NR_DO_KEYSTRING_PW1);
+  ks_rc = gpg_do_read_simple (NR_DO_KEYSTRING_RC);
 
   encrypt (dek, (uint8_t *)&kd[kk], sizeof (struct key_data));
 
@@ -698,8 +683,7 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
 
   if (r < 0)
     {
-      if (do_data == NULL)
-	random_bytes_free (dek);
+      random_bytes_free (dek);
       free (pd);
       return r;
     }
@@ -734,14 +718,12 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
   p = flash_do_write (nr, (const uint8_t *)pd, sizeof (struct prvkey_data));
   do_ptr[nr - NR_DO__FIRST__] = p;
 
-  if (do_data == NULL)
-    random_bytes_free (dek);
+  random_bytes_free (dek);
   free (pd);
   if (p == NULL)
     return -1;
 
-  if (do_data == NULL
-      && ++num_prv_keys == NUM_ALL_PRV_KEYS) /* All keys are registered.  */
+  if (++num_prv_keys == NUM_ALL_PRV_KEYS) /* All keys are registered.  */
     {
       /* Remove contents of keystrings from DO, but length */
       if (ks_pw1)
@@ -827,18 +809,16 @@ proc_key_import (const uint8_t *data, int len)
       uint8_t nr = get_do_ptr_nr_for_kk (kk);
       const uint8_t *do_data = do_ptr[nr - NR_DO__FIRST__];
 
-      /* Delete the key */
-      if (do_data)
-	{
-	  uint8_t *key_addr = *(uint8_t **)&do_data[1];
+      if (do_data == NULL)
+	return 1;
 
-	  flash_key_release (key_addr);
-	  flash_do_release (do_data);
-	}
       do_ptr[nr - NR_DO__FIRST__] = NULL;
+      flash_do_release (do_data);
 
       if (--num_prv_keys == 0)
 	{
+	  flash_keystore_release ();
+
 	  /* Delete PW1 and RC if any */
 	  gpg_do_write_simple (NR_DO_KEYSTRING_PW1, NULL, 0);
 	  gpg_do_write_simple (NR_DO_KEYSTRING_RC, NULL, 0);

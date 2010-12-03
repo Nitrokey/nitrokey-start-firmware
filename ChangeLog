@@ -1,3 +1,14 @@
+2010-12-03  NIIBE Yutaka  <gniibe@fsij.org>
+
+	Keystore management changes.
+	* src/flash.c (flash_key_alloc): Check FLASH_KEYSTORE_SIZE.
+	(flash_key_release): Removed.
+	(flash_keystore_release): New function.
+	* src/openpgp-do.c (gpg_do_write_prvkey): Make it static.
+	When there is a key already, return as error.
+	(proc_key_import): Call flash_keystore_release when all keys removed.
+	* src/gnuk.ld.in (_keystore_pool): Size of keystore is now 1.5KB.
+
 2010-11-30  NIIBE Yutaka  <gniibe@fsij.org>
 
 	Flash ROM fixes for STM32F10X_HD.
@@ -19,7 +30,7 @@
 	* ChibiOS_2.0.8/boards/OLIMEX_LPC_P2148/board.h
 	* ChibiOS_2.0.8/readme.txt
 	* ChibiOS_2.0.8/test/testdyn.c
-	* ChibiOS_2.0.8/docs/*
+	* ChibiOS_2.0.8/docs/*/*: Updated.
 
 	New private key management.
 	* src/ac.c (ac_reset_pso_cds, ac_reset_pso_other): Call
@@ -32,7 +43,6 @@
 	* src/openpgp.c (cmd_pso, cmd_internal_authenticate): Use new API
 	of rsa_sign and rsa_decrypt.
 	(cmd_pso): Fixed bug of checking return value of gpg_get_pw1_lifetime.
-
 	* src/call-rsa.c (rsa_sign): New argument KD.
 	(rsa_decrypt): Likewise.
 

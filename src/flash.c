@@ -150,7 +150,7 @@ flash_erase_page (uint32_t addr)
  *
  * flash-page-size data pool  * 2
  *
- * 3-KiB Key store (512-byte (p, q and N) key-store * 6)
+ * 1.5-KiB Key store (512-byte (p, q and N) key-store * 3)
  */
 #define FLASH_DATA_POOL_HEADER_SIZE	2
 #if defined(STM32F10X_HD)
@@ -159,6 +159,7 @@ flash_erase_page (uint32_t addr)
 #define FLASH_PAGE_SIZE			1024
 #endif
 #define FLASH_DATA_POOL_SIZE		(FLASH_PAGE_SIZE*2)
+#define FLASH_KEYSTORE_SIZE		(512*3)
 
 static const uint8_t *data_pool;
 static const uint8_t *keystore_pool;
@@ -383,6 +384,9 @@ flash_key_alloc (void)
 {
   uint8_t *k = (uint8_t *)keystore;
 
+  if ((k - keystore_pool) >= FLASH_KEYSTORE_SIZE)
+    return NULL;
+
   keystore += 512;
   return k;
 }
@@ -416,9 +420,12 @@ flash_key_write (uint8_t *key_addr, const uint8_t *key_data,
 }
 
 void
-flash_key_release (const uint8_t *key_addr)
+flash_keystore_release (void)
 {
-  (void)key_addr;		/* Not yet */
+  flash_erase_page ((uint32_t)keystore_pool);
+#if FLASH_KEYSTORE_SIZE > FLASH_PAGE_SIZE
+  flash_erase_page ((uint32_t)keystore_pool + FLASH_PAGE_SIZE);
+#endif
 }
 
 void
