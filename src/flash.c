@@ -426,6 +426,7 @@ flash_keystore_release (void)
 #if FLASH_KEYSTORE_SIZE > FLASH_PAGE_SIZE
   flash_erase_page ((uint32_t)keystore_pool + FLASH_PAGE_SIZE);
 #endif
+  keystore = keystore_pool;
 }
 
 void
