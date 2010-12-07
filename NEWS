@@ -11,10 +11,15 @@ ST-Link part (with STM32F103C8T6) of STM8S Discovery board is now supported.
 
 ** Fixes for password management.
 
+** Key management changes
+If you remove all keys, it is possible to import keys again.
+
 ** More improved USB-CCID/ICCD implementation.
-Gnuk works better with GPG's in-stock protocol stack.  Still, 
-changes are needed for GPG (scd/ccid-driver.c) to support the case
-of bChainParameter == 1.
+Gnuk works better with GPG's in-stock protocol stack.  You can do
+digital signing (not decryption, key import, or get_public_key in
+GPG2).  For decryption, key import and get_public_key, changes are
+needed for GPG (scd/ccid-driver.c) to support the case of extended
+APDU.  In short, you can sign with Gnuk by GPG 1.
 
 
 * Major changes in Gnuk 0.4

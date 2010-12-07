@@ -77,12 +77,15 @@ struct icc_header {
 
 static int icc_data_size;
 
-
 /*
  * USB-ICC communication could be considered "half duplex".
  *
- * While the device is sending something, there is no possibility to receive anything.
- * While the device is receiving something, there is no possibility to send anything.
+ * While the device is sending something, there is no possibility for
+ * the device to receive anything.
+ *
+ * While the device is receiving something, there is no possibility
+ * for the device to send anything.
+ * 
  * Thus, the buffer can be shared for RX and TX.
  */
 
@@ -109,9 +112,6 @@ static uint8_t *icc_chain_p;
  * Whole size of TX transfer (Bulk-IN transactions)
  */
 static int icc_tx_size;
-
-#define icc_tx_data icc_buffer
-
 
 Thread *icc_thread;
 
@@ -178,11 +178,15 @@ EP2_OUT_Callback (void)
     {
       icc_next_p += USB_LL_BUF_SIZE;
       SetEPRxValid (ENDP2);
-      if ((icc_next_p - icc_buffer) >= USB_BUF_SIZE) /* No room to receive any more */
+      if ((icc_next_p - icc_buffer) >= USB_BUF_SIZE)
+	/* No room to receive any more */
 	{
 	  DEBUG_INFO ("ERR0F\r\n");
 	  icc_next_p -= USB_LL_BUF_SIZE; /* Just for not overrun the buffer */
-	  /* Receive until the end of the sequence (and discard the whole block) */
+	  /*
+	   * Receive until the end of the sequence
+	   * (and discard the whole block)
+	   */
 	}
     }
   else 				/* Finished */
@@ -225,9 +229,9 @@ enum icc_state
   ICC_STATE_WAIT,		/* Waiting APDU */
 				/* Busy1, Busy2, Busy3, Busy5 */
   ICC_STATE_EXECUTE,		/* Busy4 */
-
   ICC_STATE_RECEIVE, /* APDU Received Partially */
-  ICC_STATE_SEND,    /* APDU Sent Partially */  /* Not used in this implementation.*/
+
+  ICC_STATE_SEND,    /* APDU Sent Partially */  /* Not used */
 };
 
 static enum icc_state icc_state;
@@ -295,21 +299,21 @@ icc_power_on (void)
   int size_atr;
 
   size_atr = sizeof (ATR);
-  icc_tx_data[0] = ICC_DATA_BLOCK_RET;
-  icc_tx_data[1] = size_atr;
-  icc_tx_data[2] = 0x00;
-  icc_tx_data[3] = 0x00;
-  icc_tx_data[4] = 0x00;
-  icc_tx_data[5] = 0x00;	/* Slot */
-  icc_tx_data[ICC_MSG_SEQ_OFFSET] = icc_seq;
-  icc_tx_data[ICC_MSG_STATUS_OFFSET] = 0x00;
-  icc_tx_data[ICC_MSG_ERROR_OFFSET] = 0x00;
-  icc_tx_data[ICC_MSG_CHAIN_OFFSET] = 0x00;
-  memcpy (&icc_tx_data[ICC_MSG_DATA_OFFSET], ATR, size_atr);
+  icc_buffer[0] = ICC_DATA_BLOCK_RET;
+  icc_buffer[1] = size_atr;
+  icc_buffer[2] = 0x00;
+  icc_buffer[3] = 0x00;
+  icc_buffer[4] = 0x00;
+  icc_buffer[5] = 0x00;	/* Slot */
+  icc_buffer[ICC_MSG_SEQ_OFFSET] = icc_seq;
+  icc_buffer[ICC_MSG_STATUS_OFFSET] = 0x00;
+  icc_buffer[ICC_MSG_ERROR_OFFSET] = 0x00;
+  icc_buffer[ICC_MSG_CHAIN_OFFSET] = 0x00;
+  memcpy (&icc_buffer[ICC_MSG_DATA_OFFSET], ATR, size_atr);
 
   icc_next_p = NULL;	/* This is a single transaction Bulk-IN */
   icc_tx_size = ICC_MSG_HEADER_SIZE + size_atr;
-  USB_SIL_Write (EP1_IN, icc_tx_data, icc_tx_size);
+  USB_SIL_Write (EP1_IN, icc_buffer, icc_tx_size);
   SetEPTxValid (ENDP1);
   DEBUG_INFO ("ON\r\n");
 
@@ -428,27 +432,27 @@ icc_send_data_block (uint8_t status, uint8_t chain)
 static void
 icc_send_params (void)
 {
-  icc_tx_data[0] = ICC_PARAMS_RET;
-  icc_tx_data[1] = 0x07;	/* Length = 0x00000007 */
-  icc_tx_data[2] = 0;
-  icc_tx_data[3] = 0;
-  icc_tx_data[4] = 0;
-  icc_tx_data[5] = 0x00;	/* Slot */
-  icc_tx_data[ICC_MSG_SEQ_OFFSET] = icc_seq;
-  icc_tx_data[ICC_MSG_STATUS_OFFSET] = 0;
-  icc_tx_data[ICC_MSG_ERROR_OFFSET] = 0;
-  icc_tx_data[ICC_MSG_CHAIN_OFFSET] = 0x01; /* ProtocolNum: T=1 */
-  icc_tx_data[ICC_MSG_DATA_OFFSET] = 0x11;   /* bmFindexDindex */
-  icc_tx_data[ICC_MSG_DATA_OFFSET+1] = 0x11; /* bmTCCKST1 */
-  icc_tx_data[ICC_MSG_DATA_OFFSET+2] = 0xFE; /* bGuardTimeT1 */
-  icc_tx_data[ICC_MSG_DATA_OFFSET+3] = 0x55; /* bmWaitingIntegersT1 */
-  icc_tx_data[ICC_MSG_DATA_OFFSET+4] = 0x03; /* bClockStop */
-  icc_tx_data[ICC_MSG_DATA_OFFSET+5] = 0xFE; /* bIFSC */
-  icc_tx_data[ICC_MSG_DATA_OFFSET+6] = 0; /* bNadValue */
+  icc_buffer[0] = ICC_PARAMS_RET;
+  icc_buffer[1] = 0x07;	/* Length = 0x00000007 */
+  icc_buffer[2] = 0;
+  icc_buffer[3] = 0;
+  icc_buffer[4] = 0;
+  icc_buffer[5] = 0x00;	/* Slot */
+  icc_buffer[ICC_MSG_SEQ_OFFSET] = icc_seq;
+  icc_buffer[ICC_MSG_STATUS_OFFSET] = 0;
+  icc_buffer[ICC_MSG_ERROR_OFFSET] = 0;
+  icc_buffer[ICC_MSG_CHAIN_OFFSET] = 0x01;  /* ProtocolNum: T=1 */
+  icc_buffer[ICC_MSG_DATA_OFFSET] = 0x11;   /* bmFindexDindex */
+  icc_buffer[ICC_MSG_DATA_OFFSET+1] = 0x11; /* bmTCCKST1 */
+  icc_buffer[ICC_MSG_DATA_OFFSET+2] = 0xFE; /* bGuardTimeT1 */
+  icc_buffer[ICC_MSG_DATA_OFFSET+3] = 0x55; /* bmWaitingIntegersT1 */
+  icc_buffer[ICC_MSG_DATA_OFFSET+4] = 0x03; /* bClockStop */
+  icc_buffer[ICC_MSG_DATA_OFFSET+5] = 0xFE; /* bIFSC */
+  icc_buffer[ICC_MSG_DATA_OFFSET+6] = 0;    /* bNadValue */
 
   icc_next_p = NULL;	/* This is a single transaction Bulk-IN */
   icc_tx_size = ICC_MSG_HEADER_SIZE + 7;
-  USB_SIL_Write (EP1_IN, icc_tx_data, icc_tx_size);
+  USB_SIL_Write (EP1_IN, icc_buffer, icc_tx_size);
   SetEPTxValid (ENDP1);
 #ifdef DEBUG_MORE
   DEBUG_INFO ("DATA\r\n");
