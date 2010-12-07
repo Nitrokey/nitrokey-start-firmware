@@ -1,3 +1,28 @@
+2010-12-07  NIIBE Yutaka  <gniibe@fsij.org>
+
+	USB CCID/ICC implementation changes.
+	* src/usb_desc.c (dwMaxCCIDMessageLength): Updated.
+	* src/usb-icc.c (EV_TX_FINISHED): New.
+	(icc_rcv_data, icc_tx_data): Removed.
+	(icc_buffer, icc_seq): New.
+	(icc_next_p, icc_chain_p): New.
+	(icc_tx_ready): Removed.
+	(EP1_IN_Callback): Handle multiple transactions.
+	(icc_prepare_receive): New.
+	(EP2_OUT_Callback): Handle multiple transactions.
+	(icc_error, icc_send_status): Handle the case of receive in chain.
+	(icc_power_on, icc_send_params): Specify it's a single transaction.
+	(icc_send_data_block_filling_header): New.
+	(icc_send_data_block): Simplify.
+	(icc_handle_data): Removed the case of ICC_STATE_SEND.
+	Handle buffer of multiple transactions.
+	(USBthread): Don't use sending in chain.
+	* src/gnuk.h (USB_LL_BUF_SIZE): New.
+	(USB_BUF_SIZE): Now, it's larger value.
+	* src/configure: Echo for --enable-debug.
+	* src/call-rsa.c (rsa_sign): Use temp[] buffer as rsa_pkcs1_sign
+	writes OUTPUT in early stage.
+
 2010-12-04  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* src/flash.c (flash_keystore_release): Reset keystore storage.

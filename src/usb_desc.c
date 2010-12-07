@@ -95,7 +95,7 @@ static const uint8_t gnukConfigDescriptor[] = {
 			   *  Automatic conf. based on ATR : 0x00002
 			   */
 #endif
-  0x40, 0x00, 0, 0,	  /* dwMaxCCIDMessageLength: 64 */
+  0x40, 0x01, 0, 0,	  /* dwMaxCCIDMessageLength */
   0xff,			  /* bClassGetResponse: */
   0xff,			  /* bClassEnvelope: */
   0, 0,			  /* wLCDLayout: FIXED VALUE */

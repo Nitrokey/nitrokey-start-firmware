@@ -31,6 +31,8 @@
 #include "hw_config.h"
 #include "usb_istr.h"
 
+extern void *memmove(void *dest, const void *src, size_t n);
+
 #define ICC_SET_PARAMS		0x61 /* non-ICCD command  */
 #define ICC_POWER_ON		0x62
 #define ICC_POWER_OFF		0x63
@@ -45,8 +47,7 @@
 #define ICC_MSG_STATUS_OFFSET	7
 #define ICC_MSG_ERROR_OFFSET	8
 #define ICC_MSG_CHAIN_OFFSET	9
-#define ICC_MSG_DATA_OFFSET	10
-#define ICC_MSG_HEADER_SIZE	ICC_MSG_DATA_OFFSET
+#define ICC_MSG_DATA_OFFSET	10	/* == ICC_MSG_HEADER_SIZE */
 #define ICC_MAX_MSG_DATA_SIZE	(USB_BUF_SIZE - ICC_MSG_HEADER_SIZE)
 
 #define ICC_STATUS_RUN		0x00
@@ -74,80 +75,148 @@ struct icc_header {
   uint16_t param;
 } __attribute__((packed));
 
-static struct icc_header *icc_header;
-static uint8_t icc_seq;
-
-static uint8_t *icc_data;
 static int icc_data_size;
 
-static uint8_t icc_rcv_data[USB_BUF_SIZE];
-static uint8_t icc_tx_data[USB_BUF_SIZE];
 
+/*
+ * USB-ICC communication could be considered "half duplex".
+ *
+ * While the device is sending something, there is no possibility to receive anything.
+ * While the device is receiving something, there is no possibility to send anything.
+ * Thus, the buffer can be shared for RX and TX.
+ */
+
+/*
+ * Buffer of USB communication: for both of RX and TX
+ *
+ * The buffer will be filled by multiple RX transactions (Bulk-OUT)
+ * or will be used for multiple TX transactions (Bulk-IN)
+ */
+uint8_t icc_buffer[USB_BUF_SIZE];
+uint8_t icc_seq;
+
+/*
+ * Pointer to ICC_BUFFER
+ */
+static uint8_t *icc_next_p;
+
+/*
+ * Chain pointer: This implementation support two packets in chain (not more)
+ */
+static uint8_t *icc_chain_p;
+
+/*
+ * Whole size of TX transfer (Bulk-IN transactions)
+ */
 static int icc_tx_size;
 
-static int
-icc_tx_ready (void)
-{
-  if (icc_tx_size == -1)
-    return 1;
-  else
-    return 0;
-}
+#define icc_tx_data icc_buffer
+
 
 Thread *icc_thread;
 
 #define EV_RX_DATA_READY (eventmask_t)1  /* USB Rx data available  */
+/* EV_EXEC_FINISHED == 2 */
+#define EV_TX_FINISHED (eventmask_t)4  /* USB Tx finished  */
 
 /*
- * Tx done
+ * Tx done callback
  */
 void
 EP1_IN_Callback (void)
 {
-  if (icc_tx_size == USB_BUF_SIZE)
+  if (icc_next_p == NULL)
+    /* The sequence of Bulk-IN transactions finished */
+    chEvtSignalI (icc_thread, EV_TX_FINISHED);
+  else if (icc_next_p == &icc_buffer[icc_tx_size])
+    /* It was multiple of USB_LL_BUF_SIZE */
     {
-      icc_tx_size = 0;
-      USB_SIL_Write (EP1_IN, icc_tx_data, icc_tx_size);
+      /* Send the last 0-DATA transcation of Bulk-IN in the transactions */
+      icc_next_p = NULL;
+      USB_SIL_Write (EP1_IN, icc_buffer, 0);
       SetEPTxValid (ENDP1);
     }
   else
-    icc_tx_size = -1;
+    {
+      int tx_size = USB_LL_BUF_SIZE;
+      uint8_t *p = icc_next_p;
+
+      icc_next_p += USB_LL_BUF_SIZE;
+      if (icc_next_p > &icc_buffer[icc_tx_size])
+	{
+	  icc_next_p = NULL;
+	  tx_size = &icc_buffer[icc_tx_size] - p;
+	}
+
+      USB_SIL_Write (EP1_IN, p, tx_size);
+      SetEPTxValid (ENDP1);
+    }
+}
+
+static void
+icc_prepare_receive (int chain)
+{
+  if (chain)
+    icc_next_p = icc_chain_p;
+  else
+    icc_next_p = icc_buffer;
+
+  SetEPRxValid (ENDP2);
 }
 
 /*
- * Upon arrival of Bulk-OUT packet, 
- * we setup the variables (icc_header, icc_data, and icc_data_size, icc_seq)
- * and notify icc_thread
- *  (modify header's byte order to host order if needed)
+ * Rx ready callback
  */
 void
 EP2_OUT_Callback (void)
 {
   int len;
 
-#ifdef HOST_BIG_ENDIAN
-#error "Here, you need to write code to correct byte order."
-#else
-  /* nothing to do */
-#endif
+  len = USB_SIL_Read (EP2_OUT, icc_next_p);
 
-  len = USB_SIL_Read (EP2_OUT, icc_rcv_data);
+  if (len == USB_LL_BUF_SIZE) /* The sequence of transactions continues */
+    {
+      icc_next_p += USB_LL_BUF_SIZE;
+      SetEPRxValid (ENDP2);
+      if ((icc_next_p - icc_buffer) >= USB_BUF_SIZE) /* No room to receive any more */
+	{
+	  DEBUG_INFO ("ERR0F\r\n");
+	  icc_next_p -= USB_LL_BUF_SIZE; /* Just for not overrun the buffer */
+	  /* Receive until the end of the sequence (and discard the whole block) */
+	}
+    }
+  else 				/* Finished */
+    {
+      struct icc_header *icc_header;
+      int data_len;
 
-  icc_header = (struct icc_header *)icc_rcv_data;
-  icc_data = &icc_rcv_data[ICC_MSG_DATA_OFFSET];
-  icc_data_size = len - ICC_MSG_HEADER_SIZE;
-  icc_seq = icc_header->seq;
+      icc_next_p += len;
+      if (icc_chain_p)
+	{
+	  icc_header = (struct icc_header *)icc_chain_p;
+	  icc_data_size = (icc_next_p - icc_chain_p) - ICC_MSG_HEADER_SIZE;
+	}
+      else
+	{
+	  icc_header = (struct icc_header *)icc_buffer;
+	  icc_data_size = (icc_next_p - icc_buffer) - ICC_MSG_HEADER_SIZE;
+	}
 
-  if (icc_data_size < 0)
-    /* just ignore short invalid packet, enable Rx again */
-    SetEPRxValid (ENDP2);
-  else
-    /* Notify icc_thread */
-    chEvtSignalI (icc_thread, EV_RX_DATA_READY);
+      /* NOTE: We're little endian, nothing to convert */
+      data_len = icc_header->data_len;
+      icc_seq = icc_header->seq;
 
-  /*
-   * what if (icc_data_size != icc_header->data_len)???
-   */
+      if (icc_data_size != data_len)
+	{
+	  DEBUG_INFO ("ERR0E\r\n");
+	  /* Ignore the whole block */
+	  icc_chain_p = NULL;
+	  icc_prepare_receive (0);
+	}
+      else
+	/* Notify icc_thread */
+	chEvtSignalI (icc_thread, EV_RX_DATA_READY);
+    }
 }
 
 enum icc_state
@@ -156,8 +225,9 @@ enum icc_state
   ICC_STATE_WAIT,		/* Waiting APDU */
 				/* Busy1, Busy2, Busy3, Busy5 */
   ICC_STATE_EXECUTE,		/* Busy4 */
-  ICC_STATE_RECEIVE,		/* APDU Received Partially */
-  ICC_STATE_SEND,		/* APDU Sent Partially */
+
+  ICC_STATE_RECEIVE, /* APDU Received Partially */
+  ICC_STATE_SEND,    /* APDU Sent Partially */  /* Not used in this implementation.*/
 };
 
 static enum icc_state icc_state;
@@ -188,33 +258,34 @@ static const char ATR[] = {
 void
 icc_error (int offset)
 {
-  icc_tx_data[0] = ICC_SLOT_STATUS_RET; /* Any value should be OK */
-  icc_tx_data[1] = 0x00;
-  icc_tx_data[2] = 0x00;
-  icc_tx_data[3] = 0x00;
-  icc_tx_data[4] = 0x00;
-  icc_tx_data[5] = 0x00;	/* Slot */
-  icc_tx_data[ICC_MSG_SEQ_OFFSET] = icc_seq;
+  uint8_t *icc_reply;
+
+  if (icc_chain_p)
+    icc_reply = icc_chain_p;
+  else
+    icc_reply = icc_buffer;
+
+  icc_reply[0] = ICC_SLOT_STATUS_RET; /* Any value should be OK */
+  icc_reply[1] = 0x00;
+  icc_reply[2] = 0x00;
+  icc_reply[3] = 0x00;
+  icc_reply[4] = 0x00;
+  icc_reply[5] = 0x00;	/* Slot */
+  icc_reply[ICC_MSG_SEQ_OFFSET] = icc_seq;
   if (icc_state == ICC_STATE_START)
     /* 1: ICC present but not activated 2: No ICC present */
-    icc_tx_data[ICC_MSG_STATUS_OFFSET] = 1;
+    icc_reply[ICC_MSG_STATUS_OFFSET] = 1;
   else
     /* An ICC is present and active */
-    icc_tx_data[ICC_MSG_STATUS_OFFSET] = 0;
-  icc_tx_data[ICC_MSG_STATUS_OFFSET] |= ICC_CMD_STATUS_ERROR; /* Failed */
-  icc_tx_data[ICC_MSG_ERROR_OFFSET] = offset;
-  icc_tx_data[ICC_MSG_CHAIN_OFFSET] = 0x00;
+    icc_reply[ICC_MSG_STATUS_OFFSET] = 0;
+  icc_reply[ICC_MSG_STATUS_OFFSET] |= ICC_CMD_STATUS_ERROR; /* Failed */
+  icc_reply[ICC_MSG_ERROR_OFFSET] = offset;
+  icc_reply[ICC_MSG_CHAIN_OFFSET] = 0x00;
 
-  if (!icc_tx_ready ())
-    {
-      DEBUG_INFO ("ERR0D\r\n");
-    }
-  else
-    {
-      icc_tx_size = ICC_MSG_HEADER_SIZE;
-      USB_SIL_Write (EP1_IN, icc_tx_data, icc_tx_size);
-      SetEPTxValid (ENDP1);
-    }
+  icc_next_p = NULL;	/* This is a single transaction Bulk-IN */
+  icc_tx_size = ICC_MSG_HEADER_SIZE;
+  USB_SIL_Write (EP1_IN, icc_reply, icc_tx_size);
+  SetEPTxValid (ENDP1);
 }
 
 /* Send back ATR (Answer To Reset) */
@@ -224,7 +295,6 @@ icc_power_on (void)
   int size_atr;
 
   size_atr = sizeof (ATR);
-
   icc_tx_data[0] = ICC_DATA_BLOCK_RET;
   icc_tx_data[1] = size_atr;
   icc_tx_data[2] = 0x00;
@@ -237,17 +307,11 @@ icc_power_on (void)
   icc_tx_data[ICC_MSG_CHAIN_OFFSET] = 0x00;
   memcpy (&icc_tx_data[ICC_MSG_DATA_OFFSET], ATR, size_atr);
 
-  if (!icc_tx_ready ())
-    {
-      DEBUG_INFO ("ERR0B\r\n");
-    }
-  else
-    {
-      icc_tx_size = ICC_MSG_HEADER_SIZE + size_atr;
-      USB_SIL_Write (EP1_IN, icc_tx_data, icc_tx_size);
-      SetEPTxValid (ENDP1);
-      DEBUG_INFO ("ON\r\n");
-    }
+  icc_next_p = NULL;	/* This is a single transaction Bulk-IN */
+  icc_tx_size = ICC_MSG_HEADER_SIZE + size_atr;
+  USB_SIL_Write (EP1_IN, icc_tx_data, icc_tx_size);
+  SetEPTxValid (ENDP1);
+  DEBUG_INFO ("ON\r\n");
 
   return ICC_STATE_WAIT;
 }
@@ -255,32 +319,34 @@ icc_power_on (void)
 static void
 icc_send_status (void)
 {
-  icc_tx_data[0] = ICC_SLOT_STATUS_RET;
-  icc_tx_data[1] = 0x00;
-  icc_tx_data[2] = 0x00;
-  icc_tx_data[3] = 0x00;
-  icc_tx_data[4] = 0x00;
-  icc_tx_data[5] = 0x00;	/* Slot */
-  icc_tx_data[ICC_MSG_SEQ_OFFSET] = icc_seq;
+  uint8_t *icc_reply;
+
+  if (icc_chain_p)
+    icc_reply = icc_chain_p;
+  else
+    icc_reply = icc_buffer;
+
+  icc_reply[0] = ICC_SLOT_STATUS_RET;
+  icc_reply[1] = 0x00;
+  icc_reply[2] = 0x00;
+  icc_reply[3] = 0x00;
+  icc_reply[4] = 0x00;
+  icc_reply[5] = 0x00;	/* Slot */
+  icc_reply[ICC_MSG_SEQ_OFFSET] = icc_seq;
   if (icc_state == ICC_STATE_START)
     /* 1: ICC present but not activated 2: No ICC present */
-    icc_tx_data[ICC_MSG_STATUS_OFFSET] = 1;
+    icc_reply[ICC_MSG_STATUS_OFFSET] = 1;
   else
     /* An ICC is present and active */
-    icc_tx_data[ICC_MSG_STATUS_OFFSET] = 0;
-  icc_tx_data[ICC_MSG_ERROR_OFFSET] = 0x00;
-  icc_tx_data[ICC_MSG_CHAIN_OFFSET] = 0x00;
+    icc_reply[ICC_MSG_STATUS_OFFSET] = 0;
+  icc_reply[ICC_MSG_ERROR_OFFSET] = 0x00;
+  icc_reply[ICC_MSG_CHAIN_OFFSET] = 0x00;
 
-  if (!icc_tx_ready ())
-    {
-      DEBUG_INFO ("ERR0C\r\n");
-    }
-  else
-    {
-      icc_tx_size = ICC_MSG_HEADER_SIZE;
-      USB_SIL_Write (EP1_IN, icc_tx_data, icc_tx_size);
-      SetEPTxValid (ENDP1);
-    }
+  icc_next_p = NULL;	/* This is a single transaction Bulk-IN */
+  icc_tx_size = ICC_MSG_HEADER_SIZE;
+  USB_SIL_Write (EP1_IN, icc_reply, icc_tx_size);
+  SetEPTxValid (ENDP1);
+
 #ifdef DEBUG_MORE
   DEBUG_INFO ("St\r\n");
 #endif
@@ -294,44 +360,68 @@ icc_power_off (void)
   return ICC_STATE_START;
 }
 
-uint8_t cmd_APDU[MAX_CMD_APDU_SIZE];
-uint8_t res_APDU[MAX_RES_APDU_SIZE];
-int cmd_APDU_size;
 int res_APDU_size;
 
-static uint8_t *p_cmd;
-static uint8_t *p_res;
+static void
+icc_send_data_block_filling_header (int len)
+{
+  int tx_size = USB_LL_BUF_SIZE;
+  uint8_t *p = icc_buffer;
+
+  icc_buffer[0] = ICC_DATA_BLOCK_RET;
+  icc_buffer[1] = len & 0xFF;
+  icc_buffer[2] = (len >> 8)& 0xFF;
+  icc_buffer[3] = (len >> 16)& 0xFF;
+  icc_buffer[4] = (len >> 24)& 0xFF;
+  icc_buffer[5] = 0x00;	/* Slot */
+  icc_buffer[ICC_MSG_SEQ_OFFSET] = icc_seq;
+  icc_buffer[ICC_MSG_STATUS_OFFSET] = 0;
+  icc_buffer[ICC_MSG_ERROR_OFFSET] = 0;
+  icc_buffer[ICC_MSG_CHAIN_OFFSET] = 0;
+
+  icc_tx_size = ICC_MSG_HEADER_SIZE + len;
+  icc_next_p = icc_buffer + USB_LL_BUF_SIZE;
+  if (icc_next_p > &icc_buffer[icc_tx_size])
+    {
+      icc_next_p = NULL;
+      tx_size = &icc_buffer[icc_tx_size] - p;
+    }
+
+  USB_SIL_Write (EP1_IN, p, tx_size);
+  SetEPTxValid (ENDP1);
+#ifdef DEBUG_MORE
+  DEBUG_INFO ("DATA\r\n");
+#endif
+}
 
 static void
-icc_send_data_block (uint8_t status, uint8_t error, uint8_t chain,
-		     uint8_t *data, int len)
+icc_send_data_block (uint8_t status, uint8_t chain)
 {
-  icc_tx_data[0] = ICC_DATA_BLOCK_RET;
-  icc_tx_data[1] = len & 0xFF;
-  icc_tx_data[2] = (len >> 8)& 0xFF;
-  icc_tx_data[3] = (len >> 16)& 0xFF;
-  icc_tx_data[4] = (len >> 24)& 0xFF;
-  icc_tx_data[5] = 0x00;	/* Slot */
-  icc_tx_data[ICC_MSG_SEQ_OFFSET] = icc_seq;
-  icc_tx_data[ICC_MSG_STATUS_OFFSET] = status;
-  icc_tx_data[ICC_MSG_ERROR_OFFSET] = error;
-  icc_tx_data[ICC_MSG_CHAIN_OFFSET] = chain;
-  if (len)
-    memcpy (&icc_tx_data[ICC_MSG_DATA_OFFSET], data, len);
+  uint8_t *icc_reply;
 
-  if (!icc_tx_ready ())
-    {				/* not ready to send */
-      DEBUG_INFO ("ERR09\r\n");
-    }
+  if (icc_chain_p)
+    icc_reply = icc_chain_p;
   else
-    {
-      icc_tx_size = ICC_MSG_HEADER_SIZE + len;
-      USB_SIL_Write (EP1_IN, icc_tx_data, icc_tx_size);
-      SetEPTxValid (ENDP1);
+    icc_reply = icc_buffer;
+
+  icc_reply[0] = ICC_DATA_BLOCK_RET;
+  icc_reply[1] = 0x00;
+  icc_reply[2] = 0x00;
+  icc_reply[3] = 0x00;
+  icc_reply[4] = 0x00;
+  icc_reply[5] = 0x00;	/* Slot */
+  icc_reply[ICC_MSG_SEQ_OFFSET] = icc_seq;
+  icc_reply[ICC_MSG_STATUS_OFFSET] = status;
+  icc_reply[ICC_MSG_ERROR_OFFSET] = 0x00;
+  icc_reply[ICC_MSG_CHAIN_OFFSET] = chain;
+
+  icc_next_p = NULL;	/* This is a single transaction Bulk-IN */
+  icc_tx_size = ICC_MSG_HEADER_SIZE;
+  USB_SIL_Write (EP1_IN, icc_reply, icc_tx_size);
+  SetEPTxValid (ENDP1);
 #ifdef DEBUG_MORE
-      DEBUG_INFO ("DATA\r\n");
+  DEBUG_INFO ("DATA\r\n");
 #endif
-    }
 }
 
 
@@ -356,26 +446,25 @@ icc_send_params (void)
   icc_tx_data[ICC_MSG_DATA_OFFSET+5] = 0xFE; /* bIFSC */
   icc_tx_data[ICC_MSG_DATA_OFFSET+6] = 0; /* bNadValue */
 
-  if (!icc_tx_ready ())
-    {				/* not ready to send */
-      DEBUG_INFO ("ERR09\r\n");
-    }
-  else
-    {
-      icc_tx_size = ICC_MSG_HEADER_SIZE + icc_header->data_len;
-      USB_SIL_Write (EP1_IN, icc_tx_data, icc_tx_size);
-      SetEPTxValid (ENDP1);
+  icc_next_p = NULL;	/* This is a single transaction Bulk-IN */
+  icc_tx_size = ICC_MSG_HEADER_SIZE + 7;
+  USB_SIL_Write (EP1_IN, icc_tx_data, icc_tx_size);
+  SetEPTxValid (ENDP1);
 #ifdef DEBUG_MORE
-      DEBUG_INFO ("DATA\r\n");
+  DEBUG_INFO ("DATA\r\n");
 #endif
-    }
 }
-
 
 static enum icc_state
 icc_handle_data (void)
 {
   enum icc_state next_state = icc_state;
+  struct icc_header *icc_header;
+
+  if (icc_chain_p)
+    icc_header = (struct icc_header *)icc_chain_p;
+  else
+    icc_header = (struct icc_header *)icc_buffer;
 
   switch (icc_state)
     {
@@ -404,20 +493,14 @@ icc_handle_data (void)
 	{
 	  if (icc_header->param == 0)
 	    {			/* Give this message to GPG thread */
-	      p_cmd = cmd_APDU;
-	      memcpy (p_cmd, icc_data, icc_data_size);
-	      cmd_APDU_size = icc_data_size;
 	      chEvtSignal (gpg_thread, (eventmask_t)1);
 	      next_state = ICC_STATE_EXECUTE;
 	      chEvtSignal (blinker_thread, EV_LED_ON);
 	    }
 	  else if (icc_header->param == 1)
 	    {
-	      p_cmd = cmd_APDU;
-	      memcpy (p_cmd, icc_data, icc_data_size);
-	      p_cmd += icc_data_size;
-	      cmd_APDU_size = icc_data_size;
-	      icc_send_data_block (0, 0, 0x10, NULL, 0);
+	      icc_chain_p = icc_next_p;
+	      icc_send_data_block (0, 0x10);
 	      next_state = ICC_STATE_RECEIVE;
 	    }
 	  else
@@ -436,6 +519,38 @@ icc_handle_data (void)
 	  icc_error (ICC_OFFSET_CMD_NOT_SUPPORTED);
 	}
       break;
+    case ICC_STATE_RECEIVE:
+      if (icc_header->msg_type == ICC_SLOT_STATUS)
+	icc_send_status ();
+      else if (icc_header->msg_type == ICC_XFR_BLOCK)
+	{
+	  if (icc_header->param == 2) /* Got the final block */
+	    {			/* Give this message to GPG thread */
+	      int len = icc_next_p - icc_chain_p - ICC_MSG_HEADER_SIZE;
+
+	      memmove (icc_chain_p, icc_chain_p + ICC_MSG_HEADER_SIZE, len);
+	      icc_next_p -= ICC_MSG_HEADER_SIZE;
+	      icc_data_size = icc_next_p - icc_buffer - ICC_MSG_HEADER_SIZE;
+	      icc_chain_p = NULL;
+	      next_state = ICC_STATE_EXECUTE;
+	      chEvtSignal (blinker_thread, EV_LED_ON);
+	      chEvtSignal (gpg_thread, (eventmask_t)1);
+	    }
+	  else			/* icc_header->param == 3 is not supported. */
+	    {
+	      DEBUG_INFO ("ERR08\r\n");
+	      icc_error (ICC_OFFSET_PARAM);
+	    }
+	}
+      else
+	{
+	  DEBUG_INFO ("ERR05\r\n");
+	  DEBUG_BYTE (icc_header->msg_type);
+	  icc_chain_p = NULL;
+	  icc_error (ICC_OFFSET_CMD_NOT_SUPPORTED);
+	  next_state = ICC_STATE_WAIT;
+	}
+      break;
     case ICC_STATE_EXECUTE:
       if (icc_header->msg_type == ICC_POWER_OFF)
 	{
@@ -451,91 +566,12 @@ icc_handle_data (void)
 	  icc_error (ICC_OFFSET_CMD_NOT_SUPPORTED);
 	}
       break;
-    case ICC_STATE_RECEIVE:
-      if (icc_header->msg_type == ICC_POWER_OFF)
-	next_state = icc_power_off ();
-      else if (icc_header->msg_type == ICC_SLOT_STATUS)
-	icc_send_status ();
-      else if (icc_header->msg_type == ICC_XFR_BLOCK)
-	{
-	  if (cmd_APDU_size + icc_data_size <= MAX_CMD_APDU_SIZE)
-	    {
-	      memcpy (p_cmd, icc_data, icc_data_size);
-	      p_cmd += icc_data_size;
-	      cmd_APDU_size += icc_data_size;
-
-	      if (icc_header->param == 2) /* Got final block */
-		{			/* Give this message to GPG thread */
-		  next_state = ICC_STATE_EXECUTE;
-		  chEvtSignal (blinker_thread, EV_LED_ON);
-		  cmd_APDU_size = p_cmd - cmd_APDU;
-		  chEvtSignal (gpg_thread, (eventmask_t)1);
-		}
-	      else if (icc_header->param == 3)
-		icc_send_data_block (0, 0, 0x10, NULL, 0);
-	      else
-		{
-		  DEBUG_INFO ("ERR08\r\n");
-		  icc_error (ICC_OFFSET_PARAM);
-		}
-	    }
-	  else			/* Overrun */
-	    {
-	      icc_send_data_block (ICC_CMD_STATUS_ERROR, ICC_ERROR_XFR_OVERRUN,
-				   0, NULL, 0);
-	      next_state = ICC_STATE_WAIT;
-	    }
-	}
-      else
-	{
-	  DEBUG_INFO ("ERR05\r\n");
-	  DEBUG_BYTE (icc_header->msg_type);
-	  icc_error (ICC_OFFSET_CMD_NOT_SUPPORTED);
-	  next_state = ICC_STATE_WAIT;
-	}
-      break;
-    case ICC_STATE_SEND:
-      if (icc_header->msg_type == ICC_POWER_OFF)
-	next_state = icc_power_off ();
-      else if (icc_header->msg_type == ICC_SLOT_STATUS)
-	icc_send_status ();
-      else if (icc_header->msg_type == ICC_XFR_BLOCK)
-	{
-	  if (icc_header->param == 0x10)
-	    {
-	      if (res_APDU_size <= ICC_MAX_MSG_DATA_SIZE)
-		{
-		  icc_send_data_block (0, 0, 0x02, p_res, res_APDU_size);
-		  next_state = ICC_STATE_WAIT;
-		}
-	      else
-		{
-		  icc_send_data_block (0, 0, 0x03,
-				       p_res, ICC_MAX_MSG_DATA_SIZE);
-		  p_res += ICC_MAX_MSG_DATA_SIZE;
-		  res_APDU_size -= ICC_MAX_MSG_DATA_SIZE;
-		}
-	    }
-	  else
-	    {
-	      DEBUG_INFO ("ERR0A\r\n");
-	      DEBUG_BYTE (icc_header->param >> 8);
-	      DEBUG_BYTE (icc_header->param & 0xff);
-	      icc_error (ICC_OFFSET_PARAM);
-	      next_state = ICC_STATE_WAIT;
-	    }
-	}
-      else
-	{
-	  DEBUG_INFO ("ERR06\r\n");
-	  DEBUG_BYTE (icc_header->msg_type);
-	  icc_error (ICC_OFFSET_CMD_NOT_SUPPORTED);
-	  next_state = ICC_STATE_WAIT;
-	}
+    default:
+      next_state = ICC_STATE_START;
+      DEBUG_INFO ("ERR10\r\n");
       break;
     }
 
-  SetEPRxValid (ENDP2);
   return next_state;
 }
 
@@ -547,12 +583,9 @@ icc_handle_timeout (void)
   switch (icc_state)
     {
     case ICC_STATE_EXECUTE:
-      icc_send_data_block (ICC_CMD_STATUS_TIMEEXT, 0, 0, NULL, 0);
+      icc_send_data_block (ICC_CMD_STATUS_TIMEEXT, 0);
       break;
-    case ICC_STATE_RECEIVE:
-    case ICC_STATE_SEND:
-    case ICC_STATE_START:
-    case ICC_STATE_WAIT:
+    default:
       break;
     }
 
@@ -570,8 +603,8 @@ USBthread (void *arg)
   chEvtClear (ALL_EVENTS);
 
   icc_state = ICC_STATE_START;
-  icc_tx_size = -1;
 
+  icc_prepare_receive (0);
   while (1)
     {
       eventmask_t m;
@@ -586,25 +619,20 @@ USBthread (void *arg)
 	    {
 	      chEvtSignal (blinker_thread, EV_LED_OFF);
 
-	      if (res_APDU_size <= ICC_MAX_MSG_DATA_SIZE)
-		{
-		  icc_send_data_block (0, 0, 0, res_APDU, res_APDU_size);
-		  icc_state = ICC_STATE_WAIT;
-		}
-	      else
-		{
-		  p_res = res_APDU;
-		  icc_send_data_block (0, 0, 0x01,
-				       p_res, ICC_MAX_MSG_DATA_SIZE);
-		  p_res += ICC_MAX_MSG_DATA_SIZE;
-		  res_APDU_size -= ICC_MAX_MSG_DATA_SIZE;
-		  icc_state = ICC_STATE_SEND;
-		}
+	      icc_send_data_block_filling_header (res_APDU_size);
+	      icc_state = ICC_STATE_WAIT;
 	    }
 	  else
 	    {			/* XXX: error */
 	      DEBUG_INFO ("ERR07\r\n");
 	    }
+	}
+      else if (m == EV_TX_FINISHED)
+	{
+	  if (icc_state == ICC_STATE_START || icc_state == ICC_STATE_WAIT)
+	    icc_prepare_receive (0);
+	  else if (icc_state == ICC_STATE_RECEIVE)
+	    icc_prepare_receive (1);
 	}
       else			/* Timeout */
 	icc_state = icc_handle_timeout ();

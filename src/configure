@@ -126,9 +126,11 @@ fi
 if test "$debug" = "yes"; then
   DEBUG_MAKE_OPTION="ENABLE_DEBUG=1"
   DEBUG_DEFINE="#define DEBUG 1"
+  echo "Debug option enabled"
 else
   DEBUG_MAKE_OPTION="# ENABLE_DEBUG=1"
   DEBUG_DEFINE="#undef DEBUG"
+  echo "Debug option disabled"
 fi
 
 if test "$with_dfu" = "yes"; then

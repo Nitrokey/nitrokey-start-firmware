@@ -31,18 +31,31 @@ extern int memcmp (const void *s1, const void *s2, size_t n);
 extern Thread *icc_thread;
 extern Thread *gpg_thread;
 
-#define USB_BUF_SIZE 64
-
 #define EV_EXEC_FINISHED ((eventmask_t)2)	 /* GPG Execution finished */
 
 /* maximum cmd apdu data is key import 22+4+128+128 (proc_key_import) */
 #define MAX_CMD_APDU_SIZE (7+282) /* header + data */
 /* maximum res apdu data is public key 5+9+256+2 (gpg_do_public_key) */
 #define MAX_RES_APDU_SIZE ((5+9+256)+2) /* Data + status */
-extern uint8_t cmd_APDU[MAX_CMD_APDU_SIZE];
-extern uint8_t res_APDU[MAX_RES_APDU_SIZE];
-extern int cmd_APDU_size;
+
+#define ICC_MSG_HEADER_SIZE	10
+
+#define cmd_APDU (&icc_buffer[ICC_MSG_HEADER_SIZE])
+#define res_APDU (&icc_buffer[ICC_MSG_HEADER_SIZE])
+extern int icc_data_size;
+#define cmd_APDU_size icc_data_size
 extern int res_APDU_size;
+
+/* USB buffer size of LL (Low-level): size of single Bulk transaction */
+#define USB_LL_BUF_SIZE 64
+
+/*
+ * USB buffer size of USB-ICC driver
+ * (Changing this, dwMaxCCIDMessageLength too !!)
+ */
+#define USB_BUF_SIZE ((10 + 10 + MAX_CMD_APDU_SIZE + USB_LL_BUF_SIZE - 1) \
+			/ USB_LL_BUF_SIZE * USB_LL_BUF_SIZE)
+extern uint8_t icc_buffer[USB_BUF_SIZE];
 
 #define AC_NONE_AUTHORIZED	0x00
 #define AC_PSO_CDS_AUTHORIZED	0x01  /* PW1 with 0x81 verified */

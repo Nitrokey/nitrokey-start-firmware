@@ -38,6 +38,7 @@ rsa_sign (const uint8_t *raw_message, uint8_t *output, int msg_len,
 {
   mpi P1, Q1, H;
   int r;
+  unsigned char temp[RSA_SIGNATURE_LENGTH];
 
   mpi_init (&P1, &Q1, &H, NULL);
   rsa_init (&rsa_ctx, RSA_PKCS_V15, 0);
@@ -57,7 +58,7 @@ rsa_sign (const uint8_t *raw_message, uint8_t *output, int msg_len,
   mpi_free (&P1, &Q1, &H, NULL);
 
   DEBUG_INFO ("RSA sign...");
-
+#if 0
   if ((r = rsa_check_privkey (&rsa_ctx)) == 0)
     DEBUG_INFO ("ok...");
   else
@@ -67,9 +68,11 @@ rsa_sign (const uint8_t *raw_message, uint8_t *output, int msg_len,
       rsa_free (&rsa_ctx);
       return r;
     }
+#endif
 
   r = rsa_pkcs1_sign (&rsa_ctx, RSA_PRIVATE, SIG_RSA_RAW,
-		      msg_len, raw_message, output);
+		      msg_len, raw_message, temp);
+  memcpy (output, temp, RSA_SIGNATURE_LENGTH);
   rsa_free (&rsa_ctx);
   if (r < 0)
     {
