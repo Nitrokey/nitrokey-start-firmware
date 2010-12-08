@@ -154,8 +154,10 @@ static const uint8_t extended_capabilities[] __attribute__ ((aligned (1))) = {
   0,		  /* Secure Messaging Algorithm: N/A (TDES=0, AES=1) */
   0x00, 0x00,	  /* Max get challenge */
   0x00, 0x00,	  /* max. length of cardholder certificate */
-  (MAX_CMD_APDU_SIZE>>8), (MAX_CMD_APDU_SIZE&0xff), /* Max. length of command data */
-  (MAX_RES_APDU_SIZE>>8), (MAX_RES_APDU_SIZE&0xff), /* Max. length of response data */
+  /* Max. length of command data */
+  (MAX_CMD_APDU_SIZE>>8), (MAX_CMD_APDU_SIZE&0xff),
+  /* Max. length of response data */
+  (MAX_RES_APDU_SIZE>>8), (MAX_RES_APDU_SIZE&0xff),
 };
 
 /* Algorithm Attributes */
@@ -694,7 +696,7 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
   if (kk == GPG_KEY_FOR_SIGNING)
     ac_reset_pso_cds ();
   else
-    ac_reset_pso_other ();
+    ac_reset_other ();
 
   if (ks_pw1)
     encrypt (ks_pw1+1, pd->dek_encrypted_1, DATA_ENCRYPTION_KEY_SIZE);
@@ -762,7 +764,8 @@ gpg_do_chks_prvkey (enum kind_of_key kk,
     return -1;
 
   memcpy (pd, &(do_data)[1], sizeof (struct prvkey_data));
-  dek_p = ((uint8_t *)pd) + 4 + ADDITIONAL_DATA_SIZE + DATA_ENCRYPTION_KEY_SIZE * (who_old - 1);
+  dek_p = ((uint8_t *)pd) + 4 + ADDITIONAL_DATA_SIZE
+    + DATA_ENCRYPTION_KEY_SIZE * (who_old - 1);
   memcpy (dek, dek_p, DATA_ENCRYPTION_KEY_SIZE);
   decrypt (old_ks, dek, DATA_ENCRYPTION_KEY_SIZE);
   encrypt (new_ks, dek, DATA_ENCRYPTION_KEY_SIZE);
@@ -904,7 +907,8 @@ gpg_do_table[] = {
   { GPG_DO_CH_CERTIFICATE, DO_PROC_READWRITE, AC_NEVER, AC_NEVER, NULL },
 };
 
-#define NUM_DO_ENTRIES (int)(sizeof (gpg_do_table) / sizeof (struct do_table_entry))
+#define NUM_DO_ENTRIES (int)(sizeof (gpg_do_table) \
+			     / sizeof (struct do_table_entry))
 
 /*
  * Reading data from Flash ROM, initialize DO_PTR, PW_ERR_COUNTERS, etc. 

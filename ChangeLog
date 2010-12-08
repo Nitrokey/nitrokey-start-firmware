@@ -1,5 +1,12 @@
 2010-12-08  NIIBE Yutaka  <gniibe@fsij.org>
 
+	* src/gnuk.h (AC_OTHER_AUTHORIZED): Renamed (was:
+	AC_PSO_OTHER_AUTHORIZED).
+	* src/ac.c (ac_reset_other): Renamed (was: ac_reset_pso_other).
+	(verify_other): Renamed (was: verify_pso_other).
+	(ac_reset_admin): New.
+	* src/openpgp.c (cmd_change_password): Call ac_reset_admin.
+
 	* src/main.c (main): Don't create GPGThread here.
 	* src/usb-icc.c (icc_power_on): But create here, when requested.
 	(icc_power_off): Terminate GPGThread.

@@ -91,7 +91,6 @@ static void
 gpg_fini (void)
 {
   ac_fini ();
-  memset ((void *)kd, 0, sizeof (struct key_data)*3);
 }
 
 static void
@@ -115,7 +114,7 @@ cmd_verify (void)
   if (p2 == 0x81)
     r = verify_pso_cds (&cmd_APDU[data_start], len);
   else if (p2 == 0x82)
-    r = verify_pso_other (&cmd_APDU[data_start], len);
+    r = verify_other (&cmd_APDU[data_start], len);
   else
     r = verify_admin (&cmd_APDU[data_start], len);
 
@@ -275,7 +274,7 @@ cmd_change_password (void)
     {
       gpg_do_write_simple (NR_DO_KEYSTRING_PW1, new_ks0, KEYSTRING_SIZE_PW1);
       ac_reset_pso_cds ();
-      ac_reset_pso_other ();
+      ac_reset_other ();
       gpg_reset_pw_err_counter (PW_ERR_PW1);
       DEBUG_INFO ("Changed DO_KEYSTRING_PW1.\r\n");
       GPG_SUCCESS ();
@@ -284,7 +283,7 @@ cmd_change_password (void)
     {
       gpg_do_write_simple (NR_DO_KEYSTRING_PW1, new_ks0, 1);
       ac_reset_pso_cds ();
-      ac_reset_pso_other ();
+      ac_reset_other ();
       gpg_reset_pw_err_counter (PW_ERR_PW1);
       DEBUG_INFO ("Changed length of DO_KEYSTRING_PW1.\r\n");
       GPG_SUCCESS ();
@@ -292,6 +291,7 @@ cmd_change_password (void)
   else				/* r >= 0 && who == BY_ADMIN */
     {
       DEBUG_INFO ("done.\r\n");
+      ac_reset_admin ();
       gpg_reset_pw_err_counter (PW_ERR_PW3);
       GPG_SUCCESS ();
     }
@@ -361,9 +361,10 @@ cmd_reset_user_password (void)
 	  if (memcmp (ks_rc+1, old_ks, KEYSTRING_MD_SIZE) != 0)
 	    goto sec_fail;
 	  DEBUG_INFO ("done (no prvkey).\r\n");
-	  gpg_do_write_simple (NR_DO_KEYSTRING_PW1, new_ks0, KEYSTRING_SIZE_PW1);
+	  gpg_do_write_simple (NR_DO_KEYSTRING_PW1, new_ks0,
+			       KEYSTRING_SIZE_PW1);
 	  ac_reset_pso_cds ();
-	  ac_reset_pso_other ();
+	  ac_reset_other ();
 	  gpg_reset_pw_err_counter (PW_ERR_RC);
 	  gpg_reset_pw_err_counter (PW_ERR_PW1);
 	  GPG_SUCCESS ();
@@ -372,7 +373,7 @@ cmd_reset_user_password (void)
 	{
 	  DEBUG_INFO ("done.\r\n");
 	  ac_reset_pso_cds ();
-	  ac_reset_pso_other ();
+	  ac_reset_other ();
 	  gpg_reset_pw_err_counter (PW_ERR_RC);
 	  gpg_reset_pw_err_counter (PW_ERR_PW1);
 	  GPG_SUCCESS ();
@@ -407,9 +408,10 @@ cmd_reset_user_password (void)
       else if (r == 0)
 	{
 	  DEBUG_INFO ("done (no privkey).\r\n");
-	  gpg_do_write_simple (NR_DO_KEYSTRING_PW1, new_ks0, KEYSTRING_SIZE_PW1);
+	  gpg_do_write_simple (NR_DO_KEYSTRING_PW1, new_ks0,
+			       KEYSTRING_SIZE_PW1);
 	  ac_reset_pso_cds ();
-	  ac_reset_pso_other ();
+	  ac_reset_other ();
 	  gpg_reset_pw_err_counter (PW_ERR_PW1);
 	  GPG_SUCCESS ();
 	}
@@ -417,7 +419,7 @@ cmd_reset_user_password (void)
 	{
 	  DEBUG_INFO ("done.\r\n");
 	  ac_reset_pso_cds ();
-	  ac_reset_pso_other ();
+	  ac_reset_other ();
 	  gpg_reset_pw_err_counter (PW_ERR_PW1);
 	  GPG_SUCCESS ();
 	}
@@ -583,12 +585,12 @@ cmd_pso (void)
 	  return;
 	}
 
-      if ((cmd_APDU_size != 8 + 35 && cmd_APDU_size != 8 + 35 + 1) /* SHA1 / RIPEMD-160 */
-	  && (cmd_APDU_size != 8 + 47 && cmd_APDU_size != 8 + 47 + 1) /* SHA224 */
-	  && (cmd_APDU_size != 8 + 51 && cmd_APDU_size != 8 + 51 + 1) /* SHA256 */
-	  && (cmd_APDU_size != 8 + 67 && cmd_APDU_size != 8 + 67 + 1) /* SHA384 */
-	  && (cmd_APDU_size != 8 + 83 && cmd_APDU_size != 8 + 83 + 1) /* SHA512 */)
-	/* Extended Lc: 3-byte */
+      if (cmd_APDU_size != 7 + 35 + 2	  /* SHA1 / RIPEMD-160 */
+	  /* Header (with Extended Lc)=7, size of digestInfo, and Le=2-byte */
+	  && cmd_APDU_size != 7 + 47 + 2  /* SHA224 */
+	  && cmd_APDU_size != 7 + 51 + 2  /* SHA256 */
+	  && cmd_APDU_size != 7 + 67 + 2  /* SHA384 */
+	  && cmd_APDU_size != 7 + 83 + 2) /* SHA512 */
 	{
 	  DEBUG_INFO (" wrong length: ");
 	  DEBUG_SHORT (cmd_APDU_size);
@@ -619,7 +621,7 @@ cmd_pso (void)
       DEBUG_SHORT (len);
 
       if (gpg_passwd_locked (PW_ERR_PW1)
-	  || !ac_check_status (AC_PSO_OTHER_AUTHORIZED))
+	  || !ac_check_status (AC_OTHER_AUTHORIZED))
 	{
 	  DEBUG_INFO ("security error.");
 	  GPG_SECURITY_FAILURE ();
@@ -666,7 +668,7 @@ cmd_internal_authenticate (void)
       DEBUG_SHORT (len);
 
       if (gpg_passwd_locked (PW_ERR_PW1)
-	  || !ac_check_status (AC_PSO_OTHER_AUTHORIZED))
+	  || !ac_check_status (AC_OTHER_AUTHORIZED))
 	{
 	  DEBUG_INFO ("security error.");
 	  GPG_SECURITY_FAILURE ();

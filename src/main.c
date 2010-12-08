@@ -188,10 +188,12 @@ main (int argc, char **argv)
   /*
    * Creates 'stdout' thread.
    */
-  chThdCreateStatic (waSTDOUTthread, sizeof(waSTDOUTthread), NORMALPRIO, STDOUTthread, NULL);
+  chThdCreateStatic (waSTDOUTthread, sizeof(waSTDOUTthread),
+		     NORMALPRIO, STDOUTthread, NULL);
 #endif
 
-  chThdCreateStatic (waUSBthread, sizeof(waUSBthread), NORMALPRIO, USBthread, NULL);
+  chThdCreateStatic (waUSBthread, sizeof(waUSBthread),
+		     NORMALPRIO, USBthread, NULL);
 
   while (1)
     {

@@ -229,9 +229,9 @@ enum icc_state
   ICC_STATE_WAIT,		/* Waiting APDU */
 				/* Busy1, Busy2, Busy3, Busy5 */
   ICC_STATE_EXECUTE,		/* Busy4 */
-  ICC_STATE_RECEIVE, /* APDU Received Partially */
-
-  ICC_STATE_SEND,    /* APDU Sent Partially */  /* Not used */
+  ICC_STATE_RECEIVE,		/* APDU Received Partially */
+  /* Not used */
+  ICC_STATE_SEND,		/* APDU Sent Partially */
 };
 
 static enum icc_state icc_state;

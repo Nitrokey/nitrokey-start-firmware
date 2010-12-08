@@ -49,11 +49,11 @@ ac_reset_pso_cds (void)
 }
 
 void
-ac_reset_pso_other (void)
+ac_reset_other (void)
 {
   gpg_do_clear_prvkey (GPG_KEY_FOR_DECRYPTION);
   gpg_do_clear_prvkey (GPG_KEY_FOR_AUTHENTICATION);
-  auth_status &= ~AC_PSO_OTHER_AUTHORIZED;
+  auth_status &= ~AC_OTHER_AUTHORIZED;
 }
 
 /*
@@ -86,12 +86,12 @@ verify_pso_cds (const uint8_t *pw, int pw_len)
 }
 
 int
-verify_pso_other (const uint8_t *pw, int pw_len)
+verify_other (const uint8_t *pw, int pw_len)
 {
   const uint8_t *ks_pw1;
   uint8_t pw1_keystring[KEYSTRING_SIZE_PW1];
 
-  DEBUG_INFO ("verify_pso_other\r\n");
+  DEBUG_INFO ("verify_other\r\n");
 
   if (gpg_passwd_locked (PW_ERR_PW1))
     return 0;
@@ -112,7 +112,7 @@ verify_pso_other (const uint8_t *pw, int pw_len)
 
       /* Reset counter as it's success now */
       gpg_reset_pw_err_counter (PW_ERR_PW1);
-      auth_status |= AC_PSO_OTHER_AUTHORIZED;
+      auth_status |= AC_OTHER_AUTHORIZED;
       return 1;
     }
   else
@@ -198,7 +198,8 @@ verify_admin_0 (const uint8_t *pw, int buf_len, int pw_len_known)
   else
     /* For empty PW3, pass phrase should be OPENPGP_CARD_INITIAL_PW3 */
     {
-      if ((pw_len_known >=0 && pw_len_known != strlen (OPENPGP_CARD_INITIAL_PW3))
+      if ((pw_len_known >=0
+	   && pw_len_known != strlen (OPENPGP_CARD_INITIAL_PW3))
 	  || buf_len < (int)strlen (OPENPGP_CARD_INITIAL_PW3)
 	  || strncmp ((const char *)pw, OPENPGP_CARD_INITIAL_PW3,
 		      strlen (OPENPGP_CARD_INITIAL_PW3)) != 0)
@@ -245,8 +246,17 @@ verify_admin (const uint8_t *pw, int pw_len)
 }
 
 void
+ac_reset_admin (void)
+{
+  memset (keystring_md_pw3, 0, KEYSTRING_MD_SIZE);
+  auth_status &= ~AC_ADMIN_AUTHORIZED;
+}
+
+void
 ac_fini (void)
 {
   auth_status = AC_NONE_AUTHORIZED;
-  memset (keystring_md_pw3, 0, KEYSTRING_MD_SIZE);
+  gpg_do_clear_prvkey (GPG_KEY_FOR_SIGNING);
+  gpg_do_clear_prvkey (GPG_KEY_FOR_DECRYPTION);
+  gpg_do_clear_prvkey (GPG_KEY_FOR_AUTHENTICATION);
 }

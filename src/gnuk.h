@@ -53,7 +53,7 @@ extern uint8_t icc_buffer[USB_BUF_SIZE];
 
 #define AC_NONE_AUTHORIZED	0x00
 #define AC_PSO_CDS_AUTHORIZED	0x01  /* PW1 with 0x81 verified */
-#define AC_PSO_OTHER_AUTHORIZED	0x02  /* PW1 with 0x82 verified */
+#define AC_OTHER_AUTHORIZED	0x02  /* PW1 with 0x82 verified */
 #define AC_ADMIN_AUTHORIZED	0x04  /* PW3 verified */
 #define AC_NEVER		0x80
 #define AC_ALWAYS		0xFF
@@ -67,12 +67,13 @@ extern void gpg_increment_pw_err_counter (uint8_t which);
 
 extern int ac_check_status (uint8_t ac_flag);
 extern int verify_pso_cds (const uint8_t *pw, int pw_len);
-extern int verify_pso_other (const uint8_t *pw, int pw_len);
+extern int verify_other (const uint8_t *pw, int pw_len);
 extern int verify_admin (const uint8_t *pw, int pw_len);
 extern int verify_admin_0 (const uint8_t *pw, int buf_len, int pw_len_known);
 
 extern void ac_reset_pso_cds (void);
-extern void ac_reset_pso_other (void);
+extern void ac_reset_other (void);
+extern void ac_reset_admin (void);
 extern void ac_fini (void);
 
 
