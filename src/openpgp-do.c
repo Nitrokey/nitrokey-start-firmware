@@ -78,7 +78,7 @@ gpg_increment_digital_signature_counter (void)
 }
 
 #define PASSWORD_ERRORS_MAX 3	/* >= errors, it will be locked */
-const uint8_t *pw_err_counter_p[3];
+static const uint8_t *pw_err_counter_p[3];
 
 static int
 gpg_get_pw_err_counter (uint8_t which)
@@ -836,14 +836,14 @@ proc_key_import (const uint8_t *data, int len)
     return 1;
 }
 
-static const uint16_t const cmp_ch_data[] = {
+static const uint16_t cmp_ch_data[] = {
   3,
   GPG_DO_NAME,
   GPG_DO_LANGUAGE,
   GPG_DO_SEX,
 };
 
-static const uint16_t const cmp_app_data[] = {
+static const uint16_t cmp_app_data[] = {
   10,
   GPG_DO_AID,
   GPG_DO_HIST_BYTES,
@@ -854,7 +854,7 @@ static const uint16_t const cmp_app_data[] = {
   GPG_DO_FP_ALL, GPG_DO_CAFP_ALL, GPG_DO_KGTIME_ALL
 };
 
-static const uint16_t const cmp_ss_temp[] = { 1, GPG_DO_DS_COUNT };
+static const uint16_t cmp_ss_temp[] = { 1, GPG_DO_DS_COUNT };
 
 static const struct do_table_entry
 gpg_do_table[] = {

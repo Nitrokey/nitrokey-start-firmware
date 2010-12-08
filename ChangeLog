@@ -1,3 +1,11 @@
+2010-12-08  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/main.c (main): Don't create GPGThread here.
+	* src/usb-icc.c (icc_power_on): But create here, when requested.
+	(icc_power_off): Terminate GPGThread.
+	* src/openpgp.c (gpg_init, gpg_fini): New.
+	(GPGthread): Check chThdShouldTerminate.  Call gpg_init and gpg_fini.
+
 2010-12-07  NIIBE Yutaka  <gniibe@fsij.org>
 
 	USB CCID/ICC implementation changes.

@@ -25,12 +25,6 @@ extern void *memcpy (void *dest, const void *src, size_t n);
 extern void *memset (void *s, int c, size_t n);
 extern int memcmp (const void *s1, const void *s2, size_t n);
 
-/*
- * Interface between ICC<-->GPG
- */
-extern Thread *icc_thread;
-extern Thread *gpg_thread;
-
 #define EV_EXEC_FINISHED ((eventmask_t)2)	 /* GPG Execution finished */
 
 /* maximum cmd apdu data is key import 22+4+128+128 (proc_key_import) */
@@ -79,6 +73,7 @@ extern int verify_admin_0 (const uint8_t *pw, int buf_len, int pw_len_known);
 
 extern void ac_reset_pso_cds (void);
 extern void ac_reset_pso_other (void);
+extern void ac_fini (void);
 
 
 extern void write_res_apdu (const uint8_t *p, int len,

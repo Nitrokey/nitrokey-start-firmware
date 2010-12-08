@@ -75,7 +75,7 @@ struct icc_header {
   uint16_t param;
 } __attribute__((packed));
 
-static int icc_data_size;
+int icc_data_size;
 
 /*
  * USB-ICC communication could be considered "half duplex".
@@ -113,7 +113,7 @@ static uint8_t *icc_chain_p;
  */
 static int icc_tx_size;
 
-Thread *icc_thread;
+static Thread *icc_thread;
 
 #define EV_RX_DATA_READY (eventmask_t)1  /* USB Rx data available  */
 /* EV_EXEC_FINISHED == 2 */
@@ -292,11 +292,20 @@ icc_error (int offset)
   SetEPTxValid (ENDP1);
 }
 
+static Thread *gpg_thread;
+static WORKING_AREA(waGPGthread, 128*16);
+extern msg_t GPGthread (void *arg);
+
+
 /* Send back ATR (Answer To Reset) */
 enum icc_state
 icc_power_on (void)
 {
   int size_atr;
+
+  if (gpg_thread == NULL)
+    gpg_thread = chThdCreateStatic (waGPGthread, sizeof(waGPGthread),
+				    NORMALPRIO, GPGthread, (void *)icc_thread);
 
   size_atr = sizeof (ATR);
   icc_buffer[0] = ICC_DATA_BLOCK_RET;
@@ -359,6 +368,13 @@ icc_send_status (void)
 enum icc_state
 icc_power_off (void)
 {
+  if (gpg_thread)
+    {
+      chThdTerminate (gpg_thread);
+      chThdWait (gpg_thread);
+      gpg_thread = NULL;
+    }
+
   icc_send_status ();
   DEBUG_INFO ("OFF\r\n");
   return ICC_STATE_START;
@@ -524,7 +540,12 @@ icc_handle_data (void)
 	}
       break;
     case ICC_STATE_RECEIVE:
-      if (icc_header->msg_type == ICC_SLOT_STATUS)
+      if (icc_header->msg_type == ICC_POWER_OFF)
+	{
+	  icc_chain_p = NULL;
+	  next_state = icc_power_off ();
+	}
+      else if (icc_header->msg_type == ICC_SLOT_STATUS)
 	icc_send_status ();
       else if (icc_header->msg_type == ICC_XFR_BLOCK)
 	{
@@ -557,10 +578,7 @@ icc_handle_data (void)
       break;
     case ICC_STATE_EXECUTE:
       if (icc_header->msg_type == ICC_POWER_OFF)
-	{
-	  /* XXX: Kill GPG thread */
-	  next_state = icc_power_off ();
-	}
+	next_state = icc_power_off ();
       else if (icc_header->msg_type == ICC_SLOT_STATUS)
 	icc_send_status ();
       else

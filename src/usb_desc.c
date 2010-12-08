@@ -79,6 +79,13 @@ static const uint8_t gnukConfigDescriptor[] = {
   0xfe, 0, 0, 0,	  /* dwMaxIFSD:  */
   0, 0, 0, 0,		  /* dwSynchProtocols: FIXED VALUE */
   0, 0, 0, 0,		  /* dwMechanical: FIXED VALUE */
+  /*
+   * According to Specification for USB ICCD (revision 1.0),
+   * dwFeatures should be 0x00040840.
+   *
+   * It is different now for better interaction to GPG's in-stock
+   * ccid-driver.
+   */
 #ifdef DEBUG
   0x82, 0x04, 0x04, 0x00, /* dwFeatures:
 			   *  Short and extended APDU level: 0x40000

@@ -243,3 +243,10 @@ verify_admin (const uint8_t *pw, int pw_len)
   auth_status |= AC_ADMIN_AUTHORIZED;
   return 1;
 }
+
+void
+ac_fini (void)
+{
+  auth_status = AC_NONE_AUTHORIZED;
+  memset (keystring_md_pw3, 0, KEYSTRING_MD_SIZE);
+}

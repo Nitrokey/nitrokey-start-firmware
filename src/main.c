@@ -155,9 +155,6 @@ _write (const char *s, int size)
 static WORKING_AREA(waUSBthread, 128);
 extern msg_t USBthread (void *arg);
 
-static WORKING_AREA(waGPGthread, 128*16);
-extern msg_t GPGthread (void *arg);
-
 Thread *blinker_thread;
 /*
  * LEDs blinks.
@@ -176,15 +173,11 @@ main (int argc, char **argv)
   eventmask_t m;
   uint8_t led_state = 0;
   int count = 0;
-  const uint8_t *flash_data_start;
 
   (void)argc;
   (void)argv;
 
   blinker_thread = chThdSelf ();
-
-  flash_data_start = flash_init ();
-  gpg_data_scan (flash_data_start);
 
   usb_lld_init ();
   USB_Init();
@@ -199,7 +192,6 @@ main (int argc, char **argv)
 #endif
 
   chThdCreateStatic (waUSBthread, sizeof(waUSBthread), NORMALPRIO, USBthread, NULL);
-  chThdCreateStatic (waGPGthread, sizeof(waGPGthread), NORMALPRIO, GPGthread, NULL);
 
   while (1)
     {
@@ -225,9 +217,9 @@ main (int argc, char **argv)
       if (bDeviceState == CONFIGURED && (count % 100) == 0)
 	{
 	  DEBUG_SHORT (count / 100);
-	  _write ("\r\nThis is ChibiOS 2.0.2 on Olimex STM32-H103.\r\n"
+	  _write ("\r\nThis is ChibiOS 2.0.8 on STM32.\r\n"
 		  "Testing USB driver.\n\n"
-		  "Hello world\r\n\r\n", 47+21+15);
+		  "Hello world\r\n\r\n", 35+21+15);
 	}
 #endif
     }

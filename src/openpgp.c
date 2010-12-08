@@ -75,7 +75,24 @@ write_res_apdu (const uint8_t *p, int len, uint8_t sw1, uint8_t sw2)
 #define FILE_EF_DIR	3
 #define FILE_EF_SERIAL	4
 
-static uint8_t file_selection = FILE_NONE;
+static uint8_t file_selection;
+
+static void
+gpg_init (void)
+{
+  const uint8_t *flash_data_start;
+
+  file_selection = FILE_NONE;
+  flash_data_start = flash_init ();
+  gpg_data_scan (flash_data_start);
+}
+
+static void
+gpg_fini (void)
+{
+  ac_fini ();
+  memset ((void *)kd, 0, sizeof (struct key_data)*3);
+}
 
 static void
 cmd_verify (void)
@@ -714,17 +731,16 @@ process_command_apdu (void)
     }
 }
 
-Thread *gpg_thread;
-
 msg_t
 GPGthread (void *arg)
 {
-  (void)arg;
+  Thread *icc_thread = (Thread *)arg;
 
-  gpg_thread = chThdSelf ();
+  gpg_init ();
+
   chEvtClear (ALL_EVENTS);
 
-  while (1)
+  while (!chThdShouldTerminate ())
     {
       eventmask_t m;
 
@@ -738,5 +754,6 @@ GPGthread (void *arg)
       chEvtSignal (icc_thread, EV_EXEC_FINISHED);
     }
 
+  gpg_fini ();
   return 0;
 }
