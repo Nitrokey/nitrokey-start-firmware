@@ -4,12 +4,19 @@ Gnuk NEWS - User visible changes
 
   Released 2010-12-XX, by NIIBE Yutaka
 
-** New board support "STM8S Discovery".
+** LED blink
+LED blink now shows status output the card.  It shows the status of
+CHV3, CHV2, and CHV1 when GPG is accessing the card.
+
+** New board support "STM8S Discovery"
 ST-Link part (with STM32F103C8T6) of STM8S Discovery board is now supported.
 
 ** Digital signing for SHA224/SHA256/SHA384/SHA512 digestInfo is now possible.
 
-** Fixes for password management.
+** Fixes for password management
+Now, you can allow card to do digital signing multiple times with
+single authentication.  You can use "forcesig" subcommand in card-edit
+of GnuPG to enable the feature.
 
 ** Key management changes
 If you remove all keys, it is possible to import keys again.

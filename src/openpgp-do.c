@@ -282,7 +282,7 @@ do_tag_to_nr (uint16_t tag)
     case GPG_DO_LANGUAGE:
       return NR_DO_LANGUAGE;
     default:
-      fatal ();
+      return NR_NONE;
     }
 }
 
@@ -1231,11 +1231,16 @@ gpg_do_put_data (uint16_t tag, const uint8_t *data, int len)
 	      {
 		uint8_t nr = do_tag_to_nr (tag);
 
-		*do_data_p = flash_do_write (nr, data, len);
-		if (*do_data_p)
-		  GPG_SUCCESS ();
-		else
+		if (nr == NR_NONE)
 		  GPG_MEMORY_FAILURE ();
+		else
+		  {
+		    *do_data_p = flash_do_write (nr, data, len);
+		    if (*do_data_p)
+		      GPG_SUCCESS ();
+		    else
+		      GPG_MEMORY_FAILURE ();
+		  }
 	      }
 	    break;
 	  }

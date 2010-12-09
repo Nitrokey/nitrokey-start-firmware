@@ -1,3 +1,19 @@
+2010-12-09  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/usb-icc.c (icc_power_off): Set icc_data_size = 0 to specify
+	no command APDU.  Signal GPGThread.
+	(icc_handle_data, USBthread): Don't signal main thread any more.
+
+	* src/openpgp.c (GPGthread): Only process the command APDU, if any.
+
+	* src/openpgp-do.c (do_tag_to_nr): Don't call fatal.
+	* src/main.c (fatal_code): New.
+	(main): Implemented 1-bit LED status display.
+	(fatal): Added argument CODE.
+	* src/flash.c (flash_data_pool_allocate): Supply argument FATAL_FLASH.
+	* src/random.c (random_bytes_get): Supply argument FATAL_RANDOM.
+	* src/ac.c (auth_status): Added volatile, and remove static.
+
 2010-12-08  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* src/gnuk.h (AC_OTHER_AUTHORIZED): Renamed (was:

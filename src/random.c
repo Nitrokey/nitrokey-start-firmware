@@ -45,7 +45,7 @@ random_bytes_get (void)
 	addr = ((uint32_t)&_binary_random_bits_start);
 
       if (addr == addr0)
-	fatal ();
+	fatal (FATAL_RANDOM);
     }
 
   return (const uint8_t *)addr;

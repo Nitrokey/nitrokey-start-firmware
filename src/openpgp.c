@@ -751,9 +751,11 @@ GPGthread (void *arg)
       DEBUG_INFO ("GPG!: ");
       DEBUG_WORD ((uint32_t)&m);
 
-      process_command_apdu ();
-
-      chEvtSignal (icc_thread, EV_EXEC_FINISHED);
+      if (icc_data_size != 0)
+	{
+	  process_command_apdu ();
+	  chEvtSignal (icc_thread, EV_EXEC_FINISHED);
+	}
     }
 
   gpg_fini ();

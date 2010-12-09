@@ -28,7 +28,7 @@
 #include "polarssl/config.h"
 #include "polarssl/sha1.h"
 
-static uint8_t auth_status = AC_NONE_AUTHORIZED;
+uint8_t volatile auth_status = AC_NONE_AUTHORIZED;
 
 int
 ac_check_status (uint8_t ac_flag)

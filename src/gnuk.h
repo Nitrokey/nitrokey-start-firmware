@@ -1,7 +1,3 @@
-extern Thread *blinker_thread;
-#define EV_LED_ON  ((eventmask_t)1)
-#define EV_LED_OFF ((eventmask_t)2)
-
 extern Thread *stdout_thread;
 #define EV_TX_READY ((eventmask_t)1)
 
@@ -51,6 +47,20 @@ extern int res_APDU_size;
 			/ USB_LL_BUF_SIZE * USB_LL_BUF_SIZE)
 extern uint8_t icc_buffer[USB_BUF_SIZE];
 
+enum icc_state
+{
+  ICC_STATE_START,		/* Initial */
+  ICC_STATE_WAIT,		/* Waiting APDU */
+				/* Busy1, Busy2, Busy3, Busy5 */
+  ICC_STATE_EXECUTE,		/* Busy4 */
+  ICC_STATE_RECEIVE,		/* APDU Received Partially */
+  /* Not used */
+  ICC_STATE_SEND,		/* APDU Sent Partially */
+};
+
+extern volatile enum icc_state icc_state;
+
+extern volatile uint8_t auth_status;
 #define AC_NONE_AUTHORIZED	0x00
 #define AC_PSO_CDS_AUTHORIZED	0x01  /* PW1 with 0x81 verified */
 #define AC_OTHER_AUTHORIZED	0x02  /* PW1 with 0x82 verified */
@@ -185,7 +195,9 @@ extern void gpg_increment_digital_signature_counter (void);
 
 
 extern void gpg_set_pw3 (const uint8_t *newpw, int newpw_len);
-extern void fatal (void) __attribute__ ((noreturn));
+extern void fatal (uint8_t code) __attribute__ ((noreturn));
+#define FATAL_FLASH  1
+#define FATAL_RANDOM 2
 
 extern uint8_t keystring_md_pw3[KEYSTRING_MD_SIZE];
 

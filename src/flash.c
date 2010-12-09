@@ -280,7 +280,7 @@ flash_data_pool_allocate (size_t size)
 
   if (is_data_pool_full (size))
     if (flash_copying_gc () < 0 || /*still*/ is_data_pool_full (size))
-      fatal ();
+      fatal (FATAL_FLASH);
 
   p = last_p;
   last_p += size;

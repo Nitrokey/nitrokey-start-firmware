@@ -223,18 +223,7 @@ EP2_OUT_Callback (void)
     }
 }
 
-enum icc_state
-{
-  ICC_STATE_START,		/* Initial */
-  ICC_STATE_WAIT,		/* Waiting APDU */
-				/* Busy1, Busy2, Busy3, Busy5 */
-  ICC_STATE_EXECUTE,		/* Busy4 */
-  ICC_STATE_RECEIVE,		/* APDU Received Partially */
-  /* Not used */
-  ICC_STATE_SEND,		/* APDU Sent Partially */
-};
-
-static enum icc_state icc_state;
+volatile enum icc_state icc_state;
 
 /*
  * ATR (Answer To Reset) string
@@ -368,9 +357,12 @@ icc_send_status (void)
 enum icc_state
 icc_power_off (void)
 {
+  icc_data_size = 0;
+
   if (gpg_thread)
     {
       chThdTerminate (gpg_thread);
+      chEvtSignal (gpg_thread, (eventmask_t)1);
       chThdWait (gpg_thread);
       gpg_thread = NULL;
     }
@@ -515,7 +507,6 @@ icc_handle_data (void)
 	    {			/* Give this message to GPG thread */
 	      chEvtSignal (gpg_thread, (eventmask_t)1);
 	      next_state = ICC_STATE_EXECUTE;
-	      chEvtSignal (blinker_thread, EV_LED_ON);
 	    }
 	  else if (icc_header->param == 1)
 	    {
@@ -558,7 +549,6 @@ icc_handle_data (void)
 	      icc_data_size = icc_next_p - icc_buffer - ICC_MSG_HEADER_SIZE;
 	      icc_chain_p = NULL;
 	      next_state = ICC_STATE_EXECUTE;
-	      chEvtSignal (blinker_thread, EV_LED_ON);
 	      chEvtSignal (gpg_thread, (eventmask_t)1);
 	    }
 	  else			/* icc_header->param == 3 is not supported. */
@@ -639,8 +629,6 @@ USBthread (void *arg)
 	{
 	  if (icc_state == ICC_STATE_EXECUTE)
 	    {
-	      chEvtSignal (blinker_thread, EV_LED_OFF);
-
 	      icc_send_data_block_filling_header (res_APDU_size);
 	      icc_state = ICC_STATE_WAIT;
 	    }

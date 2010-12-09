@@ -155,29 +155,30 @@ _write (const char *s, int size)
 static WORKING_AREA(waUSBthread, 128);
 extern msg_t USBthread (void *arg);
 
-Thread *blinker_thread;
 /*
- * LEDs blinks.
- * When GPGthread execute some command, LED stop blinking, but always ON.
+ * main thread does 1-bit LED display output
  */
-#define LED_BLINKER_TIMEOUT MS2ST(200)
+#define LED_TIMEOUT_INTERVAL	MS2ST(100)
+#define LED_TIMEOUT_ZERO	MS2ST(50)
+#define LED_TIMEOUT_ONE		MS2ST(200)
+#define LED_TIMEOUT_STOP	MS2ST(500)
 
+
+static volatile uint8_t fatal_code;
 
 /*
- * Entry point, note, the main() function is already a thread in the system
- * on entry.
+ * Entry point.
+ *
+ * NOTE: the main function is already a thread in the system on entry.
+ *       See the hwinit1_common function.
  */
 int
 main (int argc, char **argv)
 {
-  eventmask_t m;
-  uint8_t led_state = 0;
   int count = 0;
 
   (void)argc;
   (void)argv;
-
-  blinker_thread = chThdSelf ();
 
   usb_lld_init ();
   USB_Init();
@@ -199,26 +200,108 @@ main (int argc, char **argv)
     {
       count++;
 
-      m = chEvtWaitOneTimeout (ALL_EVENTS, LED_BLINKER_TIMEOUT);
-      if (m == EV_LED_ON)
-	led_state = 1;
-      else if (m == EV_LED_OFF)
-	led_state = 0;
-
-      if (led_state)
-	set_led (1);
-      else
+      if (fatal_code != 0)
 	{
-	  if ((count & 1))
-	    set_led (1);
+	  set_led (1);
+	  chThdSleep (LED_TIMEOUT_ZERO);
+	  set_led (0);
+	  chThdSleep (LED_TIMEOUT_INTERVAL);
+	  set_led (1);
+	  chThdSleep (LED_TIMEOUT_ZERO);
+	  set_led (0);
+	  chThdSleep (LED_TIMEOUT_INTERVAL);
+	  set_led (1);
+	  chThdSleep (LED_TIMEOUT_ZERO);
+	  set_led (0);
+	  chThdSleep (LED_TIMEOUT_STOP);
+	  set_led (1);
+	  if (fatal_code & 1)
+	    chThdSleep (LED_TIMEOUT_ONE);
 	  else
-	    set_led (0);
+	    chThdSleep (LED_TIMEOUT_ZERO);
+	  set_led (0);
+	  chThdSleep (LED_TIMEOUT_INTERVAL);
+	  set_led (1);
+	  if (fatal_code & 2)
+	    chThdSleep (LED_TIMEOUT_ONE);
+	  else
+	    chThdSleep (LED_TIMEOUT_ZERO);
+	  set_led (0);
+	  chThdSleep (LED_TIMEOUT_INTERVAL);
+	  set_led (1);
+	  chThdSleep (LED_TIMEOUT_STOP);
+	  set_led (0);
+	  chThdSleep (LED_TIMEOUT_INTERVAL);
+	} 
+
+      if (bDeviceState != CONFIGURED)
+	{
+	  set_led (1);
+	  chThdSleep (LED_TIMEOUT_ZERO);
+	  set_led (0);
+	  chThdSleep (LED_TIMEOUT_STOP * 3);
 	}
+      else
+	/* Device configured */
+	if (icc_state == ICC_STATE_START)
+	  {
+	    set_led (1);
+	    chThdSleep (LED_TIMEOUT_ONE);
+	    set_led (0);
+	    chThdSleep (LED_TIMEOUT_STOP * 3);
+	  }
+	else
+	  /* GPGthread  running */
+	  {
+	    set_led (1);
+	    if ((auth_status & AC_ADMIN_AUTHORIZED) != 0)
+	      chThdSleep (LED_TIMEOUT_ONE);
+	    else
+	      chThdSleep (LED_TIMEOUT_ZERO);
+	    set_led (0);
+	    chThdSleep (LED_TIMEOUT_INTERVAL);
+	    set_led (1);
+	    if ((auth_status & AC_OTHER_AUTHORIZED) != 0)
+	      chThdSleep (LED_TIMEOUT_ONE);
+	    else
+	      chThdSleep (LED_TIMEOUT_ZERO);
+	    set_led (0);
+	    chThdSleep (LED_TIMEOUT_INTERVAL);
+	    set_led (1);
+	    if ((auth_status & AC_PSO_CDS_AUTHORIZED) != 0)
+	      chThdSleep (LED_TIMEOUT_ONE);
+	    else
+	      chThdSleep (LED_TIMEOUT_ZERO);
+
+	    if (icc_state == ICC_STATE_WAIT)
+	      {
+		set_led (0);
+		chThdSleep (LED_TIMEOUT_STOP * 2);
+	      }
+	    else if (icc_state == ICC_STATE_RECEIVE)
+	      {
+		set_led (0);
+		chThdSleep (LED_TIMEOUT_INTERVAL);
+		set_led (1);
+		chThdSleep (LED_TIMEOUT_ONE);
+		set_led (0);
+		chThdSleep (LED_TIMEOUT_STOP);
+	      }
+	    else
+	      {
+		set_led (0);
+		chThdSleep (LED_TIMEOUT_INTERVAL);
+		set_led (1);
+		chThdSleep (LED_TIMEOUT_STOP);
+		set_led (0);
+		chThdSleep (LED_TIMEOUT_INTERVAL);
+	      }
+	  }
 
 #ifdef DEBUG_MORE
-      if (bDeviceState == CONFIGURED && (count % 100) == 0)
+      if (bDeviceState == CONFIGURED && (count % 10) == 0)
 	{
-	  DEBUG_SHORT (count / 100);
+	  DEBUG_SHORT (count / 10);
 	  _write ("\r\nThis is ChibiOS 2.0.8 on STM32.\r\n"
 		  "Testing USB driver.\n\n"
 		  "Hello world\r\n\r\n", 35+21+15);
@@ -230,8 +313,9 @@ main (int argc, char **argv)
 }
 
 void
-fatal (void)
+fatal (uint8_t code)
 {
+  fatal_code = code;
   _write ("fatal\r\n", 7);
   for (;;);
 }
