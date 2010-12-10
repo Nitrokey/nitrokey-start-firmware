@@ -178,14 +178,95 @@ gnuk_device_Get_Interface_Setting (uint8_t Interface, uint8_t AlternateSetting)
   return USB_SUCCESS;
 }
 
-#if !defined(ENABLE_VIRTUAL_COM_PORT)
-static RESULT
-gnuk_nothing_todo (uint8_t RequestNo)
+#define USB_CCID_REQ_ABORT			0x01
+#define USB_CCID_REQ_GET_CLOCK_FREQUENCIES	0x02
+#define USB_CCID_REQ_GET_DATA_RATES		0x03
+
+static const uint8_t freq_table[] = { 0xf3, 0x0d, 0, 0, }; /* dwDefaultClock */
+static uint8_t *
+gnuk_clock_frequencies (uint16_t len)
 {
-  (void)RequestNo;
-  return USB_UNSUPPORT;
+  if (len == 0)
+    {
+      pInformation->Ctrl_Info.Usb_wLength = sizeof (freq_table);
+      return NULL;
+    }
+
+  return (uint8_t *)freq_table;
 }
+
+static const uint8_t data_rate_table[] = { 0x80, 0x25, 0, 0, }; /* dwDataRate */
+static uint8_t *
+gnuk_data_rates (uint16_t len)
+{
+  if (len == 0)
+    {
+      pInformation->Ctrl_Info.Usb_wLength = sizeof (data_rate_table);
+      return NULL;
+    }
+
+  return (uint8_t *)data_rate_table;
+}
+
+static RESULT
+gnuk_setup_with_data (uint8_t RequestNo)
+{
+  if (Type_Recipient == (CLASS_REQUEST | INTERFACE_RECIPIENT))
+    if (pInformation->USBwIndex0 == 0) /* Interface */
+      {
+	if (RequestNo == USB_CCID_REQ_GET_CLOCK_FREQUENCIES)
+	  {
+	    pInformation->Ctrl_Info.CopyData = gnuk_clock_frequencies;
+	    pInformation->Ctrl_Info.Usb_wOffset = 0;
+	    gnuk_clock_frequencies (0);
+	    return USB_SUCCESS;
+	  }
+	else if (RequestNo == USB_CCID_REQ_GET_DATA_RATES)
+	  {
+	    pInformation->Ctrl_Info.CopyData = gnuk_data_rates;
+	    pInformation->Ctrl_Info.Usb_wOffset = 0;
+	    gnuk_data_rates (0);
+	    return USB_SUCCESS;
+	  }
+	else
+	  return USB_UNSUPPORT;
+      }
+    else
+      {
+#if defined(ENABLE_VIRTUAL_COM_PORT)
+	return Virtual_Com_Port_Data_Setup (RequestNo);
+#else
+	return USB_UNSUPPORT;
 #endif
+      }
+  else
+    return USB_UNSUPPORT;
+}
+
+static RESULT
+gnuk_setup_with_nodata (uint8_t RequestNo)
+{
+  if (Type_Recipient == (CLASS_REQUEST | INTERFACE_RECIPIENT))
+    if (pInformation->USBwIndex0 == 0) /* Interface */
+      {
+	if (RequestNo == USB_CCID_REQ_ABORT)
+	  /* wValue: bSeq, bSlot */
+	  /* Abortion is not supported in Gnuk */
+	  return USB_UNSUPPORT;
+	else
+	  return USB_UNSUPPORT;
+      }
+    else
+      {
+#if defined(ENABLE_VIRTUAL_COM_PORT)
+	return Virtual_Com_Port_NoData_Setup (RequestNo);
+#else
+	return USB_UNSUPPORT;
+#endif
+      }
+  else
+    return USB_UNSUPPORT;
+}
 
 /*
  * Interface to USB core
@@ -196,13 +277,8 @@ const DEVICE_PROP Device_Property = {
   gnuk_device_reset,
   gnuk_device_Status_In,
   gnuk_device_Status_Out,
-#ifdef ENABLE_VIRTUAL_COM_PORT
-  Virtual_Com_Port_Data_Setup,
-  Virtual_Com_Port_NoData_Setup,
-#else
-  gnuk_nothing_todo,
-  gnuk_nothing_todo,
-#endif
+  gnuk_setup_with_data,
+  gnuk_setup_with_nodata,
   gnuk_device_Get_Interface_Setting,
   gnuk_device_GetDeviceDescriptor,
   gnuk_device_GetConfigDescriptor,

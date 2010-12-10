@@ -5,7 +5,7 @@ Gnuk NEWS - User visible changes
   Released 2010-12-XX, by NIIBE Yutaka
 
 ** LED blink
-LED blink now shows status output the card.  It shows the status of
+LED blink now shows status output of the card.  It shows the status of
 CHV3, CHV2, and CHV1 when GPG is accessing the card.
 
 ** New board support "STM8S Discovery"
@@ -27,6 +27,10 @@ digital signing (not decryption, key import, or get_public_key in
 GPG2).  For decryption, key import and get_public_key, changes are
 needed for GPG (scd/ccid-driver.c) to support the case of extended
 APDU.  In short, you can sign with Gnuk by GPG 1.
+
+** Windows support.
+Gnuk could run on MS Windows, with "usbccid" driver and "winscard"
+driver.
 
 
 * Major changes in Gnuk 0.4

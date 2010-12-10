@@ -68,15 +68,9 @@ Virtual_Com_Port_Data_Setup (uint8_t RequestNo)
   CopyRoutine = NULL;
 
   if (RequestNo == USB_CDC_REQ_GET_LINE_CODING)
-    {
-      if (Type_Recipient == (CLASS_REQUEST | INTERFACE_RECIPIENT))
-	CopyRoutine = Virtual_Com_Port_GetLineCoding;
-    }
+    CopyRoutine = Virtual_Com_Port_GetLineCoding;
   else if (RequestNo == USB_CDC_REQ_SET_LINE_CODING)
-    {
-      if (Type_Recipient == (CLASS_REQUEST | INTERFACE_RECIPIENT))
-	CopyRoutine = Virtual_Com_Port_SetLineCoding;
-    }
+    CopyRoutine = Virtual_Com_Port_SetLineCoding;
 
   if (CopyRoutine == NULL)
     return USB_UNSUPPORT;
@@ -91,8 +85,7 @@ Virtual_Com_Port_Data_Setup (uint8_t RequestNo)
 static RESULT
 Virtual_Com_Port_NoData_Setup (uint8_t RequestNo)
 {
-  if (Type_Recipient == (CLASS_REQUEST | INTERFACE_RECIPIENT)
-      && RequestNo == USB_CDC_REQ_SET_CONTROL_LINE_STATE)
+  if (RequestNo == USB_CDC_REQ_SET_CONTROL_LINE_STATE)
     /* Do nothing and success  */
     return USB_SUCCESS;
 

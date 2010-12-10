@@ -1,3 +1,21 @@
+2010-12-10  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/usb-cdc-vport.c (Virtual_Com_Port_Data_Setup)
+	(Virtual_Com_Port_NoData_Setup): No check for class&interface
+	request.
+
+	* src/usb-icc.c (ATR): Fixed.
+
+	* src/usb_desc.c (/* ICC Descriptor*/): bcdCCID = 1.1.
+	dwDefaultClock = dwMaximumClock = 3571.
+	dwFeatures 0x00040842.
+
+	* src/usb_prop.c (gnuk_clock_frequencies, gnuk_data_rates): New.
+	(gnuk_nothing_todo): Removed.
+	(gnuk_setup_with_data, gnuk_setup_with_nodata): New.
+	(Device_Property): Changed to call gnuk_setup_with_data and
+	gnuk_setup_with_nodata.
+
 2010-12-09  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* src/usb-icc.c (icc_power_off): Set icc_data_size = 0 to specify

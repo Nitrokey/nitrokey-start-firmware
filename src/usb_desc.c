@@ -55,7 +55,7 @@ static const uint8_t gnukConfigDescriptor[] = {
   /* Interface Descriptor */
   9,			      /* bLength: Interface Descriptor size */
   USB_INTERFACE_DESCRIPTOR_TYPE, /* bDescriptorType: Interface */
-  0,				 /* Index of this interface */
+  0,				 /* bInterfaceNumber: Index of this interface */
   0,			    /* Alternate setting for this interface */
   2,			    /* bNumEndpoints: Bulk-IN, Bulk-OUT */
   USB_ICC_INTERFACE_CLASS,
@@ -66,17 +66,17 @@ static const uint8_t gnukConfigDescriptor[] = {
   /* ICC Descriptor */
   54,			  /* bLength: */
   0x21,			  /* bDescriptorType: USBDESCR_ICC */
-  0x00, 0x01,		  /* bcdCCID: revision 1.0 */
+  0x10, 0x01,		  /* bcdCCID: revision 1.1 (of CCID) */
   0,			  /* bMaxSlotIndex: */
   1,			  /* bVoltageSupport: FIXED VALUE */
   0x02, 0, 0, 0,	  /* dwProtocols: T=1 */
-  0xfc, 0x0d, 0, 0,	  /* dwDefaultClock: FIXED VALUE */
-  0xfc, 0x0d, 0, 0,	  /* dwMaximumClock: FIXED VALUE*/
-  1,			  /* bNumClockSupported: FIXED VALUE*/
-  0x80, 0x25, 0, 0,	  /* dwDataRate: FIXED VALUE */
-  0x80, 0x25, 0, 0,	  /* dwMaxDataRate: FIXED VALUE */
+  0xf3, 0x0d, 0, 0,	  /* dwDefaultClock: 3571 (non-ICCD): 3580 (ICCD) */
+  0xf3, 0x0d, 0, 0,	  /* dwMaximumClock: 3571 (non-ICCD): 3580 (ICCD) */
+  1,			  /* bNumClockSupported: FIXED VALUE */
+  0x80, 0x25, 0, 0,	  /* dwDataRate: 9600: FIXED VALUE */
+  0x80, 0x25, 0, 0,	  /* dwMaxDataRate: 9600: FIXED VALUE */
   1,			  /* bNumDataRateSupported: FIXED VALUE */
-  0xfe, 0, 0, 0,	  /* dwMaxIFSD:  */
+  0xfe, 0, 0, 0,	  /* dwMaxIFSD: 254 */
   0, 0, 0, 0,		  /* dwSynchProtocols: FIXED VALUE */
   0, 0, 0, 0,		  /* dwMechanical: FIXED VALUE */
   /*
@@ -86,22 +86,20 @@ static const uint8_t gnukConfigDescriptor[] = {
    * It is different now for better interaction to GPG's in-stock
    * ccid-driver.
    */
-#ifdef DEBUG
-  0x82, 0x04, 0x04, 0x00, /* dwFeatures:
-			   *  Short and extended APDU level: 0x40000
+  0x42, 0x08, 0x04, 0x00, /* dwFeatures (not ICCD):
+			   *  Short and extended APDU level: 0x40000 *
+			   *  (what? means ICCD?)          : 0x00800 *
 			   *  Automatic IFSD               : 0x00400
+			   *  NAD value other than 0x00    : 0x00200
+			   *  Can set ICC in clock stop    : 0x00100
 			   *  Automatic PPS CUR            : 0x00080
-			   *
-			   *  Automatic conf. based on ATR : 0x00002
+			   *  Automatic PPS PROP           : 0x00040 *
+			   *  Auto baud rate change	   : 0x00020
+			   *  Auto clock change		   : 0x00010
+			   *  Auto voltage selection	   : 0x00008
+			   *  Auto activaction of ICC	   : 0x00004
+			   *  Automatic conf. based on ATR : 0x00002  g
 			   */
-#else
-  0x42, 0x00, 0x04, 0x00, /* dwFeatures:
-			   *  Short and extended APDU level: 0x40000
-			   *  Automatic PPS PROP           : 0x00040
-			   *
-			   *  Automatic conf. based on ATR : 0x00002
-			   */
-#endif
   0x40, 0x01, 0, 0,	  /* dwMaxCCIDMessageLength */
   0xff,			  /* bClassGetResponse: */
   0xff,			  /* bClassEnvelope: */
