@@ -1,3 +1,9 @@
+2010-12-13  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* Version 0.5.
+
+	* src/usb_desc.c (gnukStringSerial): Updated.
+
 2010-12-10  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* src/usb-cdc-vport.c (Virtual_Com_Port_Data_Setup)

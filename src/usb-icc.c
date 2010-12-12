@@ -228,7 +228,7 @@ volatile enum icc_state icc_state;
 /*
  * ATR (Answer To Reset) string
  *
- * TS = 0x3B: Direct conversion
+ * TS = 0x3b: Direct conversion
  * T0 = 0xda: TA1, TC1 and TD1 follow, 10 historical bytes
  * TA1 = 0x11: FI=1, DI=1
  * TC1 = 0xff

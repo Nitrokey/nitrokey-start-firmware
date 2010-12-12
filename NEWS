@@ -2,7 +2,7 @@ Gnuk NEWS - User visible changes
 
 * Major changes in Gnuk 0.5
 
-  Released 2010-12-XX, by NIIBE Yutaka
+  Released 2010-12-13, by NIIBE Yutaka
 
 ** LED blink
 LED blink now shows status output of the card.  It shows the status of
@@ -14,7 +14,7 @@ ST-Link part (with STM32F103C8T6) of STM8S Discovery board is now supported.
 ** Digital signing for SHA224/SHA256/SHA384/SHA512 digestInfo is now possible.
 
 ** Fixes for password management
-Now, you can allow card to do digital signing multiple times with
+Now, you can allow the token to do digital signing multiple times with
 single authentication.  You can use "forcesig" subcommand in card-edit
 of GnuPG to enable the feature.
 
@@ -26,11 +26,11 @@ Gnuk works better with GPG's in-stock protocol stack.  You can do
 digital signing (not decryption, key import, or get_public_key in
 GPG2).  For decryption, key import and get_public_key, changes are
 needed for GPG (scd/ccid-driver.c) to support the case of extended
-APDU.  In short, you can sign with Gnuk by GPG 1.
+APDU.  In short, you can sign with Gnuk by GPG.
 
 ** Windows support.
-Gnuk could run on MS Windows, with "usbccid" driver and "winscard"
-driver.
+Gnuk Token could run with GPG4WIN on MS Windows.  GPG4WIN runs with
+"usbccid" driver and "winscard" driver.
 
 
 * Major changes in Gnuk 0.4
