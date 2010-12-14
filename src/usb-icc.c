@@ -241,6 +241,8 @@ volatile enum icc_state icc_state;
  * Historical bytes: to be explained...
  * XOR check
  *
+ * Minimum: 0x3b, 0x8a, 0x80, 0x01, + historical bytes, xor check
+ *
  */
 static const char ATR[] = {
   0x3b, 0xda, 0x11, 0xff, 0x81, 0xb1, 0xfe, 0x55, 0x1f, 0x03,
