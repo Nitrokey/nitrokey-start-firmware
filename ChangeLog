@@ -1,3 +1,7 @@
+2010-12-14  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/configure (FLASH_PAGE_SIZE): Always set.
+
 2010-12-13  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* Version 0.5.
