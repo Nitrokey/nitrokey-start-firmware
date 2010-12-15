@@ -26,6 +26,7 @@ verbose=no
 with_dfu=default
 with_fsij=no
 debug=no
+pinpad=no
 
 # check /dev/random
 if test ! -e /dev/random; then
@@ -51,6 +52,10 @@ for option; do
     debug=yes;;
   --disable-debug)
     debug=no;;
+  --enable-pinpad)
+    pinpad=yes;;
+  --disable-pinpad)
+    pinpad=no;;
   --with-dfu)
     with_dfu=yes ;;
   --without-dfu)
@@ -82,6 +87,7 @@ Configuration:
 			   CQ_STARM
 			   STBEE_MINI
   --enable-debug	debug with virtual COM port	[no]
+  --enable-pinpad	PIN input device support	[no]
   --with-dfu		build image for DFU 		[<target specific>]
   --with-fsij		Use FSIJ serial number		[no: random number]
 EOF
@@ -96,16 +102,25 @@ else
   exit 1
 fi
 
-# --with-dfu option
+# Flash page size in byte
+FLASH_PAGE_SIZE=1024
+# Flash memory size in KB
+FLASH_SIZE=128
+
+# Settings for TARGET
 case $target in
 CQ_STARM|STBEE_MINI)
   if test "$with_dfu" = "default"; then
     with_dfu=yes;
   fi  ;;
+STM32_PRIMER2)
+  FLASH_PAGE_SIZE=2048
+  ;;
+STM8S_DISCOVERY)
+  FLASH_SIZE=64
+  ;;
 *)
-  if test "$with_dfu" = "default"; then
-    with_dfu=no;
-  fi  ;;
+  ;;
 esac
 
 # --with-fsij option
@@ -123,6 +138,7 @@ else
   SERIAL_NUMBER_FOUR_BYTES=`sed -n -e "/^$MAIL/s/^.* \(..\):\(..\):\(..\):\(..\)/0x\1, 0x\2, 0x\3, 0x\4/p" ../FSIJ_SERIAL_NUMBER`
 fi
 
+# --enable-debug option
 if test "$debug" = "yes"; then
   DEBUG_MAKE_OPTION="ENABLE_DEBUG=1"
   DEBUG_DEFINE="#define DEBUG 1"
@@ -133,35 +149,38 @@ else
   echo "Debug option disabled"
 fi
 
+# --with-dfu option
 if test "$with_dfu" = "yes"; then
   echo "Configured for DFU"
   ORIGIN=0x08003000
-  FLASH_SIZE=116k
+  FLASH_SIZE=`expr $FLASH_SIZE - 12`
   DFU_DEFINE="#define DFU_SUPPORT 1"
 else
   echo "Configured for bare system (no-DFU)"
   ORIGIN=0x08000000
-  if test "$target" = "STM8S_DISCOVERY"; then
-    FLASH_SIZE=64k
-  else
-    FLASH_SIZE=128k
-  fi
   DFU_DEFINE="#undef DFU_SUPPORT"
 fi
 
-if test "$target" = "STM32_PRIMER2"; then
-  FLASH_PAGE_SIZE=2048
+# --enable-pinpad option
+if test "$pinpad" = "yes"; then
+  PINPAD_MAKE_OPTION="ENABLE_PINPAD=1"
+  PINPAD_DEFINE="#define PINPAD_SUPPORT 1"
+  echo "PIN pad option enabled"
 else
-  FLASH_PAGE_SIZE=1024
+  PINPAD_MAKE_OPTION="# ENABLE_PINPAD=1"
+  PINPAD_DEFINE="#undef PINPAD_SUPPORT"
+  echo "PIN pad option disabled"
 fi
 
 sed -e "s%@BOARD_MAKEFILE@%$BOARD_MAKEFILE%" \
     -e "s%@DEBUG_MAKE_OPTION@%$DEBUG_MAKE_OPTION%" \
+    -e "s%@PINPAD_MAKE_OPTION@%$PINPAD_MAKE_OPTION%" \
 	< Makefile.in > Makefile
 sed -e "s/@ORIGIN@/$ORIGIN/" -e "s/@FLASH_SIZE@/$FLASH_SIZE/" \
     -e "s/@FLASH_PAGE_SIZE@/$FLASH_PAGE_SIZE/" \
 	< gnuk.ld.in > gnuk.ld
 sed -e "s/@DEBUG_DEFINE@/$DEBUG_DEFINE/" \
+    -e "s/@PINPAD_DEFINE@/$PINPAD_DEFINE/" \
     -e "s/@DFU_DEFINE@/$DFU_DEFINE/" \
     -e "s/@FSIJ_DEFINE@/$FSIJ_DEFINE/" \
     -e "s/@SERIAL_NUMBER_FOUR_BYTES@/$SERIAL_NUMBER_FOUR_BYTES/" \

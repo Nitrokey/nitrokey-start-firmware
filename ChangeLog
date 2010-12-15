@@ -1,3 +1,12 @@
+2010-12-15  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/configure (FLASH_SIZE): Without 'k'.
+	* src/gnuk.ld.in (MEMORY): Append "k" here.
+
+	* src/config.h.in (@PINPAD_DEFINE@): New.
+	* src/Makefile.in (@PINPAD_MAKE_OPTION@): New.
+	* src/configure (PINPAD_MAKE_OPTION, PINPAD_DEFINE): New.
+
 2010-12-14  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* src/configure (FLASH_PAGE_SIZE): Always set.

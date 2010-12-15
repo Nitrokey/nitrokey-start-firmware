@@ -1,5 +1,6 @@
 # Makefile for Gnuk
 
+@PINPAD_MAKE_OPTION@
 @DEBUG_MAKE_OPTION@
 ifneq ($(ENABLE_DEBUG),)
 ENABLE_VCOMPORT=1
@@ -92,6 +93,10 @@ CSRC = $(PORTSRC) \
 
 ifneq ($(ENABLE_DEBUG),)
 CSRC += debug.c
+endif
+
+ifneq ($(ENABLE_PINPAD),)
+CSRC += pin-dial.c
 endif
 
 # List ASM source files here
