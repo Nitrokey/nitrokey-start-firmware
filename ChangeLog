@@ -2,6 +2,7 @@
 
 	* src/configure (FLASH_SIZE): Without 'k'.
 	* src/gnuk.ld.in (MEMORY): Append "k" here.
+	(.gnuk_flash): End point should be aligned too.
 
 	* src/config.h.in (@PINPAD_DEFINE@): New.
 	* src/Makefile.in (@PINPAD_MAKE_OPTION@): New.
