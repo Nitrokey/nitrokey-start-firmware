@@ -1,3 +1,11 @@
+2010-12-20  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/openpgp.c (GPGthread): Added PINPAD_SUPPORT.
+	* boards/STBEE_MINI/mcuconf.h: Simplified.
+	* boards/STBEE_MINI/board.h: Include config.h.
+	(PINPAD_SUPPORT): Added.
+	* boards/STBEE_MINI/board.c (hwinit1): Added PINPAD_SUPPORT.
+
 2010-12-15  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* src/configure (FLASH_SIZE): Without 'k'.

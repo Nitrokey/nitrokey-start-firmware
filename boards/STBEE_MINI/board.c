@@ -14,6 +14,13 @@ void
 hwinit1 (void)
 {
   hwinit1_common ();
+
+#if defined(PINPAD_SUPPORT)
+  palWritePort(IOPORT2, 0x7fff); /* Only clear GPIOB_7SEG_DP */
+  while (palReadPad (IOPORT2, GPIOB_BUTTON) != 0)
+    ;				/* Wait for JTAG debugger connection */
+  palWritePort(IOPORT2, 0xffff); /* All set */
+#endif
   /*
    * Disable JTAG and SWD, done after hwinit1_common as HAL resets AFIO
    */

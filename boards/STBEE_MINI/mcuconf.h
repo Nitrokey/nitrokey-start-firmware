@@ -54,7 +54,7 @@
 /*
  * ADC driver system settings.
  */
-#define USE_STM32_ADC1              TRUE
+#define USE_STM32_ADC1              FALSE
 #define STM32_ADC1_DMA_PRIORITY     3
 #define STM32_ADC1_IRQ_PRIORITY     5
 #define STM32_ADC1_DMA_ERROR_HOOK() chSysHalt()
@@ -62,13 +62,13 @@
 /*
  * CAN driver system settings.
  */
-#define USE_STM32_CAN1              TRUE
+#define USE_STM32_CAN1              FALSE
 #define STM32_CAN1_IRQ_PRIORITY     11
 
 /*
  * PWM driver system settings.
  */
-#define USE_STM32_PWM1              TRUE
+#define USE_STM32_PWM1              FALSE
 #define USE_STM32_PWM2              FALSE
 #define USE_STM32_PWM3              FALSE
 #define USE_STM32_PWM4              FALSE
@@ -81,7 +81,7 @@
  * SERIAL driver system settings.
  */
 #define USE_STM32_USART1            FALSE
-#define USE_STM32_USART2            TRUE
+#define USE_STM32_USART2            FALSE
 #define USE_STM32_USART3            FALSE
 #if defined(STM32F10X_HD) || defined(STM32F10X_CL)
 #define USE_STM32_UART4             FALSE
@@ -98,7 +98,7 @@
 /*
  * SPI driver system settings.
  */
-#define USE_STM32_SPI1              TRUE
+#define USE_STM32_SPI1              FALSE
 #define USE_STM32_SPI2              FALSE
 #define STM32_SPI1_DMA_PRIORITY     2
 #define STM32_SPI2_DMA_PRIORITY     2

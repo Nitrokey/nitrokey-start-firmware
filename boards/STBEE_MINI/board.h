@@ -27,6 +27,7 @@
 #ifndef _BOARD_H_
 #define _BOARD_H_
 
+#include "config.h"
 /*
  * Setup for the STBee Mini board.
  */
@@ -93,16 +94,33 @@
  * PA15 - Open Drain output (LED2 0:ON 1:OFF)
  */
 #define VAL_GPIOACRL            0x88888888      /*  PA7...PA0 */
-#define VAL_GPIOACRH            0x73788888      /* PA15...PA8 */
+#define VAL_GPIOACRH            0x63688888      /* PA15...PA8 */
 #define VAL_GPIOAODR            0xFFFFFFFF
 
-/*
- * Port B setup.
- * Everything input with pull-up except:
- */
+/* Port B setup. */
+#if defined(PINPAD_SUPPORT)
+#define GPIOB_BUTTON            2
+#define GPIOB_ROT_A             3
+#define GPIOB_ROT_B             4
+
+#define GPIOB_7SEG_DP           15
+#define GPIOB_7SEG_A            14
+#define GPIOB_7SEG_B            13
+#define GPIOB_7SEG_C            12
+#define GPIOB_7SEG_D            11
+#define GPIOB_7SEG_E            10
+#define GPIOB_7SEG_F            9
+#define GPIOB_7SEG_G            8
+
+#define VAL_GPIOBCRL            0x88888888      /*  PB7...PB0 */
+#define VAL_GPIOBCRH            0x66666666      /* PB15...PB8 */
+#define VAL_GPIOBODR            0xFFFFFFFF
+#else
+/* Everything input with pull-up */
 #define VAL_GPIOBCRL            0x88888888      /*  PB7...PB0 */
 #define VAL_GPIOBCRH            0x88888888      /* PB15...PB8 */
 #define VAL_GPIOBODR            0xFFFFFFFF
+#endif
 
 /*
  * Port C setup.
