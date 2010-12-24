@@ -738,12 +738,12 @@ GPGthread (void *arg)
 {
   Thread *icc_thread = (Thread *)arg;
 #if defined(PINPAD_SUPPORT)
-  extern msg_t pindial_main (void *arg);
-  Thread *pindial_thread;
+  extern msg_t pin_main (void *arg);
+  Thread *pin_thread;
   static WORKING_AREA(waPINthread, 128);
 
-  pindial_thread = chThdCreateStatic (waPINthread, sizeof(waPINthread),
-				      NORMALPRIO, pindial_main, NULL);
+  pin_thread = chThdCreateStatic (waPINthread, sizeof(waPINthread),
+				  NORMALPRIO, pin_main, NULL);
 #endif
 
   gpg_init ();

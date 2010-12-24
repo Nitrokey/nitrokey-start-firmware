@@ -99,6 +99,7 @@
 
 /* Port B setup. */
 #if defined(PINPAD_SUPPORT)
+#define GPIOB_CIR		0
 #define GPIOB_BUTTON            2
 #define GPIOB_ROT_A             3
 #define GPIOB_ROT_B             4
@@ -142,5 +143,10 @@
 #define VAL_GPIODCRL            0x88888844      /*  PD7...PD0 */
 #define VAL_GPIODCRH            0x88888888      /* PD15...PD8 */
 #define VAL_GPIODODR            0xFFFFFFFF
+
+#if defined(PINPAD_SUPPORT)
+extern void cir_ext_disable (void);
+extern void cir_ext_enable (void);
+#endif
 
 #endif /* _BOARD_H_ */
