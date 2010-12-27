@@ -1,5 +1,5 @@
 /*
- * pin-cir.c -- PIN input device support (Consumer Infra Red)
+ * pin-cir.c -- PIN input device support (Consumer Infra-Red)
  *
  * Copyright (C) 2010 Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
@@ -27,9 +27,33 @@
 #include "board.h"
 #include "gnuk.h"
 
+#if 0
+#define DEBUG_CIR 1
+#endif
 /*
- * Controller of Sharp AQUOS: (START + 48-bit + STOP) x N
- * Controller of Toshiba REGZA: (START + 32-bit + STOP) + (START + STOP) x N
+ * NEC Protocol: (START + 32-bit + STOP) + (START + STOP) x N
+ *      32-bit: 8-bit command inverted + 8-bit command + 16-bit address
+ * 	Example: Controller of Toshiba REGZA
+ * 	Example: Controller of Ceiling Light by NEC
+ *
+ * Sony Protocol: (START + 12-bit)
+ *      12-bit: 5-bit address + 7-bit command
+ * 	Example: Controller of Sony BRAVIA
+ *
+ * Unknown Protocol 1: (START + 48-bit + STOP) x N
+ *      Example: Controller of Sharp AQUOS
+ *      Example: Controller of Ceiling Light by Mitsubishi
+ *
+ * Unsupported:
+ *
+ * Unknown Protocol 2: (START + 112-bit + STOP)
+ *      Example: Controller of Mitsubishi air conditioner
+ *
+ * Unknown Protocol 3: (START + 128-bit + STOP)
+ *      Example: Controller of Fujitsu air conditioner
+ *
+ * Unknown Protocol 4: (START + 152-bit + STOP)
+ *      Example: Controller of Sanyo air conditioner
  */
 
 /*
@@ -124,25 +148,20 @@ static uint16_t intr_ext;
 static uint16_t intr_trg;
 static uint16_t intr_ovf;
 
-#define MAX_PININPUT_BIT 256
-static uint16_t pininput[MAX_PININPUT_BIT];
-static uint16_t *pininput_p;
+#define MAX_CIRINPUT_BIT 512
+static uint16_t cirinput[MAX_CIRINPUT_BIT];
+static uint16_t *cirinput_p;
 #endif
 
-/*
- * Currently, only NEC protocol is supported.
- */
-
-static uint16_t cir_adr;
-static uint16_t cir_cmd;
+static uint32_t cir_data;
 static uint8_t cir_seq;
-#define CIR_BIT_PERIOD 1000
+#define CIR_BIT_PERIOD 1500
+#define CIR_BIT_SIRC_PERIOD_ON 1000
 
 static void
 cir_init (void)
 {
-  cir_adr = 0;
-  cir_cmd = 0;
+  cir_data = 0;
   cir_seq = 0;
   cir_ext_enable ();
 }
@@ -158,7 +177,7 @@ pin_main (void *arg)
   pin_thread = chThdSelf ();
 
 #if defined(DEBUG_CIR)
-  pininput_p = pininput;
+  cirinput_p = cirinput;
 #endif
 
   chEvtClear (ALL_EVENTS);
@@ -181,14 +200,14 @@ pin_main (void *arg)
 	  DEBUG_SHORT (intr_trg);
 	  DEBUG_SHORT (intr_ovf);
 	  DEBUG_INFO ("----\r\n");
-	  for (p = pininput; p < pininput_p; p++)
+	  for (p = cirinput; p < cirinput_p; p++)
 	    DEBUG_SHORT (*p);
 	  DEBUG_INFO ("====\r\n");
 
-	  pininput_p = pininput;
+	  cirinput_p = cirinput;
 #endif
-	  DEBUG_INFO ("**** CIR commdand:");
-	  DEBUG_SHORT (cir_cmd);
+	  DEBUG_INFO ("**** CIR data:");
+	  DEBUG_WORD (cir_data);
 	  cir_init ();
 	}
 
@@ -225,10 +244,10 @@ cir_ext_interrupt (void)
 
 #if defined(DEBUG_CIR)
   intr_ext++;
-  if (pininput_p - pininput < MAX_PININPUT_BIT)
+  if (cirinput_p - cirinput < MAX_CIRINPUT_BIT)
     {
-      *pininput_p++ = 0x0000;
-      *pininput_p++ = (uint16_t)chTimeNow ();
+      *cirinput_p++ = 0x0000;
+      *cirinput_p++ = (uint16_t)chTimeNow ();
     }
 #endif
 
@@ -245,31 +264,27 @@ cir_ext_interrupt (void)
 void
 cir_timer_interrupt (void)
 {
+  uint16_t period, on, off;
+
+  period = TIM3->CCR1;
+  on = TIM3->CCR2;
+  off = period - on;
+
   if ((TIM3->SR & TIM_SR_TIF))
     {
-      uint16_t period, on, off;
-
-      period = TIM3->CCR1;
-      on = TIM3->CCR2;
-      off = period - on;
-
-      if (cir_seq >= 2)
+      if (cir_seq >= 1)
 	{
-	  uint8_t bit = (on >= CIR_BIT_PERIOD) ? 1 : 0;
-
-	  if (cir_seq < 2 + 16)
-	    cir_adr |= (bit << (cir_seq - 2));
-	  else
-	    cir_cmd |= (bit << (cir_seq - 2 - 16));
+	  cir_data >>= 1;
+	  cir_data |= (period >= CIR_BIT_PERIOD) ? 0x80000000 : 0;
 	}
-      
+
       cir_seq++;
 
 #if defined(DEBUG_CIR)
-      if (pininput_p - pininput < MAX_PININPUT_BIT)
+      if (cirinput_p - cirinput < MAX_CIRINPUT_BIT)
 	{
-	  *pininput_p++ = on;
-	  *pininput_p++ = off;
+	  *cirinput_p++ = on;
+	  *cirinput_p++ = off;
 	}
       intr_trg++;
 #endif
@@ -282,28 +297,50 @@ cir_timer_interrupt (void)
     {
       TIM3->SR &= ~TIM_SR_UIF;
 
-      if (palReadPad (IOPORT2, GPIOB_CIR))
+      if (on > 0)
 	{
-	  /* disable Timer */
+	  /* Disable the timer */
 	  TIM3->CR1 &= ~TIM_CR1_CEN;
 	  TIM3->DIER = 0;
 
-	  if (cir_seq == 2 + 16 + 16
-	      && (cir_cmd >> 8) == (cir_cmd & 0xff) ^ 0xff)
+	  if (cir_seq == 12)
+	    {
+#if defined(DEBUG_CIR)
+	      if (cirinput_p - cirinput < MAX_CIRINPUT_BIT)
+		{
+		  *cirinput_p++ = on;
+		  *cirinput_p++ = 0xffff;
+		}
+#endif
+	      cir_data >>= 21;
+	      cir_data |= (on >= CIR_BIT_SIRC_PERIOD_ON) ? 0x800: 0;
+	      cir_seq++;
+	    }
+	  else
+	    /* It must be the stop bit, just ignore */
+	    {
+	      ;
+	    }
+
+	  if (cir_seq == 1 + 12
+#if defined(DEBUG_CIR)
+	      || cir_seq > 12
+#endif
+	      || cir_seq == 1 + 32
+	      || cir_seq == 1 + 48)
 	    {
 	      /* Notify thread */
 	      chEvtSignal (pin_thread, (eventmask_t)1);
-	      cir_cmd &= 0xff;
 	    }
 	  else
 	    /* Ignore data received and enable CIR again */
 	    cir_init ();
 
 #if defined(DEBUG_CIR)
-	  if (pininput_p - pininput < MAX_PININPUT_BIT)
+	  if (cirinput_p - cirinput < MAX_CIRINPUT_BIT)
 	    {
-	      *pininput_p++ = 0xffff;
-	      *pininput_p++ = (uint16_t)chTimeNow ();
+	      *cirinput_p++ = 0xffff;
+	      *cirinput_p++ = (uint16_t)chTimeNow ();
 	    }
 	  intr_ovf++;
 #endif

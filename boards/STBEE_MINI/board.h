@@ -84,8 +84,11 @@
  * Please refer to the STM32 Reference Manual for details.
  */
 
+#if defined(PINPAD_SUPPORT)
 /*
  * Port A setup.
+ * PA6  - (TIM3_CH1) input with pull-up
+ * PA7  - (TIM3_CH2) input with pull-down
  * PA11 - input with pull-up (USBDM)
  * PA12 - input with pull-up (USBDP)
  * Everything input with pull-up except:
@@ -95,10 +98,9 @@
  */
 #define VAL_GPIOACRL            0x88888888      /*  PA7...PA0 */
 #define VAL_GPIOACRH            0x63688888      /* PA15...PA8 */
-#define VAL_GPIOAODR            0xFFFFFFFF
+#define VAL_GPIOAODR            0xFFFFFF7F
 
 /* Port B setup. */
-#if defined(PINPAD_SUPPORT)
 #define GPIOB_CIR		0
 #define GPIOB_BUTTON            2
 #define GPIOB_ROT_A             3
@@ -117,6 +119,20 @@
 #define VAL_GPIOBCRH            0x66666666      /* PB15...PB8 */
 #define VAL_GPIOBODR            0xFFFFFFFF
 #else
+/*
+ * Port A setup.
+ * PA11 - input with pull-up (USBDM)
+ * PA12 - input with pull-up (USBDP)
+ * Everything input with pull-up except:
+ * PA13 - Open Drain output (LED1 0:ON 1:OFF)
+ * PA14 - Push pull output  (USB ENABLE 0:DISABLE 1:ENABLE)
+ * PA15 - Open Drain output (LED2 0:ON 1:OFF)
+ */
+#define VAL_GPIOACRL            0x88888888      /*  PA7...PA0 */
+#define VAL_GPIOACRH            0x63688888      /* PA15...PA8 */
+#define VAL_GPIOAODR            0xFFFFFFFF
+
+/* Port B setup. */
 /* Everything input with pull-up */
 #define VAL_GPIOBCRL            0x88888888      /*  PB7...PB0 */
 #define VAL_GPIOBCRH            0x88888888      /* PB15...PB8 */
@@ -143,10 +159,5 @@
 #define VAL_GPIODCRL            0x88888844      /*  PD7...PD0 */
 #define VAL_GPIODCRH            0x88888888      /* PD15...PD8 */
 #define VAL_GPIODODR            0xFFFFFFFF
-
-#if defined(PINPAD_SUPPORT)
-extern void cir_ext_disable (void);
-extern void cir_ext_enable (void);
-#endif
 
 #endif /* _BOARD_H_ */

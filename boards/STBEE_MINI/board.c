@@ -24,11 +24,7 @@ hwinit1 (void)
   /* EXTI0 <= PB0 */
   AFIO->EXTICR[0] = AFIO_EXTICR1_EXTI0_PB;
   EXTI->IMR = 0;
-#if 0
-  EXTI->RTSR = EXTI_RTSR_TR0;
-#else
   EXTI->FTSR = EXTI_FTSR_TR0;
-#endif
   NVICEnableVector(EXTI0_IRQn,
 		   CORTEX_PRIORITY_MASK(CORTEX_MINIMUM_PRIORITY));
 

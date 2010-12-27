@@ -1,3 +1,7 @@
+2010-12-27  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/pin-cir.c (cir_timer_interrupt): Support Sony protocol.
+
 2010-12-24  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* src/pin-cir.c: New file.

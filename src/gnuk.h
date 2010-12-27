@@ -311,3 +311,8 @@ extern void flash_put_data_internal (const uint8_t *p, uint16_t hw);
 extern void flash_bool_write_internal (const uint8_t *p, int nr);
 extern void flash_cnt123_write_internal (const uint8_t *p, int which, int v);
 extern void flash_do_write_internal (const uint8_t *p, int nr, const uint8_t *data, int len);
+
+#if defined(PINPAD_SUPPORT)
+extern void cir_ext_disable (void);
+extern void cir_ext_enable (void);
+#endif
