@@ -31,6 +31,8 @@
 #define DEBUG_CIR 1
 #endif
 /*
+ * Philips RC-6 Protocol: (START + 1 + MODE + TR + 32-bit / 16-bit)
+ *
  * NEC Protocol: (START + 32-bit + STOP) + (START + STOP) x N
  *      32-bit: 8-bit command inverted + 8-bit command + 16-bit address
  * 	Example: Controller of Toshiba REGZA
@@ -154,7 +156,15 @@ static uint16_t *cirinput_p;
 #endif
 
 static uint32_t cir_data;
+static uint8_t cir_proto;
+#define CIR_PROTO_RC5   1	/* Not yet supported */
+#define CIR_PROTO_RC6   2
+#define CIR_PROTO_OTHER 3
+static uint8_t cir_data_sub;
 static uint8_t cir_seq;
+#define CIR_BIT_START_RC5_DETECT 2000
+#define CIR_BIT_START_RC5_LENGTH (889 + 889/2)
+#define CIR_BIT_PERIOD_RC6 444
 #define CIR_BIT_PERIOD 1500
 #define CIR_BIT_SIRC_PERIOD_ON 1000
 
@@ -208,6 +218,7 @@ pin_main (void *arg)
 #endif
 	  DEBUG_INFO ("**** CIR data:");
 	  DEBUG_WORD (cir_data);
+	  DEBUG_BYTE (cir_seq);
 	  cir_init ();
 	}
 
@@ -272,10 +283,94 @@ cir_timer_interrupt (void)
 
   if ((TIM3->SR & TIM_SR_TIF))
     {
-      if (cir_seq >= 1)
+      if (cir_seq == 0)
+	{
+	  if (on >= CIR_BIT_START_RC5_DETECT)
+	    {
+	      cir_proto = CIR_PROTO_OTHER;
+	      cir_data_sub = 0;
+	    }
+	  else
+	    {
+	      cir_proto = CIR_PROTO_RC5;
+	      if (on >= CIR_BIT_START_RC5_LENGTH)
+		cir_data_sub = 1;
+	      else
+		cir_data_sub = 0;
+	    }
+	}
+      else if (cir_proto == CIR_PROTO_OTHER)
 	{
 	  cir_data >>= 1;
 	  cir_data |= (period >= CIR_BIT_PERIOD) ? 0x80000000 : 0;
+
+	  if (cir_data_sub && on > CIR_BIT_PERIOD_RC6*3/2)
+	    /* TR-bit 0 is detected */
+	    {
+	      cir_proto = CIR_PROTO_RC6;
+	      cir_seq = 0;
+	      cir_data = 0;	/* ignore MODE bits */
+	      if (on > CIR_BIT_PERIOD_RC6*5/2)
+		{
+		  cir_data = 1;
+		  if (off > CIR_BIT_PERIOD_RC6*3/2)
+		    cir_data_sub = 1;
+		  else
+		    cir_data_sub = 0;
+		}
+	      else		/* Off must be short */
+		{
+		  cir_data_sub = 1;
+		}
+	    }
+	  else if ((!cir_data_sub
+	       && on > CIR_BIT_PERIOD_RC6*3/2 && off > CIR_BIT_PERIOD_RC6*3/2))
+	    /* TR-bit 1 is detected */
+	    {
+	      cir_proto = CIR_PROTO_RC6;
+	      cir_seq = 0;
+	      cir_data = 0;	/* ignore MODE bits */
+	      cir_data_sub = 0;
+	    }
+	  else
+	    {
+	      /* Check if it looks like TR-bit of RC6 protocol */
+	      if (off <= CIR_BIT_PERIOD_RC6*3/2)
+		cir_data_sub = 0;
+	      else
+		cir_data_sub = 1;
+	    }
+	}
+      else if (cir_proto == CIR_PROTO_RC6)
+	{
+	  if (cir_data_sub)
+	    {
+	      cir_data <<= 1;
+
+	      if (on > CIR_BIT_PERIOD_RC6*3/2)
+		{
+		  cir_data <<= 1;
+		  cir_data |= 1;
+		  cir_seq++;
+		  if (off > CIR_BIT_PERIOD_RC6*3/2)
+		    cir_data_sub = 1;
+		  else
+		    cir_data_sub = 0;
+		}
+	      else		/* Off must be short */
+		cir_data_sub = 1;
+	    }
+	  else
+	    {
+	      cir_data <<= 1;
+	      cir_data |= 1;
+
+	      /* On must be short */
+	      if (off > CIR_BIT_PERIOD_RC6*3/2)
+		cir_data_sub = 1;
+	      else
+		cir_data_sub = 0;
+	    }
 	}
 
       cir_seq++;
@@ -317,17 +412,36 @@ cir_timer_interrupt (void)
 	      cir_seq++;
 	    }
 	  else
-	    /* It must be the stop bit, just ignore */
 	    {
-	      ;
+	      if (cir_proto == CIR_PROTO_RC6)
+		{
+		  cir_data <<= 1;
+		  cir_seq++;
+		  if (cir_data_sub)
+		    {
+		      if (on >= CIR_BIT_PERIOD_RC6*3/2)
+			{
+			  cir_data <<= 1;
+			  cir_data |= 1;
+			  cir_seq++;
+			}
+		    }
+		  else
+		    cir_data |= 1;
+		}
+	      /* Or else, it must be the stop bit, just ignore */
 	    }
 
-	  if (cir_seq == 1 + 12
+	  if ((cir_proto == CIR_PROTO_OTHER
+	       && 
+	       (cir_seq == 1 + 12
 #if defined(DEBUG_CIR)
-	      || cir_seq > 12
+		|| cir_seq > 12
 #endif
-	      || cir_seq == 1 + 32
-	      || cir_seq == 1 + 48)
+		|| cir_seq == 1 + 32
+		|| cir_seq == 1 + 48))
+	      || (cir_proto == CIR_PROTO_RC6
+		  && (cir_seq == 16 || cir_seq == 32)))
 	    {
 	      /* Notify thread */
 	      chEvtSignal (pin_thread, (eventmask_t)1);
