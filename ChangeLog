@@ -1,3 +1,7 @@
+2010-12-29  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/pin-cir.c (cir_timer_interrupt): Support Philips RC-5 protocol.
+
 2010-12-28  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* src/pin-cir.c (cir_timer_interrupt): Support Philips RC-6 protocol.

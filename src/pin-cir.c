@@ -31,6 +31,8 @@
 #define DEBUG_CIR 1
 #endif
 /*
+ * Philips RC-5 Protocol: 14-bit
+
  * Philips RC-6 Protocol: (START + 1 + MODE + TR + 32-bit / 16-bit)
  *
  * NEC Protocol: (START + 32-bit + STOP) + (START + STOP) x N
@@ -157,12 +159,21 @@ static uint16_t *cirinput_p;
 
 static uint32_t cir_data;
 static uint8_t cir_proto;
-#define CIR_PROTO_RC5   1	/* Not yet supported */
+#define CIR_PROTO_RC5   1
 #define CIR_PROTO_RC6   2
 #define CIR_PROTO_OTHER 3
-static uint8_t cir_data_sub;
+
+/* CIR_DATA_ZERO: Used for zero-bit handling of RC-5/RC-6 */
+static uint8_t cir_data_zero;
+
 static uint8_t cir_seq;
+
+/*
+ * RC-5 protocol doesn't have start bit, while any other protocols
+ * have the one.
+ */
 #define CIR_BIT_START_RC5_DETECT 2000
+
 #define CIR_BIT_START_RC5_LENGTH (889 + 889/2)
 #define CIR_BIT_PERIOD_RC6 444
 #define CIR_BIT_PERIOD 1500
@@ -288,15 +299,23 @@ cir_timer_interrupt (void)
 	  if (on >= CIR_BIT_START_RC5_DETECT)
 	    {
 	      cir_proto = CIR_PROTO_OTHER;
-	      cir_data_sub = 0;
+	      cir_data_zero = 0;
 	    }
 	  else
 	    {
 	      cir_proto = CIR_PROTO_RC5;
+	      cir_data = 1;
 	      if (on >= CIR_BIT_START_RC5_LENGTH)
-		cir_data_sub = 1;
+		{
+		  cir_data <<= 1;
+		  cir_seq++;
+		  if (off >= CIR_BIT_START_RC5_LENGTH)
+		    cir_data_zero = 0;
+		  else
+		    cir_data_zero = 1;
+		}
 	      else
-		cir_data_sub = 0;
+		cir_data_zero = 0;
 	    }
 	}
       else if (cir_proto == CIR_PROTO_OTHER)
@@ -304,7 +323,8 @@ cir_timer_interrupt (void)
 	  cir_data >>= 1;
 	  cir_data |= (period >= CIR_BIT_PERIOD) ? 0x80000000 : 0;
 
-	  if (cir_data_sub && on > CIR_BIT_PERIOD_RC6*3/2)
+	  /* Detection of RC-6 protocol */
+	  if (cir_data_zero && on > CIR_BIT_PERIOD_RC6*3/2)
 	    /* TR-bit 0 is detected */
 	    {
 	      cir_proto = CIR_PROTO_RC6;
@@ -314,51 +334,53 @@ cir_timer_interrupt (void)
 		{
 		  cir_data = 1;
 		  if (off > CIR_BIT_PERIOD_RC6*3/2)
-		    cir_data_sub = 1;
+		    cir_data_zero = 1;
 		  else
-		    cir_data_sub = 0;
+		    cir_data_zero = 0;
 		}
 	      else		/* Off must be short */
 		{
-		  cir_data_sub = 1;
+		  cir_data_zero = 1;
 		}
 	    }
-	  else if ((!cir_data_sub
+	  else if ((!cir_data_zero
 	       && on > CIR_BIT_PERIOD_RC6*3/2 && off > CIR_BIT_PERIOD_RC6*3/2))
 	    /* TR-bit 1 is detected */
 	    {
 	      cir_proto = CIR_PROTO_RC6;
 	      cir_seq = 0;
 	      cir_data = 0;	/* ignore MODE bits */
-	      cir_data_sub = 0;
+	      cir_data_zero = 0;
 	    }
 	  else
 	    {
 	      /* Check if it looks like TR-bit of RC6 protocol */
 	      if (off <= CIR_BIT_PERIOD_RC6*3/2)
-		cir_data_sub = 0;
+		cir_data_zero = 0;
 	      else
-		cir_data_sub = 1;
+		cir_data_zero = 1;
 	    }
 	}
-      else if (cir_proto == CIR_PROTO_RC6)
+      else if (cir_proto == CIR_PROTO_RC5 || cir_proto == CIR_PROTO_RC6)
 	{
-	  if (cir_data_sub)
+	  if (cir_data_zero)
 	    {
 	      cir_data <<= 1;
 
-	      if (on > CIR_BIT_PERIOD_RC6*3/2)
+	      if (on >
+		  ((cir_proto == CIR_PROTO_RC5)?2:1)*CIR_BIT_PERIOD_RC6*3/2)
 		{
 		  cir_data <<= 1;
 		  cir_data |= 1;
 		  cir_seq++;
-		  if (off > CIR_BIT_PERIOD_RC6*3/2)
-		    cir_data_sub = 1;
+		  if (off > 
+		      ((cir_proto == CIR_PROTO_RC5)?2:1)*CIR_BIT_PERIOD_RC6*3/2)
+		    cir_data_zero = 1;
 		  else
-		    cir_data_sub = 0;
+		    cir_data_zero = 0;
 		}
 	      else		/* Off must be short */
-		cir_data_sub = 1;
+		cir_data_zero = 1;
 	    }
 	  else
 	    {
@@ -366,10 +388,11 @@ cir_timer_interrupt (void)
 	      cir_data |= 1;
 
 	      /* On must be short */
-	      if (off > CIR_BIT_PERIOD_RC6*3/2)
-		cir_data_sub = 1;
+	      if (off >
+		  ((cir_proto == CIR_PROTO_RC5)?2:1)*CIR_BIT_PERIOD_RC6*3/2)
+		cir_data_zero = 1;
 	      else
-		cir_data_sub = 0;
+		cir_data_zero = 0;
 	    }
 	}
 
@@ -413,13 +436,15 @@ cir_timer_interrupt (void)
 	    }
 	  else
 	    {
-	      if (cir_proto == CIR_PROTO_RC6)
+	      if (cir_proto == CIR_PROTO_RC5
+		  || cir_proto == CIR_PROTO_RC6)
 		{
 		  cir_data <<= 1;
 		  cir_seq++;
-		  if (cir_data_sub)
+		  if (cir_data_zero)
 		    {
-		      if (on >= CIR_BIT_PERIOD_RC6*3/2)
+		      if (on >= 
+			  ((cir_proto == CIR_PROTO_RC5)?2:1)*CIR_BIT_PERIOD_RC6*3/2)
 			{
 			  cir_data <<= 1;
 			  cir_data |= 1;
@@ -433,16 +458,30 @@ cir_timer_interrupt (void)
 	    }
 
 	  if ((cir_proto == CIR_PROTO_OTHER
-	       && 
-	       (cir_seq == 1 + 12
-#if defined(DEBUG_CIR)
-		|| cir_seq > 12
-#endif
-		|| cir_seq == 1 + 32
-		|| cir_seq == 1 + 48))
+	       && (cir_seq == 1 + 12 || cir_seq == 1 + 32 || cir_seq == 1 + 48))
 	      || (cir_proto == CIR_PROTO_RC6
-		  && (cir_seq == 16 || cir_seq == 32)))
+		  && (cir_seq == 16 || cir_seq == 32))
+	      || (cir_proto == CIR_PROTO_RC5 && cir_seq == 14))
 	    {
+	      /* Remove ADDRESS bits and filter COMMAND bits */
+	      if (cir_proto == CIR_PROTO_RC5)
+		cir_data &= 0x003f;
+	      else if (cir_proto == CIR_PROTO_RC6)
+		cir_data &= 0x00ff;
+	      else
+		{
+		  if (cir_seq == 1 + 12)
+		    cir_data &= 0x007f;
+		  else if (cir_seq == 1 + 32) /* Tested on Toshiba */
+		    /* XXX: Check integrity???
+		     * (cir_data >> 16)&0xff == cir_data >> 24) ^ 0xff
+		     */
+		    cir_data = (cir_data >> 16) & 0x00ff;
+		  else if (cir_seq == 1 + 48) /* Tested on Sharp */
+		    /* check integrity ??? */
+		    cir_data = (cir_data >> 16) & 0x00ff;
+		}
+
 	      /* Notify thread */
 	      chEvtSignal (pin_thread, (eventmask_t)1);
 	    }
