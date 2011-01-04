@@ -4,7 +4,7 @@
 
 	* src/usb_desc.c (gnukConfigDescriptor): Added PINPAD_SUPPORT.
 
-	* src/pin-cir.c (cir_timer_interrupt): Added cir_toggle support.
+	* src/pin-cir.c (cir_timer_interrupt): Added CIR_PERIOD_INHIBIT_CHATTER.
 
 2010-12-29  NIIBE Yutaka  <gniibe@fsij.org>
 

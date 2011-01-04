@@ -1,7 +1,7 @@
 /*
  * pin-cir.c -- PIN input device support (Consumer Infra-Red)
  *
- * Copyright (C) 2010 Free Software Initiative of Japan
+ * Copyright (C) 2010, 2011 Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
  * This file is a part of Gnuk, a GnuPG USB Token implementation.
@@ -30,17 +30,22 @@
 #if 0
 #define DEBUG_CIR 1
 #endif
+
+uint8_t pin_input_buffer[MAX_PIN_CHARS];
+uint8_t pin_input_len;
+
 /*
  * Philips RC-5 Protocol: 14-bit
 
  * Philips RC-6 Protocol: (START + 1 + MODE + TR + 32-bit / 16-bit)
+ *                                     3-bit     (mode 6 / mode 0)
  *
  * NEC Protocol: (START + 32-bit + STOP) + (START + STOP) x N
  *      32-bit: 8-bit command inverted + 8-bit command + 16-bit address
  * 	Example: Controller of Toshiba REGZA
  * 	Example: Controller of Ceiling Light by NEC
  *
- * Sony Protocol: (START + 12-bit)
+ * Sony Protocol: (START + 12-bit) or (START + 15-bit)
  *      12-bit: 5-bit address + 7-bit command
  * 	Example: Controller of Sony BRAVIA
  *
@@ -162,11 +167,20 @@ static uint8_t cir_proto;
 #define CIR_PROTO_RC5   1
 #define CIR_PROTO_RC6   2
 #define CIR_PROTO_OTHER 3
+#define CIR_PROTO_SONY  4
+
+#define CIR_KEY_RC6_ENTER     0x5c
+#define CIR_KEY_RC6_BACKSPACE 0xa4
+#define CIR_KEY_SONY_ENTER      0x16 /* 'kettei' */
+#define CIR_KEY_SONY_BACKSPACE  0xa3 /* 'modoru' */
 
 /* CIR_DATA_ZERO: Used for zero-bit handling of RC-5/RC-6 */
 static uint8_t cir_data_zero;
 
 static uint8_t cir_seq;
+
+static systime_t cir_input_last;
+#define CIR_PERIOD_INHIBIT_CHATTER 200 /* mili second */
 
 /*
  * RC-5 protocol doesn't have start bit, while any other protocols
@@ -184,10 +198,24 @@ cir_init (void)
 {
   cir_data = 0;
   cir_seq = 0;
+  /* Don't touch cir_proto here */
   cir_ext_enable ();
 }
 
 static Thread *pin_thread;
+
+static int
+cir_key_is_backspace (void)
+{
+  return (cir_proto == CIR_PROTO_RC6 && cir_data == CIR_KEY_RC6_BACKSPACE);
+}
+
+static int
+cir_key_is_enter (void)
+{
+  return (cir_proto == CIR_PROTO_RC6 && cir_data == CIR_KEY_RC6_ENTER)
+    || (cir_proto == CIR_PROTO_SONY && cir_data == CIR_KEY_SONY_ENTER);
+}
 
 msg_t
 pin_main (void *arg)
@@ -201,8 +229,8 @@ pin_main (void *arg)
   cirinput_p = cirinput;
 #endif
 
+  pin_input_len = 0;
   chEvtClear (ALL_EVENTS);
-
   cir_init ();
 
   while (!chThdShouldTerminate ())
@@ -230,6 +258,20 @@ pin_main (void *arg)
 	  DEBUG_INFO ("**** CIR data:");
 	  DEBUG_WORD (cir_data);
 	  DEBUG_BYTE (cir_seq);
+
+	  if (cir_key_is_backspace ())
+	    {
+	      if (pin_input_len > 0)
+		pin_input_len--;
+	    }
+	  else if (cir_key_is_enter ())
+	    {
+	      pindisp (' ');
+	      chThdExit (0);
+	    }
+	  else if (pin_input_len < MAX_PIN_CHARS)
+	    pin_input_buffer[pin_input_len++] = (uint8_t)cir_data;
+
 	  cir_init ();
 	}
 
@@ -282,6 +324,9 @@ cir_ext_interrupt (void)
   TIM3->DIER = TIM_DIER_UIE /*overflow*/ | TIM_DIER_TIE /*trigger*/;
   TIM3->CR1 |= TIM_CR1_CEN;
 }
+
+#define CIR_PERIOD_ON_RC5_OR_RC6 (((cir_proto == CIR_PROTO_RC5) ? 2 : 1) \
+				  * CIR_BIT_PERIOD_RC6 * 3 / 2)
 
 void
 cir_timer_interrupt (void)
@@ -367,14 +412,12 @@ cir_timer_interrupt (void)
 	    {
 	      cir_data <<= 1;
 
-	      if (on >
-		  ((cir_proto == CIR_PROTO_RC5)?2:1)*CIR_BIT_PERIOD_RC6*3/2)
+	      if (on > CIR_PERIOD_ON_RC5_OR_RC6)
 		{
 		  cir_data <<= 1;
 		  cir_data |= 1;
 		  cir_seq++;
-		  if (off > 
-		      ((cir_proto == CIR_PROTO_RC5)?2:1)*CIR_BIT_PERIOD_RC6*3/2)
+		  if (off > CIR_PERIOD_ON_RC5_OR_RC6)
 		    cir_data_zero = 1;
 		  else
 		    cir_data_zero = 0;
@@ -388,8 +431,7 @@ cir_timer_interrupt (void)
 	      cir_data |= 1;
 
 	      /* On must be short */
-	      if (off >
-		  ((cir_proto == CIR_PROTO_RC5)?2:1)*CIR_BIT_PERIOD_RC6*3/2)
+	      if (off > CIR_PERIOD_ON_RC5_OR_RC6)
 		cir_data_zero = 1;
 	      else
 		cir_data_zero = 0;
@@ -413,15 +455,19 @@ cir_timer_interrupt (void)
   else
     /* overflow occurred */
     {
+      systime_t now = chTimeNow ();
+
       TIM3->SR &= ~TIM_SR_UIF;
 
       if (on > 0)
 	{
+	  uint8_t ignore_input = 0;
+
 	  /* Disable the timer */
 	  TIM3->CR1 &= ~TIM_CR1_CEN;
 	  TIM3->DIER = 0;
 
-	  if (cir_seq == 12)
+	  if (cir_seq == 12 || cir_seq == 15)
 	    {
 #if defined(DEBUG_CIR)
 	      if (cirinput_p - cirinput < MAX_CIRINPUT_BIT)
@@ -430,21 +476,21 @@ cir_timer_interrupt (void)
 		  *cirinput_p++ = 0xffff;
 		}
 #endif
-	      cir_data >>= 21;
-	      cir_data |= (on >= CIR_BIT_SIRC_PERIOD_ON) ? 0x800: 0;
+	      cir_proto = CIR_PROTO_SONY;
+	      cir_data >>= 1;
+	      cir_data |= (on >= CIR_BIT_SIRC_PERIOD_ON) ? 0x80000000 : 0;
+	      cir_data >>= (32 - cir_seq);
 	      cir_seq++;
 	    }
 	  else
 	    {
-	      if (cir_proto == CIR_PROTO_RC5
-		  || cir_proto == CIR_PROTO_RC6)
+	      if (cir_proto == CIR_PROTO_RC5 || cir_proto == CIR_PROTO_RC6)
 		{
 		  cir_data <<= 1;
 		  cir_seq++;
 		  if (cir_data_zero)
 		    {
-		      if (on >= 
-			  ((cir_proto == CIR_PROTO_RC5)?2:1)*CIR_BIT_PERIOD_RC6*3/2)
+		      if (on > CIR_PERIOD_ON_RC5_OR_RC6)
 			{
 			  cir_data <<= 1;
 			  cir_data |= 1;
@@ -457,37 +503,59 @@ cir_timer_interrupt (void)
 	      /* Or else, it must be the stop bit, just ignore */
 	    }
 
-	  if ((cir_proto == CIR_PROTO_OTHER
-	       && (cir_seq == 1 + 12 || cir_seq == 1 + 32 || cir_seq == 1 + 48))
-	      || (cir_proto == CIR_PROTO_RC6
-		  && (cir_seq == 16 || cir_seq == 32))
-	      || (cir_proto == CIR_PROTO_RC5 && cir_seq == 14))
+	  if (now - cir_input_last < CIR_PERIOD_INHIBIT_CHATTER)
+	    ignore_input = 1;
+	  /* Remove ADDRESS bits and filter COMMAND bits */
+	  else if (cir_proto == CIR_PROTO_SONY)
 	    {
-	      /* Remove ADDRESS bits and filter COMMAND bits */
-	      if (cir_proto == CIR_PROTO_RC5)
-		cir_data &= 0x003f;
-	      else if (cir_proto == CIR_PROTO_RC6)
+	      if (cir_seq == 1 + 12)
+		cir_data = (cir_data + '1') & 0x007f;
+	      else if (cir_seq == 1 + 15)
+		{
+		  cir_proto = CIR_PROTO_SONY;
+		  cir_data = cir_data & 0x00ff;
+		}
+	      else
+		ignore_input = 1;
+	    }
+	  else if (cir_proto == CIR_PROTO_OTHER)
+	    {
+	      if (cir_seq == 1 + 32) /* Tested on Toshiba */
+		/* XXX: Check integrity???
+		 * (cir_data >> 16)&0xff == cir_data >> 24) ^ 0xff
+		 */
+		cir_data = (cir_data >> 16) & 0x00ff;
+	      else if (cir_seq == 1 + 48) /* Tested on Sharp */
+		/* check integrity ??? */
+		cir_data = (cir_data >> 16) & 0x00ff;
+	      else
+		ignore_input = 1;
+	    }
+	  else if (cir_proto == CIR_PROTO_RC6)
+	    {
+	      if (cir_seq == 16 || cir_seq == 32)
 		cir_data &= 0x00ff;
 	      else
-		{
-		  if (cir_seq == 1 + 12)
-		    cir_data &= 0x007f;
-		  else if (cir_seq == 1 + 32) /* Tested on Toshiba */
-		    /* XXX: Check integrity???
-		     * (cir_data >> 16)&0xff == cir_data >> 24) ^ 0xff
-		     */
-		    cir_data = (cir_data >> 16) & 0x00ff;
-		  else if (cir_seq == 1 + 48) /* Tested on Sharp */
-		    /* check integrity ??? */
-		    cir_data = (cir_data >> 16) & 0x00ff;
-		}
-
-	      /* Notify thread */
-	      chEvtSignal (pin_thread, (eventmask_t)1);
+		ignore_input = 1;
+	    }
+	  else if (cir_proto == CIR_PROTO_RC5)
+	    {
+	      if (cir_seq == 14)
+		cir_data &= 0x003f;
+	      else
+		ignore_input = 1;
 	    }
 	  else
+	    ignore_input = 1;
+
+	  if (ignore_input)
 	    /* Ignore data received and enable CIR again */
 	    cir_init ();
+	  else
+	    /* Notify thread */
+	    chEvtSignal (pin_thread, (eventmask_t)1);
+
+	  cir_input_last = now;
 
 #if defined(DEBUG_CIR)
 	  if (cirinput_p - cirinput < MAX_CIRINPUT_BIT)
