@@ -104,7 +104,11 @@ static const uint8_t gnukConfigDescriptor[] = {
   0xff,			  /* bClassGetResponse: */
   0xff,			  /* bClassEnvelope: */
   0, 0,			  /* wLCDLayout: FIXED VALUE */
+#if defined(PINPAD_SUPPORT)
+  1,			  /* bPinSupport: with PIN pad */
+#else
   0,			  /* bPinSupport: No PIN pad */
+#endif
   1,			  /* bMaxCCIDBusySlots: 1 */
   /*Endpoint 1 Descriptor*/
   7,			       /* bLength: Endpoint Descriptor size */

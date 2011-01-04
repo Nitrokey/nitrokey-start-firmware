@@ -315,4 +315,10 @@ extern void flash_do_write_internal (const uint8_t *p, int nr, const uint8_t *da
 #if defined(PINPAD_SUPPORT)
 extern void cir_ext_disable (void);
 extern void cir_ext_enable (void);
+
+#define MAX_PIN_CHARS 32
+extern uint8_t pin_input_buffer[MAX_PIN_CHARS];
+extern uint8_t pin_input_len;
+
+extern msg_t pin_main (void *arg);
 #endif

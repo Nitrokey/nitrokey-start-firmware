@@ -1,7 +1,7 @@
 /*
  * usb-icc.c -- USB CCID/ICCD protocol handling
  *
- * Copyright (C) 2010 Free Software Initiative of Japan
+ * Copyright (C) 2010, 2011 Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
  * This file is a part of Gnuk, a GnuPG USB Token implementation.
@@ -37,6 +37,7 @@ extern void *memmove(void *dest, const void *src, size_t n);
 #define ICC_POWER_ON		0x62
 #define ICC_POWER_OFF		0x63
 #define ICC_SLOT_STATUS		0x65 /* non-ICCD command */
+#define ICC_SECURE		0x69 /* non-ICCD command */
 #define ICC_GET_PARAMS		0x6C /* non-ICCD command */
 #define ICC_XFR_BLOCK		0x6F
 #define ICC_DATA_BLOCK_RET	0x80
@@ -480,6 +481,7 @@ icc_send_params (void)
 #endif
 }
 
+
 static enum icc_state
 icc_handle_data (void)
 {
@@ -536,6 +538,16 @@ icc_handle_data (void)
       else if (icc_header->msg_type == ICC_SET_PARAMS
 	       || icc_header->msg_type == ICC_GET_PARAMS)
 	icc_send_params ();
+      else if (icc_header->msg_type == ICC_SECURE)
+	{
+	  cmd_APDU[0] = icc_buffer[25];
+	  cmd_APDU[1] = icc_buffer[26];
+	  cmd_APDU[2] = icc_buffer[27];
+	  cmd_APDU[3] = icc_buffer[28];
+	  icc_data_size = 4;
+	  chEvtSignal (gpg_thread, (eventmask_t)1);
+	  next_state = ICC_STATE_EXECUTE;
+	}
       else
 	{
 	  DEBUG_INFO ("ERR03\r\n");

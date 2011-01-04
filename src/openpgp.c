@@ -1,7 +1,7 @@
 /*
  * openpgp.c -- OpenPGP card protocol support
  *
- * Copyright (C) 2010 Free Software Initiative of Japan
+ * Copyright (C) 2010, 2011 Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
  * This file is a part of Gnuk, a GnuPG USB Token implementation.
@@ -29,6 +29,7 @@
 #include "polarssl/config.h"
 #include "polarssl/sha1.h"
 
+#define INS_NOP	        			0x00
 #define INS_VERIFY        			0x20
 #define INS_CHANGE_REFERENCE_DATA		0x24
 #define INS_PSO		  			0x2a
@@ -94,29 +95,64 @@ gpg_fini (void)
 }
 
 static void
+cmd_nop (void)
+{
+  DEBUG_INFO (" - VERIFY\r\n");
+  GPG_SUCCESS ();
+}
+
+static void
 cmd_verify (void)
 {
   int len;
   uint8_t p2 = cmd_APDU[3];
   int r;
   int data_start = 5;
+  const uint8_t *pw;
 
   DEBUG_INFO (" - VERIFY\r\n");
   DEBUG_BYTE (p2);
 
-  len = cmd_APDU[4];
-  if (len == 0)			/* extended length */
+#if defined(PINPAD_SUPPORT)
+  if (cmd_APDU_size == 4)
+    /* Verify with pinpad */
     {
-      len = (cmd_APDU[5]<<8) | cmd_APDU[6];
-      data_start = 7;
+      Thread *t;
+
+      t = chThdCreateFromHeap (NULL, THD_WA_SIZE (128),
+			       NORMALPRIO, pin_main, NULL);
+      if (t == NULL)
+	{
+	  GPG_ERROR ();
+	  return;
+	}
+      else
+	{
+	  chThdWait (t);
+	  pw = pin_input_buffer;
+	  len = pin_input_len;
+	}
+    }
+  else
+#endif
+    {
+      len = cmd_APDU[4];
+      if (len == 0)			/* extended length */
+	{
+	  len = (cmd_APDU[5]<<8) | cmd_APDU[6];
+	  data_start = 7;
+	}
+
+      pw = &cmd_APDU[data_start];
     }
 
+
   if (p2 == 0x81)
-    r = verify_pso_cds (&cmd_APDU[data_start], len);
+    r = verify_pso_cds (pw, len);
   else if (p2 == 0x82)
-    r = verify_other (&cmd_APDU[data_start], len);
+    r = verify_other (pw, len);
   else
-    r = verify_admin (&cmd_APDU[data_start], len);
+    r = verify_admin (pw, len);
 
   if (r < 0)
     {
@@ -699,6 +735,7 @@ struct command
 };
 
 const struct command cmds[] = {
+  { INS_NOP, cmd_nop },
   { INS_VERIFY, cmd_verify },
   { INS_CHANGE_REFERENCE_DATA, cmd_change_password },
   { INS_PSO, cmd_pso },
@@ -737,14 +774,6 @@ msg_t
 GPGthread (void *arg)
 {
   Thread *icc_thread = (Thread *)arg;
-#if defined(PINPAD_SUPPORT)
-  extern msg_t pin_main (void *arg);
-  Thread *pin_thread;
-  static WORKING_AREA(waPINthread, 128);
-
-  pin_thread = chThdCreateStatic (waPINthread, sizeof(waPINthread),
-				  NORMALPRIO, pin_main, NULL);
-#endif
 
   gpg_init ();
 

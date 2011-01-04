@@ -26,7 +26,7 @@
 #define CH_USE_HEAP                     TRUE
 #define CH_USE_MALLOC_HEAP              FALSE
 #define CH_USE_MEMPOOLS                 FALSE
-#define CH_USE_DYNAMIC                  FALSE
+#define CH_USE_DYNAMIC                  TRUE
 
 /* Debug options */
 #define CH_DBG_ENABLE_CHECKS            FALSE
