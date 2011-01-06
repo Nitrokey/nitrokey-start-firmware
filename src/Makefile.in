@@ -96,7 +96,7 @@ CSRC += debug.c
 endif
 
 ifneq ($(ENABLE_PINPAD),)
-CSRC += pin-dial.c
+CSRC += pin-$(ENABLE_PINPAD).c
 endif
 
 # List ASM source files here

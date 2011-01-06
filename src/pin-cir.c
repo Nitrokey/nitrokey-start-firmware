@@ -175,14 +175,14 @@ static uint8_t cir_proto;
 #define CIR_PROTO_NEC   5
 #define CIR_PROTO_SHARP 6
 
-#define CIR_KEY_RC6_ENTER       0x5c
-#define CIR_KEY_RC6_BACKSPACE   0xa4
-#define CIR_KEY_NEC_ENTER       0x3d /* 'kettei' */
-#define CIR_KEY_NEC_BACKSPACE   0x3b /* 'modoru' */
-#define CIR_KEY_SONY_ENTER      0x65 /* 'kettei' */
-#define CIR_KEY_SONY_BACKSPACE  0xa3 /* 'modoru' */
+#define CIR_KEY_RC6_ENTER       0x0d   /* Mute */
+#define CIR_KEY_RC6_BACKSPACE   0xa4   /* <=   */
+#define CIR_KEY_NEC_ENTER       0x3d   /* 'kettei' */
+#define CIR_KEY_NEC_BACKSPACE   0x3b   /* 'modoru' */
+#define CIR_KEY_SONY_ENTER      0x65   /* 'kettei' */
+#define CIR_KEY_SONY_BACKSPACE  0xa3   /* 'modoru' */
 #define CIR_KEY_SHARP_ENTER     0x0252 /* 'kettei' */
-#define CIR_KEY_SHARP_BACKSPACE 0xe4 /* 'modoru' */
+#define CIR_KEY_SHARP_BACKSPACE 0xe4   /* 'modoru' */
 
 /* CIR_DATA_ZERO: Used for zero-bit handling of RC-5/RC-6 */
 static uint8_t cir_data_zero;
@@ -273,7 +273,9 @@ pin_main (void *arg)
 	  DEBUG_INFO ("**** CIR data:");
 	  DEBUG_WORD (cir_data);
 	  if (cir_seq > 48)
-	    DEBUG_SHORT (cir_data_more);
+	    {
+	      DEBUG_SHORT (cir_data_more);
+	    }
 	  DEBUG_BYTE (cir_seq);
 
 	  if (cir_key_is_backspace ())
@@ -553,14 +555,14 @@ cir_timer_interrupt (void)
 	      else if (cir_seq == 1 + 48)
 		{
 		  if ((cir_data >> 28) ==
-		      ((cir_data_more >> 12) & 0x0f)
-		      ^ ((cir_data_more >> 8) & 0x0f)
-		      ^ ((cir_data_more >> 4) & 0x0f)
-		      ^ (cir_data_more & 0x0f)
-		      ^ ((cir_data >> 24) & 0x0f)
-		      ^ ((cir_data >> 20) & 0x0f) ^ ((cir_data >> 16) & 0x0f)
-		      ^ ((cir_data >> 12) & 0x0f) ^ ((cir_data >> 8) & 0x0f)
-		      ^ ((cir_data >> 4) & 0x0f) ^ (cir_data & 0x0f))
+		      (((cir_data_more >> 12) & 0x0f)
+		       ^ ((cir_data_more >> 8) & 0x0f)
+		       ^ ((cir_data_more >> 4) & 0x0f)
+		       ^ (cir_data_more & 0x0f)
+		       ^ ((cir_data >> 24) & 0x0f)
+		       ^ ((cir_data >> 20) & 0x0f) ^ ((cir_data >> 16) & 0x0f)
+		       ^ ((cir_data >> 12) & 0x0f) ^ ((cir_data >> 8) & 0x0f)
+		       ^ ((cir_data >> 4) & 0x0f) ^ (cir_data & 0x0f)))
 		    {
 		      cir_proto = CIR_PROTO_SHARP;
 		      cir_data = (cir_data >> 16) & 0x0fff;
