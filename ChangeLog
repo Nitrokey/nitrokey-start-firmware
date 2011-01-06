@@ -1,3 +1,7 @@
+2011-01-06  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/pin-cir.c (cir_timer_interrupt): Support Sharp protocol.
+
 2011-01-04  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* src/chconf.h (CH_USE_DYNAMIC): It's TRUE now.
