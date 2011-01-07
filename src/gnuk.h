@@ -322,5 +322,3 @@ extern uint8_t pin_input_len;
 
 extern msg_t pin_main (void *arg);
 #endif
-
-extern const uint8_t *unique_device_id (void);

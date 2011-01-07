@@ -6,3 +6,5 @@
 @DFU_DEFINE@
 @PINPAD_DEFINE@
 @PINPAD_MORE_DEFINE@
+
+extern const unsigned char *unique_device_id (void);
