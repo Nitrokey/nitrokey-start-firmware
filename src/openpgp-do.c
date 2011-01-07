@@ -114,19 +114,9 @@ uint16_t data_objects_number_of_bytes;
 
 /*
  * Compile time vars:
- *   AID, Historical Bytes (template), Extended Capabilities,
+ *   Historical Bytes (template), Extended Capabilities,
  *   and Algorithm Attributes
  */
-
-/* AID */
-const uint8_t openpgpcard_aid[17] __attribute__ ((aligned (1))) = {
-  16,
-  0xd2, 0x76, 0x00, 0x01, 0x24, 0x01,
-  0x02, 0x00,			/* Version 2.0 */
-  MANUFACTURER_IN_AID,
-  SERIAL_NUMBER_IN_AID,
-  0x00, 0x00
-};
 
 /* Historical Bytes (template) */
 static const uint8_t historical_bytes[] __attribute__ ((aligned (1))) = {
@@ -409,6 +399,38 @@ do_kgtime_all (uint16_t tag, int with_tag)
   else
     memset (res_p, 0, SIZE_KGTIME);
   res_p += SIZE_KGTIME;
+  return 1;
+}
+
+const uint8_t openpgpcard_aid_template[] = {
+  0xd2, 0x76, 0x00, 0x01, 0x24, 0x01,
+  0x02, 0x00,			/* Version 2.0 */
+  0xf5, 0x17, 			/* Manufacturer: FSIJ */
+#if defined(SERIAL_NUMBER_IN_AID)
+  SERIAL_NUMBER_IN_AID
+#endif
+};
+
+static int
+do_openpgpcard_aid (uint16_t tag, int with_tag)
+{
+#if !defined(SERIAL_NUMBER_IN_AID)
+  const uint8_t *u = unique_device_id ();
+#endif
+
+  if (with_tag)
+    {
+      copy_tag (tag);
+      *res_p++ = 16;
+    }
+
+  memcpy (res_p, openpgpcard_aid_template, sizeof (openpgpcard_aid_template));
+  res_p += sizeof (openpgpcard_aid_template);
+#if !defined(SERIAL_NUMBER_IN_AID)
+  memcpy (res_p, u, 4);
+#endif
+  *res_p++ = 0;
+  *res_p++ = 0;
   return 1;
 }
 
@@ -884,11 +906,11 @@ gpg_do_table[] = {
   { GPG_DO_KGTIME_ALL, DO_PROC_READ, AC_ALWAYS, AC_NEVER, do_kgtime_all },
   /* Pseudo DO READ: calculated, not changeable by user */
   { GPG_DO_DS_COUNT, DO_PROC_READ, AC_ALWAYS, AC_NEVER, do_ds_count },
+  { GPG_DO_AID, DO_PROC_READ, AC_ALWAYS, AC_NEVER, do_openpgpcard_aid },
   /* Pseudo DO READ/WRITE: calculated */
   { GPG_DO_PW_STATUS, DO_PROC_READWRITE, AC_ALWAYS, AC_ADMIN_AUTHORIZED,
     rw_pw_status },
   /* Fixed data */
-  { GPG_DO_AID, DO_FIXED, AC_ALWAYS, AC_NEVER, openpgpcard_aid },
   { GPG_DO_EXTCAP, DO_FIXED, AC_ALWAYS, AC_NEVER, extended_capabilities },
   { GPG_DO_ALG_SIG, DO_FIXED, AC_ALWAYS, AC_NEVER, algorithm_attr },
   { GPG_DO_ALG_DEC, DO_FIXED, AC_ALWAYS, AC_NEVER, algorithm_attr },
@@ -1167,7 +1189,7 @@ copy_do (const struct do_table_entry *do_p, int with_tag)
  *   Call write_res_adpu to fill data returned
  */
 void
-gpg_do_get_data (uint16_t tag)
+gpg_do_get_data (uint16_t tag, int with_tag)
 {
   const struct do_table_entry *do_p = get_do_entry (tag);
 
@@ -1178,7 +1200,7 @@ gpg_do_get_data (uint16_t tag)
 
   if (do_p)
     {
-      if (copy_do (do_p, 0) < 0)
+      if (copy_do (do_p, with_tag) < 0)
 	/* Overwriting partially written result  */
 	GPG_SECURITY_FAILURE ();
       else

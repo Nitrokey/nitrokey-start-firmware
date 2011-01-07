@@ -1,4 +1,26 @@
+2011-01-07  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/openpgp.c (cmd_read_binary): Call gpg_do_get_data for AID.
+
+	* src/openpgp-do.c (gpg_do_get_data): Added new argument WITH_TAG.
+
+	* src/usb_prop.c (gnuk_device_init)
+	(gnuk_device_GetStringDescriptor): gnukStringSerial with unique
+	chip ID.
+
+	* src/openpgp-do.c (do_openpgpcard_aid): New.
+	(openpgpcard_aid): Removed.
+
+	* boards/common/hw_config.c (unique_device_id): New.
+
 2011-01-06  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/config.h.in (PINPAD_MORE_DEFINE): Added.
+
+	* src/configure: Requiring bash (for variable substitution), added
+	PINPAD.
+
+	* src/Makefile.in: Support PINPAD.
 
 	* src/pin-cir.c (cir_timer_interrupt): Support Sharp protocol.
 

@@ -93,7 +93,7 @@ uint16_t data_objects_number_of_bytes;
 
 extern void gpg_data_scan (const uint8_t *p);
 extern void gpg_data_copy (const uint8_t *p);
-extern void gpg_do_get_data (uint16_t tag);
+extern void gpg_do_get_data (uint16_t tag, int with_tag);
 extern void gpg_do_put_data (uint16_t tag, const uint8_t *data, int len);
 extern void gpg_do_public_key (uint8_t kk_byte);
 
@@ -322,3 +322,5 @@ extern uint8_t pin_input_len;
 
 extern msg_t pin_main (void *arg);
 #endif
+
+extern const uint8_t *unique_device_id (void);

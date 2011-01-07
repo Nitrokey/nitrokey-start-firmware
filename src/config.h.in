@@ -2,19 +2,7 @@
 #ifdef DEBUG
 #define ENABLE_VIRTUAL_COM_PORT 1
 #endif
-
-@FSIJ_DEFINE@
-#ifdef WITH_FSIJ_SERIAL_NUMBER
-/* FSIJ */
-#define MANUFACTURER_IN_AID		0xf5, 0x17
-#else
-/* for random serial number*/
-#define MANUFACTURER_IN_AID		0xff, 0xfe
-#endif
-
-#define SERIAL_NUMBER_IN_AID  @SERIAL_NUMBER_FOUR_BYTES@
-
+@SERIAL_DEFINE@
 @DFU_DEFINE@
-
 @PINPAD_DEFINE@
 @PINPAD_MORE_DEFINE@

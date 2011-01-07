@@ -1,7 +1,7 @@
 Gnuk - software for GPG USB Token
 
-							    Version 0.5
-							     2010-12-13
+							    Version 0.6
+							     2011-01-XX
 						           Niibe Yutaka
 				      Free Software Initiative of Japan
 
@@ -26,7 +26,7 @@ USB Token by Gnuk everywhere.
 Release notes
 =============
 
-This is sixth release of Gnuk.  While it works well for specific
+This is seventh release of Gnuk.  While it works well for specific
 usages, it is still experimental.
 
 Tested features are:
@@ -51,7 +51,9 @@ Tested features are:
 
 	* INTERNAL AUTHENTICATE
 
-	* Changing value of password status bytes (0x00C4).
+	* Changing value of password status bytes (0x00C4)
+
+	* Verify with pin pad
 
 It is known not-working well:
 
@@ -234,7 +236,7 @@ and you will see debug output of Gnuk.
 Libccid fix needed
 ------------------
 
-For libccid, we need following change:
+For libccid (< 1.4.1), we need following change:
 
 --- /etc/libccid_Info.plist.dpkg-dist	2009-07-29 06:50:20.000000000 +0900
 +++ /etc/libccid_Info.plist	2010-09-05 09:09:49.000000000 +0900
@@ -263,6 +265,8 @@ For libccid, we need following change:
  		<string>Gemplus GemPC Twin</string>
  		<string>Gemplus GemPC Key</string>
 ------------------
+
+This entry has been added into libccid 1.4.1 already ([r5425]).
 
 
 Testing Gnuk

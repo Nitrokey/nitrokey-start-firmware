@@ -517,13 +517,8 @@ cmd_read_binary (void)
 	GPG_BAD_P0_P1 ();
       else
 	{
-	  int len = openpgpcard_aid[0];
-
+	  gpg_do_get_data (0x004f, 1); /* AID */
 	  res_APDU[0] = 0x5a;
-	  memcpy (res_APDU+1, openpgpcard_aid, len);
-	  res_APDU[len+1] = 0x90;
-	  res_APDU[len+2] = 0x00;
-	  res_APDU_size = len + 3;
 	}
     }
   else
@@ -593,7 +588,7 @@ cmd_get_data (void)
   if (file_selection != FILE_DF_OPENPGP)
     GPG_NO_RECORD();
 
-  gpg_do_get_data (tag);
+  gpg_do_get_data (tag, 0);
 }
 
 static void

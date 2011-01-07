@@ -36,9 +36,34 @@
 #include "usb-cdc-vport.c"
 #endif
 
+#define SIZE_STRING_SERIAL 22
+static uint8_t gnukStringSerial[SIZE_STRING_SERIAL] = {
+  10*2+2,			/* bLength */
+  USB_STRING_DESCRIPTOR_TYPE,	/* bDescriptorType */
+#if defined(SERIAL_NUMBER_IN_AID)
+  'F', 0,			/* 'F' for Fixed */
+#else
+  'C', 0,			/* 'C' for Chip uniqure ID */
+#endif
+  '-', 0, 
+  0, 0, 0, 0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0,
+};
+
 static void
 gnuk_device_init (void)
 {
+  const uint8_t *u = unique_device_id ();
+  int i;
+
+  for (i = 0; i < 4; i++)
+    {
+      gnukStringSerial[i*2+0x8] = (u[i] >> 4) + 'A';
+      gnukStringSerial[i*2+0x9] = 0;
+      gnukStringSerial[i*2+0xa] = (u[i] & 0x0f) + 'A';
+      gnukStringSerial[i*2+0xb] = 0;
+    }
+
   pInformation->Current_Configuration = 0;
 
   /* Connect the device */
@@ -159,8 +184,18 @@ static uint8_t *
 gnuk_device_GetStringDescriptor (uint16_t Length)
 {
   uint8_t wValue0 = pInformation->USBwValue0;
+  uint32_t  wOffset = pInformation->Ctrl_Info.Usb_wOffset;
 
-  if (wValue0 > (sizeof (String_Descriptor) / sizeof (ONE_DESCRIPTOR)))
+  if (wValue0 == 3)
+    /* Serial number is requested */
+    if (Length == 0)
+      {
+	pInformation->Ctrl_Info.Usb_wLength = SIZE_STRING_SERIAL - wOffset;
+	return 0;
+      }
+    else
+      return gnukStringSerial + wOffset;
+  else if (wValue0 > (sizeof (String_Descriptor) / sizeof (ONE_DESCRIPTOR)))
     return NULL;
   else
     return Standard_GetDescriptorData (Length,
