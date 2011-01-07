@@ -58,10 +58,10 @@ gnuk_device_init (void)
 
   for (i = 0; i < 4; i++)
     {
-      gnukStringSerial[i*2+0x8] = (u[i] >> 4) + 'A';
-      gnukStringSerial[i*2+0x9] = 0;
-      gnukStringSerial[i*2+0xa] = (u[i] & 0x0f) + 'A';
-      gnukStringSerial[i*2+0xb] = 0;
+      gnukStringSerial[i*4+0x6] = (u[i*2] >> 4) + 'A';
+      gnukStringSerial[i*4+0x7] = 0;
+      gnukStringSerial[i*4+0x8] = (u[i*2+1] & 0x0f) + 'A';
+      gnukStringSerial[i*4+0x9] = 0;
     }
 
   pInformation->Current_Configuration = 0;
