@@ -54,7 +54,6 @@ enum icc_state
 				/* Busy1, Busy2, Busy3, Busy5 */
   ICC_STATE_EXECUTE,		/* Busy4 */
   ICC_STATE_RECEIVE,		/* APDU Received Partially */
-  /* Not used */
   ICC_STATE_SEND,		/* APDU Sent Partially */
 };
 
