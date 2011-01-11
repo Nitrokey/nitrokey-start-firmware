@@ -1,3 +1,7 @@
+2011-01-11  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/openpgp-do.c (do_openpgpcard_aid): Fix length of res_p;
+
 2011-01-08  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* src/usb-icc.c (icc_handle_data): Handle the case of

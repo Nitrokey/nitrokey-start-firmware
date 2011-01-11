@@ -405,9 +405,11 @@ do_kgtime_all (uint16_t tag, int with_tag)
 const uint8_t openpgpcard_aid_template[] = {
   0xd2, 0x76, 0x00, 0x01, 0x24, 0x01,
   0x02, 0x00,			/* Version 2.0 */
-  0xf5, 0x17, 			/* Manufacturer: FSIJ */
 #if defined(SERIAL_NUMBER_IN_AID)
+  0xf5, 0x17, 			/* Manufacturer: FSIJ */
   SERIAL_NUMBER_IN_AID
+#else
+  0xff, 0xfe,			/* Random bytes */
 #endif
 };
 
@@ -428,6 +430,7 @@ do_openpgpcard_aid (uint16_t tag, int with_tag)
   res_p += sizeof (openpgpcard_aid_template);
 #if !defined(SERIAL_NUMBER_IN_AID)
   memcpy (res_p, u, 4);
+  res_p += 4;
 #endif
   *res_p++ = 0;
   *res_p++ = 0;
