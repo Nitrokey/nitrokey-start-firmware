@@ -139,6 +139,7 @@ uint8_t pin_input_len;
 static void
 pindisp (uint8_t c)
 {
+#if defined(HAVE_7SEGLED)
   switch (c)
     {
     case 'G':
@@ -153,6 +154,9 @@ pindisp (uint8_t c)
     default:
       palWritePort (IOPORT2, 0xffff);
     }
+#else
+  (void)c;
+#endif
 }
 
 #if defined(DEBUG_CIR)

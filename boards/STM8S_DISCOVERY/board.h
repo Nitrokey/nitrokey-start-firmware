@@ -27,6 +27,7 @@
 #ifndef _BOARD_H_
 #define _BOARD_H_
 
+#include "config.h"
 /*
  * Setup for the ST-Link part of STM8S-Discovery board.
  */
@@ -90,6 +91,16 @@
 #define VAL_GPIOACRH            0x88888883      /* PA15...PA8 */
 #define VAL_GPIOAODR            0xFFFFFFFF
 
+#if defined(PINPAD_SUPPORT)
+/*
+ * Port B setup.
+ * Everything input with pull-up except:
+ * PB0  - (TIM3_CH3) input with pull-down
+ */
+#define VAL_GPIOBCRL            0x88888888      /*  PB7...PB0 */
+#define VAL_GPIOBCRH            0x88888888      /* PB15...PB8 */
+#define VAL_GPIOBODR            0xFFFFFFFE
+#else
 /*
  * Port B setup.
  * Everything input with pull-up except:
@@ -97,6 +108,7 @@
 #define VAL_GPIOBCRL            0x88888888      /*  PB7...PB0 */
 #define VAL_GPIOBCRH            0x88888888      /* PB15...PB8 */
 #define VAL_GPIOBODR            0xFFFFFFFF
+#endif
 
 /*
  * Port C setup.

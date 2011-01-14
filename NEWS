@@ -1,5 +1,30 @@
 Gnuk NEWS - User visible changes
 
+* Major changes in Gnuk 0.6
+
+  Released 2011-01-14, by NIIBE Yutaka
+
+** Experimental PIN-pad support is added.
+Local PIN-pad input is suppored for boards which have input hardware.
+PIN input using consumer IR receive module is tested with STBee Mini
+and STM8S Discovery.
+
+** USB device serial number is virtually unique now.
+STM32F103 has 96-bit unique chip identifier.  We take advantage of
+this, Gnuk Token has virtually unique USB serial number.
+
+** Card serial number is determined at run time by chip identifier.
+Until version 0.5, card serial number was compile time option.  If we
+used same binary for different devices, card serial number was same.
+Now, we use STM32F103's 96-bit unique chip identifier for card serial
+number (when you don't use --with-fixed-serial option).
+
+** More improved USB-CCID/ICCD implementation.
+The changes in 0.5 was not that good for libccid 1.3.11, which has
+small buffer (only 262-byte APDU).  Workaround for libccid 1.3.11 is
+implemented.
+
+
 * Major changes in Gnuk 0.5
 
   Released 2010-12-13, by NIIBE Yutaka
