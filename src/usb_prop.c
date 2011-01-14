@@ -36,16 +36,17 @@
 #include "usb-cdc-vport.c"
 #endif
 
-#define SIZE_STRING_SERIAL 22
-static uint8_t gnukStringSerial[SIZE_STRING_SERIAL] = {
-  10*2+2,			/* bLength */
+static uint8_t gnukStringSerial[] = {
+  14*2+2,			/* bLength */
   USB_STRING_DESCRIPTOR_TYPE,	/* bDescriptorType */
 #if defined(SERIAL_NUMBER_IN_AID)
   'F', 0,			/* 'F' for Fixed */
 #else
   'C', 0,			/* 'C' for Chip uniqure ID */
 #endif
-  '-', 0, 
+  '-', 0,
+  '0', 0, '.', 0, '6', 0,	/* Version number of Gnuk */
+  '-', 0,
   0, 0, 0, 0, 0, 0, 0, 0,
   0, 0, 0, 0, 0, 0, 0, 0,
 };
@@ -58,10 +59,10 @@ gnuk_device_init (void)
 
   for (i = 0; i < 4; i++)
     {
-      gnukStringSerial[i*4+0x6] = (u[i*2] >> 4) + 'A';
-      gnukStringSerial[i*4+0x7] = 0;
-      gnukStringSerial[i*4+0x8] = (u[i*2+1] & 0x0f) + 'A';
-      gnukStringSerial[i*4+0x9] = 0;
+      gnukStringSerial[i*4+14] = (u[i*2] >> 4) + 'A';
+      gnukStringSerial[i*4+15] = 0;
+      gnukStringSerial[i*4+16] = (u[i*2+1] & 0x0f) + 'A';
+      gnukStringSerial[i*4+17] = 0;
     }
 
   pInformation->Current_Configuration = 0;
@@ -190,7 +191,7 @@ gnuk_device_GetStringDescriptor (uint16_t Length)
     /* Serial number is requested */
     if (Length == 0)
       {
-	pInformation->Ctrl_Info.Usb_wLength = SIZE_STRING_SERIAL - wOffset;
+	pInformation->Ctrl_Info.Usb_wLength = sizeof gnukStringSerial - wOffset;
 	return 0;
       }
     else

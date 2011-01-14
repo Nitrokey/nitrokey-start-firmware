@@ -1,7 +1,7 @@
 Gnuk - software for GPG USB Token
 
 							    Version 0.6
-							     2011-01-XX
+							     2011-01-14
 						           Niibe Yutaka
 				      Free Software Initiative of Japan
 
@@ -83,6 +83,13 @@ read protect using JTAG debugger.
 
 I think that it could run on Olimex STM32-P103, or STBee too.
 Besides, we are porting it to STM32 Primer 2.
+
+For PIN-pad support, I connect a consumer IR receive module to STBee
+Mini and STM8S Discovery Kit, and use controller for TV.  Yes, it is
+not secure totally, since it is very easy to monitor IR output of the
+controllers.  It is experiment, and hardware needed for this
+experiment is only a consumer IR receive module which is as cheap as
+50 JPY.
 
 
 Souce code

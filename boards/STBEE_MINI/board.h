@@ -39,6 +39,10 @@
 #define BOARD_NAME "STBee Mini"
 #define CPU_WITH_NO_GPIOE	1
 
+#if defined(PINPAD_SUPPORT)
+#define HAVE_7SEGLED	1
+#endif
+
 /*
  * Board frequencies.
  */

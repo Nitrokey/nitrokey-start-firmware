@@ -1,3 +1,22 @@
+2011-01-14  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* Version 0.6.
+
+	* src/usb_prop.c (gnukStringSerial): Include version number (again).
+
+	* boards/STM8S_DISCOVERY/board.c (hwinit1): Initialize TIM3 and
+	remap TIM3.
+	(cir_ext_disable, cir_ext_enable, EXTI9_5_IRQHandler)
+	(TIM3_IRQHandler): New.
+
+	* boards/STBEE_MINI/board.h (HAVE_7SEGLED): New.
+
+	* boards/STM8S_DISCOVERY/board.h: Include "config.h".
+	(VAL_GPIOBODR): PB0 (TIM3_CH3) is pull-down for PINPAD_SUPPORT.
+
+	* src/pin-cir.c (pindisp): Handle the board with no 7 segment
+	display.
+
 2011-01-11  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* src/openpgp-do.c (do_openpgpcard_aid): Fix length of res_p;

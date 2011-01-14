@@ -7,6 +7,11 @@ Kaz Kojima:
 
 NIIBE Yutaka:
     Founder of the project.
+    Added STM8S Discovery Kit support:
+	boards/STM8S_DISCOVERY/board.c
+	boards/STM8S_DISCOVERY/board.h
+	boards/STM8S_DISCOVERY/board.mk
+	boards/STM8S_DISCOVERY/mcuconf.mk
     Added STBee Mini support:
 	boards/STBEE_MINI/board.c
 	boards/STBEE_MINI/board.h
@@ -39,5 +44,6 @@ NIIBE Yutaka:
 	src/openpgp.c
 	src/call-rsa.c
 	src/random.c
+	src/pin-cir.c
 	*
 	and others.
