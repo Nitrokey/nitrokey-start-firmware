@@ -618,6 +618,7 @@ icc_handle_data (void)
 	  icc_error (ICC_OFFSET_CMD_NOT_SUPPORTED);
 	  next_state = ICC_STATE_WAIT;
 	}
+      break;
     default:
       next_state = ICC_STATE_START;
       DEBUG_INFO ("ERR10\r\n");

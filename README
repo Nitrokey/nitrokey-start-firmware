@@ -1,7 +1,7 @@
 Gnuk - software for GPG USB Token
 
-							    Version 0.6
-							     2011-01-14
+							    Version 0.7
+							     2011-01-15
 						           Niibe Yutaka
 				      Free Software Initiative of Japan
 
@@ -26,7 +26,7 @@ USB Token by Gnuk everywhere.
 Release notes
 =============
 
-This is seventh release of Gnuk.  While it works well for specific
+This is eighth release of Gnuk.  While it works well for specific
 usages, it is still experimental.
 
 Tested features are:
