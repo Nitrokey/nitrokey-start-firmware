@@ -1,3 +1,9 @@
+2011-01-17  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/openpgp.c (cmd_nop): Removed.
+
+	* src/config.h.in: ifdef-out (not for ASSEMBLER).
+
 2011-01-15  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* src/usb-icc.c (icc_handle_data): Bug fix: add break for case

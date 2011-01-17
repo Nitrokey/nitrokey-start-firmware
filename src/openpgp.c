@@ -95,13 +95,6 @@ gpg_fini (void)
 }
 
 static void
-cmd_nop (void)
-{
-  DEBUG_INFO (" - VERIFY\r\n");
-  GPG_SUCCESS ();
-}
-
-static void
 cmd_verify (void)
 {
   int len;
@@ -730,7 +723,6 @@ struct command
 };
 
 const struct command cmds[] = {
-  { INS_NOP, cmd_nop },
   { INS_VERIFY, cmd_verify },
   { INS_CHANGE_REFERENCE_DATA, cmd_change_password },
   { INS_PSO, cmd_pso },
