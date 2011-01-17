@@ -7,4 +7,6 @@
 @PINPAD_DEFINE@
 @PINPAD_MORE_DEFINE@
 
+#if !defined(__ASSEMBLER__)
 extern const unsigned char *unique_device_id (void);
+#endif
