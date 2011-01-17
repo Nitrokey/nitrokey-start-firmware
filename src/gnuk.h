@@ -319,5 +319,8 @@ extern void cir_ext_enable (void);
 extern uint8_t pin_input_buffer[MAX_PIN_CHARS];
 extern uint8_t pin_input_len;
 
+#define PIN_INPUT_CURRENT 1
+#define PIN_INPUT_NEW     2
+#define PIN_INPUT_CONFIRM 3
 extern msg_t pin_main (void *arg);
 #endif

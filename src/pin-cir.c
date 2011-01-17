@@ -240,8 +240,9 @@ msg_t
 pin_main (void *arg)
 {
   uint8_t s = 0;
+  int msg_code = (int)arg;
 
-  (void)arg;
+  (void)msg_code;
   pin_thread = chThdSelf ();
 
 #if defined(DEBUG_CIR)

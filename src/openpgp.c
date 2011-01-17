@@ -94,6 +94,27 @@ gpg_fini (void)
   ac_fini ();
 }
 
+/* 
+ * Invoke the thread PIN_MAIN, and let user input PIN string.
+ * Return length of the string.
+ * The string itself is in PIN_INPUT_BUFFER.
+ */
+static int
+get_pinpad_input (int msg_code)
+{
+  Thread *t;
+
+  t = chThdCreateFromHeap (NULL, THD_WA_SIZE (128),
+			   NORMALPRIO, pin_main, (void *)msg_code);
+  if (t == NULL)
+    return -1;
+  else
+    {
+      chThdWait (t);
+      return pin_input_len;
+    }
+}
+
 static void
 cmd_verify (void)
 {
@@ -108,23 +129,16 @@ cmd_verify (void)
 
 #if defined(PINPAD_SUPPORT)
   if (cmd_APDU_size == 4)
-    /* Verify with pinpad */
+    /* Verification with pinpad */
     {
-      Thread *t;
-
-      t = chThdCreateFromHeap (NULL, THD_WA_SIZE (128),
-			       NORMALPRIO, pin_main, NULL);
-      if (t == NULL)
+      len = get_pinpad_input (PIN_INPUT_CURRENT);
+      if (len < 0)
 	{
 	  GPG_ERROR ();
 	  return;
 	}
       else
-	{
-	  chThdWait (t);
-	  pw = pin_input_buffer;
-	  len = pin_input_len;
-	}
+	pw = pin_input_buffer;
     }
   else
 #endif
@@ -220,8 +234,8 @@ cmd_change_password (void)
   uint8_t new_ks0[KEYSTRING_MD_SIZE+1];
   uint8_t *new_ks = &new_ks0[1];
   uint8_t p2 = cmd_APDU[3];
-  int len = cmd_APDU[4];
-  const uint8_t *pw = &cmd_APDU[5];
+  int len;
+  const uint8_t *pw;
   const uint8_t *newpw;
   int pw_len, newpw_len;
   int who = p2 - 0x80;
@@ -230,10 +244,55 @@ cmd_change_password (void)
   DEBUG_INFO ("Change PW\r\n");
   DEBUG_BYTE (who);
 
-  if (len == 0)			/* extended length */
+#if defined(PINPAD_SUPPORT)
+  if (cmd_APDU_size == 4)
+    /* Modification with pinpad */
     {
-      len = (cmd_APDU[5]<<8) | cmd_APDU[6];
-      pw += 2;
+      pw_len = get_pinpad_input (PIN_INPUT_CURRENT);
+      if (pw_len < 0)
+	{
+	  GPG_ERROR ();
+	  return;
+	}
+
+      pw = &cmd_APDU[5];
+      memcpy (&cmd_APDU[5], pin_input_buffer, pw_len);
+      newpw = pw + pw_len;
+
+      newpw_len = get_pinpad_input (PIN_INPUT_NEW);
+      if (newpw_len < 0)
+	{
+	  GPG_ERROR ();
+	  return;
+	}
+
+      memcpy (&cmd_APDU[5]+pw_len, pin_input_buffer, newpw_len);
+
+      len = get_pinpad_input (PIN_INPUT_CONFIRM);
+      if (len < 0)
+	{
+	  GPG_ERROR ();
+	  return;
+	}
+
+      if (len != newpw_len || memcmp (newpw, pin_input_buffer, len) != 0)
+	{
+	  GPG_SECURITY_FAILURE ();
+	  return;
+	}
+
+      len = cmd_APDU[4] = pw_len + newpw_len;
+    }
+  else
+#endif
+    {
+      len = cmd_APDU[4];
+      pw = &cmd_APDU[5];
+      if (len == 0)			/* extended length */
+	{
+	  len = (cmd_APDU[5]<<8) | cmd_APDU[6];
+	  pw += 2;
+	}
     }
 
   if (who == BY_USER)			/* PW1 */
