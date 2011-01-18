@@ -322,6 +322,7 @@ pin_main (void *arg)
       chThdSleep (PINDISP_TIMEOUT_INTERVAL0);
     }
 
+  cir_ext_disble ();
   return 0;
 }
 
