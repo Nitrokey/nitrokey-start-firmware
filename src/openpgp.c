@@ -137,8 +137,8 @@ cmd_verify (void)
 	  GPG_ERROR ();
 	  return;
 	}
-      else
-	pw = pin_input_buffer;
+
+      pw = pin_input_buffer;
     }
   else
 #endif
