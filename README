@@ -1,7 +1,7 @@
 Gnuk - software for GPG USB Token
 
-							    Version 0.7
-							     2011-01-15
+							    Version 0.8
+							     2011-01-19
 						           Niibe Yutaka
 				      Free Software Initiative of Japan
 
@@ -26,7 +26,7 @@ USB Token by Gnuk everywhere.
 Release notes
 =============
 
-This is eighth release of Gnuk.  While it works well for specific
+This is nineth release of Gnuk.  While it works well for specific
 usages, it is still experimental.
 
 Tested features are:
@@ -54,6 +54,8 @@ Tested features are:
 	* Changing value of password status bytes (0x00C4)
 
 	* Verify with pin pad
+
+	* Modify with pin pad
 
 It is known not-working well:
 
@@ -85,11 +87,16 @@ I think that it could run on Olimex STM32-P103, or STBee too.
 Besides, we are porting it to STM32 Primer 2.
 
 For PIN-pad support, I connect a consumer IR receive module to STBee
-Mini and STM8S Discovery Kit, and use controller for TV.  Yes, it is
-not secure totally, since it is very easy to monitor IR output of the
-controllers.  It is experiment, and hardware needed for this
+Mini and STM8S Discovery Kit, and use controller for TV.  PIN
+verification is supported by this configuration.  Yes, it is not
+secure at all, since it is very easy to monitor IR output of the
+controllers.  It is just an experiment.  Hhardware needed for this
 experiment is only a consumer IR receive module which is as cheap as
 50 JPY.
+
+Another PIN-pad support is connecting rotally encoder, push switch and
+7-segment LED display.  Both of PIN verification and PIN modification
+are supported for this circuit extension.
 
 
 Souce code

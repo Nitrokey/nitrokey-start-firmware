@@ -45,7 +45,7 @@ static uint8_t gnukStringSerial[] = {
   'C', 0,			/* 'C' for Chip uniqure ID */
 #endif
   '-', 0,
-  '0', 0, '.', 0, '6', 0,	/* Version number of Gnuk */
+  '0', 0, '.', 0, '8', 0,	/* Version number of Gnuk */
   '-', 0,
   0, 0, 0, 0, 0, 0, 0, 0,
   0, 0, 0, 0, 0, 0, 0, 0,

@@ -1,5 +1,14 @@
 Gnuk NEWS - User visible changes
 
+* Major changes in Gnuk 0.8
+
+  Released 2011-01-19, by NIIBE Yutaka
+
+** Experimental PIN-pad modification support is added.
+PIN input using rotally encoder and push switch is tested with STBee
+Mini.  By this hardware, PIN-pad modification is supported.
+
+
 * Major changes in Gnuk 0.7
 
   Released 2011-01-15, by NIIBE Yutaka

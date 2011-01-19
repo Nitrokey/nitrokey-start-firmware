@@ -1,5 +1,11 @@
 2011-01-19  NIIBE Yutaka  <gniibe@fsij.org>
 
+	* Version 0.8.
+
+	* src/pin-cir.c (pin_main): Fix typo, call cir_ext_disable.
+
+	* src/usb_prop.c (gnukStringSerial): Updated.
+
 	* src/pin-dial.c: New.
 
 	* boards/STBEE_MINI/board.c (hwinit1): Add PINPAD_DIAL_SUPPORT.
@@ -32,6 +38,8 @@
 	* src/config.h.in: ifdef-out (not for ASSEMBLER).
 
 2011-01-15  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* Version 0.7.
 
 	* src/usb-icc.c (icc_handle_data): Bug fix: add break for case
 	ICC_STATE_SEND.
