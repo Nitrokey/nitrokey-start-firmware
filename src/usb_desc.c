@@ -105,7 +105,11 @@ static const uint8_t gnukConfigDescriptor[] = {
   0xff,			  /* bClassEnvelope: */
   0, 0,			  /* wLCDLayout: FIXED VALUE */
 #if defined(PINPAD_SUPPORT)
-  1,			  /* bPinSupport: with PIN pad */
+#if defined(PINPAD_CIR_SUPPORT)
+  1,			  /* bPinSupport: with PIN pad (verify) */
+#elif defined(PINPAD_DIAL_SUPPORT)
+  3,			  /* bPinSupport: with PIN pad (verify, modify) */
+#endif
 #else
   0,			  /* bPinSupport: No PIN pad */
 #endif

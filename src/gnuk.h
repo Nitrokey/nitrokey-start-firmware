@@ -312,15 +312,19 @@ extern void flash_cnt123_write_internal (const uint8_t *p, int which, int v);
 extern void flash_do_write_internal (const uint8_t *p, int nr, const uint8_t *data, int len);
 
 #if defined(PINPAD_SUPPORT)
+#if defined(PINPAD_CIR_SUPPORT)
 extern void cir_ext_disable (void);
 extern void cir_ext_enable (void);
-
+#elif defined(PINPAD_DIAL_SUPPORT)
+extern void dial_sw_disable (void);
+extern void dial_sw_enable (void);
+#endif
+#define PIN_INPUT_CURRENT 1
+#define PIN_INPUT_NEW     2
+#define PIN_INPUT_CONFIRM 3
 #define MAX_PIN_CHARS 32
 extern uint8_t pin_input_buffer[MAX_PIN_CHARS];
 extern uint8_t pin_input_len;
 
-#define PIN_INPUT_CURRENT 1
-#define PIN_INPUT_NEW     2
-#define PIN_INPUT_CONFIRM 3
 extern msg_t pin_main (void *arg);
 #endif

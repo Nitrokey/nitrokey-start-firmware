@@ -1,3 +1,21 @@
+2011-01-19  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/pin-dial.c: New.
+
+	* boards/STBEE_MINI/board.c (hwinit1): Add PINPAD_DIAL_SUPPORT.
+	(dial_sw_disable, dial_sw_enable, EXTI2_IRQHandler): New.
+
+	* src/gnuk.h: Add PINPAD_DIAL_SUPPORT.
+
+	* src/usb-icc.c (icc_handle_data): Handle PIN modification.
+
+	* src/usb_desc.c (gnukConfigDescriptor): bPinSupport = 3 when
+	PINPAD_DIAL_SUPPORT is enabled.
+
+2011-01-18  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/pin-cir.c (pin_main): Call cir_ext_disable at the end.
+
 2011-01-17  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* src/gnuk.h (PIN_INPUT_CURRENT, PIN_INPUT_NEW)

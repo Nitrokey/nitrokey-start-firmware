@@ -107,8 +107,8 @@
 /* Port B setup. */
 #define GPIOB_CIR		0
 #define GPIOB_BUTTON            2
-#define GPIOB_ROT_A             3
-#define GPIOB_ROT_B             4
+#define GPIOB_ROT_A             6
+#define GPIOB_ROT_B             7
 
 #define GPIOB_7SEG_DP           15
 #define GPIOB_7SEG_A            14

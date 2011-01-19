@@ -517,13 +517,34 @@ icc_handle_data (void)
 	icc_send_params ();
       else if (icc_header->msg_type == ICC_SECURE)
 	{
-	  cmd_APDU[0] = icc_buffer[25];
-	  cmd_APDU[1] = icc_buffer[26];
-	  cmd_APDU[2] = icc_buffer[27];
-	  cmd_APDU[3] = icc_buffer[28];
-	  icc_data_size = 4;
-	  chEvtSignal (gpg_thread, (eventmask_t)1);
-	  next_state = ICC_STATE_EXECUTE;
+	  if (icc_buffer[10] == 0x00) /* PIN verification */
+	    {
+	      cmd_APDU[0] = icc_buffer[25];
+	      cmd_APDU[1] = icc_buffer[26];
+	      cmd_APDU[2] = icc_buffer[27];
+	      cmd_APDU[3] = icc_buffer[28];
+	      icc_data_size = 4;
+	      chEvtSignal (gpg_thread, (eventmask_t)1);
+	      next_state = ICC_STATE_EXECUTE;
+	    }
+	  else if (icc_buffer[10] == 0x01) /* PIN Modification */
+	    {
+	      uint8_t num_msgs = icc_buffer[21];
+
+	      if (num_msgs == 0x00)
+		num_msgs = 1;
+	      else if (num_msgs == 0xff)
+		num_msgs = 3;
+	      cmd_APDU[0] = icc_buffer[27 + num_msgs];
+	      cmd_APDU[1] = icc_buffer[28 + num_msgs];
+	      cmd_APDU[2] = icc_buffer[29 + num_msgs];
+	      cmd_APDU[3] = icc_buffer[30 + num_msgs];
+	      icc_data_size = 4;
+	      chEvtSignal (gpg_thread, (eventmask_t)1);
+	      next_state = ICC_STATE_EXECUTE;
+	    }
+	  else
+	    icc_error (ICC_MSG_DATA_OFFSET);
 	}
       else
 	{
