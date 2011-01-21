@@ -1,3 +1,12 @@
+2011-01-22  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/openpgp.c (cmd_pgp_gakp): Handle case of non-extended Lc.
+	(cmd_select_file): Return DF name when FCI is requested.
+
+	* src/openpgp-do.c (copy_do): Don't add tag if not requested.
+
+	* src/gnuk.h (memmove): Add declaration.
+
 2011-01-21  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* src/openpgp-do.c (copy_do): Fix off-by-one error.

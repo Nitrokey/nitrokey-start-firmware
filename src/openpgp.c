@@ -44,9 +44,9 @@
 
 static const uint8_t
 select_file_TOP_result[] __attribute__ ((aligned (1))) = {
-  0x00, 0x00,			/* unused */
-  0x0b, 0x10,			/* number of bytes in this directory */
-  0x3f, 0x00,			/* field of selected file: MF, 3f00 */
+  0x00, 0x00,	     /* unused */
+  0x00, 0x00,	     /* number of bytes in this directory: to be filled */
+  0x3f, 0x00,	     /* field of selected file: MF, 3f00 */
   0x38,			/* it's DF */
   0xff,			/* unused */
   0xff,	0x44, 0x44,	/* access conditions */
@@ -549,7 +549,12 @@ cmd_pgp_gakp (void)
 
   if (cmd_APDU[2] == 0x81)
     /* Get public key */
-    gpg_do_public_key (cmd_APDU[7]);
+    {
+      if (cmd_APDU[4] == 0)
+	gpg_do_public_key (cmd_APDU[7]);
+      else
+	gpg_do_public_key (cmd_APDU[5]);
+    }
   else
     {					/* Generate key pair */
       if (!ac_check_status (AC_ADMIN_AUTHORIZED))
@@ -591,7 +596,17 @@ cmd_select_file (void)
        */
 
       file_selection = FILE_DF_OPENPGP;
-      GPG_SUCCESS ();
+      if (cmd_APDU[3] == 0x0c)	/* No FCI */
+	GPG_SUCCESS ();
+      else
+	{
+	  gpg_do_get_data (0x004f, 1); /* AID */
+	  memmove (res_APDU+2, res_APDU, res_APDU_size);
+	  res_APDU[0] = 0x6f;
+	  res_APDU[1] = 0x12;
+	  res_APDU[2] = 0x84;	/* overwrite: DF name */
+	  res_APDU_size += 2;
+	}
     }
   else if (cmd_APDU[4] == 2
 	   && cmd_APDU[5] == 0x2f
@@ -628,7 +643,7 @@ cmd_select_file (void)
       DEBUG_INFO (" - select ?? \r\n");
 
       file_selection = FILE_NONE;
-      GPG_NO_FILE();
+      GPG_NO_FILE ();
     }
 }
 
@@ -640,7 +655,7 @@ cmd_get_data (void)
   DEBUG_INFO (" - Get Data\r\n");
 
   if (file_selection != FILE_DF_OPENPGP)
-    GPG_NO_RECORD();
+    GPG_NO_RECORD ();
 
   gpg_do_get_data (tag, 0);
 }

@@ -1146,12 +1146,15 @@ copy_do (const struct do_table_entry *do_p, int with_tag)
 	int i;
 	const uint16_t *cmp_data = (const uint16_t *)do_p->obj;
 	int num_components = cmp_data[0];
-	uint8_t *len_p;
+	uint8_t *len_p = NULL;
 
-	copy_tag (do_p->tag);
-	*res_p++ = 0x81;	/* Assume it's less than 256 */
-	len_p = res_p;
-	*res_p++ = 0;		/* for now */
+	if (with_tag)
+	  {
+	    copy_tag (do_p->tag);
+	    *res_p++ = 0x81;	/* Assume it's less than 256 */
+	    len_p = res_p;
+	    *res_p++ = 0;	/* for now */
+	  }
 
 	for (i = 0; i < num_components; i++)
 	  {
@@ -1164,7 +1167,8 @@ copy_do (const struct do_table_entry *do_p, int with_tag)
 	      return -1;
 	  }
 
-	*len_p = (res_p - len_p) - 1;
+	if (len_p)
+	  *len_p = res_p - len_p - 1;
 	break;
       }
     case DO_PROC_READ:

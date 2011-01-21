@@ -31,8 +31,6 @@
 #include "hw_config.h"
 #include "usb_istr.h"
 
-extern void *memmove(void *dest, const void *src, size_t n);
-
 #define ICC_SET_PARAMS		0x61 /* non-ICCD command  */
 #define ICC_POWER_ON		0x62
 #define ICC_POWER_OFF		0x63
