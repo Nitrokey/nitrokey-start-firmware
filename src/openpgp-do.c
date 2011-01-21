@@ -1164,7 +1164,7 @@ copy_do (const struct do_table_entry *do_p, int with_tag)
 	      return -1;
 	  }
 
-	*len_p = (res_p - len_p);
+	*len_p = (res_p - len_p) - 1;
 	break;
       }
     case DO_PROC_READ:
