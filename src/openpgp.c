@@ -94,6 +94,7 @@ gpg_fini (void)
   ac_fini ();
 }
 
+#if defined(PINPAD_SUPPORT)
 /* 
  * Invoke the thread PIN_MAIN, and let user input PIN string.
  * Return length of the string.
@@ -114,6 +115,7 @@ get_pinpad_input (int msg_code)
       return pin_input_len;
     }
 }
+#endif
 
 static void
 cmd_verify (void)

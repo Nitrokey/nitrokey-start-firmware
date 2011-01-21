@@ -1,3 +1,7 @@
+2011-01-21  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/openpgp.c (get_pinpad_input): Ifdef-out PINPAD_SUPPORT.
+
 2011-01-19  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* Version 0.8.
