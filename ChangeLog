@@ -1,3 +1,7 @@
+2011-01-25  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/openpgp.c (cmd_pso): Support DigestInfo by MD5 (for opensc).
+
 2011-01-22  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* src/openpgp.c (cmd_pgp_gakp): Handle case of non-extended Lc.

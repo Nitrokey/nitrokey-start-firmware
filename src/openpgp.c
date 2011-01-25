@@ -685,8 +685,9 @@ cmd_pso (void)
 	  return;
 	}
 
-      if (cmd_APDU_size != 7 + 35 + 2	  /* SHA1 / RIPEMD-160 */
+      if (cmd_APDU_size != 7 + 34 + 2  /* MD5 */
 	  /* Header (with Extended Lc)=7, size of digestInfo, and Le=2-byte */
+	  && cmd_APDU_size != 7 + 35 + 2  /* SHA1 / RIPEMD-160 */
 	  && cmd_APDU_size != 7 + 47 + 2  /* SHA224 */
 	  && cmd_APDU_size != 7 + 51 + 2  /* SHA256 */
 	  && cmd_APDU_size != 7 + 67 + 2  /* SHA384 */
