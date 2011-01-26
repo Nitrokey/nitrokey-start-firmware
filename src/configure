@@ -88,6 +88,8 @@ Configuration:
 			   STM32_PRIMER2
 			   CQ_STARM
 			   STBEE_MINI
+			   STM8S_DISCOVERY
+			   STBEE
   --enable-debug	debug with virtual COM port	[no]
   --enable-pinpad={cir,dial}
 			PIN input device support	[no]
@@ -118,7 +120,14 @@ CQ_STARM|STBEE_MINI)
   fi  ;;
 STM32_PRIMER2)
   FLASH_PAGE_SIZE=2048
+  FLASH_SIZE=512
   ;;
+STBEE)
+  FLASH_PAGE_SIZE=2048
+  FLASH_SIZE=512
+  if test "$with_dfu" = "default"; then
+    with_dfu=yes;
+  fi  ;;
 STM8S_DISCOVERY)
   FLASH_SIZE=64
   ;;

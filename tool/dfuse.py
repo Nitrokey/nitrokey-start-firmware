@@ -298,6 +298,8 @@ class DFU_STM32:
                     sys.stdout.flush()
                 addr += 1024
                 i += 1
+            self.ll_clear_status()
+            self.ll_clear_status()
         self.ll_clear_status()
         sys.stdout.write("\n")
         sys.stdout.flush()

@@ -1,3 +1,14 @@
+2011-01-26  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* boards/STBEE/mcuconf.h: New.
+	* boards/STBEE/board.mk: New.
+	* boards/STBEE/board.h: New.
+	* boards/STBEE/board.c: New.
+
+	* tool/dfuse.py (DFU_STM32.verify): Add double ll_clear_status.
+
+	* src/configure (target): Add STBEE.
+
 2011-01-25  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* src/openpgp.c (cmd_pso): Support DigestInfo by MD5 (for opensc).
