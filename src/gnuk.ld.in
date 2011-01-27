@@ -121,6 +121,14 @@ SECTIONS
         . = ALIGN (@FLASH_PAGE_SIZE@);
     } > flash =0xffffffff
 
+    .gnuk_ch_certificate :
+    {
+        . = ALIGN (@FLASH_PAGE_SIZE@);
+        ch_certificate_start = .;
+	. += 1920;
+        . = ALIGN (@FLASH_PAGE_SIZE@);
+    } > flash =0xffffffff
+
     .gnuk_flash :
     {
 	_data_pool = .;

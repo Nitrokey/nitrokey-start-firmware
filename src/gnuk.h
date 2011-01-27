@@ -36,6 +36,7 @@ extern void *memmove(void *dest, const void *src, size_t n);
 extern int icc_data_size;
 #define cmd_APDU_size icc_data_size
 extern int res_APDU_size;
+extern uint8_t *res_APDU_pointer;
 
 /* USB buffer size of LL (Low-level): size of single Bulk transaction */
 #define USB_LL_BUF_SIZE 64
@@ -114,6 +115,14 @@ extern void flash_set_data_pool_last (const uint8_t *p);
 extern void flash_clear_halfword (uint32_t addr);
 extern void flash_increment_counter (uint8_t counter_tag_nr);
 extern void flash_reset_counter (uint8_t counter_tag_nr);
+
+#define FILEID_CH_CERTIFICATE	0
+#define FILEID_RANDOM		1
+extern int flash_erase_binary (uint8_t file_id);
+extern int flash_write_binary (uint8_t file_id, const uint8_t *data, uint16_t len, uint16_t offset);
+
+/* Linker set this symbol */
+extern uint8_t ch_certificate_start;
 
 #define KEY_MAGIC_LEN 8
 #define KEY_CONTENT_LEN 256	/* p and q */

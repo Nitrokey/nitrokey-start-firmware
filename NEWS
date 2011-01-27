@@ -4,6 +4,8 @@ Gnuk NEWS - User visible changes
 
   Released 2011-01-XX, by NIIBE Yutaka
 
+** Card Holder Certificate is supported.
+
 ** Better interoperability to OpenSC.
 Gnuk is not yet supported by OpenSC, but it could be.  With the
 changes in Gnuk, it could be relatively easily possible to support

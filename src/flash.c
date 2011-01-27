@@ -1,7 +1,7 @@
 /*
  * flash.c -- Data Objects (DO) and GPG Key handling on Flash ROM
  *
- * Copyright (C) 2010 Free Software Initiative of Japan
+ * Copyright (C) 2010, 2011 Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
  * This file is a part of Gnuk, a GnuPG USB Token implementation.
@@ -25,8 +25,8 @@
  * We assume single DO size is less than 256.
  *
  * NOTE: When we will support "Card holder certificate" (which size is
- *       larger than 256), it will not be put into data pool, but will
- *       be implemented by its own flash page.
+ *       larger than 256), it is not put into data pool, but is
+ *       implemented by its own flash page(s).
  */
 
 #include "config.h"
@@ -167,7 +167,7 @@ static const uint8_t *keystore_pool;
 static uint8_t *last_p;
 static const uint8_t *keystore;
 
-/* The first halfward is generation for the data page (little endian) */
+/* The first halfword is generation for the data page (little endian) */
 const uint8_t const flash_data[4] __attribute__ ((section (".gnuk_data"))) = {
   0x01, 0x00, 0xff, 0xff
 };
@@ -300,7 +300,7 @@ flash_do_write_internal (const uint8_t *p, int nr, const uint8_t *data, int len)
     flash_warning ("DO WRITE ERROR");
   addr += 2;
 
-  for (i = 0; i < len/2; i ++)
+  for (i = 0; i < len/2; i++)
     {
       hw = data[i*2] | (data[i*2+1]<<8);
       if (flash_program_halfword (addr, hw) != FLASH_COMPLETE)
@@ -580,4 +580,72 @@ flash_cnt123_clear (const uint8_t **addr_p)
   p -= 2;
   flash_program_halfword ((uint32_t)p, 0);
   *addr_p = NULL;
+}
+
+
+static int
+flash_check_blank (const uint8_t *page, int size)
+{
+  const uint8_t *p;
+
+  for (p = page; p < page + size; p++)
+    if (*p != 0xff)
+      return 0;
+
+  return 1;
+}
+
+
+#define FLASH_CH_CERTIFICATE_SIZE 2048
+int
+flash_erase_binary (uint8_t file_id)
+{
+  const uint8_t *p = &ch_certificate_start;
+
+  if (file_id == FILEID_CH_CERTIFICATE)
+    {
+      if (flash_check_blank (p, FLASH_CH_CERTIFICATE_SIZE) == 0)
+	{
+	  flash_erase_page ((uint32_t)p);
+#if FLASH_CH_CERTIFICATE_SIZE > FLASH_PAGE_SIZE
+	  flash_erase_page ((uint32_t)p + FLASH_PAGE_SIZE);
+#endif
+	}
+
+      return 0;
+    }
+  else
+    return -1;
+}
+
+
+int
+flash_write_binary (uint8_t file_id, const uint8_t *data,
+		    uint16_t len, uint16_t offset)
+{
+  if (file_id == FILEID_CH_CERTIFICATE)
+    {
+      if (offset + len > FLASH_CH_CERTIFICATE_SIZE || (offset&1) || (len&1))
+	return -1;
+      else
+	{
+	  const uint8_t *p = &ch_certificate_start;
+	  uint16_t hw;
+	  uint32_t addr;
+	  int i;
+
+	  addr = (uint32_t)p + offset;
+	  for (i = 0; i < len/2; i++)
+	    {
+	      hw = data[i*2] | (data[i*2+1]<<8);
+	      if (flash_program_halfword (addr, hw) != FLASH_COMPLETE)
+		flash_warning ("DO WRITE ERROR");
+	      addr += 2;
+	    }
+
+	  return 0;
+	}
+    }
+  else
+    return -1;
 }

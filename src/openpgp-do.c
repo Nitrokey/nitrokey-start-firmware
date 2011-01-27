@@ -929,8 +929,8 @@ gpg_do_table[] = {
   { GPG_DO_KEY_IMPORT, DO_PROC_WRITE, AC_NEVER, AC_ADMIN_AUTHORIZED,
     proc_key_import },
 #if 0
-  /* Card holder certificate: Not supported yet */
-  { GPG_DO_CH_CERTIFICATE, DO_PROC_READWRITE, AC_NEVER, AC_NEVER, NULL },
+  /* Card holder certificate */
+  { GPG_DO_CH_CERTIFICATE, DO_PROC_READ, AC_ALWAYS, AC_NEVER, NULL },
 #endif
 };
 
@@ -1200,27 +1200,40 @@ copy_do (const struct do_table_entry *do_p, int with_tag)
 void
 gpg_do_get_data (uint16_t tag, int with_tag)
 {
-  const struct do_table_entry *do_p = get_do_entry (tag);
-
-  res_p = res_APDU;
-
-  DEBUG_INFO ("   ");
-  DEBUG_SHORT (tag);
-
-  if (do_p)
+  if (tag == GPG_DO_CH_CERTIFICATE)
     {
-      if (copy_do (do_p, with_tag) < 0)
-	/* Overwriting partially written result  */
-	GPG_SECURITY_FAILURE ();
-      else
+      res_APDU_pointer = &ch_certificate_start;
+      res_APDU_size = (res_APDU_pointer[2] << 8) | res_APDU_pointer[3];
+      if (res_APDU_size == 0xffff)
 	{
-	  *res_p++ = 0x90;
-	  *res_p++ = 0x00;
-	  res_APDU_size = res_p - res_APDU;
+	  res_APDU_pointer = NULL;
+	  GPG_NO_RECORD ();
 	}
     }
   else
-    GPG_NO_RECORD ();
+    {
+      const struct do_table_entry *do_p = get_do_entry (tag);
+
+      res_p = res_APDU;
+
+      DEBUG_INFO ("   ");
+      DEBUG_SHORT (tag);
+
+      if (do_p)
+	{
+	  if (copy_do (do_p, with_tag) < 0)
+	    /* Overwriting partially written result  */
+	    GPG_SECURITY_FAILURE ();
+	  else
+	    {
+	      *res_p++ = 0x90;
+	      *res_p++ = 0x00;
+	      res_APDU_size = res_p - res_APDU;
+	    }
+	}
+      else
+	GPG_NO_RECORD ();
+    }
 }
 
 void

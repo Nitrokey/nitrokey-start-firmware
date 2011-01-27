@@ -39,6 +39,7 @@
 #define INS_SELECT_FILE				0xa4
 #define INS_READ_BINARY				0xb0
 #define INS_GET_DATA				0xca
+#define INS_UPDATE_BINARY			0xd6
 #define INS_PUT_DATA				0xda
 #define INS_PUT_DATA_ODD			0xdb	/* For key import */
 
@@ -75,6 +76,8 @@ write_res_apdu (const uint8_t *p, int len, uint8_t sw1, uint8_t sw2)
 #define FILE_MF		2
 #define FILE_EF_DIR	3
 #define FILE_EF_SERIAL	4
+#define FILE_EF_CH_CERTIFICATE  5
+#define FILE_EF_RANDOM		6
 
 static uint8_t file_selection;
 
@@ -632,7 +635,7 @@ cmd_read_binary (void)
 static void
 cmd_select_file (void)
 {
-  if (cmd_APDU[2] == 4)	/* Selection by DF name */
+  if (cmd_APDU[2] == 4)	/* Selection by DF name: it must be OpenPGP card */
     {
       DEBUG_INFO (" - select DF by name\r\n");
 
@@ -654,8 +657,7 @@ cmd_select_file (void)
 	}
     }
   else if (cmd_APDU[4] == 2
-	   && cmd_APDU[5] == 0x2f
-	   && cmd_APDU[6] == 0x02)
+	   && cmd_APDU[5] == 0x2f && cmd_APDU[6] == 0x02)
     {
       DEBUG_INFO (" - select 0x2f02 EF\r\n");
       /*
@@ -665,8 +667,7 @@ cmd_select_file (void)
       file_selection = FILE_EF_SERIAL;
     }
   else if (cmd_APDU[4] == 2
-	   && cmd_APDU[5] == 0x3f
-	   && cmd_APDU[6] == 0x00)
+	   && cmd_APDU[5] == 0x3f && cmd_APDU[6] == 0x00)
     {
       DEBUG_INFO (" - select ROOT MF\r\n");
       if (cmd_APDU[3] == 0x0c)
@@ -682,6 +683,7 @@ cmd_select_file (void)
 	}
 
       file_selection = FILE_MF;
+      ac_fini ();		/* Reset authentication */
     }
   else
     {
@@ -838,6 +840,77 @@ cmd_internal_authenticate (void)
   DEBUG_INFO ("INTERNAL AUTHENTICATE done.\r\n");
 }
 
+
+static void
+cmd_update_binary (void)
+{
+  int len = cmd_APDU[4];
+  int data_start = 5;
+  uint16_t offset;
+  int r;
+
+  if (len == 0)
+    {
+      len = (cmd_APDU[5]<<8) | cmd_APDU[6];
+      data_start = 7;
+    }
+
+  DEBUG_INFO (" - UPDATE BINARY\r\n");
+
+  if (gpg_passwd_locked (PW_ERR_PW3) || !ac_check_status (AC_ADMIN_AUTHORIZED))
+    {
+      DEBUG_INFO ("security error.");
+      GPG_SECURITY_FAILURE ();
+      return;
+    }
+
+  if ((cmd_APDU[2] & 0x80))
+    if ((cmd_APDU[2] & 0x7f) <= 0x01)
+      {
+	file_selection = FILE_EF_CH_CERTIFICATE + (cmd_APDU[2] & 0x7f);
+	r = flash_erase_binary (file_selection - FILE_EF_CH_CERTIFICATE);
+	if (r < 0)
+	  {
+	    DEBUG_INFO ("memory error.\r\n");
+	    GPG_MEMORY_FAILURE ();
+	    return;
+	  }
+
+	offset = 0;
+      }
+    else
+      {
+	GPG_NO_FILE ();
+	return;
+      }
+  else
+    {
+      if (file_selection != FILE_EF_CH_CERTIFICATE
+	  && file_selection != FILE_EF_RANDOM)
+	{
+	  GPG_COMMAND_NOT_ALLOWED ();
+	  return;
+	}
+
+      offset = (cmd_APDU[2] << 8) | cmd_APDU[3];
+    }
+
+  DEBUG_SHORT (len);
+  DEBUG_SHORT (offset);
+
+  r = flash_write_binary (file_selection - FILE_EF_CH_CERTIFICATE,
+			  &cmd_APDU[data_start], len, offset);
+  if (r < 0)
+    {
+      DEBUG_INFO ("memory error.\r\n");
+      GPG_MEMORY_FAILURE ();
+      return;
+    }
+
+  DEBUG_INFO ("UPDATE BINARY done.\r\n");
+}
+
+
 struct command
 {
   uint8_t command;
@@ -854,6 +927,7 @@ const struct command cmds[] = {
   { INS_SELECT_FILE, cmd_select_file },
   { INS_READ_BINARY, cmd_read_binary },
   { INS_GET_DATA, cmd_get_data },
+  { INS_UPDATE_BINARY, cmd_update_binary }, /* Not in OpenPGP card protocol */
   { INS_PUT_DATA, cmd_put_data },
   { INS_PUT_DATA_ODD, cmd_put_data },
 };
@@ -868,6 +942,8 @@ process_command_apdu (void)
   for (i = 0; i < NUM_CMDS; i++)
     if (cmds[i].command == cmd)
       break;
+
+  res_APDU_pointer = NULL; /* default */
 
   if (i < NUM_CMDS)
     cmds[i].cmd_handler ();

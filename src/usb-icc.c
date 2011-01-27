@@ -385,6 +385,7 @@ icc_power_off (void)
 }
 
 int res_APDU_size;
+uint8_t *res_APDU_pointer;
 
 static void
 icc_send_data_block (int len, uint8_t status, uint8_t chain)
@@ -608,8 +609,16 @@ icc_handle_data (void)
 	{
 	  if (icc_header->param == 0x10)
 	    {
-	      memmove (res_APDU, res_APDU+ICC_RESPONSE_MSG_DATA_SIZE,
-		       res_APDU_size);
+	      if (res_APDU_pointer != NULL)
+		{
+		  memcpy (res_APDU, res_APDU_pointer,
+			  ICC_RESPONSE_MSG_DATA_SIZE);
+		  res_APDU_pointer += ICC_RESPONSE_MSG_DATA_SIZE;
+		}
+	      else
+		memmove (res_APDU, res_APDU+ICC_RESPONSE_MSG_DATA_SIZE,
+			 res_APDU_size);
+
 	      if (res_APDU_size <= ICC_RESPONSE_MSG_DATA_SIZE)
 		{
 		  icc_send_data_block (res_APDU_size, 0, 0x02);
@@ -689,6 +698,9 @@ USBthread (void *arg)
 	{
 	  if (icc_state == ICC_STATE_EXECUTE)
 	    {
+	      if (res_APDU_pointer != NULL)
+		memcpy (res_APDU, res_APDU_pointer, ICC_RESPONSE_MSG_DATA_SIZE);
+
 	      if (res_APDU_size <= ICC_RESPONSE_MSG_DATA_SIZE)
 		{
 		  icc_send_data_block (res_APDU_size, 0, 0);
@@ -698,6 +710,7 @@ USBthread (void *arg)
 		{
 		  icc_send_data_block (ICC_RESPONSE_MSG_DATA_SIZE, 0, 0x01);
 		  res_APDU_size -= ICC_RESPONSE_MSG_DATA_SIZE;
+		  res_APDU_pointer += ICC_RESPONSE_MSG_DATA_SIZE;
 		  icc_state = ICC_STATE_SEND;
 		}
 	    }

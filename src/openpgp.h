@@ -1,6 +1,7 @@
 #define GPG_MEMORY_FAILURE()		write_res_apdu (NULL, 0, 0x65, 0x81)
 #define GPG_SECURITY_FAILURE()		write_res_apdu (NULL, 0, 0x69, 0x82)
 #define GPG_SECURITY_AUTH_BLOCKED()	write_res_apdu (NULL, 0, 0x69, 0x83)
+#define GPG_COMMAND_NOT_ALLOWED()	write_res_apdu (NULL, 0, 0x69, 0x86)
 #define GPG_NO_FILE()			write_res_apdu (NULL, 0, 0x6a, 0x82)
 #define GPG_NO_RECORD()			write_res_apdu (NULL, 0, 0x6a, 0x88)
 #define GPG_BAD_P0_P1()			write_res_apdu (NULL, 0, 0x6b, 0x00)
