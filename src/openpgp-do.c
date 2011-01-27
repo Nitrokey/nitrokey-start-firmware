@@ -1,7 +1,7 @@
 /*
  * openpgp-do.c -- OpenPGP card Data Objects (DO) handling
  *
- * Copyright (C) 2010 Free Software Initiative of Japan
+ * Copyright (C) 2010, 2011 Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
  * This file is a part of Gnuk, a GnuPG USB Token implementation.
@@ -928,8 +928,10 @@ gpg_do_table[] = {
   /* Compound data: Write access only */
   { GPG_DO_KEY_IMPORT, DO_PROC_WRITE, AC_NEVER, AC_ADMIN_AUTHORIZED,
     proc_key_import },
+#if 0
   /* Card holder certificate: Not supported yet */
   { GPG_DO_CH_CERTIFICATE, DO_PROC_READWRITE, AC_NEVER, AC_NEVER, NULL },
+#endif
 };
 
 #define NUM_DO_ENTRIES (int)(sizeof (gpg_do_table) \
@@ -1218,7 +1220,7 @@ gpg_do_get_data (uint16_t tag, int with_tag)
 	}
     }
   else
-    GPG_NO_RECORD();
+    GPG_NO_RECORD ();
 }
 
 void
@@ -1298,7 +1300,7 @@ gpg_do_put_data (uint16_t tag, const uint8_t *data, int len)
 	}
     }
   else
-    GPG_NO_RECORD();
+    GPG_NO_RECORD ();
 }
 
 void
@@ -1320,7 +1322,7 @@ gpg_do_public_key (uint8_t kk_byte)
   if (do_data == NULL)
     {
       DEBUG_INFO ("none.\r\n");
-      GPG_NO_RECORD();
+      GPG_NO_RECORD ();
       return;
     }
 

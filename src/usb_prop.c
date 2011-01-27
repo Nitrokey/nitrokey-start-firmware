@@ -1,7 +1,7 @@
 /*
  * usb_prop.c - glue/interface code between Gnuk and USB-FS-Device_Lib
  *
- * Copyright (C) 2010 Free Software Initiative of Japan
+ * Copyright (C) 2010, 2011 Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
  * This file is a part of Gnuk, a GnuPG USB Token implementation.
