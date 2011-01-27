@@ -118,20 +118,19 @@ SECTIONS
     {
         . = ALIGN (@FLASH_PAGE_SIZE@);
 	*(.gnuk_random)
+        . = ALIGN (@FLASH_PAGE_SIZE@);
     } > flash =0xffffffff
 
-    .gnuk_flash : ALIGN (@FLASH_PAGE_SIZE@)
+    .gnuk_flash :
     {
 	_data_pool = .;
 	KEEP(*(.gnuk_data))
-	FILL(0xffffffff);
 	. = ALIGN(@FLASH_PAGE_SIZE@);
 	. += @FLASH_PAGE_SIZE@;
 	_keystore_pool = .;
-	FILL(0xffffffff);
 	. += 512*3;
 	. = ALIGN(@FLASH_PAGE_SIZE@);
-    } > flash
+    } > flash =0xffffffff
 }
 
 __heap_base__   = _end;

@@ -391,8 +391,8 @@ static void
 cmd_reset_user_password (void)
 {
   uint8_t p1 = cmd_APDU[2];
-  int len = cmd_APDU[4];
-  const uint8_t *pw = &cmd_APDU[5];
+  int len;
+  const uint8_t *pw;
   const uint8_t *newpw;
   int pw_len, newpw_len;
   int r;
@@ -402,10 +402,55 @@ cmd_reset_user_password (void)
   DEBUG_INFO ("Reset PW1\r\n");
   DEBUG_BYTE (p1);
 
-  if (len == 0)			/* extended length */
+#if defined(PINPAD_SUPPORT)
+  if (cmd_APDU_size == 4)
+    /* Modification with pinpad */
     {
-      len = (cmd_APDU[5]<<8) | cmd_APDU[6];
-      pw += 2;
+      pw_len = get_pinpad_input (PIN_INPUT_CURRENT);
+      if (pw_len < 0)
+	{
+	  GPG_ERROR ();
+	  return;
+	}
+
+      pw = &cmd_APDU[5];
+      memcpy (&cmd_APDU[5], pin_input_buffer, pw_len);
+      newpw = pw + pw_len;
+
+      newpw_len = get_pinpad_input (PIN_INPUT_NEW);
+      if (newpw_len < 0)
+	{
+	  GPG_ERROR ();
+	  return;
+	}
+
+      memcpy (&cmd_APDU[5]+pw_len, pin_input_buffer, newpw_len);
+
+      len = get_pinpad_input (PIN_INPUT_CONFIRM);
+      if (len < 0)
+	{
+	  GPG_ERROR ();
+	  return;
+	}
+
+      if (len != newpw_len || memcmp (newpw, pin_input_buffer, len) != 0)
+	{
+	  GPG_SECURITY_FAILURE ();
+	  return;
+	}
+
+      len = cmd_APDU[4] = pw_len + newpw_len;
+    }
+  else
+#endif
+    {
+      len = cmd_APDU[4];
+      pw = &cmd_APDU[5];
+      if (len == 0)			/* extended length */
+	{
+	  len = (cmd_APDU[5]<<8) | cmd_APDU[6];
+	  pw += 2;
+	}
     }
 
   if (p1 == 0x00)		/* by User with Reseting Code */

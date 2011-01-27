@@ -5,16 +5,19 @@ Gnuk NEWS - User visible changes
   Released 2011-01-XX, by NIIBE Yutaka
 
 ** Better interoperability to OpenSC.
-Gnuk is not yet supported by OpenSC, but it should be.  With this
+Gnuk is not yet supported by OpenSC, but it should be.  With the
 changes in Gnuk, it could be relatively easily possible to support
 Gnuk Token by OpenSC with a few changes to libopensc/card-openpgp.c,
-libopensc/pkcs15-openpgp.c and pkcs11/framework-pkcs15.c.
+and libopensc/pkcs15-openpgp.c.
 
 ** New board support "STBEE"
 STBEE is a board by Strawberry Linux Co., Ltd., and it has
 STM32F103VET6 on the board.  The chip is High Density CPU with 512KB
 flash memory and many I/O.  If you want to connect sensor, display,
-etc., this board would be good candidate.
+etc., this board would be a good candidate.
+
+** Experimental PIN-pad modification(unblock) support is added.
+PIN-pad modification(unblock) is supported.
 
 
 * Major changes in Gnuk 0.8
