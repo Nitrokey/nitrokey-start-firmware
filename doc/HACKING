@@ -29,11 +29,10 @@ It would be good not to use malloc.
 Get it from FSFE.
 
 
-* [Partially DONE] Serial number
+* [Mostly DONE] Serial number
 
-Currently, aid[] in openpgp-do.c has serial number 00000001.
-It would be good to generate (random) number at compile time.
-Use same serial number for OpenPGPcard and USB serial number.
+The AID of the card contains serial number.  It should be unique.  USB
+serial number should be unique to identify different tokens, too.
 
 
 * Flash ROM recover from shutdown

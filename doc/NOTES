@@ -4,15 +4,15 @@ USB communication
   * No command chaining, but extended APDU and extended Lc and Le.
     I think that this keep the code simple.
 
-  * Once, the value of dwMaxCCIDMessageLength was 64 and we supported
-    ICC block chaining, so that we could not handle multple Bulk
-    transactions.
+  * Once in the past (version <= 0.4), the value of
+    dwMaxCCIDMessageLength was 64 and we supported ICC block chaining,
+    so that we could not handle multple Bulk transactions.
 
   * Now, the value of dwMaxCCIDMessageLength is 320, that's the size
     of header of ICC block plus size of maximum APDU (by 64
-    granularity).  Still, some ccid implementation sends ICC block
-    using chaining (unfortunately), so we keep the code of ICC block
-    chaining.
+    granularity).  Still, some ccid implementation (ccid 1.3.11, for
+    example) sends ICC block using chaining unfortunately, so we keep
+    the code of ICC block chaining.
 
 
 OpenPGP card protocol implementation

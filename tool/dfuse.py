@@ -121,7 +121,7 @@ class DFU_STM32:
 
     def __del__(self):
         try:
-            self.__devhandle.releaseInterface(self.__intf)
+            self.__devhandle.releaseInterface()
             del self.__devhandle
         except:
             pass

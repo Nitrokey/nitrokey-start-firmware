@@ -379,6 +379,7 @@ icc_power_off (void)
       gpg_thread = NULL;
     }
 
+  icc_state = ICC_STATE_START;	/* This status change should be here */
   icc_send_status ();
   DEBUG_INFO ("OFF\r\n");
   return ICC_STATE_START;
@@ -627,7 +628,7 @@ icc_handle_data (void)
 	      else
 		{
 		  icc_send_data_block (ICC_RESPONSE_MSG_DATA_SIZE, 0, 0x03);
-		  res_APDU_size -= ICC_MAX_MSG_DATA_SIZE;
+		  res_APDU_size -= ICC_RESPONSE_MSG_DATA_SIZE;
 		}
 	    }
 	  else
@@ -695,30 +696,30 @@ USBthread (void *arg)
       if (m == EV_RX_DATA_READY)
 	icc_state = icc_handle_data ();
       else if (m == EV_EXEC_FINISHED)
-	{
-	  if (icc_state == ICC_STATE_EXECUTE)
-	    {
-	      if (res_APDU_pointer != NULL)
+	if (icc_state == ICC_STATE_EXECUTE)
+	  {
+	    if (res_APDU_pointer != NULL)
+	      {
 		memcpy (res_APDU, res_APDU_pointer, ICC_RESPONSE_MSG_DATA_SIZE);
+		res_APDU_pointer += ICC_RESPONSE_MSG_DATA_SIZE;
+	      }
 
-	      if (res_APDU_size <= ICC_RESPONSE_MSG_DATA_SIZE)
-		{
-		  icc_send_data_block (res_APDU_size, 0, 0);
-		  icc_state = ICC_STATE_WAIT;
-		}
-	      else
-		{
-		  icc_send_data_block (ICC_RESPONSE_MSG_DATA_SIZE, 0, 0x01);
-		  res_APDU_size -= ICC_RESPONSE_MSG_DATA_SIZE;
-		  res_APDU_pointer += ICC_RESPONSE_MSG_DATA_SIZE;
-		  icc_state = ICC_STATE_SEND;
-		}
-	    }
-	  else
-	    {			/* XXX: error */
-	      DEBUG_INFO ("ERR07\r\n");
-	    }
-	}
+	    if (res_APDU_size <= ICC_RESPONSE_MSG_DATA_SIZE)
+	      {
+		icc_send_data_block (res_APDU_size, 0, 0);
+		icc_state = ICC_STATE_WAIT;
+	      }
+	    else
+	      {
+		icc_send_data_block (ICC_RESPONSE_MSG_DATA_SIZE, 0, 0x01);
+		res_APDU_size -= ICC_RESPONSE_MSG_DATA_SIZE;
+		icc_state = ICC_STATE_SEND;
+	      }
+	  }
+	else
+	  {			/* XXX: error */
+	    DEBUG_INFO ("ERR07\r\n");
+	  }
       else if (m == EV_TX_FINISHED)
 	{
 	  if (icc_state == ICC_STATE_START || icc_state == ICC_STATE_WAIT

@@ -29,7 +29,6 @@
 #include "polarssl/config.h"
 #include "polarssl/sha1.h"
 
-#define INS_NOP	        			0x00
 #define INS_VERIFY        			0x20
 #define INS_CHANGE_REFERENCE_DATA		0x24
 #define INS_PSO		  			0x2a
@@ -907,6 +906,7 @@ cmd_update_binary (void)
       return;
     }
 
+  GPG_SUCCESS ();
   DEBUG_INFO ("UPDATE BINARY done.\r\n");
 }
 
@@ -943,8 +943,6 @@ process_command_apdu (void)
     if (cmds[i].command == cmd)
       break;
 
-  res_APDU_pointer = NULL; /* default */
-
   if (i < NUM_CMDS)
     cmds[i].cmd_handler ();
   else
@@ -972,6 +970,8 @@ GPGthread (void *arg)
 
       DEBUG_INFO ("GPG!: ");
       DEBUG_WORD ((uint32_t)&m);
+
+      res_APDU_pointer = NULL; /* default */
 
       if (icc_data_size != 0)
 	{

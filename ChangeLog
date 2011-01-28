@@ -1,3 +1,15 @@
+2011-01-28  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* tool/gnuk_update_binary.py: New.
+
+	* src/openpgp-do.c (gpg_do_get_data): Fix length adding two for
+	status word at the end and adding four for the tag and the length.
+
+	* src/usb-icc.c (icc_handle_data): Fix decrementing res_APDU_size.
+	(icc_power_off): Status should be the one *after* power off.
+
+	* src/openpgp.c (cmd_update_binary): Fix return code.
+
 2011-01-27  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* src/usb-icc.c (res_APDU_pointer): New.

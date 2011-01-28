@@ -1203,12 +1203,15 @@ gpg_do_get_data (uint16_t tag, int with_tag)
   if (tag == GPG_DO_CH_CERTIFICATE)
     {
       res_APDU_pointer = &ch_certificate_start;
-      res_APDU_size = (res_APDU_pointer[2] << 8) | res_APDU_pointer[3];
+      res_APDU_size = ((res_APDU_pointer[2] << 8) | res_APDU_pointer[3]);
       if (res_APDU_size == 0xffff)
 	{
 	  res_APDU_pointer = NULL;
 	  GPG_NO_RECORD ();
 	}
+      else
+	/* Add length of (tag+len) and status word (0x9000) at the end */
+	res_APDU_size += 4 + 2;
     }
   else
     {
