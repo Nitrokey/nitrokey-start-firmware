@@ -1,7 +1,7 @@
 Gnuk - software for GPG USB Token
 
-							    Version 0.8
-							     2011-01-19
+							    Version 0.9
+							     2011-01-30
 						           Niibe Yutaka
 				      Free Software Initiative of Japan
 
@@ -26,7 +26,7 @@ USB Token by Gnuk everywhere.
 Release notes
 =============
 
-This is nineth release of Gnuk.  While it works well for specific
+This is tenth release of Gnuk.  While it works well for specific
 usages, it is still experimental.
 
 Tested features are:
@@ -62,9 +62,11 @@ It is known not-working well:
 	* For some version of kernel and libccid, --enable-debug can't
           work well.  Please disable DEBUG option if it doesn't work well.
 
-Not (yet) supported feature(s):
-
-	* card holder certificate (its size matters (> 1KiB?), if we support)
+	* Card holder certificate
+	  It is implemented in Gnuk side.  But its size matters (>
+	  1KB).  GnuPG cannot handle a data object of large size with
+	  PC/SC backend.  Specifically, handle_transmit function in
+	  pcsc-wrapper.c uses the buffer of size 1024-byte.
 
 Not supported feature(s):
 
@@ -77,24 +79,24 @@ Targets
 We use Olimex STM32-H103 board.  We also use STM32 part of STM8S
 Discovery Kit.
 
-With DfuSe support, CQ STARM and STBee Mini are also our targets.  But
-those targets with DfuSe are basically not for normal use but for
-experiments, because it would be impossible for DfuSe to disable read
-from flash.  For real use, please consider killing DfuSe and enable
-read protect using JTAG debugger.
+With DfuSe support, CQ STARM, STBee, and STBee Mini are also our
+targets.  But those targets with DfuSe are basically not for normal
+use but for experiments, because it would be impossible for DfuSe to
+disable read from flash.  For real use, please consider killing DfuSe
+and enable read protect using JTAG debugger.
 
-I think that it could run on Olimex STM32-P103, or STBee too.
-Besides, we are porting it to STM32 Primer 2.
+I think that it could run on Olimex STM32-P103, or other boards with
+STM32F103.  Besides, we are porting it to STM32 Primer 2.
 
 For PIN-pad support, I connect a consumer IR receive module to STBee
 Mini and STM8S Discovery Kit, and use controller for TV.  PIN
 verification is supported by this configuration.  Yes, it is not
 secure at all, since it is very easy to monitor IR output of the
-controllers.  It is just an experiment.  Hhardware needed for this
-experiment is only a consumer IR receive module which is as cheap as
-50 JPY.
+controllers.  It is just an experiment.  Note that hardware needed for
+this experiment is only a consumer IR receive module which is as cheap
+as 50 JPY.
 
-Another PIN-pad support is connecting rotally encoder, push switch and
+Another PIN-pad support is connecting rotary encoder, push switch and
 7-segment LED display.  Both of PIN verification and PIN modification
 are supported for this circuit extension.
 
@@ -115,10 +117,11 @@ Please note that it is distributed with external source code too.
 Please read relevant licenses for external source code, too.
 
 The author(s) of Gnuk expect users of Gnuk will be able to access the
-source code of Gnuk.  This doesn't mean person who has a USB Token by
-Gnuk should be able to acess everything on the Token, regardless of
-its protections.  Private keys, random bytes, and other information
-should be protected properly.
+source code of Gnuk, so that users can study the code and can modify
+if needed.  This doesn't mean person who has a USB Token by Gnuk
+should be able to acess everything on the Token, regardless of its
+protections.  Private keys, random bytes, and other information should
+be protected properly.
 
 
 External source code
@@ -146,7 +149,7 @@ Gnuk is distributed with external source code.
 
   I took Libraries/STM32_USB-FS-Device_Driver and 
   Project/Virtual_COM_Port in STM32_USB-FS-Device_Lib distribution.
-  See http://www.st.com for detail.
+  See http://www.st.com/ for detail.
 
 
 Host Requirements
@@ -212,6 +215,17 @@ Then, with another terminal, type following to write "gnuk.elf" to Flash ROM:
   $ 
 
 
+STM8S Discovery Kit
+-------------------
+
+If you are using FTDI-2232D module and the connection is standard, type:
+
+  $ openocd -f interface/openocd-usb.cfg -f target/stm32.cfg
+
+Then, invoke telnet to connect OpenCD and write image as above example
+of Olimex STM32-H103.
+  
+
 CQ STARM
 --------
 
@@ -223,8 +237,8 @@ Put jumper for J6 to enable DfuSe.  Connecting the board, and type:
 Then, remove the jumper and reset the board.
 
 
-STBee Mini
-----------
+STBee and STBee Mini
+--------------------
 
 Reset the board with "USER" switch pushed.  Type following to write
 to flash:

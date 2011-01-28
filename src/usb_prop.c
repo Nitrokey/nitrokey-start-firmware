@@ -203,12 +203,18 @@ gnuk_device_GetStringDescriptor (uint16_t Length)
 				       (PONE_DESCRIPTOR)&String_Descriptor[wValue0]);
 }
 
+#ifdef ENABLE_VIRTUAL_COM_PORT
+#define NUM_INTERFACES 3	/* two for CDC, one for CCID */
+#define
+#define NUM_INTERFACES 1	/* CCID only */
+#endif
+
 static RESULT
 gnuk_device_Get_Interface_Setting (uint8_t Interface, uint8_t AlternateSetting)
 {
-  if (AlternateSetting > 0)
+  if (AlternateSetting > 0)	/* Any interface, we have no alternate */
     return USB_UNSUPPORT;
-  else if (Interface > 1)
+  else if (Interface > NUM_INTERFACES)
     return USB_UNSUPPORT;
 
   return USB_SUCCESS;
