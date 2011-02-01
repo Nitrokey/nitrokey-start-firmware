@@ -150,6 +150,31 @@ gnuk_device_SetConfiguration (void)
 }
 
 static void
+gnuk_device_SetInterface (void)
+{
+  uint16_t intf = pInformation->USBwIndex0;
+  
+  /* alternateSetting: pInformation->USBwValue0 should be 0 */
+
+  if (intf == 0)
+    {
+      ClearDTOG_RX (0x02);
+      ClearDTOG_TX (0x81);
+    }
+#ifdef ENABLE_VIRTUAL_COM_PORT
+  else if (intf == 1)
+    {
+      ClearDTOG_TX (0x84);
+    }
+  else if (intf == 2)
+    {
+      ClearDTOG_RX (0x05);
+      ClearDTOG_TX (0x83);
+    }
+#endif
+}
+
+static void
 gnuk_device_SetDeviceAddress (void)
 {
   bDeviceState = ADDRESSED;
@@ -205,7 +230,7 @@ gnuk_device_GetStringDescriptor (uint16_t Length)
 
 #ifdef ENABLE_VIRTUAL_COM_PORT
 #define NUM_INTERFACES 3	/* two for CDC, one for CCID */
-#define
+#else
 #define NUM_INTERFACES 1	/* CCID only */
 #endif
 
@@ -338,7 +363,7 @@ const USER_STANDARD_REQUESTS User_Standard_Requests = {
   NOP_Process,			/* GetConfiguration */ 
   gnuk_device_SetConfiguration,
   NOP_Process,			/* GetInterface */
-  NOP_Process,			/* SetInterface */
+  gnuk_device_SetInterface,
   NOP_Process,			/* GetStatus */
   NOP_Process,			/* ClearFeature */
   NOP_Process,			/* SetEndPointFeature */

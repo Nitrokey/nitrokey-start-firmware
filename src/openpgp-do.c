@@ -143,11 +143,15 @@ static const uint8_t extended_capabilities[] __attribute__ ((aligned (1))) = {
 				 */
   0,		  /* Secure Messaging Algorithm: N/A (TDES=0, AES=1) */
   0x00, 0x00,	  /* Max get challenge */
-  0x00, 0x00,	  /* max. length of cardholder certificate */
+  0x07, 0xfe,	  /* max. length of cardholder certificate (2KB - 2)*/
   /* Max. length of command data */
   (MAX_CMD_APDU_SIZE>>8), (MAX_CMD_APDU_SIZE&0xff),
   /* Max. length of response data */
+#if 0
   (MAX_RES_APDU_SIZE>>8), (MAX_RES_APDU_SIZE&0xff),
+#else
+  0x08, 0x00,		     /* the case of cardholder ceritificate */
+#endif
 };
 
 /* Algorithm Attributes */

@@ -2,9 +2,12 @@ Gnuk NEWS - User visible changes
 
 * Major changes in Gnuk 0.9
 
-  Released 2011-01-XX, by NIIBE Yutaka
+  Released 2011-02-01, by NIIBE Yutaka
 
-** Card Holder Certificate is supported.
+** Card Holder Certificate is supported (still this is experimental).
+Gnuk can support card holder certificate now.  Note that GnuPG is not
+ready yet.  The tool/gnuk_update_binary.py is for writing card holder
+certificate to Gnuk Token.
 
 ** Better interoperability to OpenSC.
 Gnuk is not yet supported by OpenSC, but it could be.  With the

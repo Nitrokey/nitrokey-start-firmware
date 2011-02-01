@@ -232,7 +232,7 @@ def main(filename):
     if icc.icc_get_status() == 2:
         raise ValueError, "No ICC present"
     elif icc.icc_get_status() == 1:
-        print icc.icc_power_on()
+        icc.icc_power_on()
     icc.cmd_verify(3, "12345678")
     icc.cmd_update_binary(0, data)
     icc.cmd_select_openpgp()
