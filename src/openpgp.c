@@ -408,17 +408,22 @@ cmd_reset_user_password (void)
   if (cmd_APDU_size == 4)
     /* Modification with pinpad */
     {
-      pw_len = get_pinpad_input (PIN_INPUT_CURRENT);
-      if (pw_len < 0)
+      if (p1 == 0x00)		/* by User with Reseting Code */
 	{
-	  GPG_ERROR ();
-	  return;
+	  pw_len = get_pinpad_input (PIN_INPUT_CURRENT);
+	  if (pw_len < 0)
+	    {
+	      GPG_ERROR ();
+	      return;
+	    }
+
+	  memcpy (&cmd_APDU[5], pin_input_buffer, pw_len);
 	}
+      else
+	pw_len = 0;
 
       pw = &cmd_APDU[5];
-      memcpy (&cmd_APDU[5], pin_input_buffer, pw_len);
       newpw = pw + pw_len;
-
       newpw_len = get_pinpad_input (PIN_INPUT_NEW);
       if (newpw_len < 0)
 	{
