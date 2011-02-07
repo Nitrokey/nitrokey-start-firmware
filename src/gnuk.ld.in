@@ -117,7 +117,8 @@ SECTIONS
     .gnuk_random :
     {
         . = ALIGN (@FLASH_PAGE_SIZE@);
-	*(.gnuk_random)
+        random_bits_start = .;
+	. += 1;
         . = ALIGN (@FLASH_PAGE_SIZE@);
     } > flash =0xffffffff
 

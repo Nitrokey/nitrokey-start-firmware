@@ -25,24 +25,22 @@
 #include "ch.h"
 #include "gnuk.h"
 
-extern void *_binary_random_bits_start;
-
 const uint8_t *
 random_bytes_get (void)
 {
   uint32_t addr, addr0;
 
-  addr = (uint32_t)&_binary_random_bits_start + ((hardclock () << 5) & 0x3e0);
+  addr = (uint32_t)&random_bits_start + ((hardclock () << 5) & 0x3e0);
   addr0 = addr; 
 
   while (1)
     {
-      if (*(uint32_t *)addr != 0)
+      if (*(uint32_t *)addr != 0 && *(uint32_t *)addr != 0xffffffff)
 	break;
 
       addr += 32;
-      if (addr >= ((uint32_t)&_binary_random_bits_start) + 1024)
-	addr = ((uint32_t)&_binary_random_bits_start);
+      if (addr >= ((uint32_t)&random_bits_start) + 1024)
+	addr = ((uint32_t)&random_bits_start);
 
       if (addr == addr0)
 	fatal (FATAL_RANDOM);

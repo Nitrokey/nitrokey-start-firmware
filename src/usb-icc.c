@@ -386,7 +386,7 @@ icc_power_off (void)
 }
 
 int res_APDU_size;
-uint8_t *res_APDU_pointer;
+const uint8_t *res_APDU_pointer;
 
 static void
 icc_send_data_block (int len, uint8_t status, uint8_t chain)

@@ -25,7 +25,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from intel_hex import *
 from struct import *
-import sys, time, struct
+import sys, time, os
 
 # INPUT: binary file
 
@@ -218,7 +218,7 @@ def get_device():
                             return dev, config, alt
     raise ValueError, "Device not found"
 
-def main(filename):
+def main(fileid, filename):
     f = open(filename)
     data = f.read()
     f.close()
@@ -234,7 +234,7 @@ def main(filename):
     elif icc.icc_get_status() == 1:
         icc.icc_power_on()
     icc.cmd_verify(3, "12345678")
-    icc.cmd_update_binary(0, data)
+    icc.cmd_update_binary(fileid, data)
     icc.cmd_select_openpgp()
     data = data[:-2]
     data_in_device = icc.cmd_get_data(0x7f, 0x21)
@@ -243,4 +243,10 @@ def main(filename):
     return 0
 
 if __name__ == '__main__':
-    main(sys.argv[1])
+    if os.path.basename(sys.argv[1] == "random_bits"):
+        fileid = 1
+        print "Updating random bits"
+    else:
+        fileid = 0              # Card holder certificate
+        print "Updating card holder certificate"
+    main(fileid, sys.argv[1])

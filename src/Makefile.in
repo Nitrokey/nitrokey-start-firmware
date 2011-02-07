@@ -204,19 +204,10 @@ endif
 
 include $(CHIBIOS)/os/ports/GCC/ARM/rules.mk
 
-OBJS += random-data.o
 OUTFILES += random_bits
 
 random_bits:
 	dd if=/dev/random bs=1 of=random_bits count=1024
-
-random-data.o: random_bits
-	$(CP) -I binary $< -O elf32-littlearm -B arm \
-	      --rename-section \
-		.data=.gnuk_random,alloc,load,readonly,data,contents \
-		$@
-
-$(PROJECT).elf: random-data.o
 
 distclean: clean
 	-rm -f Makefile gnuk.ld config.h

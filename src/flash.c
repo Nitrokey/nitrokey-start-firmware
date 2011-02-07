@@ -600,10 +600,11 @@ flash_check_blank (const uint8_t *page, int size)
 int
 flash_erase_binary (uint8_t file_id)
 {
-  const uint8_t *p = &ch_certificate_start;
+  const uint8_t *p;
 
   if (file_id == FILEID_CH_CERTIFICATE)
     {
+      p = &ch_certificate_start;
       if (flash_check_blank (p, FLASH_CH_CERTIFICATE_SIZE) == 0)
 	{
 	  flash_erase_page ((uint32_t)p);
@@ -611,6 +612,15 @@ flash_erase_binary (uint8_t file_id)
 	  flash_erase_page ((uint32_t)p + FLASH_PAGE_SIZE);
 #endif
 	}
+
+      return 0;
+    }
+  else if (file_id == FILEID_RANDOM)
+    {
+      p = &random_bits_start;
+
+      if (flash_check_blank (p, FLASH_PAGE_SIZE) == 0)
+	flash_erase_page ((uint32_t)p);
 
       return 0;
     }
@@ -623,29 +633,39 @@ int
 flash_write_binary (uint8_t file_id, const uint8_t *data,
 		    uint16_t len, uint16_t offset)
 {
+  uint16_t maxsize;
+  const uint8_t *p;
+
   if (file_id == FILEID_CH_CERTIFICATE)
     {
-      if (offset + len > FLASH_CH_CERTIFICATE_SIZE || (offset&1) || (len&1))
-	return -1;
-      else
-	{
-	  const uint8_t *p = &ch_certificate_start;
-	  uint16_t hw;
-	  uint32_t addr;
-	  int i;
-
-	  addr = (uint32_t)p + offset;
-	  for (i = 0; i < len/2; i++)
-	    {
-	      hw = data[i*2] | (data[i*2+1]<<8);
-	      if (flash_program_halfword (addr, hw) != FLASH_COMPLETE)
-		flash_warning ("DO WRITE ERROR");
-	      addr += 2;
-	    }
-
-	  return 0;
-	}
+      maxsize = FLASH_CH_CERTIFICATE_SIZE;
+      p = &ch_certificate_start;
+    }
+  else if (file_id == FILEID_RANDOM)
+    {
+      maxsize = FLASH_PAGE_SIZE;
+      p = &random_bits_start;
     }
   else
     return -1;
+
+  if (offset + len > maxsize || (offset&1) || (len&1))
+    return -1;
+  else
+    {
+      uint16_t hw;
+      uint32_t addr;
+      int i;
+
+      addr = (uint32_t)p + offset;
+      for (i = 0; i < len/2; i++)
+	{
+	  hw = data[i*2] | (data[i*2+1]<<8);
+	  if (flash_program_halfword (addr, hw) != FLASH_COMPLETE)
+	    flash_warning ("DO WRITE ERROR");
+	  addr += 2;
+	}
+
+      return 0;
+    }
 }

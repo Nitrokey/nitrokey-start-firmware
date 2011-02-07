@@ -1,5 +1,17 @@
 2011-02-04  NIIBE Yutaka  <gniibe@fsij.org>
 
+	* tool/gnuk_update_binary.py: Support updating random bits.
+
+	* src/random.c (random_bits_start): Renamed.
+	(random_bytes_get): Check initial erased state.
+
+	* src/Makefile.in (random-data.o): Removed.
+
+	* src/gnuk.ld.in (.gnuk_random): Don't have .gnuk_random any more.
+
+	* src/flash.c (flash_erase_binary): Support FILEID_RANDOM.
+	(flash_write_binary): Ditto.
+
 	* src/openpgp.c (cmd_reset_user_password): Fix PINPAD_SUPPORT case
 	with reset code.
 
