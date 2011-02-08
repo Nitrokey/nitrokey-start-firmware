@@ -1,7 +1,7 @@
 #! /usr/bin/python
 
 """
-gnuk_update_binary.py - a tool to put binary to Gnuk Token
+gnuk_put_binary.py - a tool to put binary to Gnuk Token
 This tool is for importing certificate, updating random number, etc.
 
 Copyright (C) 2011 Free Software Initiative of Japan
@@ -25,7 +25,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from intel_hex import *
 from struct import *
-import sys, time, os
+import sys, time, os, binascii
 
 # INPUT: binary file
 
@@ -166,6 +166,21 @@ class gnuk_token:
         if not (sw[0] == 0x90 and sw[1] == 0x00):
             raise ValueError, "cmd_verify"
 
+    def cmd_write_binary(self, fileid, data):
+        count = 0
+        data_len = len(data)
+        while count*256 < data_len:
+            if count == 0:
+                cmd_data = iso7816_compose(0xd0, 0x80+fileid, 0x00, data[:256])
+            else:
+                cmd_data = iso7816_compose(0xd0, count, 0x00, data[256*count:256*(count+1)])
+            sw = self.icc_send_cmd(cmd_data)
+            if len(sw) != 2:
+                raise ValueError, "cmd_write_binary"
+            if not (sw[0] == 0x90 and sw[1] == 0x00):
+                raise ValueError, "cmd_write_binary"
+            count += 1
+
     def cmd_update_binary(self, fileid, data):
         count = 0
         data_len = len(data)
@@ -218,12 +233,7 @@ def get_device():
                             return dev, config, alt
     raise ValueError, "Device not found"
 
-def main(fileid, filename):
-    f = open(filename)
-    data = f.read()
-    f.close()
-    print "%s: %d" % (filename, len(data))
-    data += "\x90\x00"
+def main(fileid, is_update, data):
     dev, config, intf = get_device()
     print "Device: ", dev.filename
     print "Configuration: ", config.value
@@ -234,7 +244,10 @@ def main(fileid, filename):
     elif icc.icc_get_status() == 1:
         icc.icc_power_on()
     icc.cmd_verify(3, "12345678")
-    icc.cmd_update_binary(fileid, data)
+    if is_update:
+        icc.cmd_update_binary(fileid, data)
+    else:
+        icc.cmd_write_binary(fileid, data)
     icc.cmd_select_openpgp()
     data = data[:-2]
     data_in_device = icc.cmd_get_data(0x7f, 0x21)
@@ -243,10 +256,46 @@ def main(fileid, filename):
     return 0
 
 if __name__ == '__main__':
-    if os.path.basename(sys.argv[1] == "random_bits"):
-        fileid = 1
+    if sys.argv[1] == '-u':
+        is_update = True
+        sys.argv.pop(1)
+    else:
+        is_update = False
+    if sys.argv[1] == '-s':
+        fileid = 2              # serial number
+        filename = sys.argv[2]
+        f = open(filename)
+        email = os.environ['MAIL']
+        serial_data_hex = None
+        for line in f.readlines():
+            field = string.split(line)
+            if field[0] == os.environ['MAIL']:
+                serial_data_hex = field[1].replace(':','')
+        f.close()
+        if not serial_data_hex:
+            print "No serial number"
+            exit 1
+        print "Writing serial number"
+        data = binascii.unhexlify(serial_data_hex)
+    elif sys.argv[1] == '-r':
+        fileid = 1              # Random number bits
+        if len(sys.argv) == 3:
+            filename = sys.argv[2]
+            f = open(filename)
+        else:
+            filename = stdin
+            f = sys.stdin
+        data = f.read()
+        f.close()
+        print "%s: %d" % (filename, len(data))
         print "Updating random bits"
     else:
         fileid = 0              # Card holder certificate
+        filename = sys.argv[2]
+        f = open(filename)
+        data = f.read()
+        f.close()
+        print "%s: %d" % (filename, len(data))
+        data += "\x90\x00"
         print "Updating card holder certificate"
-    main(fileid, sys.argv[1])
+    main(fileid, is_update, data)

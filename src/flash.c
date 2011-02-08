@@ -646,6 +646,11 @@ flash_write_binary (uint8_t file_id, const uint8_t *data,
       maxsize = FLASH_PAGE_SIZE;
       p = &random_bits_start;
     }
+  else if (file_id == FILEID_SERIAL_NO)
+    {
+      maxsize = 6;
+      p = &openpgpcard_aid[8];
+    }
   else
     return -1;
 

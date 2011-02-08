@@ -24,7 +24,6 @@ help=no
 target=OLIMEX_STM32_H103
 verbose=no
 with_dfu=default
-with_fixed_serial=no
 debug=no
 pinpad=no
 
@@ -62,10 +61,6 @@ for option; do
     with_dfu=yes ;;
   --without-dfu)
     with_dfu=no ;;
-  --with-fixed-serial)
-    with_fixed_serial=yes ;;
-  --without-fixed-serial)
-    with_fixed_serial=no ;;
   *)
     echo "Unrecognized option \`$option'" >&2
     echo "Try \`$0 --help' for more information." >&2
@@ -94,7 +89,6 @@ Configuration:
   --enable-pinpad={cir,dial}
 			PIN input device support	[no]
   --with-dfu		build image for DFU 		[<target specific>]
-  --with-fixed-serial	Use fixed serial number		[no: chip unique ID]
 EOF
   exit 0
 fi
@@ -134,20 +128,6 @@ STM8S_DISCOVERY)
 *)
   ;;
 esac
-
-# --with-fixed-serial option
-if test "$with_fixed_serial" = "no"; then
-  echo "Using chip unique ID for card AID"
-  SERIAL_DEFINE="#undef SERIAL_NUMBER_IN_AID"
-else
-  echo "Using fixed serial number (at compile time) for card AID"
-  if test "x$MAIL" = "x"; then
-    echo "ERROR: Please set MAIL shell variable to select FSIJ serial number" >&2
-    exit 1
-  fi
-  SERIAL=`sed -n -e "/^$MAIL/s/^.* \(..\):\(..\):\(..\):\(..\)/0x\1, 0x\2, 0x\3, 0x\4/p" ../FSIJ_SERIAL_NUMBER`
-  SERIAL_DEFINE="#define SERIAL_NUMBER_IN_AID $SERIAL"
-fi
 
 # --enable-debug option
 if test "$debug" = "yes"; then
@@ -201,6 +181,5 @@ sed -e "s/@DEBUG_DEFINE@/$DEBUG_DEFINE/" \
     -e "s/@PINPAD_DEFINE@/$PINPAD_DEFINE/" \
     -e "s/@PINPAD_MORE_DEFINE@/$PINPAD_MORE_DEFINE/" \
     -e "s/@DFU_DEFINE@/$DFU_DEFINE/" \
-    -e "s/@SERIAL_DEFINE@/$SERIAL_DEFINE/" \
 	< config.h.in > config.h
 exit 0

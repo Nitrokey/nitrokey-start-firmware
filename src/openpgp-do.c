@@ -406,23 +406,17 @@ do_kgtime_all (uint16_t tag, int with_tag)
   return 1;
 }
 
-const uint8_t openpgpcard_aid_template[] = {
+const uint8_t openpgpcard_aid[] = {
   0xd2, 0x76, 0x00, 0x01, 0x24, 0x01,
   0x02, 0x00,			/* Version 2.0 */
-#if defined(SERIAL_NUMBER_IN_AID)
-  0xf5, 0x17, 			/* Manufacturer: FSIJ */
-  SERIAL_NUMBER_IN_AID
-#else
-  0xff, 0xfe,			/* Random bytes */
-#endif
+  0xff, 0xff, 0xff, 0xff,  0xff, 0xff, /* To be overwritten */
+  /* v. id */ /*   serial number   */
 };
 
 static int
 do_openpgpcard_aid (uint16_t tag, int with_tag)
 {
-#if !defined(SERIAL_NUMBER_IN_AID)
-  const uint8_t *u = unique_device_id ();
-#endif
+  const uint16_t *vid_p = (const uint16_t *)&openpgpcard_aid[8];
 
   if (with_tag)
     {
@@ -430,14 +424,28 @@ do_openpgpcard_aid (uint16_t tag, int with_tag)
       *res_p++ = 16;
     }
 
-  memcpy (res_p, openpgpcard_aid_template, sizeof (openpgpcard_aid_template));
-  res_p += sizeof (openpgpcard_aid_template);
-#if !defined(SERIAL_NUMBER_IN_AID)
-  memcpy (res_p, u, 4);
-  res_p += 4;
-#endif
+  if (*vid_p == 0xffff || *vid_p == 0x0000)
+    {
+      const uint8_t *u = unique_device_id ();
+
+      memcpy (res_p, openpgpcard_aid, 8);
+      res_p += 8;
+
+      /* vid == 0xfffe: serial number is random byte */
+      *res_p++ = 0xff;
+      *res_p++ = 0xfe;
+      memcpy (res_p, u, 4);
+      res_p += 4;
+    }
+  else
+    {
+      memcpy (res_p, openpgpcard_aid, 14);
+      res_p += 14;
+    }
+
   *res_p++ = 0;
   *res_p++ = 0;
+
   return 1;
 }
 

@@ -1,3 +1,24 @@
+2011-02-08  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* tool/gnuk_put_binary.py: Renamed (was: gnuk_update_binary.py).
+	(gnuk_token.cmd_write_binary): New.
+	(main): Support writing serial number.
+
+	* GNUK_SERIAL_NUMBER: Renamed (was: FSIJ_SERIAL_NUMBER).
+
+	* src/config.h.in (@SERIAL_DEFINE@): Removed.
+
+	* src/gnuk.h (FILEID_SERIAL_NO): New.
+
+	* src/openpgp.c (INS_WRITE_BINARY, cmd_write_binary): New.
+
+	* src/configure: Remove --with-fixed-serial support.
+
+	* src/openpgp-do.c (do_openpgpcard_aid): Remove support of
+	SERIAL_NUMBER_IN_AID.
+
+	* src/flash.c (flash_write_binary): Support FILEID_SERIAL_NO.
+
 2011-02-04  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* tool/gnuk_update_binary.py: Support updating random bits.

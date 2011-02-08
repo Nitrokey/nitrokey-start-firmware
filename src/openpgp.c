@@ -38,6 +38,7 @@
 #define INS_SELECT_FILE				0xa4
 #define INS_READ_BINARY				0xb0
 #define INS_GET_DATA				0xca
+#define INS_WRITE_BINARY			0xd0
 #define INS_UPDATE_BINARY			0xd6
 #define INS_PUT_DATA				0xda
 #define INS_PUT_DATA_ODD			0xdb	/* For key import */
@@ -916,6 +917,68 @@ cmd_update_binary (void)
 }
 
 
+static void
+cmd_write_binary (void)
+{
+  int len = cmd_APDU[4];
+  int data_start = 5;
+  uint16_t offset;
+  int r;
+
+  if (len == 0)
+    {
+      len = (cmd_APDU[5]<<8) | cmd_APDU[6];
+      data_start = 7;
+    }
+
+  DEBUG_INFO (" - WRITE BINARY\r\n");
+
+  if (gpg_passwd_locked (PW_ERR_PW3) || !ac_check_status (AC_ADMIN_AUTHORIZED))
+    {
+      DEBUG_INFO ("security error.");
+      GPG_SECURITY_FAILURE ();
+      return;
+    }
+
+  if ((cmd_APDU[2] & 0x80))
+    if ((cmd_APDU[2] & 0x7f) == FILEID_SERIAL_NO)
+      {
+	file_selection = FILE_EF_CH_CERTIFICATE + (cmd_APDU[2] & 0x7f);
+	offset = 0;
+      }
+    else
+      {
+	GPG_NO_FILE ();
+	return;
+      }
+  else
+    {
+      if (file_selection != FILEID_SERIAL_NO)
+	{
+	  GPG_COMMAND_NOT_ALLOWED ();
+	  return;
+	}
+
+      offset = (cmd_APDU[2] << 8) | cmd_APDU[3];
+    }
+
+  DEBUG_SHORT (len);
+  DEBUG_SHORT (offset);
+
+  r = flash_write_binary (file_selection - FILE_EF_CH_CERTIFICATE,
+			  &cmd_APDU[data_start], len, offset);
+  if (r < 0)
+    {
+      DEBUG_INFO ("memory error.\r\n");
+      GPG_MEMORY_FAILURE ();
+      return;
+    }
+
+  GPG_SUCCESS ();
+  DEBUG_INFO ("WRITE BINARY done.\r\n");
+}
+
+
 struct command
 {
   uint8_t command;
@@ -932,6 +995,7 @@ const struct command cmds[] = {
   { INS_SELECT_FILE, cmd_select_file },
   { INS_READ_BINARY, cmd_read_binary },
   { INS_GET_DATA, cmd_get_data },
+  { INS_WRITE_BINARY, cmd_write_binary}, /* Not in OpenPGP card protocol */
   { INS_UPDATE_BINARY, cmd_update_binary }, /* Not in OpenPGP card protocol */
   { INS_PUT_DATA, cmd_put_data },
   { INS_PUT_DATA_ODD, cmd_put_data },

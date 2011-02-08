@@ -118,6 +118,7 @@ extern void flash_reset_counter (uint8_t counter_tag_nr);
 
 #define FILEID_CH_CERTIFICATE	0
 #define FILEID_RANDOM		1
+#define FILEID_SERIAL_NO	2
 extern int flash_erase_binary (uint8_t file_id);
 extern int flash_write_binary (uint8_t file_id, const uint8_t *data, uint16_t len, uint16_t offset);
 
@@ -305,7 +306,7 @@ extern uint8_t pw1_keystring[KEYSTRING_SIZE_PW1];
 #define OPENPGP_CARD_INITIAL_PW3 "12345678"
 #endif
 
-extern const uint8_t openpgpcard_aid[17] __attribute__ ((aligned (1)));
+extern const uint8_t openpgpcard_aid[14];
 
 extern int gpg_get_pw1_lifetime (void);
 
