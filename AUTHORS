@@ -27,9 +27,12 @@ NIIBE Yutaka:
 	boards/CQ_STARM/board.h
 	boards/CQ_STARM/board.mk
 	boards/CQ_STARM/mcuconf.h
-    Wrote a tool for DfuSe:
+    Wrote tools for DfuSe:
 	tool/dfuse.py
+	tool/dump_mem.py
 	tool/intel_hex.py
+    Wrote a tool for Gnuk:
+	tool/gnuk_put_binary.py
     Wrote:
 	gnuk.svg
 	src/configure

@@ -25,7 +25,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from intel_hex import *
 from struct import *
-import sys, time, os, binascii
+import sys, time, os, binascii, string
 
 # INPUT: binary file
 
@@ -80,14 +80,6 @@ class gnuk_token:
 
         self.__timeout = 10000
         self.__seq = 0
-
-
-    def __del__(self):
-        try:
-            self.__devhandle.releaseInterface()
-            del self.__devhandle
-        except:
-            pass
 
     def icc_get_result(self):
         msg = self.__devhandle.bulkRead(self.__bulkin, 1024, self.__timeout)
@@ -249,9 +241,10 @@ def main(fileid, is_update, data):
     else:
         icc.cmd_write_binary(fileid, data)
     icc.cmd_select_openpgp()
-    data = data[:-2]
-    data_in_device = icc.cmd_get_data(0x7f, 0x21)
-    compare(data, data_in_device)
+    if fileid == 0:
+        data = data[:-2]
+        data_in_device = icc.cmd_get_data(0x7f, 0x21)
+        compare(data, data_in_device)
     icc.icc_power_off()
     return 0
 
@@ -265,16 +258,16 @@ if __name__ == '__main__':
         fileid = 2              # serial number
         filename = sys.argv[2]
         f = open(filename)
-        email = os.environ['MAIL']
+        email = os.environ['EMAIL']
         serial_data_hex = None
         for line in f.readlines():
             field = string.split(line)
-            if field[0] == os.environ['MAIL']:
+            if field[0] == email:
                 serial_data_hex = field[1].replace(':','')
         f.close()
         if not serial_data_hex:
             print "No serial number"
-            exit 1
+            exit(1)
         print "Writing serial number"
         data = binascii.unhexlify(serial_data_hex)
     elif sys.argv[1] == '-r':
@@ -291,7 +284,7 @@ if __name__ == '__main__':
         print "Updating random bits"
     else:
         fileid = 0              # Card holder certificate
-        filename = sys.argv[2]
+        filename = sys.argv[1]
         f = open(filename)
         data = f.read()
         f.close()

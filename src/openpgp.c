@@ -870,7 +870,7 @@ cmd_update_binary (void)
     }
 
   if ((cmd_APDU[2] & 0x80))
-    if ((cmd_APDU[2] & 0x7f) <= 0x01)
+    if ((cmd_APDU[2] & 0x7f) <= FILEID_RANDOM)
       {
 	file_selection = FILE_EF_CH_CERTIFICATE + (cmd_APDU[2] & 0x7f);
 	r = flash_erase_binary (file_selection - FILE_EF_CH_CERTIFICATE);
@@ -941,7 +941,7 @@ cmd_write_binary (void)
     }
 
   if ((cmd_APDU[2] & 0x80))
-    if ((cmd_APDU[2] & 0x7f) == FILEID_SERIAL_NO)
+    if ((cmd_APDU[2] & 0x7f) <= FILEID_SERIAL_NO)
       {
 	file_selection = FILE_EF_CH_CERTIFICATE + (cmd_APDU[2] & 0x7f);
 	offset = 0;
@@ -953,7 +953,9 @@ cmd_write_binary (void)
       }
   else
     {
-      if (file_selection != FILEID_SERIAL_NO)
+      if (file_selection != FILE_EF_CH_CERTIFICATE
+	  && file_selection != FILE_EF_RANDOM
+	  && file_selection != FILEID_SERIAL_NO)
 	{
 	  GPG_COMMAND_NOT_ALLOWED ();
 	  return;

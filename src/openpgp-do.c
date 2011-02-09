@@ -416,7 +416,7 @@ const uint8_t openpgpcard_aid[] = {
 static int
 do_openpgpcard_aid (uint16_t tag, int with_tag)
 {
-  const uint16_t *vid_p = (const uint16_t *)&openpgpcard_aid[8];
+  uint16_t vid = *((const volatile uint16_t *)&openpgpcard_aid[8]);
 
   if (with_tag)
     {
@@ -424,7 +424,7 @@ do_openpgpcard_aid (uint16_t tag, int with_tag)
       *res_p++ = 16;
     }
 
-  if (*vid_p == 0xffff || *vid_p == 0x0000)
+  if (vid == 0xffff || vid == 0x0000)
     {
       const uint8_t *u = unique_device_id ();
 

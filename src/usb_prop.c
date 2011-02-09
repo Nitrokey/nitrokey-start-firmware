@@ -37,19 +37,14 @@
 #endif
 
 static uint8_t gnukStringSerial[] = {
-  14*2+2,			/* bLength */
+  13*2+2,			/* bLength */
   USB_STRING_DESCRIPTOR_TYPE,	/* bDescriptorType */
-#if defined(SERIAL_NUMBER_IN_AID)
-  'F', 0,			/* 'F' for Fixed */
-#else
-  'C', 0,			/* 'C' for Chip uniqure ID */
-#endif
-  '-', 0,
-  '0', 0, '.', 0, '8', 0,	/* Version number of Gnuk */
+  '0', 0, '.', 0, '1', 0, '0', 0, /* Version number of Gnuk */
   '-', 0,
   0, 0, 0, 0, 0, 0, 0, 0,
   0, 0, 0, 0, 0, 0, 0, 0,
 };
+#define ID_OFFSET 12
 
 static void
 gnuk_device_init (void)
@@ -59,10 +54,10 @@ gnuk_device_init (void)
 
   for (i = 0; i < 4; i++)
     {
-      gnukStringSerial[i*4+14] = (u[i*2] >> 4) + 'A';
-      gnukStringSerial[i*4+15] = 0;
-      gnukStringSerial[i*4+16] = (u[i*2+1] & 0x0f) + 'A';
-      gnukStringSerial[i*4+17] = 0;
+      gnukStringSerial[i*4+ID_OFFSET+0] = (u[i*2] >> 4) + 'A';
+      gnukStringSerial[i*4+ID_OFFSET+1] = 0;
+      gnukStringSerial[i*4+ID_OFFSET+2] = (u[i*2+1] & 0x0f) + 'A';
+      gnukStringSerial[i*4+ID_OFFSET+3] = 0;
     }
 
   pInformation->Current_Configuration = 0;

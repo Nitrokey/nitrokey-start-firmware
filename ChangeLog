@@ -1,3 +1,18 @@
+2011-02-09  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/usb_prop.c (gnukStringSerial): Updated.
+
+	* tool/gnuk_put_binary.py (gnuk_token.__del__): Removed.
+	Releasing the interface is done in PyUSB.
+
+	* tool/dfuse.py (DFU_STM32.__del__): Removed.
+
+	* src/openpgp.c (cmd_write_binary): Support random bits and card
+	holder certificate as well.
+
+	* src/openpgp-do.c (do_openpgpcard_aid): Add volatile to prevent
+	compiler optimization to access AID.
+
 2011-02-08  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* tool/gnuk_put_binary.py: Renamed (was: gnuk_update_binary.py).

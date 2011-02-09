@@ -119,13 +119,6 @@ class DFU_STM32:
         # Initialize members
         self.__blocknum = 0
 
-    def __del__(self):
-        try:
-            self.__devhandle.releaseInterface()
-            del self.__devhandle
-        except:
-            pass
-
     def ll_getdev(self):
         return self.__devhandle
 
