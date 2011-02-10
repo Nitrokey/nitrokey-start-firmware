@@ -93,8 +93,8 @@ EOF
   exit 0
 fi
 
-BOARD_MAKEFILE=../boards/$target/board.mk
-if test -f $BOARD_MAKEFILE; then
+BOARD_DIR=../boards/$target
+if test -d $BOARD_DIR; then
   echo "Configured for target: $target"
 else
   echo "Unsupported target \`$target'" >&2
@@ -170,7 +170,7 @@ else
   echo "PIN pad option enabled ($pinpad)"
 fi
 
-sed -e "s%@BOARD_MAKEFILE@%$BOARD_MAKEFILE%" \
+sed -e "s%@BOARD_DIR@%$BOARD_DIR%" \
     -e "s%@DEBUG_MAKE_OPTION@%$DEBUG_MAKE_OPTION%" \
     -e "s%@PINPAD_MAKE_OPTION@%$PINPAD_MAKE_OPTION%" \
 	< Makefile.in > Makefile

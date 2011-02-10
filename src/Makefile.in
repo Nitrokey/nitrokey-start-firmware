@@ -1,5 +1,6 @@
 # Makefile for Gnuk
 
+BOARD_DIR=@BOARD_DIR@
 @PINPAD_MAKE_OPTION@
 @DEBUG_MAKE_OPTION@
 ifneq ($(ENABLE_DEBUG),)
@@ -72,7 +73,6 @@ include $(CHIBIOS)/os/kernel/kernel.mk
 include stmusb.mk
 include vcomport.mk
 include crypt.mk
-include @BOARD_MAKEFILE@
 
 # C sources that can be compiled in ARM or THUMB mode depending on the global
 # setting.
@@ -81,6 +81,8 @@ CSRC = $(PORTSRC) \
        $(HALSRC) \
        $(PLATFORMSRC) \
        $(BOARDSRC) \
+       ../boards/common/hw_config.c \
+       $(BOARD_DIR)/board.c \
        $(CHIBIOS)/os/various/evtimer.c \
        $(CHIBIOS)/os/various/syscalls.c \
        $(STMUSBSRC) \
@@ -105,7 +107,7 @@ ASMSRC = $(PORTASM) \
 
 INCDIR = $(CRYPTINCDIR) $(STMUSBINCDIR) $(VCOMDIR) \
 	 $(PORTINC) $(KERNINC) $(TESTINC) \
-         $(HALINC) $(PLATFORMINC) $(BOARDINC) \
+         $(HALINC) $(PLATFORMINC) ../boards/common $(BOARD_DIR) \
          $(CHIBIOS)/os/various
 
 #
@@ -204,10 +206,8 @@ endif
 
 include $(CHIBIOS)/os/ports/GCC/ARM/rules.mk
 
-OUTFILES += random_bits
-
 random_bits:
 	dd if=/dev/random bs=1 of=random_bits count=1024
 
 distclean: clean
-	-rm -f Makefile gnuk.ld config.h
+	-rm -f Makefile gnuk.ld config.h random_bits

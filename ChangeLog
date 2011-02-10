@@ -1,3 +1,17 @@
+2011-02-10  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* Version 0.10.
+
+	* src/configure, src/Makefile.in (BOARD_DIR): New.
+
+	* boards/CQ_STARM/board.mk, boards/OLIMEX_STM32_H103/board.mk:
+	Removed.
+	* boards/STBEE/board.mk, boards/STBEE_MINI/board.mk: Removed.
+	* boards/STM32_PRIMER2/board.mk, boards/STM8S_DISCOVERY/board.mk:
+	Removed.
+
+	* src/Makefile.in (OUTFILES): Don't include random_bits.
+
 2011-02-09  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* src/usb_prop.c (gnukStringSerial): Updated.

@@ -1,5 +1,24 @@
 Gnuk NEWS - User visible changes
 
+* Major changes in Gnuk 0.10
+
+  Released 2011-02-10, by NIIBE Yutaka
+
+** The executable can be installed to multiple devices.
+So far, users of Gnuk should have not shared single executable among
+multiple devices because the executable includes random bits (or
+fixed serial number).  Now, random_bits and fixed serial number are
+configured *after* compilation, we can install single executable image
+to multiple devices.  Note that we need to configure random_bits for
+each device.
+
+** Removed configure option: --with-fixed-serial
+It is not compile time option any more.  After installation, we can
+modify serial number in AID by tool/gnuk_put_binary.py.  Modification
+is possible only once.  If you don't modify, Gnuk uses unique chip ID
+of STM32 processor for AID.
+
+
 * Major changes in Gnuk 0.9
 
   Released 2011-02-01, by NIIBE Yutaka
@@ -15,8 +34,8 @@ changes in Gnuk, it could be relatively easily possible to support
 Gnuk Token by OpenSC with a few changes to libopensc/card-openpgp.c,
 and libopensc/pkcs15-openpgp.c.
 
-** New board support "STBEE"
-STBEE is a board by Strawberry Linux Co., Ltd., and it has
+** New board support "STBee"
+STBee is a board by Strawberry Linux Co., Ltd., and it has
 STM32F103VET6 on the board.  The chip is High Density CPU with 512KB
 flash memory and many I/O.  If you want to connect sensor, display,
 etc., this board would be a good candidate.

@@ -2,7 +2,6 @@ Kaz Kojima:
     Added STM32 Primer2 support:
 	boards/STM32_PRIMER2/board.c
 	boards/STM32_PRIMER2/board.h
-	boards/STM32_PRIMER2/board.mk
 	boards/STM32_PRIMER2/mcuconf.h
 
 NIIBE Yutaka:
@@ -10,22 +9,18 @@ NIIBE Yutaka:
     Added STBee support:
 	boards/STBEE/board.c
 	boards/STBEE/board.h
-	boards/STBEE/board.mk
 	boards/STBEE/mcuconf.h
     Added STM8S Discovery Kit support:
 	boards/STM8S_DISCOVERY/board.c
 	boards/STM8S_DISCOVERY/board.h
-	boards/STM8S_DISCOVERY/board.mk
-	boards/STM8S_DISCOVERY/mcuconf.mk
+	boards/STM8S_DISCOVERY/mcuconf.h
     Added STBee Mini support:
 	boards/STBEE_MINI/board.c
 	boards/STBEE_MINI/board.h
-	boards/STBEE_MINI/board.mk
 	boards/STBEE_MINI/mcuconf.h
     Added CQ STARM support:
 	boards/CQ_STARM/board.c
 	boards/CQ_STARM/board.h
-	boards/CQ_STARM/board.mk
 	boards/CQ_STARM/mcuconf.h
     Wrote tools for DfuSe:
 	tool/dfuse.py

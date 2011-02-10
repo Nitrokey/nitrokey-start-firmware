@@ -1,7 +1,7 @@
 Gnuk - software for GPG USB Token
 
-							    Version 0.9
-							     2011-02-01
+							   Version 0.10
+							     2011-02-10
 						           Niibe Yutaka
 				      Free Software Initiative of Japan
 
@@ -26,8 +26,11 @@ USB Token by Gnuk everywhere.
 Release notes
 =============
 
-This is tenth release of Gnuk.  While it works well for specific
-usages, it is still experimental.
+This is eleventh release of Gnuk.  While it works well for specific
+usages, it is still experimental.  Note that you need to write random
+bits after installation of gnuk executable to the chip from this
+release.  This procedure is required to share a single executable
+among multiple devices.
 
 Tested features are:
 
@@ -72,6 +75,7 @@ Not supported feature(s):
 
 	* Overriding key import.  You need to remove all keys first.
 
+	* Key generation
 
 Targets
 =======
@@ -185,18 +189,11 @@ Type:
 
   $ make
 
-In the make process, it takes time for the command of
-
-   dd if=/dev/random bs=1 of=random_bits count=1024
-
-Don't just wait, but do some other work on your PC.
-/dev/random needs entropy to finish.
-
 Then, we will have "gnuk.elf".
 
 
-How to run
-==========
+How to install
+==============
 
 Olimex STM32-H103 board
 -----------------------
@@ -222,9 +219,21 @@ If you are using FTDI-2232D module and the connection is standard, type:
 
   $ openocd -f interface/openocd-usb.cfg -f target/stm32.cfg
 
-Then, invoke telnet to connect OpenCD and write image as above example
-of Olimex STM32-H103.
-  
+Initially, the flash ROM of the chip is protected.  you need to do:
+
+  $ telnet localhost 4444
+  > reset halt
+  > stm32x unlock 0
+  > reset
+  > shutdown
+  $ 
+
+and re-connect the board.  Note that power-off / power-on sequence is
+required to reset flash ROM.
+
+Then, invoke OpenOCD again and telnet to connect OpenCD and write
+image as above example of Olimex STM32-H103.
+
 
 CQ STARM
 --------
@@ -248,6 +257,67 @@ to flash:
 
 Then, reset the board.
 
+
+How to protect flash ROM
+========================
+
+Invoke your OpenOCD and type:
+
+  $ telnet localhost 4444
+  > reset halt
+  > stm32x lock 0
+  > reset
+  > shutdown
+
+After power-off / power-on sequence, the contents of flash ROM cannot
+be accessible from JTAG debugger.
+
+Note that it would be still possible for some implementation of DfuSe
+to access the contents.  If you want to protect, killing DfuSe and
+accessing by JTAG debugger is recommended.
+
+
+How to configure
+================
+
+You need python and PyUSB (python-usb package in Debian).
+
+(1) In the 'src' directory, type
+
+  $ make random_bits
+
+In this process, it takes time for the command of
+
+   dd if=/dev/random bs=1 of=random_bits count=1024
+
+Don't just wait, but do some other works on your PC.
+/dev/random needs entropy to finish.
+
+(2) Stop the pcsc daemon.
+
+  # /etc/init.d/pcscd stop
+
+(3) Write the random bits to the device
+
+Connect your board to USB port of your PC.  And invoke gnuk_put_binary.py:
+
+  # ../tool/gnuk_put_binary.py -r random_bits random_bits: 1024
+
+(4) [Optional] Write fixed serial number
+
+If you use fixed serial number in the file 'GNUK_SERIAL_NUMBER', you can do:
+
+  # EMAIL=<YOUR-EMAIL-ADDRESS> ../tool/gnuk_put_binary.py -s ../GNUK_SERIAL_NUMBER 
+
+(5) [Optional] Write card holder certificate
+
+If you have card holder certificate binary file, you can do:
+
+  # ../tool/gnuk_put_binary.py ../../<YOUR-CERTIFICATE>.bin 
+
+
+How to run
+==========
 
 Debug enabled
 -------------
