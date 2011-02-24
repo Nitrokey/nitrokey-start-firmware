@@ -301,19 +301,27 @@ Don't just wait, but do some other works on your PC.
 
 Connect your board to USB port of your PC.  And invoke gnuk_put_binary.py:
 
-  # ../tool/gnuk_put_binary.py -r random_bits random_bits: 1024
+  # ../tool/gnuk_put_binary.py -r random_bits
+  random_bits: 1024
+  Updating random bits
+  ...
 
 (4) [Optional] Write fixed serial number
 
 If you use fixed serial number in the file 'GNUK_SERIAL_NUMBER', you can do:
 
   # EMAIL=<YOUR-EMAIL-ADDRESS> ../tool/gnuk_put_binary.py -s ../GNUK_SERIAL_NUMBER 
+  Writing serial number
+  ...
 
 (5) [Optional] Write card holder certificate
 
 If you have card holder certificate binary file, you can do:
 
   # ../tool/gnuk_put_binary.py ../../<YOUR-CERTIFICATE>.bin 
+  ../../<YOUR-CERTIFICATE>.bin: <LENGTH-OF-YOUR-CERTIFICATE>
+  Updating card holder certificate
+  ...
 
 
 How to run

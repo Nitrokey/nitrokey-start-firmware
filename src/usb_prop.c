@@ -153,18 +153,18 @@ gnuk_device_SetInterface (void)
 
   if (intf == 0)
     {
-      ClearDTOG_RX (0x02);
-      ClearDTOG_TX (0x81);
+      ClearDTOG_RX (ENDP2);
+      ClearDTOG_TX (ENDP1);
     }
 #ifdef ENABLE_VIRTUAL_COM_PORT
   else if (intf == 1)
     {
-      ClearDTOG_TX (0x84);
+      ClearDTOG_TX (ENDP4);
     }
   else if (intf == 2)
     {
-      ClearDTOG_RX (0x05);
-      ClearDTOG_TX (0x83);
+      ClearDTOG_RX (ENDP5);
+      ClearDTOG_TX (ENDP3);
     }
 #endif
 }

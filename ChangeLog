@@ -1,3 +1,8 @@
+2011-02-24  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/usb_prop.c (gnuk_device_SetInterface): Fix argument to
+	ClearDTOG_TX.
+
 2011-02-10  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* Version 0.10.
