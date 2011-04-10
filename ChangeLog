@@ -1,3 +1,7 @@
+2011-04-11  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* tool/dfuse.py (DFU_STM32.verify): support data size of non-1-KiB.
+
 2011-02-24  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* src/usb_prop.c (gnuk_device_SetInterface): Fix argument to

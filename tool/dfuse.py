@@ -229,7 +229,7 @@ class DFU_STM32:
             data = ih.memory[start_addr]
             end_addr = start_addr + len(data)
             addr = start_addr & 0xfffffc00
-            # XXX: data should be 1-KiB aligned and size should be just KiB.
+            # XXX: data should be 1-KiB aligned
             if addr != start_addr:
                 raise ValueError, "padding is not supported yet"
             self.dfuse_set_address_pointer(addr)
@@ -272,7 +272,7 @@ class DFU_STM32:
             data = ih.memory[start_addr]
             end_addr = start_addr + len(data)
             addr = start_addr & 0xfffffc00
-            # XXX: data should be 1-KiB aligned and size should be just KiB.
+            # XXX: data should be 1-KiB aligned
             if addr != start_addr:
                 raise ValueError, "padding is not supported yet"
             self.dfuse_set_address_pointer(addr)
@@ -282,8 +282,8 @@ class DFU_STM32:
             while addr < end_addr:
                 block = self.dfuse_read_memory()
                 j = 0
-                for d in block:
-                    if d != (ord(data[i*1024+j])&0xff):
+                for c in data[i*1024:i*1024+1024]
+                    if (ord(c)&0xff) != block[j]:
                         raise ValueError, "verify failed at %08x" % (addr + i*1024+j)
                     j += 1
                 if i & 0x03 == 0x03:
