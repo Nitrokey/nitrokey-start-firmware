@@ -39,7 +39,7 @@
 static uint8_t gnukStringSerial[] = {
   13*2+2,			/* bLength */
   USB_STRING_DESCRIPTOR_TYPE,	/* bDescriptorType */
-  '0', 0, '.', 0, '1', 0, '0', 0, /* Version number of Gnuk */
+  '0', 0, '.', 0, '1', 0, '1', 0, /* Version number of Gnuk */
   '-', 0,
   0, 0, 0, 0, 0, 0, 0, 0,
   0, 0, 0, 0, 0, 0, 0, 0,
