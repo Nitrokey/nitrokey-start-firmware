@@ -1,6 +1,16 @@
-2011-04-10  NIIBE Yutaka  <gniibe@fsij.org>
+2011-04-18  NIIBE Yutaka  <gniibe@fsij.org>
 
-	* tool/dfuse.py (DFU_STM32.verify): data can be less than 1KiB.
+	* gnuk.svg: Updated.
+
+2011-04-15  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* Version 0.11.
+
+	* src/usb_prop.c (gnukStringSerial): Updated.
+
+2011-04-11  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* tool/dfuse.py (DFU_STM32.verify): support data size of non-1-KiB.
 
 2011-02-24  NIIBE Yutaka  <gniibe@fsij.org>
 

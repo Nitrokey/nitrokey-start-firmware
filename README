@@ -1,7 +1,7 @@
 Gnuk - software for GPG USB Token
 
-							   Version 0.10
-							     2011-02-10
+							   Version 0.11
+							     2011-04-15
 						           Niibe Yutaka
 				      Free Software Initiative of Japan
 
@@ -26,11 +26,11 @@ USB Token by Gnuk everywhere.
 Release notes
 =============
 
-This is eleventh release of Gnuk.  While it works well for specific
-usages, it is still experimental.  Note that you need to write random
-bits after installation of gnuk executable to the chip from this
-release.  This procedure is required to share a single executable
-among multiple devices.
+This is twelfth release of Gnuk.  While it works well for specific
+usages and it is considered stable, it is still somewhat experimental.
+Note that you need to write random bits after installation of gnuk
+executable to the chip.  This procedure is required to share a single
+executable among multiple devices.
 
 Tested features are:
 
