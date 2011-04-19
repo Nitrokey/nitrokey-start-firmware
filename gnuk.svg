@@ -36,30 +36,30 @@
          id="stop3620" />
       <stop
          id="stop3632"
-         offset="0.0625"
-         style="stop-color:#ffc8c8;stop-opacity:1;" />
+         offset="0.07"
+         style="stop-color:#c8c8e0;stop-opacity:1;" />
       <stop
          id="stop3630"
-         offset="0.17166339"
-         style="stop-color:#ff9696;stop-opacity:1;" />
+         offset="0.17"
+         style="stop-color:#9696c8;stop-opacity:1;" />
       <stop
          id="stop3628"
-         offset="0.30279359"
-         style="stop-color:#ff6464;stop-opacity:1;" />
+         offset="0.33"
+         style="stop-color:#6464b4;stop-opacity:1;" />
       <stop
-         style="stop-color:#ff3232;stop-opacity:1;"
+         style="stop-color:#3232a0;stop-opacity:1;"
          offset="0.5"
          id="stop3634" />
       <stop
          id="stop3636"
-         offset="0.65893352"
-         style="stop-color:#ff2828;stop-opacity:1;" />
+         offset="0.66"
+         style="stop-color:#282898;stop-opacity:1;" />
       <stop
          id="stop3626"
-         offset="0.83552629"
-         style="stop-color:#ff1e1e;stop-opacity:1;" />
+         offset="0.85"
+         style="stop-color:#1e1e90;stop-opacity:1;" />
       <stop
-         style="stop-color:#ff0000;stop-opacity:1;"
+         style="stop-color:#000088;stop-opacity:1;"
          offset="1"
          id="stop3622" />
     </linearGradient>
@@ -208,7 +208,7 @@
        sodipodi:nodetypes="ccccsc"
        transform="matrix(-1,0,0,1,949.00681,5.38669)" />
     <path
-       style="fill:#ffffaf;fill-opacity:1;stroke:#000000;stroke-width:4px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       style="fill:#afcfff;fill-opacity:1;stroke:#000000;stroke-width:4px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
        d="M 236.90125,452.90625 C 135.34805,496.35376 97.060607,634.496 151.37,761.4375 c 50.02335,116.92341 158.1859,159.40625 257.75,159.40625 99.5641,0 207.72665,-42.48284 257.75,-159.40625 C 721.17939,634.496 682.89195,496.35376 581.33875,452.90625 526.07714,429.26367 466.8919,524.375 409.12,524.375 c -57.7719,0 -116.77668,-94.67646 -172.21875,-71.46875 z"
        id="path2"
        inkscape:connector-curvature="0" />
