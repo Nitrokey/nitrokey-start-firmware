@@ -229,12 +229,24 @@
      style="display:inline"
      sodipodi:insensitive="true">
     <rect
-       style="fill:#d9fffe;fill-opacity:1;stroke:#000000;stroke-width:1;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:1,1;stroke-dashoffset:1"
-       id="rect4286"
+       style="fill:#d9fffe;fill-opacity:1;stroke:none"
+       id="rect0"
        width="248.19862"
        height="105.23622"
        x="0"
        y="947.12598" />
+    <line id="line0"
+	  x1="0" y1="947.12598" x2="20" y2="947.12598"
+	  style="stroke:#000044;stroke-width:0.5;stroke-opacity:1;stroke-dasharray:2,1;stroke-dashoffset:1" />
+    <line id="line1"
+	  x1="248.19862" y1="947.12598" x2="248.19862" y2="957.12598"
+	  style="stroke:#000044;stroke-width:0.5;stroke-opacity:1;stroke-dasharray:2,1;stroke-dashoffset:1" />
+    <line id="line2"
+	  x1="248.19862" y1="1052.3622" x2="228.19862" y2="1052.3622"
+	  style="stroke:#000044;stroke-width:0.5;stroke-opacity:1;stroke-dasharray:2,1;stroke-dashoffset:1" />
+    <line id="line3"
+	  x1="0" y1="1052.3622" x2="0" y2="1042.3622"
+	  style="stroke:#000044;stroke-width:0.5;stroke-opacity:1;stroke-dasharray:2,1;stroke-dashoffset:1" />
     <image
        y="951.12598"
        x="202.27382"
