@@ -353,7 +353,7 @@ cmd_change_password (void)
   new_ks0[0] = newpw_len;
 
   r = gpg_change_keystring (who, old_ks, who, new_ks);
-  if (r < -2)
+  if (r <= -2)
     {
       DEBUG_INFO ("memory error.\r\n");
       GPG_MEMORY_FAILURE ();
@@ -487,7 +487,7 @@ cmd_reset_user_password (void)
       sha1 (newpw, newpw_len, new_ks);
       new_ks0[0] = newpw_len;
       r = gpg_change_keystring (BY_RESETCODE, old_ks, BY_USER, new_ks);
-      if (r < -2)
+      if (r <= -2)
 	{
 	  DEBUG_INFO ("memory error.\r\n");
 	  GPG_MEMORY_FAILURE ();
@@ -538,7 +538,7 @@ cmd_reset_user_password (void)
       sha1 (newpw, newpw_len, new_ks);
       new_ks0[0] = newpw_len;
       r = gpg_change_keystring (admin_authorized, old_ks, BY_USER, new_ks);
-      if (r < -2)
+      if (r <= -2)
 	{
 	  DEBUG_INFO ("memory error.\r\n");
 	  GPG_MEMORY_FAILURE ();

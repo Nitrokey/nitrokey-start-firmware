@@ -282,8 +282,9 @@ ac_reset_admin (void)
 void
 ac_fini (void)
 {
-  auth_status = AC_NONE_AUTHORIZED;
+  memset (keystring_md_pw3, 0, KEYSTRING_MD_SIZE);
   gpg_do_clear_prvkey (GPG_KEY_FOR_SIGNING);
   gpg_do_clear_prvkey (GPG_KEY_FOR_DECRYPTION);
   gpg_do_clear_prvkey (GPG_KEY_FOR_AUTHENTICATION);
+  auth_status = AC_NONE_AUTHORIZED;
 }
