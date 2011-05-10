@@ -837,7 +837,6 @@ proc_key_import (const uint8_t *data, int len)
 {
   int r;
   enum kind_of_key kk;
-  const uint8_t *pw3_keystring;
   const uint8_t *keystring_admin;
 
   if (admin_authorized == BY_ADMIN)

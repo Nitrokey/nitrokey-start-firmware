@@ -65,7 +65,7 @@ verify_pso_cds (const uint8_t *pw, int pw_len)
   int r;
   uint8_t keystring[KEYSTRING_SIZE_PW1];
 
-  if (gpg_passwd_locked (PW_ERR_PW1))
+  if (gpg_pw_locked (PW_ERR_PW1))
     return 0;
 
   DEBUG_INFO ("verify_pso_cds\r\n");
@@ -93,7 +93,7 @@ verify_other (const uint8_t *pw, int pw_len)
 
   DEBUG_INFO ("verify_other\r\n");
 
-  if (gpg_passwd_locked (PW_ERR_PW1))
+  if (gpg_pw_locked (PW_ERR_PW1))
     return 0;
 
   ks_pw1 = gpg_do_read_simple (NR_DO_KEYSTRING_PW1);
@@ -170,7 +170,7 @@ verify_admin_0 (const uint8_t *pw, int buf_len, int pw_len_known)
   const uint8_t *pw3_keystring;
   int pw_len;
 
-  if (gpg_passwd_locked (PW_ERR_PW3))
+  if (gpg_pw_locked (PW_ERR_PW3))
     return 0;
 
   pw3_keystring = gpg_do_read_simple (NR_DO_KEYSTRING_PW3);

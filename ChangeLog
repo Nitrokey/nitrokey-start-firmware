@@ -6,8 +6,6 @@
 	(gpg_pw_increment_err_counter): Rename from gpg_increment_err_counter.
 	* src/ac.c, src/openpgp.c, src/gnuk.h: Follow the change.
 
-2011-05-09  NIIBE Yutaka  <gniibe@fsij.org>
-
 	Bug fixes.
 	* src/openpgp.c (cmd_reset_user_password, cmd_change_password)
 	* src/openpgp-do.c (proc_resetting_code): Fix check of return value.
