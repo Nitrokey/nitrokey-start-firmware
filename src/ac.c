@@ -161,6 +161,9 @@ calc_md (int count, const uint8_t *salt, const uint8_t *pw, int pw_len,
   memset (&sha1_ctx, 0, sizeof (sha1_ctx));
 }
 
+uint8_t keystring_md_pw3[KEYSTRING_MD_SIZE];
+uint8_t admin_authorized;
+
 int
 verify_admin_0 (const uint8_t *pw, int buf_len, int pw_len_known)
 {
@@ -191,25 +194,51 @@ verify_admin_0 (const uint8_t *pw, int buf_len, int pw_len_known)
 	  gpg_increment_pw_err_counter (PW_ERR_PW3);
 	  return -1;
 	}
-      else
-	/* OK, the user is now authenticated */
-	gpg_reset_pw_err_counter (PW_ERR_PW3);
+
+      admin_authorized = BY_ADMIN;
+    success:
+      /* OK, the user is now authenticated */
+      gpg_reset_pw_err_counter (PW_ERR_PW3);
+      return pw_len;
     }
   else
-    /* For empty PW3, pass phrase should be OPENPGP_CARD_INITIAL_PW3 */
     {
-      if ((pw_len_known >=0
-	   && pw_len_known != strlen (OPENPGP_CARD_INITIAL_PW3))
-	  || buf_len < (int)strlen (OPENPGP_CARD_INITIAL_PW3)
-	  || strncmp ((const char *)pw, OPENPGP_CARD_INITIAL_PW3,
-		      strlen (OPENPGP_CARD_INITIAL_PW3)) != 0)
-	/* It is failure, but we don't try to lock for the case of empty PW3 */
-	return -1;
+      const uint8_t *ks_pw1;
+      uint8_t pw1_keystring[KEYSTRING_SIZE_PW1];
 
-      pw_len = strlen (OPENPGP_CARD_INITIAL_PW3);
+      ks_pw1 = gpg_do_read_simple (NR_DO_KEYSTRING_PW1);
+      if (ks_pw1 == NULL)
+	{ /*
+	   * For empty PW3 with empty PW1, pass phrase should be
+	   * OPENPGP_CARD_INITIAL_PW3
+	   */
+	  if ((pw_len_known >=0
+	       && pw_len_known != strlen (OPENPGP_CARD_INITIAL_PW3))
+	      || buf_len < (int)strlen (OPENPGP_CARD_INITIAL_PW3)
+	      || strncmp ((const char *)pw, OPENPGP_CARD_INITIAL_PW3,
+			  strlen (OPENPGP_CARD_INITIAL_PW3)) != 0)
+	    goto failure;
+
+	  pw_len = strlen (OPENPGP_CARD_INITIAL_PW3);
+	  admin_authorized = BY_ADMIN;
+	  goto success;
+	}
+      else			/* empty PW3, but PW1 exists */
+	{
+	  pw_len = ks_pw1[0];
+	  if (pw_len_known < 0 && pw_len_known != pw_len)
+	    goto failure;
+
+	  pw1_keystring[0] = pw_len;
+	  sha1 (pw, pw_len, pw1_keystring+1);
+	  if (gpg_do_load_prvkey (GPG_KEY_FOR_SIGNING, BY_USER,
+				  pw1_keystring + 1) < 0)
+	    goto failure;
+
+	  admin_authorized = BY_USER;
+	  goto success; 
+	}
     }
-
-  return pw_len;
 }
 
 void
@@ -228,8 +257,6 @@ gpg_set_pw3 (const uint8_t *newpw, int newpw_len)
   calc_md (65536, &ks[1], newpw, newpw_len, &ks[10]);
   gpg_do_write_simple (NR_DO_KEYSTRING_PW3, ks, KEYSTRING_SIZE_PW3);
 }
-
-uint8_t keystring_md_pw3[KEYSTRING_MD_SIZE];
 
 int
 verify_admin (const uint8_t *pw, int pw_len)

@@ -525,7 +525,7 @@ proc_resetting_code (const uint8_t *data, int len)
   newpw = data;
   sha1 (newpw, newpw_len, new_ks);
   new_ks0[0] = newpw_len;
-  r = gpg_change_keystring (BY_ADMIN, old_ks, BY_RESETCODE, new_ks);
+  r = gpg_change_keystring (admin_authorized, old_ks, BY_RESETCODE, new_ks);
   if (r < -2)
     {
       DEBUG_INFO ("memory error.\r\n");
@@ -656,7 +656,7 @@ static int8_t num_prv_keys;
 
 static int
 gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
-		     const uint8_t *keystring)
+		     const uint8_t *keystring_admin)
 {
   uint8_t nr = get_do_ptr_nr_for_kk (kk);
   const uint8_t *p;
@@ -752,7 +752,10 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
   else
     memset (pd->dek_encrypted_2, 0, DATA_ENCRYPTION_KEY_SIZE);
 
-  encrypt (keystring, pd->dek_encrypted_3, DATA_ENCRYPTION_KEY_SIZE);
+  if (keystring_admin)
+    encrypt (keystring_admin, pd->dek_encrypted_3, DATA_ENCRYPTION_KEY_SIZE);
+  else
+    memset (pd->dek_encrypted_3, 0, DATA_ENCRYPTION_KEY_SIZE);
 
   p = flash_do_write (nr, (const uint8_t *)pd, sizeof (struct prvkey_data));
   do_ptr[nr - NR_DO__FIRST__] = p;
@@ -834,6 +837,13 @@ proc_key_import (const uint8_t *data, int len)
 {
   int r;
   enum kind_of_key kk;
+  const uint8_t *pw3_keystring;
+  const uint8_t *keystring_admin;
+
+  if (admin_authorized == BY_ADMIN)
+    keystring_admin = keystring_md_pw3;
+  else
+    keystring_admin = NULL;
 
   DEBUG_BINARY (data, len);
 
@@ -869,7 +879,7 @@ proc_key_import (const uint8_t *data, int len)
 
   /* It should starts with 00 01 00 01 (E) */
   /* Skip E, 4-byte */
-  r = gpg_do_write_prvkey (kk, &data[26], len - 26, keystring_md_pw3);
+  r = gpg_do_write_prvkey (kk, &data[26], len - 26, keystring_admin);
   if (r < 0)
     return 0;
   else
@@ -941,8 +951,8 @@ gpg_do_table[] = {
   { GPG_DO_KEY_IMPORT, DO_PROC_WRITE, AC_NEVER, AC_ADMIN_AUTHORIZED,
     proc_key_import },
 #if 0
-  /* Card holder certificate */
-  { GPG_DO_CH_CERTIFICATE, DO_PROC_READ, AC_ALWAYS, AC_NEVER, NULL },
+  /* Card holder certificate is handled in special way, as its size is big */
+  { GPG_DO_CH_CERTIFICATE, DO_VAR, AC_ALWAYS, AC_ADMIN_AUTHORIZED, NULL },
 #endif
 };
 

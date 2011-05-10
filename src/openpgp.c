@@ -537,7 +537,7 @@ cmd_reset_user_password (void)
       newpw = pw;
       sha1 (newpw, newpw_len, new_ks);
       new_ks0[0] = newpw_len;
-      r = gpg_change_keystring (BY_ADMIN, old_ks, BY_USER, new_ks);
+      r = gpg_change_keystring (admin_authorized, old_ks, BY_USER, new_ks);
       if (r < -2)
 	{
 	  DEBUG_INFO ("memory error.\r\n");

@@ -211,6 +211,7 @@ extern void fatal (uint8_t code) __attribute__ ((noreturn));
 #define FATAL_RANDOM 2
 
 extern uint8_t keystring_md_pw3[KEYSTRING_MD_SIZE];
+extern uint8_t admin_authorized;
 
 /*** Flash memory tag values ***/
 #define NR_NONE			0x00
