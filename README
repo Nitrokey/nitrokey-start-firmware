@@ -87,7 +87,7 @@ With DfuSe support, CQ STARM, STBee, and STBee Mini are also our
 targets.  But those targets with DfuSe are basically not for normal
 use but for experiments, because it would be impossible for DfuSe to
 disable read from flash.  For real use, please consider killing DfuSe
-and enable read protect using JTAG debugger.
+and enable read protection using JTAG debugger.
 
 I think that it could run on Olimex STM32-P103, or other boards with
 STM32F103.  Besides, we are porting it to STM32 Primer 2.
