@@ -75,11 +75,11 @@ verify_pso_cds (const uint8_t *pw, int pw_len)
   sha1 (pw, pw_len, keystring+1);
   if ((r = gpg_do_load_prvkey (GPG_KEY_FOR_SIGNING, BY_USER, keystring+1)) < 0)
     {
-      gpg_increment_pw_err_counter (PW_ERR_PW1);
+      gpg_pw_increment_err_counter (PW_ERR_PW1);
       return r;
     }
   else
-    gpg_reset_pw_err_counter (PW_ERR_PW1);
+    gpg_pw_reset_err_counter (PW_ERR_PW1);
 
   auth_status |= AC_PSO_CDS_AUTHORIZED;
   return 1;
@@ -111,14 +111,14 @@ verify_other (const uint8_t *pw, int pw_len)
 	goto error;
 
       /* Reset counter as it's success now */
-      gpg_reset_pw_err_counter (PW_ERR_PW1);
+      gpg_pw_reset_err_counter (PW_ERR_PW1);
       auth_status |= AC_OTHER_AUTHORIZED;
       return 1;
     }
   else
     {
     error:
-      gpg_increment_pw_err_counter (PW_ERR_PW1);
+      gpg_pw_increment_err_counter (PW_ERR_PW1);
       return 0;
     }
 }
@@ -191,14 +191,14 @@ verify_admin_0 (const uint8_t *pw, int buf_len, int pw_len_known)
       if (memcmp (md, &pw3_keystring[1+8+1], KEYSTRING_MD_SIZE) != 0)
 	{
 	failure:
-	  gpg_increment_pw_err_counter (PW_ERR_PW3);
+	  gpg_pw_increment_err_counter (PW_ERR_PW3);
 	  return -1;
 	}
 
       admin_authorized = BY_ADMIN;
     success:
       /* OK, the user is now authenticated */
-      gpg_reset_pw_err_counter (PW_ERR_PW3);
+      gpg_pw_reset_err_counter (PW_ERR_PW3);
       return pw_len;
     }
   else

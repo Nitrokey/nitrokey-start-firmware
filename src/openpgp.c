@@ -368,7 +368,7 @@ cmd_change_password (void)
       gpg_do_write_simple (NR_DO_KEYSTRING_PW1, new_ks0, KEYSTRING_SIZE_PW1);
       ac_reset_pso_cds ();
       ac_reset_other ();
-      gpg_reset_pw_err_counter (PW_ERR_PW1);
+      gpg_pw_reset_err_counter (PW_ERR_PW1);
       DEBUG_INFO ("Changed DO_KEYSTRING_PW1.\r\n");
       GPG_SUCCESS ();
     }
@@ -377,7 +377,7 @@ cmd_change_password (void)
       gpg_do_write_simple (NR_DO_KEYSTRING_PW1, new_ks0, 1);
       ac_reset_pso_cds ();
       ac_reset_other ();
-      gpg_reset_pw_err_counter (PW_ERR_PW1);
+      gpg_pw_reset_err_counter (PW_ERR_PW1);
       DEBUG_INFO ("Changed length of DO_KEYSTRING_PW1.\r\n");
       GPG_SUCCESS ();
     }
@@ -385,7 +385,7 @@ cmd_change_password (void)
     {
       DEBUG_INFO ("done.\r\n");
       ac_reset_admin ();
-      gpg_reset_pw_err_counter (PW_ERR_PW3);
+      gpg_pw_reset_err_counter (PW_ERR_PW3);
       GPG_SUCCESS ();
     }
 }
@@ -466,7 +466,7 @@ cmd_reset_user_password (void)
       const uint8_t *ks_rc = gpg_do_read_simple (NR_DO_KEYSTRING_RC);
       uint8_t old_ks[KEYSTRING_MD_SIZE];
 
-      if (gpg_passwd_locked (PW_ERR_RC))
+      if (gpg_pw_locked (PW_ERR_RC))
 	{
 	  DEBUG_INFO ("blocked.\r\n");
 	  GPG_SECURITY_AUTH_BLOCKED ();
@@ -496,7 +496,7 @@ cmd_reset_user_password (void)
 	{
 	sec_fail:
 	  DEBUG_INFO ("failed.\r\n");
-	  gpg_increment_pw_err_counter (PW_ERR_RC);
+	  gpg_pw_increment_err_counter (PW_ERR_RC);
 	  GPG_SECURITY_FAILURE ();
 	}
       else if (r == 0)
@@ -508,8 +508,8 @@ cmd_reset_user_password (void)
 			       KEYSTRING_SIZE_PW1);
 	  ac_reset_pso_cds ();
 	  ac_reset_other ();
-	  gpg_reset_pw_err_counter (PW_ERR_RC);
-	  gpg_reset_pw_err_counter (PW_ERR_PW1);
+	  gpg_pw_reset_err_counter (PW_ERR_RC);
+	  gpg_pw_reset_err_counter (PW_ERR_PW1);
 	  GPG_SUCCESS ();
 	}
       else
@@ -517,8 +517,8 @@ cmd_reset_user_password (void)
 	  DEBUG_INFO ("done.\r\n");
 	  ac_reset_pso_cds ();
 	  ac_reset_other ();
-	  gpg_reset_pw_err_counter (PW_ERR_RC);
-	  gpg_reset_pw_err_counter (PW_ERR_PW1);
+	  gpg_pw_reset_err_counter (PW_ERR_RC);
+	  gpg_pw_reset_err_counter (PW_ERR_PW1);
 	  GPG_SUCCESS ();
 	}
     }
@@ -555,7 +555,7 @@ cmd_reset_user_password (void)
 			       KEYSTRING_SIZE_PW1);
 	  ac_reset_pso_cds ();
 	  ac_reset_other ();
-	  gpg_reset_pw_err_counter (PW_ERR_PW1);
+	  gpg_pw_reset_err_counter (PW_ERR_PW1);
 	  GPG_SUCCESS ();
 	}
       else
@@ -563,7 +563,7 @@ cmd_reset_user_password (void)
 	  DEBUG_INFO ("done.\r\n");
 	  ac_reset_pso_cds ();
 	  ac_reset_other ();
-	  gpg_reset_pw_err_counter (PW_ERR_PW1);
+	  gpg_pw_reset_err_counter (PW_ERR_PW1);
 	  GPG_SUCCESS ();
 	}
     }
@@ -773,7 +773,7 @@ cmd_pso (void)
     {
       DEBUG_SHORT (len);
 
-      if (gpg_passwd_locked (PW_ERR_PW1)
+      if (gpg_pw_locked (PW_ERR_PW1)
 	  || !ac_check_status (AC_OTHER_AUTHORIZED))
 	{
 	  DEBUG_INFO ("security error.");
@@ -820,7 +820,7 @@ cmd_internal_authenticate (void)
     {
       DEBUG_SHORT (len);
 
-      if (gpg_passwd_locked (PW_ERR_PW1)
+      if (gpg_pw_locked (PW_ERR_PW1)
 	  || !ac_check_status (AC_OTHER_AUTHORIZED))
 	{
 	  DEBUG_INFO ("security error.");
@@ -862,7 +862,7 @@ cmd_update_binary (void)
 
   DEBUG_INFO (" - UPDATE BINARY\r\n");
 
-  if (gpg_passwd_locked (PW_ERR_PW3) || !ac_check_status (AC_ADMIN_AUTHORIZED))
+  if (gpg_pw_locked (PW_ERR_PW3) || !ac_check_status (AC_ADMIN_AUTHORIZED))
     {
       DEBUG_INFO ("security error.");
       GPG_SECURITY_FAILURE ();
@@ -933,7 +933,7 @@ cmd_write_binary (void)
 
   DEBUG_INFO (" - WRITE BINARY\r\n");
 
-  if (gpg_passwd_locked (PW_ERR_PW3) || !ac_check_status (AC_ADMIN_AUTHORIZED))
+  if (gpg_pw_locked (PW_ERR_PW3) || !ac_check_status (AC_ADMIN_AUTHORIZED))
     {
       DEBUG_INFO ("security error.");
       GPG_SECURITY_FAILURE ();

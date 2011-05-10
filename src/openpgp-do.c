@@ -81,22 +81,22 @@ gpg_increment_digital_signature_counter (void)
 static const uint8_t *pw_err_counter_p[3];
 
 static int
-gpg_get_pw_err_counter (uint8_t which)
+gpg_pw_get_err_counter (uint8_t which)
 {
   return flash_cnt123_get_value (pw_err_counter_p[which]);
 }
 
 int
-gpg_passwd_locked (uint8_t which)
+gpg_pw_locked (uint8_t which)
 {
-  if (gpg_get_pw_err_counter (which) >= PASSWORD_ERRORS_MAX)
+  if (gpg_pw_get_err_counter (which) >= PASSWORD_ERRORS_MAX)
     return 1;
   else
     return 0;
 }
 
 void
-gpg_reset_pw_err_counter (uint8_t which)
+gpg_pw_reset_err_counter (uint8_t which)
 {
   flash_cnt123_clear (&pw_err_counter_p[which]);
   if (pw_err_counter_p[which] != NULL)
@@ -104,7 +104,7 @@ gpg_reset_pw_err_counter (uint8_t which)
 }
 
 void
-gpg_increment_pw_err_counter (uint8_t which)
+gpg_pw_increment_err_counter (uint8_t which)
 {
   flash_cnt123_increment (which, &pw_err_counter_p[which]);
 }
@@ -502,9 +502,9 @@ rw_pw_status (uint16_t tag, int with_tag,
       *res_p++ = PW_LEN_MAX;
       *res_p++ = PW_LEN_MAX;
       *res_p++ = PW_LEN_MAX;
-      *res_p++ = PASSWORD_ERRORS_MAX - gpg_get_pw_err_counter (PW_ERR_PW1);
-      *res_p++ = PASSWORD_ERRORS_MAX - gpg_get_pw_err_counter (PW_ERR_RC);
-      *res_p++ = PASSWORD_ERRORS_MAX - gpg_get_pw_err_counter (PW_ERR_PW3);
+      *res_p++ = PASSWORD_ERRORS_MAX - gpg_pw_get_err_counter (PW_ERR_PW1);
+      *res_p++ = PASSWORD_ERRORS_MAX - gpg_pw_get_err_counter (PW_ERR_RC);
+      *res_p++ = PASSWORD_ERRORS_MAX - gpg_pw_get_err_counter (PW_ERR_PW3);
       return 1;
     }
 }
@@ -526,7 +526,7 @@ proc_resetting_code (const uint8_t *data, int len)
   sha1 (newpw, newpw_len, new_ks);
   new_ks0[0] = newpw_len;
   r = gpg_change_keystring (admin_authorized, old_ks, BY_RESETCODE, new_ks);
-  if (r < -2)
+  if (r <= -2)
     {
       DEBUG_INFO ("memory error.\r\n");
       return 0;
@@ -547,7 +547,7 @@ proc_resetting_code (const uint8_t *data, int len)
       gpg_do_write_simple (NR_DO_KEYSTRING_RC, new_ks0, 1);
     }
 
-  gpg_reset_pw_err_counter (PW_ERR_RC);
+  gpg_pw_reset_err_counter (PW_ERR_RC);
   return 1;
 }
 

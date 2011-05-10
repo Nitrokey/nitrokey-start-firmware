@@ -72,9 +72,9 @@ extern volatile uint8_t auth_status;
 #define PW_ERR_PW1 0
 #define PW_ERR_RC  1
 #define PW_ERR_PW3 2
-extern int gpg_passwd_locked (uint8_t which);
-extern void gpg_reset_pw_err_counter (uint8_t which);
-extern void gpg_increment_pw_err_counter (uint8_t which);
+extern int gpg_pw_locked (uint8_t which);
+extern void gpg_pw_reset_err_counter (uint8_t which);
+extern void gpg_pw_increment_err_counter (uint8_t which);
 
 extern int ac_check_status (uint8_t ac_flag);
 extern int verify_pso_cds (const uint8_t *pw, int pw_len);

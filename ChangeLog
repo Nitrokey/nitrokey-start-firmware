@@ -1,5 +1,13 @@
 2011-05-10  NIIBE Yutaka  <gniibe@fsij.org>
 
+	* src/openpgp-do.c (gpg_pw_locked): Rename from gpg_passwd_locked.
+	(gpg_pw_get_err_counter): Rename from gpg_get_pw_err_counter.
+	(gpg_pw_reset_err_counter): Rename from gpg_reset_pw_err_counter.
+	(gpg_pw_increment_err_counter): Rename from gpg_increment_err_counter.
+	* src/ac.c, src/openpgp.c, src/gnuk.h: Follow the change.
+
+2011-05-09  NIIBE Yutaka  <gniibe@fsij.org>
+
 	Bug fixes.
 	* src/openpgp.c (cmd_reset_user_password, cmd_change_password)
 	* src/openpgp-do.c (proc_resetting_code): Fix check of return value.
@@ -9,7 +17,6 @@
 	Support verify_admin by PW1 when PW3 is empty.
 	* src/ac.c (admin_authorized): New.
 	(verify_admin_0): Set admin_authorized.
-
 	* src/openpgp-do.c (proc_resetting_code): Use admin_authorized.
 	(gpg_do_write_prvkey): Clear dek_encrypted_3 when keystring_admin
 	is NULL.
