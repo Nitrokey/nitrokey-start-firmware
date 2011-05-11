@@ -90,7 +90,7 @@ extern void ac_fini (void);
 
 extern void write_res_apdu (const uint8_t *p, int len,
 			    uint8_t sw1, uint8_t sw2);
-uint16_t data_objects_number_of_bytes;
+extern uint16_t data_objects_number_of_bytes;
 
 extern void gpg_data_scan (const uint8_t *p);
 extern void gpg_data_copy (const uint8_t *p);
@@ -132,6 +132,10 @@ extern uint8_t random_bits_start;
 
 /* encrypted data content */
 struct key_data {
+  uint8_t data[KEY_CONTENT_LEN]; /* p and q */
+};
+
+struct key_data_internal {
   uint8_t data[KEY_CONTENT_LEN]; /* p and q */
   uint32_t check;
   uint32_t random;
@@ -308,8 +312,6 @@ extern uint8_t pw1_keystring[KEYSTRING_SIZE_PW1];
 #endif
 
 extern const uint8_t openpgpcard_aid[14];
-
-extern int gpg_get_pw1_lifetime (void);
 
 extern void flash_bool_clear (const uint8_t **addr_p);
 extern const uint8_t *flash_bool_write (uint8_t nr);
