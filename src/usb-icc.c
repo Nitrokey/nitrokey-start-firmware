@@ -112,6 +112,8 @@ static uint8_t *icc_chain_p;
  */
 static int icc_tx_size;
 
+static Thread *icc_thread;
+
 #define EV_RX_DATA_READY (eventmask_t)1  /* USB Rx data available  */
 /* EV_EXEC_FINISHED == 2 */
 #define EV_TX_FINISHED (eventmask_t)4  /* USB Tx finished  */
@@ -123,12 +125,8 @@ void
 EP1_IN_Callback (void)
 {
   if (icc_next_p == NULL)
-    {
-      Thread *me = chThdSelf ();
-
-      /* The sequence of Bulk-IN transactions finished */
-      chEvtSignalI (me, EV_TX_FINISHED);
-    }
+    /* The sequence of Bulk-IN transactions finished */
+    chEvtSignalI (icc_thread, EV_TX_FINISHED);
   else if (icc_next_p == &icc_buffer[icc_tx_size])
     /* It was multiple of USB_LL_BUF_SIZE */
     {
@@ -219,12 +217,8 @@ EP2_OUT_Callback (void)
 	  icc_prepare_receive (0);
 	}
       else
-	{
-	  Thread *me = chThdSelf ();
-
-	  /* Notify myself */
-	  chEvtSignalI (me, EV_RX_DATA_READY);
-	}
+	/* Notify myself */
+	chEvtSignalI (icc_thread, EV_RX_DATA_READY);
     }
 }
 
@@ -311,12 +305,8 @@ icc_power_on (void)
   int size_atr;
 
   if (gpg_thread == NULL)
-    {
-      Thread *me = chThdSelf ();
-
-      gpg_thread = chThdCreateStatic (waGPGthread, sizeof(waGPGthread),
-				      NORMALPRIO, GPGthread, (void *)me);
-    }
+    gpg_thread = chThdCreateStatic (waGPGthread, sizeof(waGPGthread),
+				    NORMALPRIO, GPGthread, (void *)icc_thread);
 
   size_atr = sizeof (ATR);
   icc_buffer[0] = ICC_DATA_BLOCK_RET;
@@ -691,6 +681,7 @@ USBthread (void *arg)
 {
   (void)arg;
 
+  icc_thread = chThdSelf ();
   chEvtClear (ALL_EVENTS);
 
   icc_state = ICC_STATE_START;

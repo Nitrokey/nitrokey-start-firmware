@@ -1,5 +1,7 @@
 2011-05-11  NIIBE Yutaka  <gniibe@fsij.org>
 
+	* tool/gnuk_put_binary.py: New implementation by pyscard.
+
 	* src/main.c (device_initialize_once): New.
 	* src/usb_prop.c (gnukStringSerial): Move to...
 	* src/usb_desc.c (gnukStringSerial): here.  Bump version to 0.12.
