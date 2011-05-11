@@ -161,15 +161,15 @@ verify_admin_0 (const uint8_t *pw, int buf_len, int pw_len_known)
   const uint8_t *pw3_keystring;
   int pw_len;
 
-  if (gpg_pw_locked (PW_ERR_PW3))
-    return 0;
-
   pw3_keystring = gpg_do_read_simple (NR_DO_KEYSTRING_PW3);
   if (pw3_keystring != NULL)
     {
       int count;
       uint8_t md[KEYSTRING_MD_SIZE];
       const uint8_t *salt;
+
+      if (gpg_pw_locked (PW_ERR_PW3))
+	return 0;
 
       pw_len = pw3_keystring[0];
       if ((pw_len_known >= 0 && pw_len_known != pw_len) || pw_len < buf_len)
@@ -187,8 +187,7 @@ verify_admin_0 (const uint8_t *pw, int buf_len, int pw_len_known)
 	}
 
       admin_authorized = BY_ADMIN;
-    success:
-      /* OK, the user is now authenticated */
+    success:		       /* OK, the user is now authenticated */
       gpg_pw_reset_err_counter (PW_ERR_PW3);
       return pw_len;
     }
@@ -201,22 +200,35 @@ verify_admin_0 (const uint8_t *pw, int buf_len, int pw_len_known)
 	  int r;
 	  uint8_t keystring[KEYSTRING_MD_SIZE];
 
+	  if (gpg_pw_locked (PW_ERR_PW1))
+	    return 0;
+
 	  pw_len = ks_pw1[0];
 	  if ((pw_len_known >= 0 && pw_len_known != pw_len)
 	      || buf_len < pw_len)
-	    goto failure;
+	    {
+	    failure_pw1:
+	      gpg_pw_increment_err_counter (PW_ERR_PW1);
+	      return -1;
+	    }
 
 	  sha1 (pw, pw_len, keystring);
 	  if ((r = gpg_do_load_prvkey (GPG_KEY_FOR_SIGNING, BY_USER, keystring))
 	      < 0)
-	    goto failure;
-	  else if (r > 0)
+	    goto failure_pw1;
+	  else if (r == 0)
 	    {
-	      admin_authorized = BY_USER;
-	      goto success; 
+	      if (memcmp (ks_pw1+1, keystring, KEYSTRING_MD_SIZE) != 0)
+		goto failure_pw1;
 	    }
-	  /* if r == 0 (no signing key), then fall through */
+
+	  admin_authorized = BY_USER;
+	  gpg_pw_reset_err_counter (PW_ERR_PW1);
+	  return pw_len;
 	}
+
+      if (gpg_pw_locked (PW_ERR_PW3))
+	return 0;
 
       /*
        * For the case of empty PW3 (with empty PW1 or no signing key yet),

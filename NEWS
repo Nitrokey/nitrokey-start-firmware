@@ -5,8 +5,8 @@ Gnuk NEWS - User visible changes
   Released 2011-05-1X, by NIIBE Yutaka
 
 ** Admin-less mode is supported.
-The OpenPGP card specification assumes existence of a security
-officer, who has privilege to manage the card.  On the other hand,
+The OpenPGP card specification assumes existence of a security officer
+(admin), who has privilege to manage the card.  On the other hand,
 many use cases of Gnuk are admin == user.
 
 Thus, Gnuk now supports "admin-less" mode.  In this mode, user can get
@@ -17,12 +17,11 @@ setting PW3.  Without setting PW3, it becomes "admin-less" mode
 by setting PW1.
 
 ** Important bug fix.
-Gnuk (<= 0.11) has a severe bug which makes possible for attacker to
-guess admin password easily.  When admin password is not set (the
-default value of factory setting), failure of VERIFY doesn't increment
-error counter in older versions.  Observing no increment of error
-counter, attacker could know that admin password is the one of factory
-setting.
+Gnuk (<= 0.11) has a bug which makes possible for attacker to guess
+admin password easily.  When admin password is not set (the default
+value of factory setting), failure of VERIFY doesn't increment error
+counter in older versions.  Observing no increment of error counter,
+attacker could know that admin password is the one of factory setting.
 
 ** tool/gnuk_put_binary.py now uses pyscard.
 Instead of PyUSB, it uses Python binding of PC/SC.  PyUSB version is
