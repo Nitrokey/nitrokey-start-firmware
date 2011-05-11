@@ -1,3 +1,8 @@
+2011-05-11  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/ac.c (auth_status): Don't assign 0 as it's automatically
+	cleared.
+
 2011-05-10  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* src/openpgp-do.c (gpg_pw_locked): Rename from gpg_passwd_locked.
