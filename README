@@ -20,7 +20,36 @@ solved by a USB token which is small enough.
 
 Please look at the graphics of "gnuk.svg" for the software name.  My
 son used to be with his NUK(R), always, everywhere.  I will be with a
-USB Token by Gnuk everywhere.
+USB Token by "Gnuk" everywhere.
+
+
+FAQ
+===
+
+Q1: What's kind of key algorithm is supported?
+A1: Gnuk only supports 2048-bit RSA.
+
+Q2: How long does it take for digital signing?
+A2: It takes two seconds or so. 
+
+Q3: What's your recommendation for target board?
+A3: Orthodox choice is Olimex STM32-H103.
+    If you have skill of electronics and like DIY, STM32 part of STM8S
+    Discovery Kit might be the best choice.
+
+Q4: What's version of GnuPG are you using?
+A4: In Debian GNU/Linux system, I use GnuPG 2.0.14-2 (in sid).
+
+Q5: What's version of pcscd and libccid are you using?
+A5: In Debian GNU/Linux system, I use pcscd 1.5.5-4 and libccid 1.3.11-2,
+    which is in squeeze.  Note that you need to edit /etc/libccid_Info.plist
+    when using libccid (< 1.4.1).
+
+Q6: What kinds of hardware is required for development?
+A6: You need a target board plus JTAG debugger.  If you just want to
+    test Gnuk for target boards with DfuSe, JTAG debugger is not
+    the requirement.  Note that for real use, you need JTAG debugger
+    to enable flash ROM protection.
 
 
 Release notes
@@ -76,6 +105,7 @@ Not supported feature(s):
 	* Overriding key import.  You need to remove all keys first.
 
 	* Key generation
+
 
 Targets
 =======
