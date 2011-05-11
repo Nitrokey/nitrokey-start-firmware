@@ -172,6 +172,7 @@ device_initialize_once (void)
 
   if (p[0] == 0xff && p[1] == 0xff && p[2] == 0xff && p[3] == 0xff)
     {
+      extern void flash_unlock (void);
       /*
        * This is the first time invocation.
        * Setup serial number by unique device ID.
@@ -179,6 +180,7 @@ device_initialize_once (void)
       const uint8_t *u = unique_device_id ();
       int i;
 
+      flash_unlock ();
       for (i = 0; i < 4; i++)
 	{
 	  uint8_t b = u[i];
@@ -186,10 +188,10 @@ device_initialize_once (void)
 
 	  nibble = (b >> 4);
 	  nibble += (nibble >= 10 ? ('A' - 10) : '0');
-	  flash_put_data_internal (&p[i*4], nibble << 8);
+	  flash_put_data_internal (&p[i*4], nibble);
 	  nibble = (b & 0x0f);
 	  nibble += (nibble >= 10 ? ('A' - 10) : '0');
-	  flash_put_data_internal (&p[i*4+2], nibble << 8);
+	  flash_put_data_internal (&p[i*4+2], nibble);
 	}
     }
 }

@@ -46,7 +46,7 @@ enum flash_status
   FLASH_TIMEOUT
 };
 
-static void
+void
 flash_unlock (void)
 {
   FLASH->KEYR = FLASH_KEY1;
