@@ -1,7 +1,10 @@
 2011-05-11  NIIBE Yutaka  <gniibe@fsij.org>
 
+	* src/openpgp-do.c (gpg_get_pw1_lifetime): Make static.
+	(gpg_do_load_prvkey, gpg_do_write_prvkey): Use kdi.
+	(gpg_increment_digital_signature_counter): Call gpg_get_pw1_lifetime.
+	* src/openpgp.c (cmd_pso): Follow the change.
 	* src/usb-icc.c (icc_thread): Remove.  Use chThdSelf ().
-
 	* src/flash.c (keystore_pool): Remove.  Use &_keystore_pool.
 	* src/ac.c (auth_status): Don't assign 0 as it's automatically
 	cleared.

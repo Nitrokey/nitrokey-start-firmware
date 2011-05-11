@@ -761,12 +761,8 @@ cmd_pso (void)
 	      GPG_ERROR ();
 	    }
 	  else
-	    {			/* Success */
-	      if (gpg_get_pw1_lifetime () == 0)
-		ac_reset_pso_cds ();
-
-	      gpg_increment_digital_signature_counter ();
-	    }
+	    /* Success */
+	    gpg_increment_digital_signature_counter ();
 	}
     }
   else if (cmd_APDU[2] == 0x80 && cmd_APDU[3] == 0x86)

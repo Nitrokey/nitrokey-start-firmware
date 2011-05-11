@@ -32,51 +32,6 @@
 #include "polarssl/aes.h"
 #include "polarssl/sha1.h"
 
-static uint32_t digital_signature_counter;
-
-static const uint8_t *
-gpg_write_digital_signature_counter (const uint8_t *p, uint32_t dsc)
-{
-  uint16_t hw0, hw1;
-
-  if ((dsc >> 10) == 0)
-    { /* no upper bits */
-      hw1 = NR_COUNTER_DS_LSB | ((dsc & 0x0300) >> 8) | ((dsc & 0x00ff) << 8);
-      flash_put_data_internal (p, hw1);
-      return p+2;
-    }
-  else
-    {
-      hw0 = NR_COUNTER_DS | ((dsc & 0xfc0000) >> 18) | ((dsc & 0x03fc00) >> 2);
-      hw1 = NR_COUNTER_DS_LSB;
-      flash_put_data_internal (p, hw0);
-      flash_put_data_internal (p+2, hw1);
-      return p+4;
-    }
-}
-
-void
-gpg_increment_digital_signature_counter (void)
-{
-  uint16_t hw0, hw1;
-  uint32_t dsc = (digital_signature_counter + 1) & 0x00ffffff;
-
-  if ((dsc & 0x03ff) == 0)
-    { /* carry occurs from l10 to h14 */
-      hw0 = NR_COUNTER_DS | ((dsc & 0xfc0000) >> 18) | ((dsc & 0x03fc00) >> 2);
-      hw1 = NR_COUNTER_DS_LSB;	/* zero */
-      flash_put_data (hw0);
-      flash_put_data (hw1);
-    }
-  else
-    {
-      hw1 = NR_COUNTER_DS_LSB | ((dsc & 0x0300) >> 8) | ((dsc & 0x00ff) << 8);
-      flash_put_data (hw1);
-    }
-
-  digital_signature_counter = dsc;
-}
-
 #define PASSWORD_ERRORS_MAX 3	/* >= errors, it will be locked */
 static const uint8_t *pw_err_counter_p[3];
 
@@ -173,7 +128,8 @@ static const uint8_t algorithm_attr[] __attribute__ ((aligned (1))) = {
  * in flash memory
  */
 static const uint8_t *pw1_lifetime_p;
-int
+
+static int
 gpg_get_pw1_lifetime (void)
 {
   if (pw1_lifetime_p == NULL)
@@ -181,6 +137,56 @@ gpg_get_pw1_lifetime (void)
   else
     return 1;
 }
+
+
+static uint32_t digital_signature_counter;
+
+static const uint8_t *
+gpg_write_digital_signature_counter (const uint8_t *p, uint32_t dsc)
+{
+  uint16_t hw0, hw1;
+
+  if ((dsc >> 10) == 0)
+    { /* no upper bits */
+      hw1 = NR_COUNTER_DS_LSB | ((dsc & 0x0300) >> 8) | ((dsc & 0x00ff) << 8);
+      flash_put_data_internal (p, hw1);
+      return p+2;
+    }
+  else
+    {
+      hw0 = NR_COUNTER_DS | ((dsc & 0xfc0000) >> 18) | ((dsc & 0x03fc00) >> 2);
+      hw1 = NR_COUNTER_DS_LSB;
+      flash_put_data_internal (p, hw0);
+      flash_put_data_internal (p+2, hw1);
+      return p+4;
+    }
+}
+
+void
+gpg_increment_digital_signature_counter (void)
+{
+  uint16_t hw0, hw1;
+  uint32_t dsc = (digital_signature_counter + 1) & 0x00ffffff;
+
+  if ((dsc & 0x03ff) == 0)
+    { /* carry occurs from l10 to h14 */
+      hw0 = NR_COUNTER_DS | ((dsc & 0xfc0000) >> 18) | ((dsc & 0x03fc00) >> 2);
+      hw1 = NR_COUNTER_DS_LSB;	/* zero */
+      flash_put_data (hw0);
+      flash_put_data (hw1);
+    }
+  else
+    {
+      hw1 = NR_COUNTER_DS_LSB | ((dsc & 0x0300) >> 8) | ((dsc & 0x00ff) << 8);
+      flash_put_data (hw1);
+    }
+
+  digital_signature_counter = dsc;
+
+  if (gpg_get_pw1_lifetime () == 0)
+    ac_reset_pso_cds ();
+}
+
 
 #define SIZE_FINGER_PRINT 20
 #define SIZE_KEYGEN_TIME 4	/* RFC4880 */
@@ -619,23 +625,27 @@ gpg_do_load_prvkey (enum kind_of_key kk, int who, const uint8_t *keystring)
   const uint8_t *do_data = do_ptr[nr - NR_DO__FIRST__];
   uint8_t *key_addr;
   uint8_t dek[DATA_ENCRYPTION_KEY_SIZE];
+  struct key_data_internal kdi;
 
   if (do_data == NULL)
     return 0;
 
   key_addr = *(uint8_t **)&(do_data)[1];
-  memcpy (kd[kk].data, key_addr, KEY_CONTENT_LEN);
-  memcpy (((uint8_t *)&kd[kk].check), do_data+5, ADDITIONAL_DATA_SIZE);
-  memcpy (dek, do_data+5+16*who, DATA_ENCRYPTION_KEY_SIZE);
+  memcpy (kdi.data, key_addr, KEY_CONTENT_LEN);
+  memcpy (((uint8_t *)&kdi.check), do_data+5, ADDITIONAL_DATA_SIZE);
 
+  memcpy (dek, do_data+5+16*who, DATA_ENCRYPTION_KEY_SIZE);
   decrypt (keystring, dek, DATA_ENCRYPTION_KEY_SIZE);
-  decrypt (dek, (uint8_t *)&kd[kk], sizeof (struct key_data));
-  if (memcmp (kd[kk].magic, GNUK_MAGIC, KEY_MAGIC_LEN) != 0)
+
+  decrypt (dek, (uint8_t *)&kdi, sizeof (struct key_data_internal));
+  if (memcmp (kdi.magic, GNUK_MAGIC, KEY_MAGIC_LEN) != 0)
     {
       DEBUG_INFO ("gpg_do_load_prvkey failed.\r\n");
       return -1;
     }
   /* more sanity check??? */
+
+  memcpy (kd[kk].data, kdi.data, KEY_CONTENT_LEN);
   return 1;
 }
 
@@ -668,6 +678,7 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
   const uint8_t *do_data = do_ptr[nr - NR_DO__FIRST__];
   const uint8_t *ks_pw1;
   const uint8_t *ks_rc;
+  struct key_data_internal kdi;
 
 #if 0
   assert (key_len == KEY_CONTENT_LEN);
@@ -703,10 +714,10 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
   DEBUG_INFO ("key_addr: ");
   DEBUG_WORD ((uint32_t)key_addr);
 
-  memcpy (kd[kk].data, key_data, KEY_CONTENT_LEN);
-  kd[kk].check = calc_check32 (key_data, KEY_CONTENT_LEN);
-  kd[kk].random = get_random ();
-  memcpy (kd[kk].magic, GNUK_MAGIC, KEY_MAGIC_LEN);
+  memcpy (kdi.data, key_data, KEY_CONTENT_LEN);
+  kdi.check = calc_check32 (key_data, KEY_CONTENT_LEN);
+  kdi.random = get_random ();
+  memcpy (kdi.magic, GNUK_MAGIC, KEY_MAGIC_LEN);
 
   dek = random_bytes_get (); /* 16-byte random bytes */
   memcpy (pd->dek_encrypted_1, dek, DATA_ENCRYPTION_KEY_SIZE);
@@ -715,9 +726,9 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
   ks_pw1 = gpg_do_read_simple (NR_DO_KEYSTRING_PW1);
   ks_rc = gpg_do_read_simple (NR_DO_KEYSTRING_RC);
 
-  encrypt (dek, (uint8_t *)&kd[kk], sizeof (struct key_data));
+  encrypt (dek, (uint8_t *)&kdi, sizeof (struct key_data));
 
-  r = flash_key_write (key_addr, kd[kk].data, modulus);
+  r = flash_key_write (key_addr, kdi.data, modulus);
   modulus_free (modulus);
 
   if (r < 0)
@@ -728,7 +739,7 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
     }
 
   pd->key_addr = key_addr;
-  memcpy (pd->crm_encrypted, (uint8_t *)&kd[kk].check, ADDITIONAL_DATA_SIZE);
+  memcpy (pd->crm_encrypted, (uint8_t *)&kdi.check, ADDITIONAL_DATA_SIZE);
 
   if (kk == GPG_KEY_FOR_SIGNING)
     ac_reset_pso_cds ();
