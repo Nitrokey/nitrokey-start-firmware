@@ -1,5 +1,14 @@
 2011-05-11  NIIBE Yutaka  <gniibe@fsij.org>
 
+	* src/main.c (device_initialize_once): New.
+	* src/usb_prop.c (gnukStringSerial): Move to...
+	* src/usb_desc.c (gnukStringSerial): here.  Bump version to 0.12.
+	Fill by 0xff.
+	* src/usb_prop.c (gnuk_device_init)
+	(gnuk_device_GetStringDescriptor): Don't use RAM for
+	gnukStringSerial, use ROM like other string descriptor.
+	* src/usb_desc.c (String_Descriptor): Add gnukStringSerial.
+
 	* src/openpgp-do.c (gpg_get_pw1_lifetime): Make static.
 	(gpg_do_load_prvkey, gpg_do_write_prvkey): Use kdi.
 	(gpg_increment_digital_signature_counter): Call gpg_get_pw1_lifetime.

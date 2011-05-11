@@ -326,6 +326,9 @@ extern void flash_bool_write_internal (const uint8_t *p, int nr);
 extern void flash_cnt123_write_internal (const uint8_t *p, int which, int v);
 extern void flash_do_write_internal (const uint8_t *p, int nr, const uint8_t *data, int len);
 
+extern const unsigned char *unique_device_id (void);
+extern const uint8_t gnukStringSerial[];
+
 #if defined(PINPAD_SUPPORT)
 #if defined(PINPAD_CIR_SUPPORT)
 extern void cir_ext_disable (void);

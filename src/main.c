@@ -164,6 +164,36 @@ extern msg_t USBthread (void *arg);
 #define LED_TIMEOUT_STOP	MS2ST(500)
 
 
+#define ID_OFFSET 12
+static void
+device_initialize_once (void)
+{
+  const uint8_t *p = &gnukStringSerial[ID_OFFSET];
+
+  if (p[0] == 0xff && p[1] == 0xff && p[2] == 0xff && p[3] == 0xff)
+    {
+      /*
+       * This is the first time invocation.
+       * Setup serial number by unique device ID.
+       */
+      const uint8_t *u = unique_device_id ();
+      int i;
+
+      for (i = 0; i < 4; i++)
+	{
+	  uint8_t b = u[i];
+	  uint8_t nibble; 
+
+	  nibble = (b >> 4);
+	  nibble += (nibble >= 10 ? ('A' - 10) : '0');
+	  flash_put_data_internal (&p[i*4], nibble << 8);
+	  nibble = (b & 0x0f);
+	  nibble += (nibble >= 10 ? ('A' - 10) : '0');
+	  flash_put_data_internal (&p[i*4+2], nibble << 8);
+	}
+    }
+}
+
 static volatile uint8_t fatal_code;
 
 /*
@@ -180,6 +210,7 @@ main (int argc, char **argv)
   (void)argc;
   (void)argv;
 
+  device_initialize_once ();
   usb_lld_init ();
   USB_Init();
 

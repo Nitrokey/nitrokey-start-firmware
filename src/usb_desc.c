@@ -224,6 +224,16 @@ static const uint8_t gnukStringProduct[] = {
   ' ', 0, 'T', 0, 'o', 0, 'k', 0, 'e', 0, 'n', 0
 };
 
+const uint8_t gnukStringSerial[] = {
+  13*2+2,			/* bLength */
+  USB_STRING_DESCRIPTOR_TYPE,	/* bDescriptorType */
+  '0', 0, '.', 0, '1', 0, '2', 0, /* Version number of Gnuk */
+  '-', 0,
+  0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+  0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+};
+
+
 const ONE_DESCRIPTOR Device_Descriptor = {
   (uint8_t*)gnukDeviceDescriptor,
   sizeof (gnukDeviceDescriptor)
@@ -234,8 +244,9 @@ const ONE_DESCRIPTOR Config_Descriptor = {
   sizeof (gnukConfigDescriptor)
 };
 
-const ONE_DESCRIPTOR String_Descriptor[3] = {
+const ONE_DESCRIPTOR String_Descriptor[] = {
   {(uint8_t*)gnukStringLangID, sizeof (gnukStringLangID)},
   {(uint8_t*)gnukStringVendor, sizeof (gnukStringVendor)},
   {(uint8_t*)gnukStringProduct, sizeof (gnukStringProduct)},
+  {(uint8_t*)gnukStringSerial, sizeof (gnukStringSerial)},
 };

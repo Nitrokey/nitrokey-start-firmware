@@ -36,30 +36,10 @@
 #include "usb-cdc-vport.c"
 #endif
 
-static uint8_t gnukStringSerial[] = {
-  13*2+2,			/* bLength */
-  USB_STRING_DESCRIPTOR_TYPE,	/* bDescriptorType */
-  '0', 0, '.', 0, '1', 0, '1', 0, /* Version number of Gnuk */
-  '-', 0,
-  0, 0, 0, 0, 0, 0, 0, 0,
-  0, 0, 0, 0, 0, 0, 0, 0,
-};
-#define ID_OFFSET 12
 
 static void
 gnuk_device_init (void)
 {
-  const uint8_t *u = unique_device_id ();
-  int i;
-
-  for (i = 0; i < 4; i++)
-    {
-      gnukStringSerial[i*4+ID_OFFSET+0] = (u[i*2] >> 4) + 'A';
-      gnukStringSerial[i*4+ID_OFFSET+1] = 0;
-      gnukStringSerial[i*4+ID_OFFSET+2] = (u[i*2+1] & 0x0f) + 'A';
-      gnukStringSerial[i*4+ID_OFFSET+3] = 0;
-    }
-
   pInformation->Current_Configuration = 0;
 
   /* Connect the device */
@@ -205,22 +185,13 @@ static uint8_t *
 gnuk_device_GetStringDescriptor (uint16_t Length)
 {
   uint8_t wValue0 = pInformation->USBwValue0;
-  uint32_t  wOffset = pInformation->Ctrl_Info.Usb_wOffset;
 
-  if (wValue0 == 3)
-    /* Serial number is requested */
-    if (Length == 0)
-      {
-	pInformation->Ctrl_Info.Usb_wLength = sizeof gnukStringSerial - wOffset;
-	return 0;
-      }
-    else
-      return gnukStringSerial + wOffset;
-  else if (wValue0 > (sizeof (String_Descriptor) / sizeof (ONE_DESCRIPTOR)))
+  if (wValue0 > (sizeof (String_Descriptor) / sizeof (ONE_DESCRIPTOR)))
     return NULL;
   else
-    return Standard_GetDescriptorData (Length,
-				       (PONE_DESCRIPTOR)&String_Descriptor[wValue0]);
+    return
+      Standard_GetDescriptorData (Length,
+				  (PONE_DESCRIPTOR)&String_Descriptor[wValue0]);
 }
 
 #ifdef ENABLE_VIRTUAL_COM_PORT
