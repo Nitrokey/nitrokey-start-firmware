@@ -1,5 +1,10 @@
 2011-05-11  NIIBE Yutaka  <gniibe@fsij.org>
 
+	* src/ac.c (verify_pso_cds, verify_other): Fail (with no counter
+	update) if key is not registered yet.
+	(verify_admin_0): Compare to OPENPGP_CARD_INITIAL_PW3 when empty
+	PW3 and non-empty PW1 but signing key is not registered yet.
+
 	* tool/gnuk_put_binary.py: New implementation by pyscard.
 
 	* src/main.c (device_initialize_once): New.

@@ -1070,6 +1070,11 @@ gpg_data_scan (const uint8_t *p_start)
   digital_signature_counter = (dsc_h14 << 10) | dsc_l10;
 }
 
+/*
+ * Write all data to newly allocated Flash ROM page (from P_START),
+ * updating PW1_LIFETIME_P, PW_ERR_COUNTER_P, and DO_PTR.
+ * Called by flash_copying_gc.
+ */
 void
 gpg_data_copy (const uint8_t *p_start)
 {

@@ -147,7 +147,7 @@ struct key_data_internal {
 struct prvkey_data {
   const uint8_t *key_addr;
   /*
-   * CRM: [C]heck, [R]andom, and [M]agic in struct key_data
+   * CRM: [C]heck, [R]andom, and [M]agic in struct key_data_internal
    *
    */
   uint8_t crm_encrypted[ADDITIONAL_DATA_SIZE];

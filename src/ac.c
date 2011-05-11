@@ -63,7 +63,7 @@ int
 verify_pso_cds (const uint8_t *pw, int pw_len)
 {
   int r;
-  uint8_t keystring[KEYSTRING_SIZE_PW1];
+  uint8_t keystring[KEYSTRING_MD_SIZE];
 
   if (gpg_pw_locked (PW_ERR_PW1))
     return 0;
@@ -71,16 +71,17 @@ verify_pso_cds (const uint8_t *pw, int pw_len)
   DEBUG_INFO ("verify_pso_cds\r\n");
   DEBUG_BYTE (pw_len);
 
-  keystring[0] = pw_len;
-  sha1 (pw, pw_len, keystring+1);
-  if ((r = gpg_do_load_prvkey (GPG_KEY_FOR_SIGNING, BY_USER, keystring+1)) < 0)
+  sha1 (pw, pw_len, keystring);
+  if ((r = gpg_do_load_prvkey (GPG_KEY_FOR_SIGNING, BY_USER, keystring)) < 0)
     {
       gpg_pw_increment_err_counter (PW_ERR_PW1);
-      return r;
+      return -1;
     }
-  else
-    gpg_pw_reset_err_counter (PW_ERR_PW1);
+  else if (r == 0)
+    /* No key is available.  Fail even if password can match.  */
+    return -1;
 
+  gpg_pw_reset_err_counter (PW_ERR_PW1);
   auth_status |= AC_PSO_CDS_AUTHORIZED;
   return 1;
 }
@@ -88,39 +89,29 @@ verify_pso_cds (const uint8_t *pw, int pw_len)
 int
 verify_other (const uint8_t *pw, int pw_len)
 {
-  const uint8_t *ks_pw1;
-  uint8_t pw1_keystring[KEYSTRING_SIZE_PW1];
+  int r1, r2;
+  uint8_t keystring[KEYSTRING_MD_SIZE];
 
   DEBUG_INFO ("verify_other\r\n");
 
   if (gpg_pw_locked (PW_ERR_PW1))
     return 0;
 
-  ks_pw1 = gpg_do_read_simple (NR_DO_KEYSTRING_PW1);
-  if ((ks_pw1 == NULL && pw_len == strlen (OPENPGP_CARD_INITIAL_PW1))
-      || (ks_pw1 != NULL && pw_len == ks_pw1[0]))
-    {				/* No problem */
-      pw1_keystring[0] = pw_len;
-      sha1 (pw, pw_len, pw1_keystring+1);
-      if (gpg_do_load_prvkey (GPG_KEY_FOR_DECRYPTION, BY_USER,
-			      pw1_keystring + 1) < 0)
-	goto error;
-
-      if (gpg_do_load_prvkey (GPG_KEY_FOR_AUTHENTICATION, BY_USER,
-			      pw1_keystring + 1) < 0)
-	goto error;
-
-      /* Reset counter as it's success now */
-      gpg_pw_reset_err_counter (PW_ERR_PW1);
-      auth_status |= AC_OTHER_AUTHORIZED;
-      return 1;
-    }
-  else
+  sha1 (pw, pw_len, keystring);
+  if ((r1 = gpg_do_load_prvkey (GPG_KEY_FOR_DECRYPTION, BY_USER, keystring)) < 0
+      || (r2 = gpg_do_load_prvkey (GPG_KEY_FOR_AUTHENTICATION, BY_USER,
+				   keystring)) < 0)
     {
-    error:
       gpg_pw_increment_err_counter (PW_ERR_PW1);
-      return 0;
+      return -1;
     }
+  else if (r1 == 0 && r2 == 0)
+    /* No key is available.  Fail even if password can match.  */
+    return -1;
+
+  gpg_pw_reset_err_counter (PW_ERR_PW1);
+  auth_status |= AC_OTHER_AUTHORIZED;
+  return 1;
 }
 
 /*
@@ -203,41 +194,42 @@ verify_admin_0 (const uint8_t *pw, int buf_len, int pw_len_known)
     }
   else
     {
-      const uint8_t *ks_pw1;
-      uint8_t pw1_keystring[KEYSTRING_SIZE_PW1];
+      const uint8_t *ks_pw1 = gpg_do_read_simple (NR_DO_KEYSTRING_PW1);
 
-      ks_pw1 = gpg_do_read_simple (NR_DO_KEYSTRING_PW1);
-      if (ks_pw1 == NULL)
-	{ /*
-	   * For empty PW3 with empty PW1, pass phrase should be
-	   * OPENPGP_CARD_INITIAL_PW3
-	   */
-	  if ((pw_len_known >=0
-	       && pw_len_known != strlen (OPENPGP_CARD_INITIAL_PW3))
-	      || buf_len < (int)strlen (OPENPGP_CARD_INITIAL_PW3)
-	      || strncmp ((const char *)pw, OPENPGP_CARD_INITIAL_PW3,
-			  strlen (OPENPGP_CARD_INITIAL_PW3)) != 0)
-	    goto failure;
+      if (ks_pw1 != NULL)
+	{			/* empty PW3, but PW1 exists */
+	  int r;
+	  uint8_t keystring[KEYSTRING_MD_SIZE];
 
-	  pw_len = strlen (OPENPGP_CARD_INITIAL_PW3);
-	  admin_authorized = BY_ADMIN;
-	  goto success;
-	}
-      else			/* empty PW3, but PW1 exists */
-	{
 	  pw_len = ks_pw1[0];
-	  if (pw_len_known < 0 && pw_len_known != pw_len)
+	  if ((pw_len_known >= 0 && pw_len_known != pw_len)
+	      || buf_len < pw_len)
 	    goto failure;
 
-	  pw1_keystring[0] = pw_len;
-	  sha1 (pw, pw_len, pw1_keystring+1);
-	  if (gpg_do_load_prvkey (GPG_KEY_FOR_SIGNING, BY_USER,
-				  pw1_keystring + 1) < 0)
+	  sha1 (pw, pw_len, keystring);
+	  if ((r = gpg_do_load_prvkey (GPG_KEY_FOR_SIGNING, BY_USER, keystring))
+	      < 0)
 	    goto failure;
-
-	  admin_authorized = BY_USER;
-	  goto success; 
+	  else if (r > 0)
+	    {
+	      admin_authorized = BY_USER;
+	      goto success; 
+	    }
+	  /* if r == 0 (no signing key), then fall through */
 	}
+
+      /*
+       * For the case of empty PW3 (with empty PW1 or no signing key yet),
+       * pass phrase should be OPENPGP_CARD_INITIAL_PW3
+       */
+      pw_len = strlen (OPENPGP_CARD_INITIAL_PW3);
+      if ((pw_len_known >=0 && pw_len_known != pw_len)
+	  || buf_len < pw_len
+	  || strncmp ((const char *)pw, OPENPGP_CARD_INITIAL_PW3, pw_len))
+	goto failure;
+
+      admin_authorized = BY_ADMIN;
+      goto success;
     }
 }
 
