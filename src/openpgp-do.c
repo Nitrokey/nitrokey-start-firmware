@@ -726,7 +726,7 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
   ks_pw1 = gpg_do_read_simple (NR_DO_KEYSTRING_PW1);
   ks_rc = gpg_do_read_simple (NR_DO_KEYSTRING_RC);
 
-  encrypt (dek, (uint8_t *)&kdi, sizeof (struct key_data));
+  encrypt (dek, (uint8_t *)&kdi, sizeof (struct key_data_internal));
 
   r = flash_key_write (key_addr, kdi.data, modulus);
   modulus_free (modulus);
