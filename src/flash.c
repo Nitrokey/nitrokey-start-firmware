@@ -162,7 +162,7 @@ flash_erase_page (uint32_t addr)
 #define FLASH_KEYSTORE_SIZE		(512*3)
 
 static const uint8_t *data_pool;
-static const uint8_t *keystore_pool;
+extern uint8_t _keystore_pool;
 
 static uint8_t *last_p;
 static const uint8_t *keystore;
@@ -179,7 +179,6 @@ const uint8_t *
 flash_init (void)
 {
   const uint8_t *p;
-  extern uint8_t _keystore_pool;
   uint16_t gen0, gen1;
   uint16_t *gen0_p = (uint16_t *)&_data_pool;
   uint16_t *gen1_p = (uint16_t *)(&_data_pool + FLASH_PAGE_SIZE);
@@ -196,10 +195,8 @@ flash_init (void)
   else
     data_pool = &_data_pool;
 
-  keystore_pool = &_keystore_pool;
-
   /* Seek empty keystore */
-  p = keystore_pool;
+  p = &_keystore_pool;
   while (*p != 0xff || *(p+1) != 0xff)
     p += 512;
 
@@ -384,7 +381,7 @@ flash_key_alloc (void)
 {
   uint8_t *k = (uint8_t *)keystore;
 
-  if ((k - keystore_pool) >= FLASH_KEYSTORE_SIZE)
+  if ((k - &_keystore_pool) >= FLASH_KEYSTORE_SIZE)
     return NULL;
 
   keystore += 512;
@@ -422,11 +419,11 @@ flash_key_write (uint8_t *key_addr, const uint8_t *key_data,
 void
 flash_keystore_release (void)
 {
-  flash_erase_page ((uint32_t)keystore_pool);
+  flash_erase_page ((uint32_t)&_keystore_pool);
 #if FLASH_KEYSTORE_SIZE > FLASH_PAGE_SIZE
-  flash_erase_page ((uint32_t)keystore_pool + FLASH_PAGE_SIZE);
+  flash_erase_page ((uint32_t)&_keystore_pool + FLASH_PAGE_SIZE);
 #endif
-  keystore = keystore_pool;
+  keystore = &_keystore_pool;
 }
 
 void

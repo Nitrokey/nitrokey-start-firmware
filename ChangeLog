@@ -1,5 +1,7 @@
 2011-05-11  NIIBE Yutaka  <gniibe@fsij.org>
 
+	* src/flash.c (keystore_pool): Remove.  Use &_keystore_pool.
+
 	* src/ac.c (auth_status): Don't assign 0 as it's automatically
 	cleared.
 
