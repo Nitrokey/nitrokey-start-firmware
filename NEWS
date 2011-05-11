@@ -1,5 +1,38 @@
 Gnuk NEWS - User visible changes
 
+* Major changes in Gnuk 0.12
+
+  Released 2011-05-1X, by NIIBE Yutaka
+
+** Admin-less mode is supported.
+The OpenPGP card specification assumes existence of a security
+officer, who has privilege to manage the card.  On the other hand,
+many use cases of Gnuk are admin == user.
+
+Thus, Gnuk now supports "admin-less" mode.  In this mode, user can get
+privilege with the password of PW1.
+
+At the initialization of the card, Gnuk becomes compatible mode by
+setting PW3.  Without setting PW3, it becomes "admin-less" mode
+by setting PW1.
+
+** Important bug fix.
+Gnuk (<= 0.11) has a severe bug which makes possible for attacker to
+guess admin password easily.  When admin password is not set (the
+default value of factory setting), failure of VERIFY doesn't increment
+error counter in older versions.  Observing no increment of error
+counter, attacker could know that admin password is the one of factory
+setting.
+
+** tool/gnuk_put_binary.py now uses pyscard.
+Instead of PyUSB, it uses Python binding of PC/SC.  PyUSB version is
+still available as tool/gnuk_put_binary_libusb.py.
+
+** Logo for Gnuk is updated.
+
+** Gnuk Sticker SVG is available.
+
+
 * Major changes in Gnuk 0.11
 
   Released 2011-04-15, by NIIBE Yutaka

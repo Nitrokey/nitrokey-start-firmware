@@ -310,7 +310,8 @@ accessing by JTAG debugger is recommended.
 How to configure
 ================
 
-You need python and PyUSB (python-usb package in Debian).
+You need python and pyscard (python-pyscard package in Debian) or
+PyUSB (python-usb package in Debian).
 
 (1) In the 'src' directory, type
 
@@ -323,24 +324,35 @@ In this process, it takes time for the command of
 Don't just wait, but do some other works on your PC.
 /dev/random needs entropy to finish.
 
-(2) Stop the pcsc daemon.
+
+(2) [pyscard] Stop scdaemon
+    [PyUSB] Stop the pcsc daemon.
+
+If scdaemon is running, please kill it, or you will get "Smartcard
+Exception" by "Sharing violation".
+
+  $ killall -9 scdaemon
+
+In case of PyUSB tool, you need to stop pcscd.
 
   # /etc/init.d/pcscd stop
+
 
 (3) Write the random bits to the device
 
 Connect your board to USB port of your PC.  And invoke gnuk_put_binary.py:
 
-  # ../tool/gnuk_put_binary.py -r random_bits
+  $ ../tool/gnuk_put_binary.py -r random_bits
   random_bits: 1024
   Updating random bits
   ...
+
 
 (4) [Optional] Write fixed serial number
 
 If you use fixed serial number in the file 'GNUK_SERIAL_NUMBER', you can do:
 
-  # EMAIL=<YOUR-EMAIL-ADDRESS> ../tool/gnuk_put_binary.py -s ../GNUK_SERIAL_NUMBER 
+  $ EMAIL=<YOUR-EMAIL-ADDRESS> ../tool/gnuk_put_binary.py -s ../GNUK_SERIAL_NUMBER 
   Writing serial number
   ...
 
@@ -348,7 +360,7 @@ If you use fixed serial number in the file 'GNUK_SERIAL_NUMBER', you can do:
 
 If you have card holder certificate binary file, you can do:
 
-  # ../tool/gnuk_put_binary.py ../../<YOUR-CERTIFICATE>.bin 
+  $ ../tool/gnuk_put_binary.py ../../<YOUR-CERTIFICATE>.bin 
   ../../<YOUR-CERTIFICATE>.bin: <LENGTH-OF-YOUR-CERTIFICATE>
   Updating card holder certificate
   ...
@@ -443,9 +455,16 @@ linux/Documentation/usb/usbmon.txt
 Read-only Git Repository
 ========================
 
+You can browse at http://www.gniibe.org/gitweb/gnuk.git/
+
 You can get it by:
 
+  $ git clone git://www.gniibe.org/gnuk.git/
+
+or
+
   $ git clone http://www.gniibe.org/git/gnuk.git/
+
 
 
 Information on the Web
