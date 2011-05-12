@@ -16,12 +16,15 @@ At the initialization of the card, Gnuk becomes compatible mode by
 setting PW3.  Without setting PW3, it becomes "admin-less" mode
 by setting PW1.
 
-** Important bug fix.
-Gnuk (<= 0.11) has a bug which makes possible for attacker to guess
+** Important two bug fixes.
+Gnuk (<= 0.11) had a bug which makes possible for attacker to guess
 admin password easily.  When admin password is not set (the default
 value of factory setting), failure of VERIFY doesn't increment error
 counter in older versions.  Observing no increment of error counter,
 attacker could know that admin password is the one of factory setting.
+
+Gnuk (<= 0.11) had a bug which makes possible for attacker to change
+user password without knowing original password.
 
 ** tool/gnuk_put_binary.py now uses pyscard.
 Instead of PyUSB, it uses Python binding of PC/SC.  PyUSB version is

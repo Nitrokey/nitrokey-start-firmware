@@ -56,34 +56,67 @@ ac_reset_other (void)
   auth_status &= ~AC_OTHER_AUTHORIZED;
 }
 
-/*
- * Verify for "Perform Security Operation : Compute Digital Signature"
- */
 int
-verify_pso_cds (const uint8_t *pw, int pw_len)
+verify_user_0 (const uint8_t *pw, int buf_len, int pw_len_known,
+	       const uint8_t *ks_pw1)
 {
+  int pw_len;
   int r;
   uint8_t keystring[KEYSTRING_MD_SIZE];
 
   if (gpg_pw_locked (PW_ERR_PW1))
     return 0;
 
-  DEBUG_INFO ("verify_pso_cds\r\n");
-  DEBUG_BYTE (pw_len);
-
-  sha1 (pw, pw_len, keystring);
-  if ((r = gpg_do_load_prvkey (GPG_KEY_FOR_SIGNING, BY_USER, keystring)) < 0)
+  if (ks_pw1 == NULL)
     {
+      pw_len = strlen (OPENPGP_CARD_INITIAL_PW1);
+      if ((pw_len_known >= 0 && pw_len_known != pw_len)
+	  || buf_len < pw_len
+	  || strncmp ((const char *)pw, OPENPGP_CARD_INITIAL_PW1, pw_len))
+	goto failure;
+      else
+	goto success;
+    }
+  else
+    pw_len = ks_pw1[0];
+
+  if ((pw_len_known >= 0 && pw_len_known != pw_len)
+      || buf_len < pw_len)
+    {
+    failure:
       gpg_pw_increment_err_counter (PW_ERR_PW1);
       return -1;
     }
-  else if (r == 0)
-    /* No key is available.  Fail even if password can match.  */
-    return -1;
 
+  sha1 (pw, pw_len, keystring);
+  if ((r = gpg_do_load_prvkey (GPG_KEY_FOR_SIGNING, BY_USER, keystring))
+      < 0)
+    goto failure;
+  else if (r == 0)
+    if (memcmp (ks_pw1+1, keystring, KEYSTRING_MD_SIZE) != 0)
+      goto failure;
+
+ success:
   gpg_pw_reset_err_counter (PW_ERR_PW1);
-  auth_status |= AC_PSO_CDS_AUTHORIZED;
-  return 1;
+  return pw_len;
+}
+
+/*
+ * Verify for "Perform Security Operation : Compute Digital Signature"
+ */
+int
+verify_pso_cds (const uint8_t *pw, int pw_len)
+{
+  const uint8_t *ks_pw1 = gpg_do_read_simple (NR_DO_KEYSTRING_PW1);
+  int r;
+
+  DEBUG_INFO ("verify_pso_cds\r\n");
+  DEBUG_BYTE (pw_len);
+
+  r = verify_user_0 (pw, pw_len, pw_len, ks_pw1);
+  if (r > 0)
+    auth_status |= AC_PSO_CDS_AUTHORIZED;
+  return r;
 }
 
 int
@@ -196,43 +229,21 @@ verify_admin_0 (const uint8_t *pw, int buf_len, int pw_len_known)
       const uint8_t *ks_pw1 = gpg_do_read_simple (NR_DO_KEYSTRING_PW1);
 
       if (ks_pw1 != NULL)
-	{			/* empty PW3, but PW1 exists */
-	  int r;
-	  uint8_t keystring[KEYSTRING_MD_SIZE];
+	{	  /* empty PW3, but PW1 exists */
+	  int r = verify_user_0 (pw, buf_len, pw_len_known, ks_pw1);
 
-	  if (gpg_pw_locked (PW_ERR_PW1))
-	    return 0;
+	  if (r > 0)
+	    admin_authorized = BY_USER;
 
-	  pw_len = ks_pw1[0];
-	  if ((pw_len_known >= 0 && pw_len_known != pw_len)
-	      || buf_len < pw_len)
-	    {
-	    failure_pw1:
-	      gpg_pw_increment_err_counter (PW_ERR_PW1);
-	      return -1;
-	    }
-
-	  sha1 (pw, pw_len, keystring);
-	  if ((r = gpg_do_load_prvkey (GPG_KEY_FOR_SIGNING, BY_USER, keystring))
-	      < 0)
-	    goto failure_pw1;
-	  else if (r == 0)
-	    {
-	      if (memcmp (ks_pw1+1, keystring, KEYSTRING_MD_SIZE) != 0)
-		goto failure_pw1;
-	    }
-
-	  admin_authorized = BY_USER;
-	  gpg_pw_reset_err_counter (PW_ERR_PW1);
-	  return pw_len;
+	  return r;
 	}
 
       if (gpg_pw_locked (PW_ERR_PW3))
 	return 0;
 
       /*
-       * For the case of empty PW3 (with empty PW1 or no signing key yet),
-       * pass phrase should be OPENPGP_CARD_INITIAL_PW3
+       * For the case of empty PW3 (with empty PW1), pass phrase
+       * should be OPENPGP_CARD_INITIAL_PW3
        */
       pw_len = strlen (OPENPGP_CARD_INITIAL_PW3);
       if ((pw_len_known >=0 && pw_len_known != pw_len)
@@ -252,9 +263,9 @@ gpg_set_pw3 (const uint8_t *newpw, int newpw_len)
   uint32_t random;
 
   ks[0] = newpw_len;
-  random = get_random ();
+  random = get_salt ();
   memcpy (&ks[1], &random, sizeof (random));
-  random = get_random ();
+  random = get_salt ();
   memcpy (&ks[5], &random, sizeof (random));
   ks[9] = 0x60;			/* 65536 iterations */
 

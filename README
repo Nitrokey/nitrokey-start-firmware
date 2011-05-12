@@ -352,7 +352,7 @@ Connect your board to USB port of your PC.  And invoke gnuk_put_binary.py:
 
 If you use fixed serial number in the file 'GNUK_SERIAL_NUMBER', you can do:
 
-  $ EMAIL=<YOUR-EMAIL-ADDRESS> ../tool/gnuk_put_binary.py -s ../GNUK_SERIAL_NUMBER 
+  $ EMAIL=<YOUR-EMAIL-ADDRESS> ../tool/gnuk_put_binary.py -s ../GNUK_SERIAL_NUMBER
   Writing serial number
   ...
 

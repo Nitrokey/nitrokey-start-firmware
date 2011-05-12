@@ -302,24 +302,24 @@ cmd_change_password (void)
 
   if (who == BY_USER)			/* PW1 */
     {
-      const uint8_t *pk = gpg_do_read_simple (NR_DO_KEYSTRING_PW1);
+      const uint8_t *ks_pw1 = gpg_do_read_simple (NR_DO_KEYSTRING_PW1);
 
-      if (pk == NULL)
+      pw_len = verify_user_0 (pw, len, -1, ks_pw1);
+
+      if (pw_len < 0)
 	{
-	  if (len < (int)strlen (OPENPGP_CARD_INITIAL_PW1))
-	    {
-	      DEBUG_INFO ("permission denied.\r\n");
-	      GPG_SECURITY_FAILURE ();
-	      return;
-	    }
-
-	  pw_len = strlen (OPENPGP_CARD_INITIAL_PW1);
-	  newpw = pw + pw_len;
-	  newpw_len = len - pw_len;
+	  DEBUG_INFO ("permission denied.\r\n");
+	  GPG_SECURITY_FAILURE ();
+	  return;
+	}
+      else if (pw_len == 0)
+	{
+	  DEBUG_INFO ("blocked.\r\n");
+	  GPG_SECURITY_AUTH_BLOCKED ();
+	  return;
 	}
       else
 	{
-	  pw_len = pk[0];
 	  newpw = pw + pw_len;
 	  newpw_len = len - pw_len;
 	}
@@ -368,7 +368,6 @@ cmd_change_password (void)
       gpg_do_write_simple (NR_DO_KEYSTRING_PW1, new_ks0, KEYSTRING_SIZE_PW1);
       ac_reset_pso_cds ();
       ac_reset_other ();
-      gpg_pw_reset_err_counter (PW_ERR_PW1);
       DEBUG_INFO ("Changed DO_KEYSTRING_PW1.\r\n");
       GPG_SUCCESS ();
     }
@@ -377,7 +376,6 @@ cmd_change_password (void)
       gpg_do_write_simple (NR_DO_KEYSTRING_PW1, new_ks0, 1);
       ac_reset_pso_cds ();
       ac_reset_other ();
-      gpg_pw_reset_err_counter (PW_ERR_PW1);
       DEBUG_INFO ("Changed length of DO_KEYSTRING_PW1.\r\n");
       GPG_SUCCESS ();
     }
@@ -385,7 +383,6 @@ cmd_change_password (void)
     {
       DEBUG_INFO ("done.\r\n");
       ac_reset_admin ();
-      gpg_pw_reset_err_counter (PW_ERR_PW3);
       GPG_SUCCESS ();
     }
 }

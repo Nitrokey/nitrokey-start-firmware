@@ -716,7 +716,7 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
 
   memcpy (kdi.data, key_data, KEY_CONTENT_LEN);
   kdi.check = calc_check32 (key_data, KEY_CONTENT_LEN);
-  kdi.random = get_random ();
+  kdi.random = get_salt ();
   memcpy (kdi.magic, GNUK_MAGIC, KEY_MAGIC_LEN);
 
   dek = random_bytes_get (); /* 16-byte random bytes */
