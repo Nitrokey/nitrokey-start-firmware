@@ -282,7 +282,7 @@ class DFU_STM32:
             while addr < end_addr:
                 block = self.dfuse_read_memory()
                 j = 0
-                for c in data[i*1024:i*1024+1024]
+                for c in data[i*1024:(i+1)*1024]:
                     if (ord(c)&0xff) != block[j]:
                         raise ValueError, "verify failed at %08x" % (addr + i*1024+j)
                     j += 1
@@ -299,10 +299,19 @@ class DFU_STM32:
 
 busses = usb.busses()
 
+# 0483: SGS Thomson Microelectronics
+# df11: DfuSe
+USB_VENDOR_STMICRO=0x0483
+USB_PRODUCT_DFUSE=0xdf11
+
 def get_device():
     for bus in busses:
         devices = bus.devices
         for dev in devices:
+            if dev.idVendor != USB_VENDOR_STMICRO:
+                continue
+            if dev.idProduct != USB_PRODUCT_DFUSE:
+                continue
             for config in dev.configurations:
                 for intf in config.interfaces:
                     for alt in intf:

@@ -1,5 +1,8 @@
 2011-05-12  NIIBE Yutaka  <gniibe@fsij.org>
 
+	* tool/dfuse.py (DFU_STM32.verify): Add missing colon.
+	* tool/dfuse.py (get_device): Restrict to STMicro DfuSe.
+
 	* tool/gnuk_put_binary.py (main): Add -p option to enter password.
 
 	* src/ac.c (verify_user_0): New.
