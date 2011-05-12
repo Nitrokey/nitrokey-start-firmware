@@ -94,14 +94,14 @@ def compare(data_original, data_in_device):
 DEFAULT_PW3 = "12345678"
 BY_ADMIN = 3
 
-def main(fileid, is_update, data):
+def main(fileid, is_update, data, passwd):
     gnuk = GnukToken()
 
     gnuk.connection.connect()
     print "Token:", gnuk.connection.getReader()
     print "ATR:", toHexString( gnuk.connection.getATR() )
 
-    gnuk.cmd_verify(BY_ADMIN, DEFAULT_PW3)
+    gnuk.cmd_verify(BY_ADMIN, passwd)
     gnuk.cmd_write_binary(fileid, data, is_update)
     if fileid == 0:
         gnuk.cmd_select_openpgp()
@@ -113,6 +113,11 @@ def main(fileid, is_update, data):
 
 
 if __name__ == '__main__':
+    passwd = DEFAULT_PW3
+    if sys.argv[1] == '-p':
+        from getpass import getpass
+        passwd = getpass("Admin password:")
+        sys.argv.pop(1)
     if sys.argv[1] == '-u':
         is_update = True
         sys.argv.pop(1)
@@ -155,4 +160,4 @@ if __name__ == '__main__':
         print "%s: %d" % (filename, len(data))
         data += "\x90\x00"
         print "Updating card holder certificate"
-    main(fileid, is_update, data)
+    main(fileid, is_update, data, passwd)

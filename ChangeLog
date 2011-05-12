@@ -1,5 +1,7 @@
 2011-05-12  NIIBE Yutaka  <gniibe@fsij.org>
 
+	* tool/gnuk_put_binary.py (main): Add -p option to enter password.
+
 	* src/ac.c (verify_user_0): New.
 	(verify_pso_cds, verify_admin_0): Use verify_user_0.
 	* src/openpgp.c (cmd_change_password): Use verify_user_0.
