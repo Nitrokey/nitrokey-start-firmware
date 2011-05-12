@@ -1,5 +1,8 @@
 2011-05-12  NIIBE Yutaka  <gniibe@fsij.org>
 
+	* src/openpgp.c (cmd_pso, cmd_internal_authenticate)
+	(cmd_update_binary, cmd_write_binary): Don't check pw locked.
+
 	* tool/dfuse.py (DFU_STM32.verify): Add missing colon.
 	* tool/dfuse.py (get_device): Restrict to STMicro DfuSe.
 

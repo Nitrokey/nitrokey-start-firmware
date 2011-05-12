@@ -766,8 +766,7 @@ cmd_pso (void)
     {
       DEBUG_SHORT (len);
 
-      if (gpg_pw_locked (PW_ERR_PW1)
-	  || !ac_check_status (AC_OTHER_AUTHORIZED))
+      if (!ac_check_status (AC_OTHER_AUTHORIZED))
 	{
 	  DEBUG_INFO ("security error.");
 	  GPG_SECURITY_FAILURE ();
@@ -783,7 +782,7 @@ cmd_pso (void)
 	GPG_ERROR ();
     }
   else
-    {				/* XXX: not yet supported */
+    {
       DEBUG_INFO (" - ??");
       DEBUG_BYTE (cmd_APDU[2]);
       DEBUG_INFO (" - ??");
@@ -813,8 +812,7 @@ cmd_internal_authenticate (void)
     {
       DEBUG_SHORT (len);
 
-      if (gpg_pw_locked (PW_ERR_PW1)
-	  || !ac_check_status (AC_OTHER_AUTHORIZED))
+      if (!ac_check_status (AC_OTHER_AUTHORIZED))
 	{
 	  DEBUG_INFO ("security error.");
 	  GPG_SECURITY_FAILURE ();
@@ -855,7 +853,7 @@ cmd_update_binary (void)
 
   DEBUG_INFO (" - UPDATE BINARY\r\n");
 
-  if (gpg_pw_locked (PW_ERR_PW3) || !ac_check_status (AC_ADMIN_AUTHORIZED))
+  if (!ac_check_status (AC_ADMIN_AUTHORIZED))
     {
       DEBUG_INFO ("security error.");
       GPG_SECURITY_FAILURE ();
@@ -926,7 +924,7 @@ cmd_write_binary (void)
 
   DEBUG_INFO (" - WRITE BINARY\r\n");
 
-  if (gpg_pw_locked (PW_ERR_PW3) || !ac_check_status (AC_ADMIN_AUTHORIZED))
+  if (!ac_check_status (AC_ADMIN_AUTHORIZED))
     {
       DEBUG_INFO ("security error.");
       GPG_SECURITY_FAILURE ();
