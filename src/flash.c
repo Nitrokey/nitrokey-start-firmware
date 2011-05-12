@@ -24,9 +24,9 @@
 /*
  * We assume single DO size is less than 256.
  *
- * NOTE: When we will support "Card holder certificate" (which size is
- *       larger than 256), it is not put into data pool, but is
- *       implemented by its own flash page(s).
+ * NOTE: "Card holder certificate" (which size is larger than 256) is
+ *       not put into data pool, but is implemented by its own flash
+ *       page(s).
  */
 
 #include "config.h"
@@ -143,14 +143,18 @@ flash_erase_page (uint32_t addr)
  *         .dtors
  * _etext
  *         .data
- *         ...
- * _etext + (_edata - _data)
- *
- * flash-page-size align padding
- *
- * flash-page-size data pool  * 2
- *
- * 1.5-KiB Key store (512-byte (p, q and N) key-store * 3)
+ * _bss_start
+ *         .bss
+ * _end 
+ *         <alignment to page>
+ * random_bits_start
+ *         <one page>
+ * ch_certificate_startp
+ *         <2048 bytes>
+ * _data_pool
+ *	   <two pages>
+ * _keystore_pool
+ *         1.5-KiB Key store (512-byte (p, q and N) key-store * 3)
  */
 #define FLASH_DATA_POOL_HEADER_SIZE	2
 #if defined(STM32F10X_HD)
