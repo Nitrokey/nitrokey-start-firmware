@@ -1,5 +1,8 @@
 2011-05-12  NIIBE Yutaka  <gniibe@fsij.org>
 
+	* src/random.c (get_salt): Rename from get_random.
+	(random_bytes_get, random_bytes_free): It's 16-byte.
+
 	* src/ac.c (verify_admin_0): Use PW_ERR_PW1 counter when
 	authenticated by PW1.
 

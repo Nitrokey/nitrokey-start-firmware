@@ -290,10 +290,11 @@ extern uint8_t admin_authorized;
 
 #define SIZE_PW_STATUS_BYTES 7
 
-/* 32-byte random bytes */
-extern uint32_t get_random (void);
+/* 16-byte random bytes */
 extern const uint8_t *random_bytes_get (void);
 extern void random_bytes_free (const uint8_t *);
+/* 4-byte salt */
+extern uint32_t get_salt (void);
 
 extern uint32_t hardclock (void);
 

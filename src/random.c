@@ -1,7 +1,7 @@
 /*
  * random.c -- get random bytes
  *
- * Copyright (C) 2010 Free Software Initiative of Japan
+ * Copyright (C) 2010, 2011 Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
  * This file is a part of Gnuk, a GnuPG USB Token implementation.
@@ -25,20 +25,23 @@
 #include "ch.h"
 #include "gnuk.h"
 
+/*
+ * Return pointer to random 16-byte
+ */
 const uint8_t *
 random_bytes_get (void)
 {
   uint32_t addr, addr0;
 
-  addr = (uint32_t)&random_bits_start + ((hardclock () << 5) & 0x3e0);
-  addr0 = addr; 
+  addr = (uint32_t)&random_bits_start + ((hardclock () << 4) & 0x3f0);
+  addr0 = addr;
 
   while (1)
     {
       if (*(uint32_t *)addr != 0 && *(uint32_t *)addr != 0xffffffff)
 	break;
 
-      addr += 32;
+      addr += 16;
       if (addr >= ((uint32_t)&random_bits_start) + 1024)
 	addr = ((uint32_t)&random_bits_start);
 
@@ -49,22 +52,34 @@ random_bytes_get (void)
   return (const uint8_t *)addr;
 }
 
+/*
+ * Free pointer to random 16-byte
+ */
 void
 random_bytes_free (const uint8_t *p)
 {
   int i;
   uint32_t addr = (uint32_t)p;
 
-  for (i = 0; i < 16; i++)
+  for (i = 0; i < 8; i++)
     flash_clear_halfword (addr+i*2);
 }
 
+/*
+ * Return 4-byte salt
+ */
 uint32_t
-get_random (void)
+get_salt (void)
 {
-  const uint32_t *p = (const uint32_t *)random_bytes_get ();
-  uint32_t r = *p;
+  const uint8_t *u = unique_device_id (); /* 12-byte unique id */
+  uint32_t r = 0;
+  int i;
 
-  random_bytes_free ((const uint8_t *)p);
+  for (i = 0; i < 4; i++)
+    {
+      r <<= 8;
+      r |= u[hardclock () % 12];
+    }
+
   return r;
 }
