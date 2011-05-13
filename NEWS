@@ -2,7 +2,7 @@ Gnuk NEWS - User visible changes
 
 * Major changes in Gnuk 0.12
 
-  Released 2011-05-1X, by NIIBE Yutaka
+  Released 2011-05-13, by NIIBE Yutaka
 
 ** Admin-less mode is supported.
 The OpenPGP card specification assumes existence of a security officer
@@ -17,10 +17,12 @@ setting PW3.  Without setting PW3, it becomes "admin-less" mode
 by setting PW1.
 
 ** Important two bug fixes.
-Gnuk (<= 0.11) had a bug which makes possible for attacker to change
-user password without knowing original password.
+Gnuk (<= 0.11) has a bug which makes possible for attacker to change
+user password to unknown state without knowing original password (when
+no keys are loaded yet).  No, attacker could not steal your identity
+(cannot sign or decrypt), but it would be possible to disturb you.
 
-Gnuk (<= 0.11) had a bug which makes possible for attacker to guess
+Gnuk (<= 0.11) has a bug which makes possible for attacker to guess
 admin password easily.  When admin password is not set (the default
 value of factory setting), failure of VERIFY doesn't increment error
 counter in older versions.  Observing no increment of error counter,

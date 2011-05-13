@@ -1,7 +1,7 @@
-Gnuk - software for GPG USB Token
+Gnuk - software for GnuPG USB Token
 
-							   Version 0.11
-							     2011-04-15
+							   Version 0.12
+							     2011-05-13
 						           Niibe Yutaka
 				      Free Software Initiative of Japan
 
@@ -26,6 +26,24 @@ USB Token by "Gnuk" everywhere.
 FAQ
 ===
 
+Q0: How Gnuk USB Token is superior than other solutions (OpenPGP
+    card 2.0, GPF Crypto Stick, etc) ?
+    http://www.g10code.de/p-card.html
+    http://www.privacyfoundation.de/crypto_stick/
+A0: IMRHO, not quite.  There is no ready-to-use out-of-box product.
+    (It is welcome for me that some vendor will manufacture Gnuk USB
+     Token.  Even I can help design of hardware, if needed.)
+    Good points are:
+    * If you have skill of electronics and like DIY, you can build
+      Gnuk Token cheaper (see Q8-A8).
+    * You can study Gnuk to modify and to enhance.  For example, you
+      can implement your own authentication method with some sensor
+      such as acceleration sensor.
+    * It is "of Free Software"; Gnuk is distributed under GPLv3+,
+            "by Free Software"; Gnuk development requires only Free Software
+	    	                (GNU Toolchain, Python, etc.), 
+	    "for Free Software"; Gnuk supports GnuPG.
+
 Q1: What's kind of key algorithm is supported?
 A1: Gnuk only supports 2048-bit RSA.
 
@@ -38,7 +56,9 @@ A3: Orthodox choice is Olimex STM32-H103.
     Discovery Kit might be the best choice.
 
 Q4: What's version of GnuPG are you using?
-A4: In Debian GNU/Linux system, I use GnuPG 2.0.14-2 (in sid).
+A4: In Debian GNU/Linux system, I use gnupg 1.4.11-3 and gnupg-agent
+    2.0.14-2 (in sid).  With older versions, you can only sign with SHA1.
+    See: http://www.fsij.org/gnuk/gnupg2-fixes-needed
 
 Q5: What's version of pcscd and libccid are you using?
 A5: In Debian GNU/Linux system, I use pcscd 1.5.5-4 and libccid 1.3.11-2,
@@ -46,17 +66,35 @@ A5: In Debian GNU/Linux system, I use pcscd 1.5.5-4 and libccid 1.3.11-2,
     when using libccid (< 1.4.1).
 
 Q6: What kinds of hardware is required for development?
-A6: You need a target board plus JTAG debugger.  If you just want to
+A6: You need a target board plus a JTAG debugger.  If you just want to
     test Gnuk for target boards with DfuSe, JTAG debugger is not
     the requirement.  Note that for real use, you need JTAG debugger
     to enable flash ROM protection.
+
+Q7: How much does it cost?
+A7: Olimex STM32-H103 plus ARM-USB-TINY-H cost 70 Euro or so.
+
+Q8: How much does it cost for DIY version?
+A8: STM8S Discovery Kit costs 750 JPY (< $10 USD) only.  You can build
+    your own JTAG debugger using FTDI2232 module (1450 JPY), see:
+    http://www.fsij.org/gnuk/jtag_dongle_ftdi2232
+
+Q9: I got an error like "gpg: selecting openpgp failed: ec=6.108", what's up?
+A9: GnuPG's SCDaemon has problems for handling insertion/removal of
+    card/reader (problems are fixed in trunk).  When your newly
+    inserted token is not found by GnuPG, try killing scdaemon and let
+    it to be invoked again.  I do:
+      $ killall -9 scdaemon
+    and confirm scdaemon doesn't exist, then,
+      $ gpg-connect-agent learn /bye
 
 
 Release notes
 =============
 
-This is twelfth release of Gnuk.  While it works well for specific
+This is thirteenth release of Gnuk.  While it works well for specific
 usages and it is considered stable, it is still somewhat experimental.
+
 Note that you need to write random bits after installation of gnuk
 executable to the chip.  This procedure is required to share a single
 executable among multiple devices.
@@ -64,29 +102,17 @@ executable among multiple devices.
 Tested features are:
 
 	* Personalization of the card
-
 	  * Changing Login name, URL, Name, Sex, Language, etc.
-
 	* Password handling (PW1, RC, PW3)
-
 	* Key import for three types:
-
 	  * key for digital signing
-
 	  * key for decryption
-
 	  * key for authentication
-
 	* PSO: Digital Signature
-
 	* PSO: Decipher
-
 	* INTERNAL AUTHENTICATE
-
-	* Changing value of password status bytes (0x00C4)
-
+	* Changing value of password status bytes (0x00C4): forcesig
 	* Verify with pin pad
-
 	* Modify with pin pad
 
 It is known not-working well:
@@ -103,7 +129,6 @@ It is known not-working well:
 Not supported feature(s):
 
 	* Overriding key import.  You need to remove all keys first.
-
 	* Key generation
 
 
@@ -360,7 +385,7 @@ If you use fixed serial number in the file 'GNUK_SERIAL_NUMBER', you can do:
 
 If you have card holder certificate binary file, you can do:
 
-  $ ../tool/gnuk_put_binary.py ../../<YOUR-CERTIFICATE>.bin 
+  $ ../tool/gnuk_put_binary.py ../../<YOUR-CERTIFICATE>.bin
   ../../<YOUR-CERTIFICATE>.bin: <LENGTH-OF-YOUR-CERTIFICATE>
   Updating card holder certificate
   ...
@@ -425,7 +450,55 @@ Try following to see Gnuk runs:
   $ gpg --card-status
 
 
-For more, see doc/DEMO.
+Personalize the Token and import keys
+-------------------------------------
+
+You can personalize the token, putting your information like: Name,
+Login name, Sex, Languages, URL, etc., and password.  To do so, GnuPG
+command is:
+
+  $ gpg --card-edit
+
+Note that the factory setting of user password is "123456" and admin
+password is "12345678" as the specification.
+
+No, Gnuk doesn't support key generation.  You need to create your
+keys on your computer, and import them to Gnuk Token.  After you create
+your keys (they must be 2048-bit RSA), you can import them.
+
+For detail, please see doc/DEMO and doc/DEMO-2.
+
+Note that it make sense to preserve your keys on your computer so that
+you can import the keys (again) to (possibly another) Gnuk Token.  In
+this case, you can use GnuPG's option to specify the home directory by
+--homedir.
+
+After creating keys by:
+
+  $ gpg --gen-key
+  ...
+
+Copy directory which contains your secret keys to new directory named
+<gpgdir-with-your-secret-keys>:
+
+  $ cp -pa $HOME/.gnupg <gpgdir-with-your-secret-keys>
+
+Then, import keys by:
+
+  $ gpg --edit-key <YOUR-KEYID>
+
+While your $HOME/.gnupg now doesn't have your secret keys after
+import, <gpgdir-with-your-secret-keys> still has them.  You can again
+import them by:
+
+  $ gpg --homedir=<gpgdir-with-your-secret-keys> --edit-key <YOUR-KEYID>
+
+Note that you *should not* save changes this time to preserve keys
+on your computer.  The session goes like this:
+
+  gpg> quit
+  Save changes? (y/N) n
+  Quit without saving? (y/N) y
 
 
 
@@ -455,7 +528,7 @@ linux/Documentation/usb/usbmon.txt
 Read-only Git Repository
 ========================
 
-You can browse at http://www.gniibe.org/gitweb/gnuk.git/
+You can browse at http://www.gniibe.org/gitweb?p=gnuk.git;a=summary
 
 You can get it by:
 
@@ -470,7 +543,7 @@ or
 Information on the Web
 ======================
 
-Please see: http://www.fsij.org/gnuk/
+Please visit: http://www.fsij.org/gnuk/
 
 
 Your Contributions
