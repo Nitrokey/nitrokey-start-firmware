@@ -206,7 +206,6 @@ flash_init (void)
 
   keystore = p;
 
-  flash_unlock ();
   return data_pool + FLASH_DATA_POOL_HEADER_SIZE;
 }
 

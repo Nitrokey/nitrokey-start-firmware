@@ -1,5 +1,9 @@
 2011-05-16  NIIBE Yutaka  <gniibe@fsij.org>
 
+	* src/main.c (main): Call flash_unlock at the beginning.
+	(device_initialize_once): Don't call flash_unlock here.
+	* src/flash.c (flash_init): Likewise.
+
 	* src/openpgp.c (cmd_select_file): Don't use write_res_apdu.
 	(set_res_apdu): Rename from write_res_apdu.  Just SW1 and SW2.
 

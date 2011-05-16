@@ -172,7 +172,6 @@ device_initialize_once (void)
 
   if (p[0] == 0xff && p[1] == 0xff && p[2] == 0xff && p[3] == 0xff)
     {
-      extern void flash_unlock (void);
       /*
        * This is the first time invocation.
        * Setup serial number by unique device ID.
@@ -180,7 +179,6 @@ device_initialize_once (void)
       const uint8_t *u = unique_device_id ();
       int i;
 
-      flash_unlock ();
       for (i = 0; i < 4; i++)
 	{
 	  uint8_t b = u[i];
@@ -212,6 +210,7 @@ main (int argc, char **argv)
   (void)argc;
   (void)argv;
 
+  flash_unlock ();
   device_initialize_once ();
   usb_lld_init ();
   USB_Init();

@@ -107,6 +107,7 @@ enum kind_of_key {
   GPG_KEY_FOR_AUTHENTICATION,
 };
 
+extern void flash_unlock (void);
 extern const uint8_t *flash_init (void);
 extern void flash_do_release (const uint8_t *);
 extern const uint8_t *flash_do_write (uint8_t nr, const uint8_t *data, int len);
