@@ -90,8 +90,7 @@ extern void ac_reset_admin (void);
 extern void ac_fini (void);
 
 
-extern void write_res_apdu (const uint8_t *p, int len,
-			    uint8_t sw1, uint8_t sw2);
+extern void set_res_apdu (uint8_t sw1, uint8_t sw2);
 extern uint16_t data_objects_number_of_bytes;
 
 extern void gpg_data_scan (const uint8_t *p);

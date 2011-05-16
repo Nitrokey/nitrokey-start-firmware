@@ -62,13 +62,11 @@ select_file_TOP_result[] __attribute__ ((aligned (1))) = {
 };
 
 void
-write_res_apdu (const uint8_t *p, int len, uint8_t sw1, uint8_t sw2)
+set_res_apdu (uint8_t sw1, uint8_t sw2)
 {
-  res_APDU_size = 2 + len;
-  if (len)
-    memcpy (res_APDU, p, len);
-  res_APDU[len] = sw1;
-  res_APDU[len+1] = sw2;
+  res_APDU_size = 2;
+  res_APDU[0] = sw1;
+  res_APDU[1] = sw2;
 }
 
 #define FILE_NONE	0
@@ -678,10 +676,14 @@ cmd_select_file (void)
 	}
       else
 	{
-	  write_res_apdu (select_file_TOP_result,
-			  sizeof (select_file_TOP_result), 0x90, 0x00);
+	  int len = sizeof (select_file_TOP_result);
+
+	  res_APDU_size = 2 + len;
+	  memcpy (res_APDU, select_file_TOP_result, len);
 	  res_APDU[2] = (data_objects_number_of_bytes & 0xff);
 	  res_APDU[3] = (data_objects_number_of_bytes >> 8);
+	  res_APDU[len] = 0x90;
+	  res_APDU[len+1] = 0x00;
 	}
 
       file_selection = FILE_MF;
