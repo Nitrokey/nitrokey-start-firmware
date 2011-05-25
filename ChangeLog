@@ -1,3 +1,7 @@
+2011-05-25  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* tool/hub_ctrl.py: New.  Port of original C implementation.
+
 2011-05-16  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* src/main.c (main): Call flash_unlock at the beginning.
