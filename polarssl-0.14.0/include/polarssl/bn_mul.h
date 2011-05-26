@@ -500,22 +500,23 @@
     asm( "ldr    r0, %0         " :: "m" (s));  \
     asm( "ldr    r1, %0         " :: "m" (d));  \
     asm( "ldr    r2, %0         " :: "m" (c));  \
-    asm( "ldr    r3, %0         " :: "m" (b));
+    asm( "ldr    r3, %0         " :: "m" (b));  \
+    asm( "adds   r0, #0         ");
 
 #define MULADDC_CORE                            \
+    asm( "ldr    r5, [r1]       " );            \
     asm( "ldr    r4, [r0], #4   " );            \
-    asm( "mov    r5, #0         " );            \
-    asm( "ldr    r6, [r1]       " );            \
-    asm( "umlal  r2, r5, r3, r4 " );            \
-    asm( "adds   r7, r6, r2     " );            \
-    asm( "adc    r2, r5, #0     " );            \
-    asm( "str    r7, [r1], #4   " );
+    asm( "adcs   r5, r2, r5     " );            \
+    asm( "mov    r2, #0         " );            \
+    asm( "umlal  r5, r2, r3, r4 " );            \
+    asm( "str    r5, [r1], #4   " );
 
 #define MULADDC_STOP                            \
+    asm( "adc    r2, r2, #0     " );            \
     asm( "str    r2, %0         " : "=m" (c));  \
     asm( "str    r1, %0         " : "=m" (d));  \
     asm( "str    r0, %0         " : "=m" (s) :: \
-    "r0", "r1", "r2", "r3", "r4", "r5", "r6", "r7" );
+    "r0", "r1", "r2", "r3", "r4", "r5" );
 
 #endif /* ARMv3 */
 

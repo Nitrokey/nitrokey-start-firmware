@@ -1,3 +1,10 @@
+2011-05-26  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* polarssl-0.14.0/include/polarssl/bn_mul.h [__arm__]
+	(MULADDC_INIT): Add ADDS instruction to clear of carry flag.
+	(MULADDC_CORE): Tune to 6 instructions and less registers.
+	(MULADDC_STOP): Add ADC instruction to save carry flag.
+
 2011-05-25  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* tool/hub_ctrl.py: New.  Port of original C implementation.
