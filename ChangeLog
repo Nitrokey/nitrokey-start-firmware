@@ -1,3 +1,8 @@
+2011-05-27  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* polarssl-0.14.0/include/polarssl/bn_mul.h [__arm__]
+	(MULADDC_HUIT): New.
+
 2011-05-26  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* polarssl-0.14.0/include/polarssl/bn_mul.h [__arm__]

@@ -496,6 +496,52 @@
 
 #if defined(__arm__)
 
+#define MULADDC_HUIT                        \
+    asm( "ldmia  r0!, { r4, r5 } " );       \
+    asm( "ldmia  r1, { r8, r9 }  " );       \
+    asm( "umull  r6, r7, r3, r4  " );       \
+    asm( "adcs   r6, r6, r2      " );       \
+    asm( "adc    r7, r7, #0      " );       \
+    asm( "adds   r8, r8, r6      " );       \
+    asm( "umull  r6, r2, r3, r5  " );       \
+    asm( "adcs   r6, r6, r7      " );       \
+    asm( "adc    r2, r2, #0      " );       \
+    asm( "adds   r9, r9, r6      " );       \
+    asm( "stmia  r1!, { r8, r9 } " );       \
+    asm( "ldmia  r0!, { r4, r5 } " );       \
+    asm( "ldmia  r1, { r8, r9 }  " );       \
+    asm( "umull  r6, r7, r3, r4  " );       \
+    asm( "adcs   r6, r6, r2      " );       \
+    asm( "adc    r7, r7, #0      " );       \
+    asm( "adds   r8, r8, r6      " );       \
+    asm( "umull  r6, r2, r3, r5  " );       \
+    asm( "adcs   r6, r6, r7      " );       \
+    asm( "adc    r2, r2, #0      " );       \
+    asm( "adds   r9, r9, r6      " );       \
+    asm( "stmia  r1!, { r8, r9 } " );       \
+    asm( "ldmia  r0!, { r4, r5 } " );       \
+    asm( "ldmia  r1, { r8, r9 }  " );       \
+    asm( "umull  r6, r7, r3, r4  " );       \
+    asm( "adcs   r6, r6, r2      " );       \
+    asm( "adc    r7, r7, #0      " );       \
+    asm( "adds   r8, r8, r6      " );       \
+    asm( "umull  r6, r2, r3, r5  " );       \
+    asm( "adcs   r6, r6, r7      " );       \
+    asm( "adc    r2, r2, #0      " );       \
+    asm( "adds   r9, r9, r6      " );       \
+    asm( "stmia  r1!, { r8, r9 } " );       \
+    asm( "ldmia  r0!, { r4, r5 } " );       \
+    asm( "ldmia  r1, { r8, r9 }  " );       \
+    asm( "umull  r6, r7, r3, r4  " );       \
+    asm( "adcs   r6, r6, r2      " );       \
+    asm( "adc    r7, r7, #0      " );       \
+    asm( "adds   r8, r8, r6      " );       \
+    asm( "umull  r6, r2, r3, r5  " );       \
+    asm( "adcs   r6, r6, r7      " );       \
+    asm( "adc    r2, r2, #0      " );       \
+    asm( "adds   r9, r9, r6      " );       \
+    asm( "stmia  r1!, { r8, r9 } " );
+
 #define MULADDC_INIT                            \
     asm( "ldr    r0, %0         " :: "m" (s));  \
     asm( "ldr    r1, %0         " :: "m" (d));  \
@@ -516,7 +562,7 @@
     asm( "str    r2, %0         " : "=m" (c));  \
     asm( "str    r1, %0         " : "=m" (d));  \
     asm( "str    r0, %0         " : "=m" (s) :: \
-    "r0", "r1", "r2", "r3", "r4", "r5" );
+    "r0", "r1", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9");
 
 #endif /* ARMv3 */
 
