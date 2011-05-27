@@ -948,7 +948,7 @@ cmd_write_binary (void)
     {
       if (file_selection != FILE_EF_CH_CERTIFICATE
 	  && file_selection != FILE_EF_RANDOM
-	  && file_selection != FILEID_SERIAL_NO)
+	  && file_selection != FILE_EF_SERIAL)
 	{
 	  GPG_COMMAND_NOT_ALLOWED ();
 	  return;

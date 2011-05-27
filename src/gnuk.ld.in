@@ -118,7 +118,7 @@ SECTIONS
     {
         . = ALIGN (@FLASH_PAGE_SIZE@);
         random_bits_start = .;
-	. += 1;
+	LONG(0xffffffff);
         . = ALIGN (@FLASH_PAGE_SIZE@);
     } > flash =0xffffffff
 
@@ -126,6 +126,7 @@ SECTIONS
     {
         . = ALIGN (@FLASH_PAGE_SIZE@);
         ch_certificate_start = .;
+	LONG(0xffffffff);
 	. += 1920;
         . = ALIGN (@FLASH_PAGE_SIZE@);
     } > flash =0xffffffff

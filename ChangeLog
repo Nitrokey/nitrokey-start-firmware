@@ -1,5 +1,13 @@
 2011-05-27  NIIBE Yutaka  <gniibe@fsij.org>
 
+	* tool/gnuk_put_binary.py (main): Confirm Serial ID is written
+	correctly.
+
+	* src/openpgp.c (cmd_write_binary): Fix FILE_EF_SERIAL comparison.
+
+	* src/gnuk.ld.in (.gnuk_random, .gnuk_ch_certificate): Put LONG to
+	have CONTENTS.
+
 	* polarssl-0.14.0/include/polarssl/bn_mul.h [__arm__]
 	(MULADDC_HUIT): New.
 
