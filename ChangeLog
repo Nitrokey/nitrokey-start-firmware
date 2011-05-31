@@ -1,3 +1,8 @@
+2011-05-31  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* include/polarssl/bn_mul.h [__arm__]
+	(MULADDC_HUIT, MULADDC_INIT, MULADDC_CORE, MULADDC_STOP): Tweak.
+
 2011-05-27  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* tool/gnuk_put_binary.py (main): Confirm Serial ID is written
