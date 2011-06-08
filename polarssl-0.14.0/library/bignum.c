@@ -894,7 +894,16 @@ static void mpi_mul_hlp( int i, t_int *s, t_int *d, t_int b )
 {
     t_int c = 0, t = 0;
 
-#if defined(MULADDC_HUIT)
+#if defined(MULADDC_1024_LOOP)
+    MULADDC_1024_LOOP
+
+    for( ; i > 0; i-- )
+    {
+        MULADDC_INIT
+        MULADDC_CORE
+        MULADDC_STOP
+    }
+#elif defined(MULADDC_HUIT)
     for( ; i >= 8; i -= 8 )
     {
         MULADDC_INIT

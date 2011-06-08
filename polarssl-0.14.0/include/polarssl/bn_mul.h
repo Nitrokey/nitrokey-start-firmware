@@ -495,50 +495,110 @@
 #endif /* TriCore */
 
 #if defined(__arm__)
+#define MULADDC_1024_CORE                      \
+       "ldmia  %0!, { r5, r6, r7 }  \n"        \
+       "ldmia  %1, { r8, r9, r10 }  \n"        \
+       "umull  r11, r12, %2, r5     \n"        \
+       "adcs    r11, r11, %3        \n"        \
+       "adc    %3, r12, #0          \n"        \
+       "adds   r8, r8, r11          \n"        \
+       "umull  r11, r12, %2, r6     \n"        \
+       "adcs   r11, r11, %3         \n"        \
+       "adc    %3, r12, #0          \n"        \
+       "adds   r9, r9, r11          \n"        \
+       "umull  r11, r12, %2, r7     \n"        \
+       "adcs   r11, r11, %3         \n"        \
+       "adc    %3, r12, #0          \n"        \
+       "adds   r10, r10, r11        \n"        \
+       "stmia  %1!, { r8, r9, r10 } \n"
 
+#define MULADDC_1024_LOOP                      \
+  asm( "tst %4, #0xfe0              \n"        \
+       "beq 0f                      \n"        \
+"1:	sub %4, %4, #32             \n"        \
+       "ldmia  %0!, { r5, r6, r7 }  \n"        \
+       "ldmia  %1, { r8, r9, r10 }  \n"        \
+       "umull  r11, r12, %2, r5     \n"        \
+       "adds   r11, r11, %3         \n"        \
+       "adc    %3, r12, #0          \n"        \
+       "adds   r8, r8, r11          \n"        \
+       "umull  r11, r12, %2, r6     \n"        \
+       "adcs   r11, r11, %3         \n"        \
+       "adc    %3, r12, #0          \n"        \
+       "adds   r9, r9, r11          \n"        \
+       "umull  r11, r12, %2, r7     \n"        \
+       "adcs   r11, r11, %3         \n"        \
+       "adc    %3, r12, #0          \n"        \
+       "adds   r10, r10, r11        \n"        \
+       "stmia  %1!, { r8, r9, r10 } \n"        \
+       MULADDC_1024_CORE MULADDC_1024_CORE     \
+       MULADDC_1024_CORE MULADDC_1024_CORE     \
+       MULADDC_1024_CORE MULADDC_1024_CORE     \
+       MULADDC_1024_CORE MULADDC_1024_CORE     \
+       MULADDC_1024_CORE                       \
+       "ldmia  %0!, { r5, r6 }      \n"        \
+       "ldmia  %1, { r8, r9 }       \n"        \
+       "umull  r11, r12, %2, r5     \n"        \
+       "adcs   r11, r11, %3         \n"        \
+       "adc    %3, r12, #0          \n"        \
+       "adds   r8, r8, r11          \n"        \
+       "umull  r11, r12, %2, r6     \n"        \
+       "adcs   r11, r11, %3         \n"        \
+       "adc    %3, r12, #0          \n"        \
+       "adds   r9, r9, r11          \n"        \
+       "stmia  %1!, { r8, r9 }      \n"        \
+       "adc    %3, %3, #0           \n"        \
+       "tst %4, #0xfe0              \n"        \
+       "bne 1b                      \n"        \
+"0:"                                           \
+          : "=r" (s), "=r" (d), "=r" (b), "=r" (c), "=r" (i) \
+          : "0" (s), "1" (d), "2" (b), "3" (c), "4" (i)      \
+          : "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r12", "memory", "cc" );
+
+/* Just for reference (dead code) */
 #define MULADDC_HUIT                    	     \
 	          "ldmia  %0!, { r4, r5 } \n"        \
 	          "ldmia  %1, { r8, r9 }  \n"        \
 	          "umull  r6, r7, %2, r4  \n"        \
 	          "adcs   r6, r6, %3      \n"        \
-	          "adc    r7, r7, #0      \n"        \
+	          "adc    %3, r7, #0      \n"        \
 	          "adds   r8, r8, r6      \n"        \
-	          "umull  r6, %3, %2, r5  \n"        \
-	          "adcs   r6, r6, r7      \n"        \
-	          "adc    %3, %3, #0      \n"        \
+	          "umull  r6, r7, %2, r5  \n"        \
+	          "adcs   r6, r6, %3      \n"        \
+	          "adc    %3, r7, #0      \n"        \
 	          "adds   r9, r9, r6      \n"        \
 	          "stmia  %1!, { r8, r9 } \n"        \
 	          "ldmia  %0!, { r4, r5 } \n"        \
 	          "ldmia  %1, { r8, r9 }  \n"        \
 	          "umull  r6, r7, %2, r4  \n"        \
 	          "adcs   r6, r6, %3      \n"        \
-	          "adc    r7, r7, #0      \n"        \
+	          "adc    %3, r7, #0      \n"        \
 	          "adds   r8, r8, r6      \n"        \
-	          "umull  r6, %3, %2, r5  \n"        \
-	          "adcs   r6, r6, r7      \n"        \
-	          "adc    %3, %3, #0      \n"        \
+	          "umull  r6, r7, %2, r5  \n"        \
+	          "adcs   r6, r6, %3      \n"        \
+	          "adc    %3, r7, #0      \n"        \
 	          "adds   r9, r9, r6      \n"        \
 	          "stmia  %1!, { r8, r9 } \n"        \
 	          "ldmia  %0!, { r4, r5 } \n"        \
 	          "ldmia  %1, { r8, r9 }  \n"        \
 	          "umull  r6, r7, %2, r4  \n"        \
 	          "adcs   r6, r6, %3      \n"        \
-	          "adc    r7, r7, #0      \n"        \
+	          "adc    %3, r7, #0      \n"        \
 	          "adds   r8, r8, r6      \n"        \
-	          "umull  r6, %3, %2, r5  \n"        \
-	          "adcs   r6, r6, r7      \n"        \
-	          "adc    %3, %3, #0      \n"        \
+	          "umull  r6, r7, %2, r5  \n"        \
+	          "adcs   r6, r6, %3      \n"        \
+	          "adc    %3, r7, #0      \n"        \
 	          "adds   r9, r9, r6      \n"        \
 	          "stmia  %1!, { r8, r9 } \n"        \
 	          "ldmia  %0!, { r4, r5 } \n"        \
 	          "ldmia  %1, { r8, r9 }  \n"        \
 	          "umull  r6, r7, %2, r4  \n"        \
 	          "adcs   r6, r6, %3      \n"        \
-	          "adc    r7, r7, #0      \n"        \
+	          "adc    %3, r7, #0      \n"        \
 	          "adds   r8, r8, r6      \n"        \
-	          "umull  r6, %3, %2, r5  \n"        \
-	          "adcs   r6, r6, r7      \n"        \
-	          "adc    %3, %3, #0      \n"        \
+	          "umull  r6, r7, %2, r5  \n"        \
+	          "adcs   r6, r6, %3      \n"        \
+	          "adc    %3, r7, #0      \n"        \
 	          "adds   r9, r9, r6      \n"        \
 	          "stmia  %1!, { r8, r9 } \n" 
 
