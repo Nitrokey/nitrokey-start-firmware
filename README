@@ -1,7 +1,7 @@
 Gnuk - software for GnuPG USB Token
 
-							   Version 0.12
-							     2011-05-13
+							   Version 0.13
+							     2011-06-15
 						           Niibe Yutaka
 				      Free Software Initiative of Japan
 
@@ -19,8 +19,8 @@ me to bring a card reader all the time.  With Gnuk, this issue will be
 solved by a USB token which is small enough.
 
 Please look at the graphics of "gnuk.svg" for the software name.  My
-son used to be with his NUK(R), always, everywhere.  I will be with a
-USB Token by "Gnuk" everywhere.
+son used to be with his NUK(R), always, everywhere.  I am with a USB
+Token by "Gnuk", always, everywhere.
 
 
 FAQ
@@ -44,11 +44,11 @@ A0: IMRHO, not quite.  There is no ready-to-use out-of-box product.
 	    	                (GNU Toolchain, Python, etc.), 
 	    "for Free Software"; Gnuk supports GnuPG.
 
-Q1: What's kind of key algorithm is supported?
+Q1: What kind of key algorithm is supported?
 A1: Gnuk only supports 2048-bit RSA.
 
 Q2: How long does it take for digital signing?
-A2: It takes two seconds or so. 
+A2: It takes a second and a half or so. 
 
 Q3: What's your recommendation for target board?
 A3: Orthodox choice is Olimex STM32-H103.
@@ -92,7 +92,7 @@ A9: GnuPG's SCDaemon has problems for handling insertion/removal of
 Release notes
 =============
 
-This is thirteenth release of Gnuk.  While it works well for specific
+This is fourteenth release of Gnuk.  While it works well for specific
 usages and it is considered stable, it is still somewhat experimental.
 
 Note that you need to write random bits after installation of gnuk
@@ -200,6 +200,9 @@ Gnuk is distributed with external source code.
   We use PolarSSL for RSA computation, AES encryption/decryption
   and SHA-1 computation.
 
+  The file include/polarssl/bn_mul.h is heavily modified for ARM
+  Cortex-M3.
+
 * STM32_USB-FS-Device_Driver/ -- a part of USB-FS-Device_Lib
 * Virtual_COM_Port/ -- a part of USB-FS-Device_Lib
 
@@ -229,8 +232,8 @@ How to compile
 
 You need GNU toolchain and newlib for 'arm-none-eabi' target.
 
-See http://github.com/esden/summon-arm-toolchain/ for preparation of
-GNU Toolchain for 'arm-none-eabi' target.
+See http://github.com/uwehermann/summon-arm-toolchain/ for preparation
+of GNU Toolchain for 'arm-none-eabi' target.
 
 Change directory to `src':
 

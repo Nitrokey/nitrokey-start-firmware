@@ -1,5 +1,18 @@
 Gnuk NEWS - User visible changes
 
+* Major changes in Gnuk 0.13
+
+  Released 2011-06-15, by NIIBE Yutaka
+
+** Improved RSA routine.
+About 20% speed improvement.
+
+** New tool: hub_ctrl.
+It is a Python implementation ported from original C implementation.
+It is useful for development of USB target if you have a good hub.
+You can power off/on the port to reset Gnuk Token.
+
+
 * Major changes in Gnuk 0.12
 
   Released 2011-05-13, by NIIBE Yutaka

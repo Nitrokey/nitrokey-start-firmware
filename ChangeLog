@@ -1,6 +1,18 @@
+2011-06-15  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* Version 0.13.
+	* src/usb_desc.c (gnukStringSerial): Updated.
+
+2011-06-08  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* polarssl-0.14.0/include/polarssl/bn_mul.h [__arm__]
+	(MULADDC_1024_CORE, MULADDC_1024_LOOP): New.
+	* polarssl-0.14.0/library/bignum.c (mpi_mul_hlp): Use
+	MULADDC_1024_LOOP.
+
 2011-05-31  NIIBE Yutaka  <gniibe@fsij.org>
 
-	* include/polarssl/bn_mul.h [__arm__]
+	* polarssl-0.14.0/include/polarssl/bn_mul.h [__arm__]
 	(MULADDC_HUIT, MULADDC_INIT, MULADDC_CORE, MULADDC_STOP): Tweak.
 
 2011-05-27  NIIBE Yutaka  <gniibe@fsij.org>
