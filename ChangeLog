@@ -1,5 +1,8 @@
 2011-07-04  NIIBE Yutaka  <gniibe@fsij.org>
 
+	* ChibiOS_2.0.8/os/ports/GCC/ARMCMx/chcore_v7m.c
+	(_port_irq_epilogue, _port_switch_from_isr): Apply a patch of 2.2.6.
+
 	* ChibiOS_2.0.8/os/hal/platforms/STM32/adc_lld.h: Apply a patch of
 	ADC from the branch of ChibiOS_2.0.X.
 
