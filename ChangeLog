@@ -1,3 +1,10 @@
+2011-07-22  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* boards/OLIMEX_STM32_H103/board.h (BOARD_NAME): Fixed.
+
+	* boards/STBEE_MINI/mcuconf.h: Added missing include of
+	mcuconf-common.h.
+
 2011-07-04  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* ChibiOS_2.0.8/os/ports/GCC/ARMCMx/chcore_v7m.c

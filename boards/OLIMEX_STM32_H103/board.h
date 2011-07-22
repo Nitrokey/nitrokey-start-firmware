@@ -28,14 +28,14 @@
 #define _BOARD_H_
 
 /*
- * Setup for the Olimex STM32-P103 proto board.
+ * Setup for the Olimex STM32-H103 proto board.
  */
 
 /*
  * Board identifier.
  */
-#define BOARD_OLIMEX_STM32_P103
-#define BOARD_NAME "Olimex STM32-P103"
+#define BOARD_OLIMEX_STM32_H103
+#define BOARD_NAME "Olimex STM32-H103"
 
 /*
  * Board frequencies.
