@@ -41,7 +41,7 @@
 /*
  * ADC driver system settings.
  */
-#define USE_STM32_ADC1              FALSE
+#define USE_STM32_ADC1              TRUE
 #define STM32_ADC1_DMA_PRIORITY     3
 #define STM32_ADC1_IRQ_PRIORITY     5
 #define STM32_ADC1_DMA_ERROR_HOOK() chSysHalt()

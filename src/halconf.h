@@ -6,7 +6,7 @@
 #include "mcuconf.h"
 
 #define CH_HAL_USE_PAL              TRUE
-#define CH_HAL_USE_ADC              FALSE
+#define CH_HAL_USE_ADC              TRUE
 #define CH_HAL_USE_CAN              FALSE
 #define CH_HAL_USE_MAC              FALSE
 #define CH_HAL_USE_PWM              FALSE

@@ -10,7 +10,7 @@
 #define CH_OPTIMIZE_SPEED               TRUE
 #define CH_USE_REGISTRY                 TRUE
 #define CH_USE_WAITEXIT                 TRUE
-#define CH_USE_SEMAPHORES               FALSE
+#define CH_USE_SEMAPHORES               TRUE
 #define CH_USE_SEMAPHORES_PRIORITY      FALSE
 #define CH_USE_SEMSW                    FALSE
 #define CH_USE_MUTEXES                  TRUE
