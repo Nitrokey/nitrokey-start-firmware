@@ -24,6 +24,21 @@
 #include "config.h"
 #include "ch.h"
 #include "gnuk.h"
+#include "neug.h"
+
+#define RANDOM_BYTES_LENGTH 16
+static uint32_t random_word[RANDOM_BYTES_LENGTH/sizeof (uint32_t)];
+
+void
+random_init (void)
+{
+  int i;
+
+  neug_init (random_word, RANDOM_BYTES_LENGTH/sizeof (uint32_t));
+
+  for (i = 0; i < NEUG_PRE_LOOP; i++)
+    (void)neug_get (NEUG_KICK_FILLING);
+}
 
 /*
  * Return pointer to random 16-byte
@@ -31,25 +46,8 @@
 const uint8_t *
 random_bytes_get (void)
 {
-  uint32_t addr, addr0;
-
-  addr = (uint32_t)&random_bits_start + ((hardclock () << 4) & 0x3f0);
-  addr0 = addr;
-
-  while (1)
-    {
-      if (*(uint32_t *)addr != 0 && *(uint32_t *)addr != 0xffffffff)
-	break;
-
-      addr += 16;
-      if (addr >= ((uint32_t)&random_bits_start) + 1024)
-	addr = ((uint32_t)&random_bits_start);
-
-      if (addr == addr0)
-	fatal (FATAL_RANDOM);
-    }
-
-  return (const uint8_t *)addr;
+  neug_wait_full ();
+  return (const uint8_t *)random_word;
 }
 
 /*
@@ -58,11 +56,8 @@ random_bytes_get (void)
 void
 random_bytes_free (const uint8_t *p)
 {
-  int i;
-  uint32_t addr = (uint32_t)p;
-
-  for (i = 0; i < 8; i++)
-    flash_clear_halfword (addr+i*2);
+  (void)p;
+  neug_flush ();
 }
 
 /*
@@ -71,15 +66,5 @@ random_bytes_free (const uint8_t *p)
 uint32_t
 get_salt (void)
 {
-  const uint8_t *u = unique_device_id (); /* 12-byte unique id */
-  uint32_t r = 0;
-  int i;
-
-  for (i = 0; i < 4; i++)
-    {
-      r <<= 8;
-      r |= u[hardclock () % 12];
-    }
-
-  return r;
+  return neug_get (NEUG_KICK_FILLING);
 }

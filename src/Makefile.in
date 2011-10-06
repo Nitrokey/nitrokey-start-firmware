@@ -91,7 +91,7 @@ CSRC = $(PORTSRC) \
        main.c usb_lld.c \
 	usb_desc.c usb_prop.c \
 	usb-icc.c openpgp.c ac.c openpgp-do.c flash.c hardclock.c \
-	random.c
+	random.c neug.c
 
 ifneq ($(ENABLE_DEBUG),)
 CSRC += debug.c

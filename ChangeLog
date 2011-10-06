@@ -1,3 +1,36 @@
+2011-10-06  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/main.c (main): Call random_init.
+
+	* src/gnuk.ld.in (__process_stack_size__): Fix.
+	(.gnuk_random): Removed.
+
+	* src/flash.c (flash_erase_binary, flash_write_binary): Remove
+	support of random_byte in flash ROM.
+
+	* src/neug.c (adccb): Use old API (was: chEvtSignalFlagsI).
+	(adccb_err): Remove.
+	(rng_gen, rng): Add the last argument adccb for adcStartConversion:
+	This is old API of ADC driver.
+	(adcgrpcfg): Remove callbacks, add CONT and SWSTART: This is old
+	API of ADC driver.
+	(adccb): Remove the first argument: This is old API of ADC driver.
+	(neug_wait_full): New.
+
+	* ChibiOS_2.0.8/os/hal/platforms/STM32/adc_lld.h (ADC_SAMPLE_1P5):
+	Add (from new API).
+
+	* src/random.c (random_init): New.
+	(random_bytes_get, random_bytes_free, get_salt): Use NeuG.
+
+	* src/Makefile.in (CSRC): Add neug.c.
+
+	* src/neug.c: New.  Verbatim copy of NeuG/src/random.c.
+
+	* boards/common/mcuconf-common.h (USE_STM32_ADC1): TRUE for NewG RNG.
+	* src/chconf.h (CH_USE_SEMAPHORES): TRUE as ADC driver requires it.
+	* src/halconf.h (CH_HAL_USE_ADC); TRUE for NewG RNG.
+
 2011-07-22  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* boards/OLIMEX_STM32_H103/board.h (BOARD_NAME): Fixed.

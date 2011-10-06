@@ -27,8 +27,9 @@
 /*
  * ST32F103 memory setup.
  */
-__main_stack_size__     = 0x0400;
-__stacks_total_size__   = __main_stack_size__;
+__main_stack_size__     = 0x0200;
+__process_stack_size__  = 0x0200;
+__stacks_total_size__   = __main_stack_size__ + __process_stack_size__;
 
 MEMORY
 {
@@ -113,14 +114,6 @@ SECTIONS
 
     PROVIDE(end = .);
     _end            = .;
-
-    .gnuk_random :
-    {
-        . = ALIGN (@FLASH_PAGE_SIZE@);
-        random_bits_start = .;
-	LONG(0xffffffff);
-        . = ALIGN (@FLASH_PAGE_SIZE@);
-    } > flash =0xffffffff
 
     .gnuk_ch_certificate :
     {

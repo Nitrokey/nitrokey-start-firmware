@@ -147,8 +147,6 @@ flash_erase_page (uint32_t addr)
  *         .bss
  * _end 
  *         <alignment to page>
- * random_bits_start
- *         <one page>
  * ch_certificate_startp
  *         <2048 bytes>
  * _data_pool
@@ -615,15 +613,6 @@ flash_erase_binary (uint8_t file_id)
 
       return 0;
     }
-  else if (file_id == FILEID_RANDOM)
-    {
-      p = &random_bits_start;
-
-      if (flash_check_blank (p, FLASH_PAGE_SIZE) == 0)
-	flash_erase_page ((uint32_t)p);
-
-      return 0;
-    }
   else
     return -1;
 }
@@ -640,11 +629,6 @@ flash_write_binary (uint8_t file_id, const uint8_t *data,
     {
       maxsize = FLASH_CH_CERTIFICATE_SIZE;
       p = &ch_certificate_start;
-    }
-  else if (file_id == FILEID_RANDOM)
-    {
-      maxsize = FLASH_PAGE_SIZE;
-      p = &random_bits_start;
     }
   else if (file_id == FILEID_SERIAL_NO)
     {

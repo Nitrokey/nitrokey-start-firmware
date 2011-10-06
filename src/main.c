@@ -213,7 +213,8 @@ main (int argc, char **argv)
   flash_unlock ();
   device_initialize_once ();
   usb_lld_init ();
-  USB_Init();
+  USB_Init ();
+  random_init ();
 
 #ifdef DEBUG
   stdout_init ();

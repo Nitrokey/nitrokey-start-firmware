@@ -41,8 +41,7 @@ static Thread *rng_thread;
  */
 static adcsample_t samp[ADC_GRP1_NUM_CHANNELS * ADC_GRP1_BUF_DEPTH];
  
-static void adccb (ADCDriver *adcp, adcsample_t *buffer, size_t n);
-static void adccb_err (ADCDriver *adcp, adcerror_t err);
+static void adccb (adcsample_t *buffer, size_t n);
 
 /*
  * ADC conversion group.
@@ -53,10 +52,8 @@ static void adccb_err (ADCDriver *adcp, adcerror_t err);
 static const ADCConversionGroup adcgrpcfg = {
   FALSE,
   ADC_GRP1_NUM_CHANNELS,
-  adccb,
-  adccb_err,
   0,
-  ADC_CR2_TSVREFE,
+  ADC_CR2_EXTSEL_SWSTART | ADC_CR2_TSVREFE | ADC_CR2_CONT,
   ADC_SMPR1_SMP_SENSOR(ADC_SAMPLE_1P5) | ADC_SMPR1_SMP_VREF(ADC_SAMPLE_1P5),
   0,
   ADC_SQR1_NUM_CH(ADC_GRP1_NUM_CHANNELS),
@@ -67,21 +64,14 @@ static const ADCConversionGroup adcgrpcfg = {
 /*
  * ADC end conversion callback.
  */
-static void adccb (ADCDriver *adcp, adcsample_t *buffer, size_t n)
+static void adccb (adcsample_t *buffer, size_t n)
 {
+  ADCDriver *adcp = &ADCD1;
+
   (void) buffer; (void) n;
-
-  chSysLockFromIsr();
-  if (adcp->state == ADC_COMPLETE)
-    chEvtSignalFlagsI (rng_thread, ADC_DATA_AVAILABLE);
-  chSysUnlockFromIsr();
+  if (adcp->ad_state == ADC_COMPLETE)
+    chEvtSignalI (rng_thread, ADC_DATA_AVAILABLE);
 }
-
-static void adccb_err (ADCDriver *adcp, adcerror_t err)
-{
-  (void)adcp;  (void)err;
-}
-
 
 /*
  * TinyMT routines.
@@ -319,7 +309,7 @@ static int rng_gen (struct rng_rb *rb)
 	   | ((samp[4] & 0x01) << 4) | ((samp[5] & 0x01) << 5)
 	   | ((samp[6] & 0x01) << 6) | ((samp[7] & 0x01) << 7));
 
-      adcStartConversion (&ADCD1, &adcgrpcfg, samp, ADC_GRP1_BUF_DEPTH);
+      adcStartConversion (&ADCD1, &adcgrpcfg, samp, ADC_GRP1_BUF_DEPTH, adccb);
 
       /*
        * Put a random byte to entropy pool.
@@ -356,7 +346,7 @@ static msg_t rng (void *arg)
   rng_thread = chThdSelf ();
 
   adcStart (&ADCD1, NULL);
-  adcStartConversion (&ADCD1, &adcgrpcfg, samp, ADC_GRP1_BUF_DEPTH);
+  adcStartConversion (&ADCD1, &adcgrpcfg, samp, ADC_GRP1_BUF_DEPTH, adccb);
 
   while (1)
     {
@@ -372,7 +362,7 @@ static msg_t rng (void *arg)
 }
 
 static struct rng_rb the_ring_buffer;
-static WORKING_AREA(wa_rng, 64);
+static WORKING_AREA(wa_rng, 128);
 
 /**
  * @brief Initialize NeuG.
@@ -449,4 +439,15 @@ neug_get (int kick)
   chMtxUnlock ();
 
   return v;
+}
+
+void
+neug_wait_full (void)
+{
+  struct rng_rb *rb = &the_ring_buffer;
+
+  chMtxLock (&rb->m);
+  while (!rb->full)
+    chCondWait (&rb->data_available);
+  chMtxUnlock ();
 }

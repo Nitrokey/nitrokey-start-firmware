@@ -62,6 +62,20 @@
 #define ADC_CHANNEL_SENSOR      16  /**< @brief Internal temperature sensor.*/
 #define ADC_CHANNEL_VREFINT     17  /**< @brief Internal reference.         */
 
+/**
+ * @name    Sampling rates
+ * @{
+ */
+#define ADC_SAMPLE_1P5          0   /**< @brief 1.5 cycles sampling time.   */
+#define ADC_SAMPLE_7P5          1   /**< @brief 7.5 cycles sampling time.   */
+#define ADC_SAMPLE_13P5         2   /**< @brief 13.5 cycles sampling time.  */
+#define ADC_SAMPLE_28P5         3   /**< @brief 28.5 cycles sampling time.  */
+#define ADC_SAMPLE_41P5         4   /**< @brief 41.5 cycles sampling time.  */
+#define ADC_SAMPLE_55P5         5   /**< @brief 55.5 cycles sampling time.  */
+#define ADC_SAMPLE_71P5         6   /**< @brief 71.5 cycles sampling time.  */
+#define ADC_SAMPLE_239P5        7   /**< @brief 239.5 cycles sampling time. */
+/** @} */
+
 /*===========================================================================*/
 /* Driver pre-compile time settings.                                         */
 /*===========================================================================*/
