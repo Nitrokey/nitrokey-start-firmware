@@ -1028,12 +1028,9 @@ GPGthread (void *arg)
 
   while (!chThdShouldTerminate ())
     {
-      eventmask_t m;
-
-      m = chEvtWaitOne (ALL_EVENTS);
+      chEvtWaitOne (ALL_EVENTS);
 
       DEBUG_INFO ("GPG!: ");
-      DEBUG_WORD ((uint32_t)&m);
 
       res_APDU_pointer = NULL; /* default */
 
