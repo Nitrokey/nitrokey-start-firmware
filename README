@@ -92,12 +92,8 @@ A9: GnuPG's SCDaemon has problems for handling insertion/removal of
 Release notes
 =============
 
-This is fourteenth release of Gnuk.  While it works well for specific
+This is fifteenth release of Gnuk.  While it works well for specific
 usages and it is considered stable, it is still somewhat experimental.
-
-Note that you need to write random bits after installation of gnuk
-executable to the chip.  This procedure is required to share a single
-executable among multiple devices.
 
 Tested features are:
 
@@ -179,8 +175,8 @@ The author(s) of Gnuk expect users of Gnuk will be able to access the
 source code of Gnuk, so that users can study the code and can modify
 if needed.  This doesn't mean person who has a USB Token by Gnuk
 should be able to acess everything on the Token, regardless of its
-protections.  Private keys, random bytes, and other information should
-be protected properly.
+protections.  Private keys, and other information should be protected
+properly.
 
 
 External source code
@@ -341,19 +337,7 @@ How to configure
 You need python and pyscard (python-pyscard package in Debian) or
 PyUSB (python-usb package in Debian).
 
-(1) In the 'src' directory, type
-
-  $ make random_bits
-
-In this process, it takes time for the command of
-
-   dd if=/dev/random bs=1 of=random_bits count=1024
-
-Don't just wait, but do some other works on your PC.
-/dev/random needs entropy to finish.
-
-
-(2) [pyscard] Stop scdaemon
+(1) [pyscard] Stop scdaemon
     [PyUSB] Stop the pcsc daemon.
 
 If scdaemon is running, please kill it, or you will get "Smartcard
@@ -366,17 +350,7 @@ In case of PyUSB tool, you need to stop pcscd.
   # /etc/init.d/pcscd stop
 
 
-(3) Write the random bits to the device
-
-Connect your board to USB port of your PC.  And invoke gnuk_put_binary.py:
-
-  $ ../tool/gnuk_put_binary.py -r random_bits
-  random_bits: 1024
-  Updating random bits
-  ...
-
-
-(4) [Optional] Write fixed serial number
+(2) [Optional] Write fixed serial number
 
 If you use fixed serial number in the file 'GNUK_SERIAL_NUMBER', you can do:
 
@@ -384,7 +358,7 @@ If you use fixed serial number in the file 'GNUK_SERIAL_NUMBER', you can do:
   Writing serial number
   ...
 
-(5) [Optional] Write card holder certificate
+(3) [Optional] Write card holder certificate
 
 If you have card holder certificate binary file, you can do:
 

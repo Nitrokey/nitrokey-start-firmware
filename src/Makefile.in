@@ -206,8 +206,5 @@ endif
 
 include $(CHIBIOS)/os/ports/GCC/ARM/rules.mk
 
-random_bits:
-	dd if=/dev/random bs=1 of=random_bits count=1024
-
 distclean: clean
-	-rm -f Makefile gnuk.ld config.h random_bits
+	-rm -f Makefile gnuk.ld config.h

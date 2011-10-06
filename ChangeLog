@@ -1,5 +1,7 @@
 2011-10-06  NIIBE Yutaka  <gniibe@fsij.org>
 
+	* src/Makefile.in (random_bits): Remove.
+
 	* src/openpgp.c (GPGthread): Remove unused event message.
 
 	* src/main.c (main): Call random_init.
