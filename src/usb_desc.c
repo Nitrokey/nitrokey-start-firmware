@@ -227,7 +227,7 @@ static const uint8_t gnukStringProduct[] = {
 const uint8_t gnukStringSerial[] = {
   13*2+2,			/* bLength */
   USB_STRING_DESCRIPTOR_TYPE,	/* bDescriptorType */
-  '0', 0, '.', 0, '1', 0, '3', 0, /* Version number of Gnuk */
+  '0', 0, '.', 0, '1', 0, '4', 0, /* Version number of Gnuk */
   '-', 0,
   0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
   0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,

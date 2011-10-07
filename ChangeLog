@@ -1,3 +1,10 @@
+2011-10-07  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* Version 0.14.
+	* src/usb_desc.c (gnukStringSerial): Updated.
+
+	* src/random.c (random_init): Call neug_prng_reseed.
+
 2011-10-06  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* src/Makefile.in (random_bits): Remove.

@@ -1,5 +1,5 @@
 /*
- * random.c - random number generation
+ * neug.c - random number generation (from NeuG/src/random.c)
  *
  * Copyright (C) 2011 Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>

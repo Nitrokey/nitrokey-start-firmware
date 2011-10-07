@@ -38,6 +38,8 @@ random_init (void)
 
   for (i = 0; i < NEUG_PRE_LOOP; i++)
     (void)neug_get (NEUG_KICK_FILLING);
+
+  neug_prng_reseed ();
 }
 
 /*

@@ -1,7 +1,7 @@
 Gnuk - software for GnuPG USB Token
 
-							   Version 0.13
-							     2011-06-15
+							   Version 0.14
+							     2011-10-07
 						           Niibe Yutaka
 				      Free Software Initiative of Japan
 
@@ -27,7 +27,7 @@ FAQ
 ===
 
 Q0: How Gnuk USB Token is superior than other solutions (OpenPGP
-    card 2.0, GPF Crypto Stick, etc) ?
+    card 2.0, GPF Crypto Stick, etc.) ?
     http://www.g10code.de/p-card.html
     http://www.privacyfoundation.de/crypto_stick/
 A0: IMRHO, not quite.  There is no ready-to-use out-of-box product.
@@ -54,6 +54,8 @@ Q3: What's your recommendation for target board?
 A3: Orthodox choice is Olimex STM32-H103.
     If you have skill of electronics and like DIY, STM32 part of STM8S
     Discovery Kit might be the best choice.
+    Currently FST-01 (Flying Stone Tiny 01) is under development,
+    it will be the best choice, hopefully.
 
 Q4: What's version of GnuPG are you using?
 A4: In Debian GNU/Linux system, I use gnupg 1.4.11-3 and gnupg-agent
@@ -125,7 +127,7 @@ It is known not-working well:
 Not supported feature(s):
 
 	* Overriding key import.  You need to remove all keys first.
-	* Key generation
+	* Key generation on device side
 
 
 Targets
