@@ -8,11 +8,11 @@ typedef struct bn512 {
   uint32_t words[ BN512_WORDS ]; /* Little endian */
 } bn512;
 
-int bn256_add (bn256 *X, const bn256 *A, const bn256 *B);
-int bn256_sub (bn256 *X, const bn256 *A, const bn256 *B);
+uint32_t bn256_add (bn256 *X, const bn256 *A, const bn256 *B);
+uint32_t bn256_sub (bn256 *X, const bn256 *A, const bn256 *B);
 void bn256_mul (bn512 *X, const bn256 *A, const bn256 *B);
 void bn256_sqr (bn512 *X, const bn256 *A);
-int bn256_shift (bn256 *X, const bn256 *A, int shift);
+uint32_t bn256_shift (bn256 *X, const bn256 *A, int shift);
 int bn256_is_zero (const bn256 *X);
 int bn256_is_even (const bn256 *X);
 int bn256_is_ge (const bn256 *A, const bn256 *B);

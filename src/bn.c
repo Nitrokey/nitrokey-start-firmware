@@ -24,7 +24,7 @@
 #include <stdint.h>
 #include "bn.h"
 
-int
+uint32_t
 bn256_add (bn256 *X, const bn256 *A, const bn256 *B)
 {
   int i;
@@ -50,7 +50,7 @@ bn256_add (bn256 *X, const bn256 *A, const bn256 *B)
   return carry;
 }
 
-int
+uint32_t
 bn256_sub (bn256 *X, const bn256 *A, const bn256 *B)
 {
   int i;
@@ -183,7 +183,7 @@ bn256_sqr (bn512 *X, const bn256 *A)
   X->words[k] = r0;
 }
 
-int
+uint32_t
 bn256_shift (bn256 *X, const bn256 *A, int shift)
 {
   int i;
