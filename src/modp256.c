@@ -63,7 +63,7 @@ modp256_add (bn256 *X, const bn256 *A, const bn256 *B)
  * @brief  X = (A - B) mod p256
  */
 void
-modp256_sub (bn256 *X, bn256 *A, bn256 *B)
+modp256_sub (bn256 *X, const bn256 *A, const bn256 *B)
 {
   int borrow;
 
@@ -76,7 +76,7 @@ modp256_sub (bn256 *X, bn256 *A, bn256 *B)
  * @brief  X = A mod p256
  */
 void
-modp256_reduce (bn256 *X, bn512 *A)
+modp256_reduce (bn256 *X, const bn512 *A)
 {
   bn256 tmp[1];
 
@@ -189,7 +189,7 @@ modp256_reduce (bn256 *X, bn512 *A)
  * @brief  X = (A * B) mod p256
  */
 void
-modp256_mul (bn256 *X, bn256 *A, bn256 *B)
+modp256_mul (bn256 *X, const bn256 *A, const bn256 *B)
 {
   bn512 AB[1];
 
@@ -201,7 +201,7 @@ modp256_mul (bn256 *X, bn256 *A, bn256 *B)
  * @brief  X = A * A mod p256
  */
 void
-modp256_sqr (bn256 *X, bn256 *A)
+modp256_sqr (bn256 *X, const bn256 *A)
 {
   bn512 AA[1];
 
@@ -265,4 +265,29 @@ modp256_inv (bn256 *C, const bn256 *a)
 	  modp256_sub (C, C, A);
 	}
     }
+}
+
+/**
+ * @brief  X = (A << shift) mod p256
+ * @note   shift <= 32
+ */
+void
+modp256_shift (bn256 *X, const bn256 *A, int shift)
+{
+  int carry;
+
+  carry = bn256_shift (X, A, shift);
+  if (shift < 0)
+    return;
+
+  while (carry)
+    {
+      int borrow;
+
+      borrow = bn256_sub (X, X, P256);
+      carry -= borrow;
+    }
+
+  if (bn256_is_ge (X, P256))
+    bn256_sub (X, X, P256);
 }
