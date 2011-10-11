@@ -274,19 +274,23 @@ modp256_inv (bn256 *C, const bn256 *a)
 void
 modp256_shift (bn256 *X, const bn256 *A, int shift)
 {
-  int carry;
+  uint32_t carry;
+  bn256 tmp[1];
 
   carry = bn256_shift (X, A, shift);
   if (shift < 0)
     return;
 
-  while (carry)
-    {
-      int borrow;
+  memset (tmp, 0, sizeof (bn256));
+  tmp->words[7] = carry;
+  tmp->words[0] = carry;
+  modp256_add (X, X, tmp);
 
-      borrow = bn256_sub (X, X, P256);
-      carry -= borrow;
-    }
+  tmp->words[7] = 0;
+  tmp->words[0] = 0;
+  tmp->words[6] = carry;
+  tmp->words[3] = carry;
+  modp256_sub (X, X, tmp);
 
   if (bn256_is_ge (X, P256))
     bn256_sub (X, X, P256);
