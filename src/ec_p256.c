@@ -230,8 +230,8 @@ calculate_kG (ac *X, const bn256 *K)
 	{
 	  if (q_infinite)
 	    {
-	      memcpy (Q->x, (&precomputed_KG[k_i - 1])->x, sizeof (bn256));
-	      memcpy (Q->y, (&precomputed_KG[k_i - 1])->y, sizeof (bn256));
+	      memcpy (Q->x, (&precomputed_2E_KG[k_i_e - 1])->x, sizeof (bn256));
+	      memcpy (Q->y, (&precomputed_2E_KG[k_i_e - 1])->y, sizeof (bn256));
 	      Q->z->words[0] = 1;
 	      Q->z->words[1] = Q->z->words[2] = Q->z->words[3]
 		= Q->z->words[4] = Q->z->words[5] = Q->z->words[6]
