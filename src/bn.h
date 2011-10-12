@@ -16,3 +16,4 @@ uint32_t bn256_shift (bn256 *X, const bn256 *A, int shift);
 int bn256_is_zero (const bn256 *X);
 int bn256_is_even (const bn256 *X);
 int bn256_is_ge (const bn256 *A, const bn256 *B);
+void bn256_random (bn256 *X);

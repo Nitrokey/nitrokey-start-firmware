@@ -7,6 +7,7 @@
 #include "bn.h"
 #include "modp256.h"
 #include "jpc-ac.h"
+#include "mod.h"
 
 #if 0
 /*
@@ -244,4 +245,60 @@ calculate_kG (ac *X, const bn256 *K)
     }
 
   jpc_to_ac (X, Q);
+}
+
+
+/*
+ * N: order of G
+ */
+static const bn256 N[1] = {
+  {{ 0xfc632551, 0xf3b9cac2, 0xa7179e84, 0xbce6faad,
+     0xffffffff, 0xffffffff, 0x00000000, 0xffffffff }}
+};
+
+/*
+ * MU = 2^512 / N
+ * MU = ( (1 << 256) | MU_lower )
+ */
+static const bn256 MU_lower[1] = {
+  {{ 0xeedf9bfe, 0x012ffd85, 0xdf1a6c21, 0x43190552,
+     0xffffffff, 0xfffffffe, 0xffffffff, 0x00000000 }}
+};
+
+
+/**
+ * @brief Compute signature (r,s) of hash string z with secret key dA
+ */
+void
+ecdsa (bn256 *r, bn256 *s, const bn256 *z, const bn256 *d)
+{
+  bn256 k[1];
+  ac KG[1];
+  bn512 tmp[1];
+  bn256 k_inv[1];
+  uint32_t carry;
+
+  do
+    {
+      do
+	{
+	  bn256_random (k);
+	  calculate_kG (KG, k);
+	  if (bn256_is_ge (KG->x, N))
+	    bn256_sub (r, KG->x, N);
+	  else
+	    memcpy (r, KG->x, sizeof (bn256));
+	}
+      while (bn256_is_zero (r));
+
+      mod_inv (k_inv, k, N);
+      bn256_mul (tmp, r, d);
+      mod_reduce (s, tmp, N, MU_lower);
+      carry = bn256_add (s, s, z);
+      if (carry)
+	bn256_sub (s, s, N);
+      bn256_mul (tmp, s, k_inv);
+      mod_reduce (s, tmp, N, MU_lower);
+    }
+  while (bn256_is_zero (s));
 }
