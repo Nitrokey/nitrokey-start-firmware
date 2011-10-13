@@ -77,6 +77,65 @@ bn256_sub (bn256 *X, const bn256 *A, const bn256 *B)
   return borrow;
 }
 
+uint32_t
+bn256_add_uint (bn256 *X, const bn256 *A, uint32_t w)
+{
+  int i;
+  uint32_t carry = 0;
+  uint32_t *px;
+  const uint32_t *pa;
+
+  px = X->words;
+  pa = A->words;
+
+  for (i = 0; i < BN256_WORDS; i++)
+    {
+      *px = *pa + carry;
+      carry = (*px < carry);
+      if (i == 0)
+	{
+	  *px += w;
+	  carry += (*px < w);
+	}
+
+      px++;
+      pa++;
+    }
+
+  return carry;
+}
+
+uint32_t
+bn256_sub_uint (bn256 *X, const bn256 *A, uint32_t w)
+{
+  int i;
+  uint32_t borrow = 0;
+  uint32_t *px;
+  const uint32_t *pa;
+
+  px = X->words;
+  pa = A->words;
+
+  for (i = 0; i < BN256_WORDS; i++)
+    {
+      uint32_t borrow0 = (*pa < borrow);
+
+      *px = *pa - borrow;
+      if (i == 0)
+	{
+	  borrow = (*px < w) + borrow0;
+	  *px -= w;
+	}
+      else
+	borrow = borrow0;
+
+      px++;
+      pa++;
+    }
+
+  return borrow;
+}
+
 void
 bn256_mul (bn512 *X, const bn256 *A, const bn256 *B)
 {
@@ -243,4 +302,19 @@ bn256_is_ge (const bn256 *A, const bn256 *B)
       return 0;
 
   return 1;
+}
+
+void
+bn256_random (bn256 *X)
+{
+#if 1
+  X->words[7] = 0x01234567;
+  X->words[6] = 0x89abcdef;
+  X->words[5] = 0xff00ff00;
+  X->words[4] = 0x00ff00ff;
+  X->words[3] = 0xee55ee55;
+  X->words[2] = 0x55ee55ee;
+  X->words[1] = 0x01234567;
+  X->words[0] = 0x89abcdef;
+#endif
 }

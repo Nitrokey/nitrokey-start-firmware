@@ -72,11 +72,13 @@ jpc_double (jpc *X, const jpc *A)
  * @param X	Destination JPC
  * @param A	JPC
  * @param B	AC
+ * @param MINUS if 1 subtraction, addition otherwise.
  */
 void
-jpc_add_ac (jpc *X, const jpc *A, const ac *B)
+jpc_add_ac_signed (jpc *X, const jpc *A, const ac *B, int minus)
 {
   bn256 a[1], b[1], c[1], d[1];
+#define minus_B_y c
 #define c_sqr a
 #define c_cube b
 #define x1_c_sqr c
@@ -91,7 +93,13 @@ jpc_add_ac (jpc *X, const jpc *A, const ac *B)
   modp256_mul (a, a, B->x);
 
   modp256_mul (b, b, A->z);
-  modp256_mul (b, b, B->y);
+  if (minus)
+    {
+      bn256_sub (minus_B_y, P256, B->y);
+      modp256_mul (b, b, minus_B_y);
+    }
+  else
+    modp256_mul (b, b, B->y);
 
   modp256_sub (c, a, A->x);
   modp256_sub (d, b, A->y);
@@ -113,6 +121,19 @@ jpc_add_ac (jpc *X, const jpc *A, const ac *B)
   modp256_mul (y3_tmp, y3_tmp, d);
   modp256_mul (y1_c_cube, A->y, c_cube);
   modp256_sub (X->y, y3_tmp, y1_c_cube);
+}
+
+/**
+ * @brief	X = A + B
+ *
+ * @param X	Destination JPC
+ * @param A	JPC
+ * @param B	AC
+ */
+void
+jpc_add_ac (jpc *X, const jpc *A, const ac *B)
+{
+  jpc_add_ac_signed (X, A, B, 0);
 }
 
 /**

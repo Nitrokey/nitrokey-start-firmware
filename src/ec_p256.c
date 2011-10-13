@@ -8,6 +8,7 @@
 #include "modp256.h"
 #include "jpc-ac.h"
 #include "mod.h"
+#include "ec_p256.h"
 
 #if 0
 /*
@@ -190,7 +191,7 @@ static const ac precomputed_2E_KG[15] = {
 };
 
 void
-calculate_kG (ac *X, const bn256 *K)
+compute_kG (ac *X, const bn256 *K)
 {
   int i;
   int q_infinite = 1;
@@ -233,14 +234,158 @@ calculate_kG (ac *X, const bn256 *K)
 	    {
 	      memcpy (Q->x, (&precomputed_2E_KG[k_i_e - 1])->x, sizeof (bn256));
 	      memcpy (Q->y, (&precomputed_2E_KG[k_i_e - 1])->y, sizeof (bn256));
+	      memset (Q->z, 0, sizeof (bn256));
 	      Q->z->words[0] = 1;
-	      Q->z->words[1] = Q->z->words[2] = Q->z->words[3]
-		= Q->z->words[4] = Q->z->words[5] = Q->z->words[6]
-		= Q->z->words[7] = 0;
 	      q_infinite = 0;
 	    }
 	  else
 	    jpc_add_ac (Q, Q, &precomputed_2E_KG[k_i_e - 1]);
+	}
+    }
+
+  jpc_to_ac (X, Q);
+}
+
+
+#define NAF_K_SIGN(k)	(k&8)
+#define NAF_K_INDEX(k)	((k&7)-1)
+
+void
+naf4_257_set (naf4_257 *NAF_K, int i, int ki)
+{
+  if (ki != 0)
+    {
+      if (ki > 0)
+	ki = (ki+1)/2;
+      else
+	ki = (1-ki)/2 | 8;
+    }
+
+  if (i == 256)
+    NAF_K->last_nibble = ki;
+  else
+    {
+      NAF_K->words[i/8] &= ~(0x0f << ((i & 0x07)*4));
+      NAF_K->words[i/8] |= (ki << ((i & 0x07)*4));
+    }
+}
+
+int
+naf4_257_get (const naf4_257 *NAF_K, int i)
+{
+  int ki;
+
+  if (i == 256)
+    ki = NAF_K->last_nibble;
+  else
+    {
+      ki = NAF_K->words[i/8] >> ((i & 0x07)*4);
+      ki &= 0x0f;
+    }
+
+  return ki;
+}
+
+void
+compute_naf4_257 (naf4_257 *NAF_K, const bn256 *K)
+{
+  int i = 0;
+  bn256 K_tmp[1];
+  uint32_t carry = 0;
+
+  memcpy (K_tmp, K, sizeof (bn256));
+  memset (NAF_K, 0, sizeof (naf4_257));
+
+  while (!bn256_is_zero (K_tmp))
+    {
+      if (bn256_is_even (K_tmp))
+	naf4_257_set (NAF_K, i, 0);
+      else
+	{
+	  int ki = (K_tmp->words[0]) & 0x0f;
+
+	  if ((ki & 0x08))
+	    {
+	      carry = bn256_add_uint (K_tmp, K_tmp, 16 - ki);
+	      ki = ki - 16;
+	    }
+	  else
+	    K_tmp->words[0] &= 0xfffffff0;
+
+	  naf4_257_set (NAF_K, i, ki);
+	}
+
+      bn256_shift (K_tmp, K_tmp, -1);
+      if (carry)
+	{
+	  K_tmp->words[7] |= 0x80000000;
+	  carry = 0;
+	}
+      i++;
+    }
+}
+
+void
+compute_kP (ac *X, const naf4_257 *NAF_K, const ac *P)
+{
+  int i;
+  int q_infinite = 1;
+  jpc Q[1];
+  ac P3[1], P5[1], P7[1];
+  const ac *p_Pi[4];
+
+  p_Pi[0] = P;
+  p_Pi[1] = P3;
+  p_Pi[2] = P5;
+  p_Pi[3] = P7;
+
+  {
+    jpc Q1[1];
+
+    memcpy (Q->x, P->x, sizeof (bn256));
+    memcpy (Q->y, P->y, sizeof (bn256));
+    memset (Q->z, 0, sizeof (bn256));
+    Q->z->words[0] = 1;
+
+    jpc_double (Q, Q);
+    jpc_add_ac (Q1, Q, P);
+    jpc_to_ac (P3, Q1);
+    jpc_double (Q, Q);
+    jpc_add_ac (Q1, Q, P);
+    jpc_to_ac (P5, Q1);
+
+    memcpy (Q->x, P3->x, sizeof (bn256));
+    memcpy (Q->y, P3->y, sizeof (bn256));
+    memset (Q->z, 0, sizeof (bn256));
+    Q->z->words[0] = 1;
+    jpc_double (Q, Q);
+    jpc_add_ac (Q1, Q, P);
+    jpc_to_ac (P7, Q1);
+  }
+
+  for (i = 256; i >= 0; i--)
+    {
+      int k_i;
+
+      if (!q_infinite)
+	jpc_double (Q, Q);
+
+      k_i = naf4_257_get (NAF_K, i);
+      if (k_i)
+	{
+	  if (q_infinite)
+	    {
+	      memcpy (Q->x, p_Pi[NAF_K_INDEX(k_i)]->x, sizeof (bn256));
+	      if (NAF_K_SIGN (k_i))
+		bn256_sub (Q->y, P256, p_Pi[NAF_K_INDEX(k_i)]->y);
+	      else
+		memcpy (Q->y, p_Pi[NAF_K_INDEX(k_i)]->y, sizeof (bn256));
+	      memset (Q->z, 0, sizeof (bn256));
+	      Q->z->words[0] = 1;
+	      q_infinite = 0;
+	    }
+	  else
+	    jpc_add_ac_signed (Q, Q, p_Pi[NAF_K_INDEX(k_i)], NAF_K_SIGN (k_i));
 	}
     }
 
@@ -283,7 +428,7 @@ ecdsa (bn256 *r, bn256 *s, const bn256 *z, const bn256 *d)
       do
 	{
 	  bn256_random (k);
-	  calculate_kG (KG, k);
+	  compute_kG (KG, k);
 	  if (bn256_is_ge (KG->x, N))
 	    bn256_sub (r, KG->x, N);
 	  else
