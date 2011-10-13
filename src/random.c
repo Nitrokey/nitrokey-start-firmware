@@ -26,7 +26,7 @@
 #include "gnuk.h"
 #include "neug.h"
 
-#define RANDOM_BYTES_LENGTH 16
+#define RANDOM_BYTES_LENGTH 32
 static uint32_t random_word[RANDOM_BYTES_LENGTH/sizeof (uint32_t)];
 
 void
@@ -43,7 +43,7 @@ random_init (void)
 }
 
 /*
- * Return pointer to random 16-byte
+ * Return pointer to random 32-byte
  */
 const uint8_t *
 random_bytes_get (void)
@@ -53,7 +53,7 @@ random_bytes_get (void)
 }
 
 /*
- * Free pointer to random 16-byte
+ * Free pointer to random 32-byte
  */
 void
 random_bytes_free (const uint8_t *p)

@@ -307,14 +307,16 @@ bn256_is_ge (const bn256 *A, const bn256 *B)
 void
 bn256_random (bn256 *X)
 {
-#if 1
-  X->words[7] = 0x01234567;
-  X->words[6] = 0x89abcdef;
-  X->words[5] = 0xff00ff00;
-  X->words[4] = 0x00ff00ff;
-  X->words[3] = 0xee55ee55;
-  X->words[2] = 0x55ee55ee;
-  X->words[1] = 0x01234567;
-  X->words[0] = 0x89abcdef;
-#endif
+  const uint8_t *rand = random_bytes_get ();
+
+  X->words[7] = ((uint32_t *)rand)[7];
+  X->words[6] = ((uint32_t *)rand)[6];
+  X->words[5] = ((uint32_t *)rand)[5];
+  X->words[4] = ((uint32_t *)rand)[4];
+  X->words[3] = ((uint32_t *)rand)[3];
+  X->words[2] = ((uint32_t *)rand)[2];
+  X->words[1] = ((uint32_t *)rand)[1];
+  X->words[0] = ((uint32_t *)rand)[0];
+
+  random_bytes_free (rand);
 }
