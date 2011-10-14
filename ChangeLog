@@ -1,3 +1,7 @@
+2011-10-14  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/gnuk.ld.in (__main_stack_size__): It's 1KB (was 512 byte).
+
 2011-10-07  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* Version 0.14.
