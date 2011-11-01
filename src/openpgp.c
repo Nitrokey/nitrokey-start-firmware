@@ -97,24 +97,19 @@ gpg_fini (void)
 
 #if defined(PINPAD_SUPPORT)
 /* 
- * Invoke the thread PIN_MAIN, and let user input PIN string.
+ * Let user input PIN string.
  * Return length of the string.
  * The string itself is in PIN_INPUT_BUFFER.
  */
 static int
 get_pinpad_input (int msg_code)
 {
-  Thread *t;
+  int r;
 
-  t = chThdCreateFromHeap (NULL, THD_WA_SIZE (128),
-			   NORMALPRIO, pin_main, (void *)msg_code);
-  if (t == NULL)
-    return -1;
-  else
-    {
-      chThdWait (t);
-      return pin_input_len;
-    }
+  chEvtSignal (main_thread, LED_INPUT_MODE);
+  r = pinpad_getline (msg_code, MS2ST (8000));
+  chEvtSignal (main_thread, LED_STATUS_MODE);
+  return r;
 }
 #endif
 

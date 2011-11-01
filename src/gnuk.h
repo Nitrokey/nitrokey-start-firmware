@@ -348,5 +348,16 @@ extern void dial_sw_enable (void);
 extern uint8_t pin_input_buffer[MAX_PIN_CHARS];
 extern uint8_t pin_input_len;
 
-extern msg_t pin_main (void *arg);
+extern int pinpad_getline (int msg_code, systime_t timeout);
+
+#define LED_ONESHOT_SHORT ((eventmask_t)1)
+#define LED_ONESHOT_LONG  ((eventmask_t)2)
+#define LED_TWOSHOT       ((eventmask_t)4)
+#define LED_STATUS_MODE   ((eventmask_t)8)
+#define LED_INPUT_MODE   ((eventmask_t)16)
+#define LED_FATAL_MODE   ((eventmask_t)32)
+extern Thread *main_thread;
+extern void led_blink (int spec);
+
+
 #endif

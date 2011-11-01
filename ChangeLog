@@ -1,5 +1,30 @@
 2011-11-01  Niibe Yutaka  <gniibe@fsij.org>
 
+	* boards/STBEE_MINI/board.h (TIMx): Define.
+	boards/STBEE/board.h (TIMx): Ditto.
+	boards/STM8S_DISCOVERY/board.h: Ditto.
+
+	* src/pin-cir.c (pinpad_getline): New.
+	(cir_timer_interrupt, cir_ext_interrupt): Use TIMx.
+	(cir_key_is_backspace, cir_key_is_enter, pin_main, pindisp):
+	Remove.
+	(cir_codetable_dell_mr425, cir_codetable_aquos)
+	(cir_codetable_regza, cir_codetable_bravia, ch_is_backspace)
+	(ch_is_enter, find_char_codetable, hex, cir_getchar): New.
+	(cir_timer_interrupt): Don't filter out ADDRESS.
+
+	* src/openpgp.c (get_pinpad_input): Don't invoke thread,
+	but just call pinpad_getline.
+
+	* src/main.c (display_interaction, display_fatal_code)
+	(display_status_code, led_blink): New.
+	(main): Call display_* routine.
+	(fatal): Notify main thread.
+	* src/usb_prop.c (gnuk_device_SetConfiguration): Notify main
+	thread.
+
+	* src/pin-cir.c (pindisp): Remove.
+
 	* boards/FST_01_00: New (for 8MHz FST-01).
 
 	* src/ac.c (calc_md): Fix comparison.

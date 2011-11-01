@@ -41,6 +41,10 @@
 
 #if defined(PINPAD_SUPPORT)
 #define HAVE_7SEGLED	1
+/*
+ * Timer assignment for CIR
+ */
+#define TIMx	TIM3
 #endif
 
 /*

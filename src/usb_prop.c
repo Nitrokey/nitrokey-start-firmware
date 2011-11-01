@@ -120,8 +120,14 @@ gnuk_device_SetConfiguration (void)
   DEVICE_INFO *pInfo = &Device_Info;
 
   if (pInfo->Current_Configuration != 0)
-    /* Device configured */
-    bDeviceState = CONFIGURED;
+    {				/* Device configured */
+      extern void *main_thread;
+      extern void chEvtSignalI (void *, unsigned long);
+#define LED_STATUS_MODE   (8)
+
+      bDeviceState = CONFIGURED;
+      chEvtSignalI (main_thread, LED_STATUS_MODE);
+    }
 }
 
 static void

@@ -57,6 +57,11 @@
 #define GPIOA_LED                8
 
 /*
+ * Timer assignment for CIR
+ */
+#define TIMx	TIM3
+
+/*
  * I/O ports initial setup, this configuration is established soon after reset
  * in the initialization code.
  *
