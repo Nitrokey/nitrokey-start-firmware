@@ -1,3 +1,11 @@
+2011-11-01  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/Makefile.in (MCFLAGS): Override MCFLAGS option for newer
+	GCC of summon-arm-toolchain to add -mfix-cortex-m3-ldrd.
+	NOTE: This should not be needed (as -mcpu=cortex-m3 defaults
+	to -mfix-cortex-m3-ldrd for GCC-proper), but it is needed
+	to select arm-none-eabi/lib/thumb2/libc.a correctly.
+
 2011-10-14  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* src/gnuk.ld.in (__main_stack_size__): It's 1KB (was 512 byte).

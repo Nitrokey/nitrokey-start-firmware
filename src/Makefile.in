@@ -205,6 +205,7 @@ ifeq ($(USE_FWLIB),yes)
 endif
 
 include $(CHIBIOS)/os/ports/GCC/ARM/rules.mk
+MCFLAGS= -mcpu=$(MCU) -mfix-cortex-m3-ldrd
 
 distclean: clean
 	-rm -f Makefile gnuk.ld config.h
