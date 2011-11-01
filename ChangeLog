@@ -1,5 +1,7 @@
 2011-11-01  Niibe Yutaka  <gniibe@fsij.org>
 
+	* boards/FST_01_00: New (for 8MHz FST-01).
+
 	* src/ac.c (calc_md): Fix comparison.
 
 	* src/call-rsa.c (RSA_SIGNATURE_LENGTH): Use KEY_CONTENT_LEN.
