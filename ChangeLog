@@ -1,5 +1,7 @@
 2011-11-01  Niibe Yutaka  <gniibe@fsij.org>
 
+	* src/ac.c (verify_user_0): Fix for non-initialized PW1.
+
 	* src/Makefile.in (MCFLAGS): Override MCFLAGS option for newer
 	GCC of summon-arm-toolchain to add -mfix-cortex-m3-ldrd.
 	NOTE: This should not be needed (as -mcpu=cortex-m3 defaults

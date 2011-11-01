@@ -75,7 +75,7 @@ verify_user_0 (const uint8_t *pw, int buf_len, int pw_len_known,
 	  || strncmp ((const char *)pw, OPENPGP_CARD_INITIAL_PW1, pw_len))
 	goto failure;
       else
-	goto success;
+	goto success_one_step;
     }
   else
     pw_len = ks_pw1[0];
@@ -88,15 +88,15 @@ verify_user_0 (const uint8_t *pw, int buf_len, int pw_len_known,
       return -1;
     }
 
+ success_one_step:
   sha1 (pw, pw_len, keystring);
   if ((r = gpg_do_load_prvkey (GPG_KEY_FOR_SIGNING, BY_USER, keystring))
       < 0)
     goto failure;
   else if (r == 0)
-    if (memcmp (ks_pw1+1, keystring, KEYSTRING_MD_SIZE) != 0)
+    if (ks_pw1 != NULL && memcmp (ks_pw1+1, keystring, KEYSTRING_MD_SIZE) != 0)
       goto failure;
 
- success:
   gpg_pw_reset_err_counter (PW_ERR_PW1);
   return pw_len;
 }
