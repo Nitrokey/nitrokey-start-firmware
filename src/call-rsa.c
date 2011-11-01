@@ -1,7 +1,7 @@
 /*
  * call-rsa.c -- Glue code between RSA computation and OpenPGP card protocol
  *
- * Copyright (C) 2010 Free Software Initiative of Japan
+ * Copyright (C) 2010, 2011 Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
  * This file is a part of Gnuk, a GnuPG USB Token implementation.
@@ -28,7 +28,9 @@
 #include "polarssl/config.h"
 #include "polarssl/rsa.h"
 
-#define RSA_SIGNATURE_LENGTH 256 /* 256 byte == 2048-bit */
+#define RSA_SIGNATURE_LENGTH KEY_CONTENT_LEN
+ /* 256 byte == 2048-bit */
+ /* 128 byte == 1024-bit */
 
 static rsa_context rsa_ctx;
 
@@ -43,10 +45,10 @@ rsa_sign (const uint8_t *raw_message, uint8_t *output, int msg_len,
   mpi_init (&P1, &Q1, &H, NULL);
   rsa_init (&rsa_ctx, RSA_PKCS_V15, 0);
 
-  rsa_ctx.len = 2048 / 8;
+  rsa_ctx.len = KEY_CONTENT_LEN;
   mpi_read_string (&rsa_ctx.E, 16, "10001");
   mpi_read_binary (&rsa_ctx.P, &kd->data[0], rsa_ctx.len / 2);
-  mpi_read_binary (&rsa_ctx.Q, &kd->data[128], rsa_ctx.len / 2);
+  mpi_read_binary (&rsa_ctx.Q, &kd->data[KEY_CONTENT_LEN/2], rsa_ctx.len / 2);
   mpi_mul_mpi (&rsa_ctx.N, &rsa_ctx.P, &rsa_ctx.Q);
   mpi_sub_int (&P1, &rsa_ctx.P, 1);
   mpi_sub_int (&Q1, &rsa_ctx.Q, 1);
@@ -90,23 +92,25 @@ rsa_sign (const uint8_t *raw_message, uint8_t *output, int msg_len,
     }
 }
 
+/*
+ * LEN: length in byte
+ */
 const uint8_t *
 modulus_calc (const uint8_t *p, int len)
 {
   mpi P, Q, N;
   uint8_t *modulus;
 
-  (void)len;			/* 2048-bit assumed */
-  modulus = malloc (2048 / 8);
+  modulus = malloc (len);
   if (modulus == NULL)
     return NULL;
 
   mpi_init (&P, &Q, &N, NULL);
-  mpi_read_binary (&P, p, 2048 / 8 / 2);
-  mpi_read_binary (&Q, p + 128, 2048 / 8 / 2);
+  mpi_read_binary (&P, p, len / 2);
+  mpi_read_binary (&Q, p + len / 2, len / 2);
   mpi_mul_mpi (&N, &P, &Q);
 
-  mpi_write_binary (&N, modulus, 2048 / 8);
+  mpi_write_binary (&N, modulus, len);
   mpi_free (&P, &Q, &N, NULL);
   return modulus;
 }
@@ -135,8 +139,9 @@ rsa_decrypt (const uint8_t *input, uint8_t *output, int msg_len,
   DEBUG_WORD (msg_len);
 
   mpi_read_string (&rsa_ctx.E, 16, "10001");
-  mpi_read_binary (&rsa_ctx.P, &kd->data[0], 2048 / 8 / 2);
-  mpi_read_binary (&rsa_ctx.Q, &kd->data[128], 2048 / 8 / 2);
+  mpi_read_binary (&rsa_ctx.P, &kd->data[0], KEY_CONTENT_LEN / 2);
+  mpi_read_binary (&rsa_ctx.Q, &kd->data[KEY_CONTENT_LEN/2],
+		   KEY_CONTENT_LEN / 2);
   mpi_mul_mpi (&rsa_ctx.N, &rsa_ctx.P, &rsa_ctx.Q);
   mpi_sub_int (&P1, &rsa_ctx.P, 1);
   mpi_sub_int (&Q1, &rsa_ctx.Q, 1);

@@ -1,5 +1,9 @@
 2011-11-01  Niibe Yutaka  <gniibe@fsij.org>
 
+	* src/call-rsa.c (RSA_SIGNATURE_LENGTH): Use KEY_CONTENT_LEN.
+	(rsa_sign, rsa_decrypt): Likewise.
+	(modulus_calc): Don't assume it's 2048-bit.
+
 	* src/ac.c (verify_user_0): Fix for non-initialized PW1.
 
 	* src/Makefile.in (MCFLAGS): Override MCFLAGS option for newer
