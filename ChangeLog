@@ -1,5 +1,8 @@
 2011-11-01  Niibe Yutaka  <gniibe@fsij.org>
 
+	* src/pin-dial.c (pinpad_getline): New.
+	(pin_main): Remove.
+
 	* boards/STBEE_MINI/board.h (TIMx): Define.
 	boards/STBEE/board.h (TIMx): Ditto.
 	boards/STM8S_DISCOVERY/board.h: Ditto.

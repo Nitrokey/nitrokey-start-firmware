@@ -128,10 +128,9 @@ dial_sw_interrupt (void)
 }
 
 
-msg_t
-pin_main (void *arg)
+int
+pinpad_getline (int msg_code, systime_t timeout)
 {
-  int msg_code = (int)arg;
   uint16_t count, count_prev;
   uint8_t input_mode;
   uint8_t sw_push_count;
@@ -150,7 +149,7 @@ pin_main (void *arg)
   sw_push_count = 0;
   sw_event = 0;
 
-  while (!chThdShouldTerminate ())
+  while (1)
     {
       eventmask_t m;
 
@@ -218,5 +217,5 @@ pin_main (void *arg)
   led_disp (OFF);
   TIM4->CR1 &= ~TIM_CR1_CEN;
   dial_sw_disable ();
-  return 0;
+  return pin_input_len;
 }
