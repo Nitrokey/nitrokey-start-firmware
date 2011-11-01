@@ -1,7 +1,7 @@
 Gnuk - software for GnuPG USB Token
 
-							   Version 0.14
-							     2011-10-07
+							   Version 0.15
+							     2011-11-XX
 						           Niibe Yutaka
 				      Free Software Initiative of Japan
 
@@ -94,7 +94,7 @@ A9: GnuPG's SCDaemon has problems for handling insertion/removal of
 Release notes
 =============
 
-This is fifteenth release of Gnuk.  While it works well for specific
+This is sixteenth release of Gnuk.  While it works well for specific
 usages and it is considered stable, it is still somewhat experimental.
 
 Tested features are:
@@ -119,10 +119,11 @@ It is known not-working well:
           work well.  Please disable DEBUG option if it doesn't work well.
 
 	* Card holder certificate
-	  It is implemented in Gnuk side.  But its size matters (>
-	  1KB).  GnuPG cannot handle a data object of large size with
-	  PC/SC backend.  Specifically, handle_transmit function in
-	  pcsc-wrapper.c uses the buffer of size 1024-byte.
+	  It is implemented in Gnuk side.  But its large size matters
+	  (> 1KB).  Some versions of GnuPG cannot handle a data object
+	  of large size with PC/SC backend.  Specifically,
+	  handle_transmit function in pcsc-wrapper.c uses the buffer
+	  of size 1024-byte.
 
 Not supported feature(s):
 
@@ -230,8 +231,24 @@ How to compile
 
 You need GNU toolchain and newlib for 'arm-none-eabi' target.
 
-See http://github.com/uwehermann/summon-arm-toolchain/ for preparation
-of GNU Toolchain for 'arm-none-eabi' target.
+See http://github.com/esden/summon-arm-toolchain/ (which includes fix
+of binutils-2.21.1) for preparation of GNU Toolchain for
+'arm-none-eabi' target.
+
+# Note that we need to link correct C library (for string functions).
+# For this purpose, Makefile.in contains following line:
+# 
+# 	MCFLAGS= -mcpu=$(MCU) -mfix-cortex-m3-ldrd
+# 
+# This should not be needed (as -mcpu=cortex-m3 means
+# -mfix-cortex-m3-ldrd), but in practice it is needed for 
+# the configuration of patch-gcc-config-arm-t-arm-elf.diff in
+# summon-arm-toolchain.
+# 
+# In ChibiOS_2.0.8/os/ports/GCC/ARM/rules.mk, it specifies
+# -mno-thumb-interwork option.  This means that you should not
+# link C library which contains ARM (not Thumb) code.
+
 
 Change directory to `src':
 

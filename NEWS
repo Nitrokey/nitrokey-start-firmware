@@ -1,5 +1,26 @@
 Gnuk NEWS - User visible changes
 
+* Major changes in Gnuk 0.15
+
+  Released 2011-11-XX, by NIIBE Yutaka
+
+** Experimental PIN-pad support (by TV controller) change
+Now, Gnuk has codetables for conversion from CIR code to ASCII code.
+Note that only four controllers (of Dell, Sharp, Sony, and Toshiba)
+are supported and tested.
+
+** It is possible for users to keep using OPENPGP_CARD_INITIAL_PW1
+With a bug fix of verify_user_0, it's now possible.  Although it's not
+recommended.
+
+** Important bug fix and a workaround
+In version 0.14, __main_stack_size__ (for interrupt handler) was too
+small for some cases.  This is fixed in 0.15.
+
+In src/Makefile.in, added -mfix-cortex-m3-ldrd for correctly linking C
+library for thumb2.  This is needed for newer summon-arm-toolchain.
+
+
 * Major changes in Gnuk 0.14
 
   Released 2011-10-07, by NIIBE Yutaka
