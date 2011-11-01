@@ -627,6 +627,9 @@ gpg_do_load_prvkey (enum kind_of_key kk, int who, const uint8_t *keystring)
   uint8_t dek[DATA_ENCRYPTION_KEY_SIZE];
   struct key_data_internal kdi;
 
+  DEBUG_INFO ("Loading private key: ");
+  DEBUG_BYTE (kk);
+
   if (do_data == NULL)
     return 0;
 
@@ -646,6 +649,7 @@ gpg_do_load_prvkey (enum kind_of_key kk, int who, const uint8_t *keystring)
   /* more sanity check??? */
 
   memcpy (kd[kk].data, kdi.data, KEY_CONTENT_LEN);
+  DEBUG_BINARY (&kd[kk], KEY_CONTENT_LEN);
   return 1;
 }
 

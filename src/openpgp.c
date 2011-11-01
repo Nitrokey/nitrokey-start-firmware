@@ -726,6 +726,7 @@ cmd_pso (void)
 
   DEBUG_INFO (" - PSO: ");
   DEBUG_WORD ((uint32_t)&r);
+  DEBUG_BINARY (cmd_APDU, cmd_APDU_size);
 
   if (cmd_APDU[2] == 0x9e && cmd_APDU[3] == 0x9a)
     {
@@ -751,6 +752,7 @@ cmd_pso (void)
       else
 	{
 	  DEBUG_SHORT (len);  /* Should be cmd_APDU_size - 8 [- 1] */
+	  DEBUG_BINARY (&kd[GPG_KEY_FOR_SIGNING], KEY_CONTENT_LEN);
 
 	  r = rsa_sign (&cmd_APDU[data_start], res_APDU, len,
 			&kd[GPG_KEY_FOR_SIGNING]);
@@ -767,6 +769,7 @@ cmd_pso (void)
   else if (cmd_APDU[2] == 0x80 && cmd_APDU[3] == 0x86)
     {
       DEBUG_SHORT (len);
+      DEBUG_BINARY (&kd[GPG_KEY_FOR_DECRYPTION], KEY_CONTENT_LEN);
 
       if (!ac_check_status (AC_OTHER_AUTHORIZED))
 	{
