@@ -172,7 +172,7 @@ calc_md (int count, const uint8_t *salt, const uint8_t *pw, int pw_len,
       count -= pw_len + 8;
     }
 
-  if (count < 8)
+  if (count <= 8)
     sha1_update (&sha1_ctx, salt, count);
   else
     {
