@@ -171,7 +171,6 @@ uint8_t pin_input_len;
  * TIMx_DMAR
  */
 
-
 #if defined(DEBUG_CIR)
 static uint16_t intr_ext;
 static uint16_t intr_trg;
@@ -269,7 +268,7 @@ cir_codetable_aquos[] = {
   { 0x0281, 'j' }, /* RED */
   { 0x0282, 'k' }, /* GREEN */
   { 0x0283, 'l' }, /* YELLOW */
-  { 0x011b, 'm' }, /* DISPLAY CONTROL (gamen hyouji)     */
+  { 0x011b, 'm' }, /* DISPLAY CONTROL (gamen hyouji) */
   { 0x01d5, 'n' }, /* DISPLAY SIZE */
   { 0x0157, 'o' }, /* UP */
   { 0x01d7, 'p' }, /* LEFT */
@@ -304,7 +303,7 @@ cir_codetable_aquos[] = {
   { 0x0113, 'F' }, /* Inputs (nyuuryoku kirikae) */
   { 0x0275, 'G' }, /* other programs (ura bangumi) */
   { 0x0266, 'H' }, /* signal control (eizou kirikae) */
-  { 0x01e7, 'I' }, /* AV position  */
+  { 0x01e7, 'I' }, /* AV position */
   { 0x027f, 'J' }, /* i.LINK */
   { 0x0b00, 'K' }, /* Recorder power */
   { 0x028f, 'L' }, /* as you like it (okonomi senkyoku) */
@@ -375,7 +374,7 @@ cir_codetable_regza[] = {
   { 0x62, '@' }, /* 2 NHK2 */
   { 0x63, '#' }, /* 3 NHKh */
   { 0x64, '$' }, /* 4 BS Nihon TV */
-  { 0x65, '%' }, /* 5 BS Asashi */
+  { 0x65, '%' }, /* 5 BS Asahi */
   { 0x66, '^' }, /* 6 BS-i */
   { 0x67, '&' }, /* 7 BSJ */
   { 0x68, '*' }, /* 8 BS Fuji */
