@@ -134,8 +134,8 @@ Not supported feature(s):
 Targets
 =======
 
-We use Olimex STM32-H103 board.  We also use STM32 part of STM8S
-Discovery Kit.
+We use Olimex STM32-H103 board and Flying Stone Tiny 01 (FST-01).  We
+also use STM32 part of STM8S Discovery Kit.
 
 With DfuSe support, CQ STARM, STBee, and STBee Mini are also our
 targets.  But those targets with DfuSe are basically not for normal
@@ -283,6 +283,36 @@ Then, with another terminal, type following to write "gnuk.elf" to Flash ROM:
   > reset
   > exit
   $ 
+
+
+Flying Stone Tiny 01
+--------------------
+
+If you are using Flying Stone Tiny 01, you need a SWD writer.  I am
+using revision 946 of Simon Qian's Versaloon.
+
+    svn checkout -r 946 http://vsprog.googlecode.com/svn/trunk/
+
+For OpenOCD, we need unofficial patch.
+
+See the article of Versaloon Forum:
+
+    http://www.versaloon.com/bbs/viewtopic.php?p=16179
+
+
+Type following to invoke OpenOCD:
+
+  $ openocd -f interface/vsllink.cfg -c "transport select swd" -c "swd_mode 2" -f target/stm32f1x.cfg
+
+Then, with another terminal, type following to write "gnuk.elf" to Flash ROM:
+
+  $ telnet localhost 4444
+  > reset halt
+  > flash write_image erase gnuk.elf
+  > reset
+  > exit
+  $ 
+
 
 
 STM8S Discovery Kit
