@@ -1,3 +1,7 @@
+2011-11-14  Niibe Yutaka  <gniibe@fsij.org>
+
+	* boards/FST_01/{mcuconf.h,board.h,board.c}: New.
+
 2011-11-01  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/pin-dial.c (pinpad_getline): New.
