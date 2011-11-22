@@ -4,7 +4,7 @@
 dfuse.py - DFU (Device Firmware Upgrade) tool for STM32 Processor.
 "SE" in DfuSe stands for "STmicroelectronics Extention".
 
-Copyright (C) 2010 Free Software Initiative of Japan
+Copyright (C) 2010, 2011 Free Software Initiative of Japan
 Author: NIIBE Yutaka <gniibe@fsij.org>
 
 This file is a part of Gnuk, a GnuPG USB Token implementation.
@@ -208,10 +208,20 @@ class DFU_STM32:
         # First, erase pages
         sys.stdout.write("Erasing: ")
         sys.stdout.flush()
+        last_addr = 0
         for start_addr in sorted(ih.memory.keys()):
             data = ih.memory[start_addr]
             end_addr = start_addr + len(data)
             addr = start_addr & 0xfffffc00
+            if not last_addr == 0:
+                i = 0
+                while last_addr < addr:
+                    self.dfuse_erase(last_addr)
+                    if i & 0x03 == 0x03:
+                        sys.stdout.write(".")
+                        sys.stdout.flush()
+                    last_addr += 1024
+                    i += 1
             i = 0
             while addr < end_addr:
                 self.dfuse_erase(addr)
@@ -220,18 +230,28 @@ class DFU_STM32:
                     sys.stdout.flush()
                 addr += 1024
                 i += 1
+            last_addr = addr
         sys.stdout.write("\n")
         sys.stdout.flush()
         # Then, write pages
         sys.stdout.write("Writing: ")
         sys.stdout.flush()
+        last_addr = 0
         for start_addr in sorted(ih.memory.keys()):
             data = ih.memory[start_addr]
             end_addr = start_addr + len(data)
             addr = start_addr & 0xfffffc00
-            # XXX: data should be 1-KiB aligned
+            if not last_addr == 0:
+                i = 0
+                while last_addr < addr:
+                    if i & 0x03 == 0x03:
+                        sys.stdout.write(".")
+                        sys.stdout.flush()
+                    last_addr += 1024
+                    i += 1
             if addr != start_addr:
-                raise ValueError, "padding is not supported yet"
+                # fill by 0xff
+                data = '\xff' * (start_addr & 0x3ff) + data
             self.dfuse_set_address_pointer(addr)
             i = 0
             while addr < end_addr:
@@ -241,6 +261,7 @@ class DFU_STM32:
                     sys.stdout.flush()
                 addr += 1024
                 i += 1
+            last_addr = addr
         if self.__protocol == DFU_STM32PROTOCOL_0:
             # 0-length write at the end
             self.ll_download_block(self.__blocknum, None)
@@ -268,13 +289,22 @@ class DFU_STM32:
         # Read pages
         sys.stdout.write("Reading: ")
         sys.stdout.flush()
+        last_addr = 0
         for start_addr in sorted(ih.memory.keys()):
             data = ih.memory[start_addr]
             end_addr = start_addr + len(data)
             addr = start_addr & 0xfffffc00
-            # XXX: data should be 1-KiB aligned
+            if not last_addr == 0:
+                i = 0
+                while last_addr < addr:
+                    if i & 0x03 == 0x03:
+                        sys.stdout.write(".")
+                        sys.stdout.flush()
+                    last_addr += 1024
+                    i += 1
             if addr != start_addr:
-                raise ValueError, "padding is not supported yet"
+                # fill by 0xff
+                data = '\xff' * (start_addr & 0x3ff) + data
             self.dfuse_set_address_pointer(addr)
             self.ll_clear_status()
             self.ll_clear_status()
@@ -291,6 +321,7 @@ class DFU_STM32:
                     sys.stdout.flush()
                 addr += 1024
                 i += 1
+            last_addr = addr
             self.ll_clear_status()
             self.ll_clear_status()
         self.ll_clear_status()

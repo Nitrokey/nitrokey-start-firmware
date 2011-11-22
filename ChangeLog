@@ -1,3 +1,8 @@
+2011-11-22  Niibe Yutaka  <gniibe@fsij.org>
+
+	* tool/dfuse.py (DFU_STM32.download, DFU_STM32.verify): Support
+	unaligned write and hole.
+
 2011-11-14  Niibe Yutaka  <gniibe@fsij.org>
 
 	* boards/FST_01/{mcuconf.h,board.h,board.c}: New.
