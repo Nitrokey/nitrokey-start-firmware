@@ -2,7 +2,14 @@ Gnuk NEWS - User visible changes
 
 * Major changes in Gnuk 0.15
 
-  Released 2011-11-XX, by NIIBE Yutaka
+  Released 2011-11-24, by NIIBE Yutaka
+
+** New targets: FST_01 and FST_01_00
+Flying Stone Technology's open hardware, Flying Stone Tiny 01 is
+supported.
+
+** Flash writing tool for "DfuSe" is improved
+Now, it support holes and unaligned blocks in hex file.
 
 ** Experimental PIN-pad support (by TV controller) change
 Now, Gnuk has codetables for conversion from CIR code to ASCII code.

@@ -1,7 +1,7 @@
 Gnuk - software for GnuPG USB Token
 
 							   Version 0.15
-							     2011-11-XX
+							     2011-11-24
 						           Niibe Yutaka
 				      Free Software Initiative of Japan
 
@@ -89,6 +89,20 @@ A9: GnuPG's SCDaemon has problems for handling insertion/removal of
       $ killall -9 scdaemon
     and confirm scdaemon doesn't exist, then,
       $ gpg-connect-agent learn /bye
+
+Qa: With GNOME, I can't use Gnuk Token for SSH.  How can we use it for SSH?
+Aa: You need to deactivate seahorse-agent and gnome-keyring, but use
+    gpg-agant for the role of ssh-agent.  For gnome-keyring please do:
+
+    $ gconftool-2 --type bool --set /apps/gnome-keyring/daemon-components/ssh false
+
+Qb: With GNOME 3, I can't use Gnuk Token at all.  Why?
+Ab: That's because gnome-keyring-daemon interferes GnuPG.  Type:
+
+    $ gnome-session-properties
+
+and at the tab of "Startup Programs", disable check buttons for "GPG Password Agent" and "SSH Key Agent".
+
 
 
 Release notes
