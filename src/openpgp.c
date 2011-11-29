@@ -572,13 +572,44 @@ cmd_put_data (void)
     GPG_NO_RECORD();
 
   tag = ((cmd_APDU[2]<<8) | cmd_APDU[3]);
-  len = cmd_APDU_size - 5;
   data = &cmd_APDU[5];
-  if (len >= 256)
-    /* extended Lc */
+
+#if defined(PINPAD_SUPPORT)
+  if (cmd_APDU_size == 4)	/* For 0xD3: reset code */
     {
-      data += 2;
-      len -= 2;
+      len = get_pinpad_input (PIN_INPUT_NEW);
+      if (len < 0)
+	{
+	  GPG_ERROR ();
+	  return;
+	}
+
+      cmd_APDU[4] = len;
+      memcpy (data, pin_input_buffer, len);
+
+      len = get_pinpad_input (PIN_INPUT_CONFIRM);
+      if (len < 0)
+	{
+	  GPG_ERROR ();
+	  return;
+	}
+
+      if (len != cmd_APDU[4] || memcmp (data, pin_input_buffer, len) !=0)
+	{
+	  GPG_SECURITY_FAILURE ();
+	  return;
+	}
+    }
+  else
+#endif
+    {
+      len = cmd_APDU_size - 5;
+      if (len >= 256)
+	/* extended Lc */
+	{
+	  data += 2;
+	  len -= 2;
+	}
     }
 
   gpg_do_put_data (tag, data, len);
