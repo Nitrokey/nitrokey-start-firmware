@@ -1,3 +1,21 @@
+2011-12-01  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/gnuk.h (EV_PINPAD_INPUT_DONE, EV_NOP, EV_CMD_AVAILABLE)
+	(EV_VERIFY_CMD_AVAILABLE, EV_MODIFY_CMD_AVAILABLE): New.
+	* src/usb-icc.c (icc_power_off, icc_handle_data): Use EV_NOP,
+	EV_CMD_AVAILABLE, EV_VERIFY_CMD_AVAILABLE, and EV_MODIFY_CMD_AVAILABLE.
+	* src/pin-cir.c (cir_timer_interrupt): Use EV_PINPAD_INPUT_DONE.
+	* src/pin-dial.c (dial_sw_interrupt, pinpad_getline): Ditto.
+	(EV_SW_PUSH): Remove.
+
+	* src/openpgp.h (GPG_FUNCTION_NOT_SUPPORTED): New.
+	(GPG_CONDITION_NOT_SATISFIED): New.
+	* src/openpgp.c (cmd_change_password): Use GPG_FUNCTION_NOT_SUPPORTED.
+
+	* src/openpgp.c (cmd_verify, cmd_change_password)
+	(cmd_reset_user_password, cmd_put_data): Remove pinpad handling...
+	(GPGthread): ... and implement pinpad handling here.
+
 2011-11-29  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/openpgp.c (cmd_put_data) [PINPAD_SUPPORT]: Support pinpad

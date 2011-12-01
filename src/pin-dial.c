@@ -117,13 +117,12 @@ blink_dp (void)
 }
 
 static Thread *pin_thread;
-#define EV_SW_PUSH (eventmask_t)1
 
 void
 dial_sw_interrupt (void)
 {
   dial_sw_disable ();
-  chEvtSignalI (pin_thread, EV_SW_PUSH);
+  chEvtSignalI (pin_thread, EV_PINPAD_INPUT_DONE);
   palClearPad (IOPORT1, GPIOA_LED2);
 }
 
@@ -157,7 +156,7 @@ pinpad_getline (int msg_code, systime_t timeout)
       dial_sw_enable ();
       m = chEvtWaitOneTimeout (ALL_EVENTS, LED_DISP_BLINK_INTERVAL0);
 
-      if (m == EV_SW_PUSH || sw_push_count)
+      if (m == EV_PINPAD_INPUT_DONE || sw_push_count)
 	{
 	  if (palReadPad (IOPORT2, GPIOB_BUTTON) == 0)
 	    sw_push_count++;

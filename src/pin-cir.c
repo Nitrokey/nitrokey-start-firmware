@@ -910,7 +910,7 @@ cir_timer_interrupt (void)
 	      cir_input_last = now;
 	      /* Notify thread */
 	      if (pin_thread)
-		chEvtSignalI (pin_thread, (eventmask_t)1);
+		chEvtSignalI (pin_thread, EV_PINPAD_INPUT_DONE);
 	    }
 
 #if defined(DEBUG_CIR)

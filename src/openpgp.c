@@ -125,32 +125,14 @@ cmd_verify (void)
   DEBUG_INFO (" - VERIFY\r\n");
   DEBUG_BYTE (p2);
 
-#if defined(PINPAD_SUPPORT)
-  if (cmd_APDU_size == 4)
-    /* Verification with pinpad */
+  len = cmd_APDU[4];
+  if (len == 0)			/* extended length */
     {
-      len = get_pinpad_input (PIN_INPUT_CURRENT);
-      if (len < 0)
-	{
-	  GPG_ERROR ();
-	  return;
-	}
-
-      pw = pin_input_buffer;
-    }
-  else
-#endif
-    {
-      len = cmd_APDU[4];
-      if (len == 0)			/* extended length */
-	{
-	  len = (cmd_APDU[5]<<8) | cmd_APDU[6];
-	  data_start = 7;
-	}
-
-      pw = &cmd_APDU[data_start];
+      len = (cmd_APDU[5]<<8) | cmd_APDU[6];
+      data_start = 7;
     }
 
+  pw = &cmd_APDU[data_start];
 
   if (p2 == 0x81)
     r = verify_pso_cds (pw, len);
@@ -231,6 +213,7 @@ cmd_change_password (void)
   uint8_t old_ks[KEYSTRING_MD_SIZE];
   uint8_t new_ks0[KEYSTRING_MD_SIZE+1];
   uint8_t *new_ks = &new_ks0[1];
+  uint8_t p1 = cmd_APDU[2];	/* 0: change (old+new), 1: exchange (new) */
   uint8_t p2 = cmd_APDU[3];
   int len;
   const uint8_t *pw;
@@ -242,55 +225,18 @@ cmd_change_password (void)
   DEBUG_INFO ("Change PW\r\n");
   DEBUG_BYTE (who);
 
-#if defined(PINPAD_SUPPORT)
-  if (cmd_APDU_size == 4)
-    /* Modification with pinpad */
+  len = cmd_APDU[4];
+  pw = &cmd_APDU[5];
+  if (len == 0)			/* extended length */
     {
-      pw_len = get_pinpad_input (PIN_INPUT_CURRENT);
-      if (pw_len < 0)
-	{
-	  GPG_ERROR ();
-	  return;
-	}
-
-      pw = &cmd_APDU[5];
-      memcpy (&cmd_APDU[5], pin_input_buffer, pw_len);
-      newpw = pw + pw_len;
-
-      newpw_len = get_pinpad_input (PIN_INPUT_NEW);
-      if (newpw_len < 0)
-	{
-	  GPG_ERROR ();
-	  return;
-	}
-
-      memcpy (&cmd_APDU[5]+pw_len, pin_input_buffer, newpw_len);
-
-      len = get_pinpad_input (PIN_INPUT_CONFIRM);
-      if (len < 0)
-	{
-	  GPG_ERROR ();
-	  return;
-	}
-
-      if (len != newpw_len || memcmp (newpw, pin_input_buffer, len) != 0)
-	{
-	  GPG_SECURITY_FAILURE ();
-	  return;
-	}
-
-      len = cmd_APDU[4] = pw_len + newpw_len;
+      len = (cmd_APDU[5]<<8) | cmd_APDU[6];
+      pw += 2;
     }
-  else
-#endif
+
+  if (p1 != 0)
     {
-      len = cmd_APDU[4];
-      pw = &cmd_APDU[5];
-      if (len == 0)			/* extended length */
-	{
-	  len = (cmd_APDU[5]<<8) | cmd_APDU[6];
-	  pw += 2;
-	}
+      GPG_FUNCTION_NOT_SUPPORTED();
+      return;
     }
 
   if (who == BY_USER)			/* PW1 */
@@ -395,60 +341,12 @@ cmd_reset_user_password (void)
   DEBUG_INFO ("Reset PW1\r\n");
   DEBUG_BYTE (p1);
 
-#if defined(PINPAD_SUPPORT)
-  if (cmd_APDU_size == 4)
-    /* Modification with pinpad */
+  len = cmd_APDU[4];
+  pw = &cmd_APDU[5];
+  if (len == 0)			/* extended length */
     {
-      if (p1 == 0x00)		/* by User with Reseting Code */
-	{
-	  pw_len = get_pinpad_input (PIN_INPUT_CURRENT);
-	  if (pw_len < 0)
-	    {
-	      GPG_ERROR ();
-	      return;
-	    }
-
-	  memcpy (&cmd_APDU[5], pin_input_buffer, pw_len);
-	}
-      else
-	pw_len = 0;
-
-      pw = &cmd_APDU[5];
-      newpw = pw + pw_len;
-      newpw_len = get_pinpad_input (PIN_INPUT_NEW);
-      if (newpw_len < 0)
-	{
-	  GPG_ERROR ();
-	  return;
-	}
-
-      memcpy (&cmd_APDU[5]+pw_len, pin_input_buffer, newpw_len);
-
-      len = get_pinpad_input (PIN_INPUT_CONFIRM);
-      if (len < 0)
-	{
-	  GPG_ERROR ();
-	  return;
-	}
-
-      if (len != newpw_len || memcmp (newpw, pin_input_buffer, len) != 0)
-	{
-	  GPG_SECURITY_FAILURE ();
-	  return;
-	}
-
-      len = cmd_APDU[4] = pw_len + newpw_len;
-    }
-  else
-#endif
-    {
-      len = cmd_APDU[4];
-      pw = &cmd_APDU[5];
-      if (len == 0)			/* extended length */
-	{
-	  len = (cmd_APDU[5]<<8) | cmd_APDU[6];
-	  pw += 2;
-	}
+      len = (cmd_APDU[5]<<8) | cmd_APDU[6];
+      pw += 2;
     }
 
   if (p1 == 0x00)		/* by User with Reseting Code */
@@ -574,42 +472,12 @@ cmd_put_data (void)
   tag = ((cmd_APDU[2]<<8) | cmd_APDU[3]);
   data = &cmd_APDU[5];
 
-#if defined(PINPAD_SUPPORT)
-  if (cmd_APDU_size == 4)	/* For 0xD3: reset code */
+  len = cmd_APDU_size - 5;
+  if (len >= 256)
+    /* extended Lc */
     {
-      len = get_pinpad_input (PIN_INPUT_NEW);
-      if (len < 0)
-	{
-	  GPG_ERROR ();
-	  return;
-	}
-
-      cmd_APDU[4] = len;
-      memcpy (data, pin_input_buffer, len);
-
-      len = get_pinpad_input (PIN_INPUT_CONFIRM);
-      if (len < 0)
-	{
-	  GPG_ERROR ();
-	  return;
-	}
-
-      if (len != cmd_APDU[4] || memcmp (data, pin_input_buffer, len) !=0)
-	{
-	  GPG_SECURITY_FAILURE ();
-	  return;
-	}
-    }
-  else
-#endif
-    {
-      len = cmd_APDU_size - 5;
-      if (len >= 256)
-	/* extended Lc */
-	{
-	  data += 2;
-	  len -= 2;
-	}
+      data += 2;
+      len -= 2;
     }
 
   gpg_do_put_data (tag, data, len);
@@ -1057,15 +925,91 @@ GPGthread (void *arg)
 
   while (!chThdShouldTerminate ())
     {
-      chEvtWaitOne (ALL_EVENTS);
+      eventmask_t m = chEvtWaitOne (ALL_EVENTS);
+#if defined(PINPAD_SUPPORT)
+      int len, pw_len, newpw_len;
+#endif
 
       DEBUG_INFO ("GPG!: ");
 
-      res_APDU_pointer = NULL; /* default */
+      res_APDU_pointer = NULL;
+
+      if (m == EV_VERIFY_CMD_AVAILABLE)
+	{
+#if defined(PINPAD_SUPPORT)
+	  if (cmd_APDU[1] != INS_VERIFY)
+	    {
+	      GPG_CONDITION_NOT_SATISFIED ();
+	      goto done;
+	    }
+
+	  pw_len = get_pinpad_input (PIN_INPUT_CURRENT);
+	  if (pw_len < 0)
+	    {
+	      GPG_ERROR ();
+	      goto done;
+	    }
+	  memcpy (&cmd_APDU[5], pin_input_buffer, pw_len);
+	  cmd_APDU[4] = pw_len;
+	  icc_data_size = 5 + pw_len;
+#else
+	  GPG_ERROR ();
+	  goto done;
+#endif
+	}
+      else if (m == EV_MODIFY_CMD_AVAILABLE)
+	{
+#if defined(PINPAD_SUPPORT)
+	  if (cmd_APDU[1] != INS_CHANGE_REFERENCE_DATA)
+	    {
+	      GPG_CONDITION_NOT_SATISFIED ();
+	      goto done;
+	    }
+
+	  pw_len = get_pinpad_input (PIN_INPUT_CURRENT);
+	  if (pw_len < 0)
+	    {
+	      GPG_ERROR ();
+	      goto done;
+	    }
+	  memcpy (&cmd_APDU[5], pin_input_buffer, pw_len);
+
+	  newpw_len = get_pinpad_input (PIN_INPUT_NEW);
+	  if (newpw_len < 0)
+	    {
+	      GPG_ERROR ();
+	      goto done;
+	    }
+	  memcpy (&cmd_APDU[5]+pw_len, pin_input_buffer, newpw_len);
+
+	  len = get_pinpad_input (PIN_INPUT_CONFIRM);
+	  if (len < 0)
+	    {
+	      GPG_ERROR ();
+	      goto done;
+	    }
+
+	  if (len != newpw_len
+	      || memcmp (&cmd_APDU[5]+pw_len, pin_input_buffer, len) != 0)
+	    {
+	      GPG_SECURITY_FAILURE ();
+	      goto done;
+	    }
+
+	  len = cmd_APDU[4] = pw_len + newpw_len;
+	  icc_data_size = 5 + len;
+#else
+	  GPG_ERROR ();
+	  goto done;
+#endif
+	}
+      else if (m == EV_NOP)
+	continue;
 
       if (icc_data_size != 0)
 	{
 	  process_command_apdu ();
+	done:
 	  chEvtSignal (icc_thread, EV_EXEC_FINISHED);
 	}
     }

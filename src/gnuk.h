@@ -24,6 +24,13 @@ extern void *memmove(void *dest, const void *src, size_t n);
 
 #define EV_EXEC_FINISHED ((eventmask_t)2)	 /* GPG Execution finished */
 
+/* GPG thread */
+#define EV_PINPAD_INPUT_DONE ((eventmask_t)1)
+#define EV_NOP ((eventmask_t)2)
+#define EV_CMD_AVAILABLE ((eventmask_t)4)
+#define EV_VERIFY_CMD_AVAILABLE ((eventmask_t)8)
+#define EV_MODIFY_CMD_AVAILABLE ((eventmask_t)16)
+
 /* maximum cmd apdu data is key import 22+4+128+128 (proc_key_import) */
 #define MAX_CMD_APDU_SIZE (7+282) /* header + data */
 /* maximum res apdu data is public key 5+9+256+2 (gpg_do_public_key) */

@@ -374,7 +374,7 @@ icc_power_off (void)
   if (gpg_thread)
     {
       chThdTerminate (gpg_thread);
-      chEvtSignal (gpg_thread, (eventmask_t)1);
+      chEvtSignal (gpg_thread, EV_NOP);
       chThdWait (gpg_thread);
       gpg_thread = NULL;
     }
@@ -497,7 +497,7 @@ icc_handle_data (void)
 	{
 	  if (icc_header->param == 0)
 	    {			/* Give this message to GPG thread */
-	      chEvtSignal (gpg_thread, (eventmask_t)1);
+	      chEvtSignal (gpg_thread, EV_CMD_AVAILABLE);
 	      next_state = ICC_STATE_EXECUTE;
 	    }
 	  else if (icc_header->param == 1)
@@ -524,7 +524,7 @@ icc_handle_data (void)
 	      cmd_APDU[2] = icc_buffer[27];
 	      cmd_APDU[3] = icc_buffer[28];
 	      icc_data_size = 4;
-	      chEvtSignal (gpg_thread, (eventmask_t)1);
+	      chEvtSignal (gpg_thread, EV_VERIFY_CMD_AVAILABLE);
 	      next_state = ICC_STATE_EXECUTE;
 	    }
 	  else if (icc_buffer[10] == 0x01) /* PIN Modification */
@@ -540,7 +540,7 @@ icc_handle_data (void)
 	      cmd_APDU[2] = icc_buffer[29 + num_msgs];
 	      cmd_APDU[3] = icc_buffer[30 + num_msgs];
 	      icc_data_size = 4;
-	      chEvtSignal (gpg_thread, (eventmask_t)1);
+	      chEvtSignal (gpg_thread, EV_MODIFY_CMD_AVAILABLE);
 	      next_state = ICC_STATE_EXECUTE;
 	    }
 	  else
@@ -572,7 +572,7 @@ icc_handle_data (void)
 	      icc_data_size = icc_next_p - icc_buffer - ICC_MSG_HEADER_SIZE;
 	      icc_chain_p = NULL;
 	      next_state = ICC_STATE_EXECUTE;
-	      chEvtSignal (gpg_thread, (eventmask_t)1);
+	      chEvtSignal (gpg_thread, EV_CMD_AVAILABLE);
 	    }
 	  else			/* icc_header->param == 3 is not supported. */
 	    {
