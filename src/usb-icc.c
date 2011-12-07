@@ -524,6 +524,14 @@ icc_handle_data (void)
 	      cmd_APDU[2] = icc_buffer[27];
 	      cmd_APDU[3] = icc_buffer[28];
 	      icc_data_size = 4;
+	      cmd_APDU[4] = 0; /* bConfirmPIN */
+	      cmd_APDU[5] = icc_buffer[17]; /* bEntryValidationCondition */
+	      cmd_APDU[6] = icc_buffer[18]; /* bNumberMessage */
+	      cmd_APDU[7] = icc_buffer[19]; /* wLangId L */
+	      cmd_APDU[8] = icc_buffer[20]; /* wLangId H */
+	      cmd_APDU[9] = icc_buffer[21]; /* bMsgIndex, bMsgIndex1 */
+	      cmd_APDU[10] = 0; /* bMsgIndex2 */
+	      cmd_APDU[11] = 0; /* bMsgIndex3 */
 	      chEvtSignal (gpg_thread, EV_VERIFY_CMD_AVAILABLE);
 	      next_state = ICC_STATE_EXECUTE;
 	    }
@@ -540,6 +548,17 @@ icc_handle_data (void)
 	      cmd_APDU[2] = icc_buffer[29 + num_msgs];
 	      cmd_APDU[3] = icc_buffer[30 + num_msgs];
 	      icc_data_size = 4;
+	      cmd_APDU[4] = icc_buffer[19]; /* bConfirmPIN */
+	      cmd_APDU[5] = icc_buffer[20]; /* bEntryValidationCondition */
+	      cmd_APDU[6] = icc_buffer[21]; /* bNumberMessage */
+	      cmd_APDU[7] = icc_buffer[22]; /* wLangId L */
+	      cmd_APDU[8] = icc_buffer[23]; /* wLangId H */
+	      cmd_APDU[9] = icc_buffer[24]; /* bMsgIndex, bMsgIndex1 */
+	      cmd_APDU[10] = cmd_APDU[11] = 0;
+	      if (num_msgs >= 2)
+		cmd_APDU[10] = icc_buffer[25]; /* bMsgIndex2 */
+	      if (num_msgs == 3)
+		cmd_APDU[11] = icc_buffer[26]; /* bMsgIndex3 */
 	      chEvtSignal (gpg_thread, EV_MODIFY_CMD_AVAILABLE);
 	      next_state = ICC_STATE_EXECUTE;
 	    }

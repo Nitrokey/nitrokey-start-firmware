@@ -1,3 +1,10 @@
+2011-12-07  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/openpgp.c (GPGthread): Handle bConfirmPIN parameter.
+
+	* src/usb-icc.c (icc_handle_data): Pass PC_to_RDR_Secure
+	information to gpg_thread using memory of cmd_APDU.
+
 2011-12-01  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/gnuk.h (EV_PINPAD_INPUT_DONE, EV_NOP, EV_CMD_AVAILABLE)

@@ -960,19 +960,28 @@ GPGthread (void *arg)
       else if (m == EV_MODIFY_CMD_AVAILABLE)
 	{
 #if defined(PINPAD_SUPPORT)
+	  uint8_t bConfirmPIN = cmd_APDU[4];
+	  uint8_t *p = &cmd_APDU[5];
+
 	  if (cmd_APDU[1] != INS_CHANGE_REFERENCE_DATA)
 	    {
 	      GPG_CONDITION_NOT_SATISFIED ();
 	      goto done;
 	    }
 
-	  pw_len = get_pinpad_input (PIN_INPUT_CURRENT);
-	  if (pw_len < 0)
+	  if ((bConfirmPIN & 2))	/* Require old PIN */
 	    {
-	      GPG_ERROR ();
-	      goto done;
+	      pw_len = get_pinpad_input (PIN_INPUT_CURRENT);
+	      if (pw_len < 0)
+		{
+		  GPG_ERROR ();
+		  goto done;
+		}
+	      memcpy (p, pin_input_buffer, pw_len);
+	      p += pw_len;
 	    }
-	  memcpy (&cmd_APDU[5], pin_input_buffer, pw_len);
+	  else
+	    pw_len = 0;
 
 	  newpw_len = get_pinpad_input (PIN_INPUT_NEW);
 	  if (newpw_len < 0)
@@ -980,20 +989,22 @@ GPGthread (void *arg)
 	      GPG_ERROR ();
 	      goto done;
 	    }
-	  memcpy (&cmd_APDU[5]+pw_len, pin_input_buffer, newpw_len);
+	  memcpy (p, pin_input_buffer, newpw_len);
 
-	  len = get_pinpad_input (PIN_INPUT_CONFIRM);
-	  if (len < 0)
+	  if ((bConfirmPIN & 1))	/* New PIN twice */
 	    {
-	      GPG_ERROR ();
-	      goto done;
-	    }
+	      len = get_pinpad_input (PIN_INPUT_CONFIRM);
+	      if (len < 0)
+		{
+		  GPG_ERROR ();
+		  goto done;
+		}
 
-	  if (len != newpw_len
-	      || memcmp (&cmd_APDU[5]+pw_len, pin_input_buffer, len) != 0)
-	    {
-	      GPG_SECURITY_FAILURE ();
-	      goto done;
+	      if (len != newpw_len || memcmp (p, pin_input_buffer, len) != 0)
+		{
+		  GPG_SECURITY_FAILURE ();
+		  goto done;
+		}
 	    }
 
 	  len = cmd_APDU[4] = pw_len + newpw_len;
