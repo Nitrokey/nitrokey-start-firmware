@@ -1,5 +1,11 @@
 2011-12-07  Niibe Yutaka  <gniibe@fsij.org>
 
+	* src/usb_desc.c (gnukDeviceDescriptor): Changed bcdUSB = 1.1.
+	Gnuk device conforms to USB 2.0 full speed device, but when it was
+	2.0, some OS informs users, "you can connect the device to 2.0
+	compliant hub so that it can have better bandwidth", which is not
+	the case for full speed device.
+
 	* src/openpgp.c (GPGthread): Handle bConfirmPIN parameter.
 
 	* src/usb-icc.c (icc_handle_data): Pass PC_to_RDR_Secure
