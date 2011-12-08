@@ -1,0 +1,491 @@
+#include "usb_lib.h"
+
+#include "config.h"
+#include "ch.h"
+#include "gnuk.h"
+#include "usb_msc.h"
+
+struct usb_endp_in {
+  const uint8_t *txbuf;	     /* Pointer to the transmission buffer. */
+  size_t txsize;	     /* Transmit transfer size remained. */
+  size_t txcnt;		     /* Transmitted bytes so far. */
+};
+
+struct usb_endp_out {
+  uint8_t *rxbuf;		/* Pointer to the receive buffer. */
+  size_t rxsize;		/* Requested receive transfer size. */
+  size_t rxcnt;			/* Received bytes so far.  */
+};
+
+static struct usb_endp_in ep6_in;
+static struct usb_endp_out ep7_out;
+
+static Thread *the_thread;
+
+#define ENDP_MAX_SIZE 64
+
+static uint8_t msc_state;
+
+
+static void usb_stall_transmit (void)
+{
+  SetEPTxStatus (ENDP6, EP_TX_STALL);
+}
+
+static void usb_start_transmit (const uint8_t *p, size_t n)
+{
+  size_t pkt_len = n > ENDP_MAX_SIZE ? ENDP_MAX_SIZE : n;
+
+  ep6_in.txbuf = p;
+  ep6_in.txsize = n;
+  ep6_in.txcnt = 0;
+
+  USB_SIL_Write (EP6_IN, (uint8_t *)ep6_in.txbuf, pkt_len);
+  SetEPTxValid (ENDP6);
+}
+
+/* "Data Transmitted" callback */
+void EP6_IN_Callback (void)
+{
+  size_t n = (size_t)GetEPTxCount (ENDP6);
+
+  ep6_in.txbuf += n;
+  ep6_in.txcnt += n;
+  ep6_in.txsize -= n;
+
+  if (ep6_in.txsize > 0)	/* More data to be sent */
+    {
+      if (ep6_in.txsize > ENDP_MAX_SIZE)
+	n = ENDP_MAX_SIZE;
+      else
+	n = ep6_in.txsize;
+      USB_SIL_Write (EP6_IN, (uint8_t *)ep6_in.txbuf, n);
+      SetEPTxValid (ENDP6);
+      return;
+    }
+
+  /* Transmit has been completed, notify the waiting thread */
+  switch (msc_state)
+    {
+    case MSC_SENDING_CSW:
+    case MSC_DATA_IN:
+      if (the_thread != NULL) {
+	Thread *tp;
+	chSysLockFromIsr ();
+	tp = the_thread;
+	the_thread = NULL;
+	tp->p_u.rdymsg = RDY_OK;
+	chSchReadyI (tp);
+	chSysUnlockFromIsr ();
+      }
+      break;
+    default:
+      break;
+    }
+}
+
+
+static void usb_stall_receive (void)
+{
+  SetEPRxStatus (ENDP7, EP_RX_STALL);
+}
+
+static void usb_start_receive (uint8_t *p, size_t n)
+{
+  ep7_out.rxbuf = p;
+  ep7_out.rxsize = n;
+  ep7_out.rxcnt = 0;
+  SetEPRxValid (ENDP7);
+}
+
+/* "Data Received" call back */
+void EP7_OUT_Callback (void)
+{
+  size_t n = (size_t)GetEPRxCount (ENDP7);
+  int err = 0;
+
+  if (n > ep7_out.rxsize)
+    {				/* buffer overflow */
+      err = 1;
+      SetEPRxCount (ENDP7, ep7_out.rxsize);
+    }
+
+  n = USB_SIL_Read (EP7_OUT, ep7_out.rxbuf);
+  ep7_out.rxbuf += n;
+  ep7_out.rxcnt += n;
+  ep7_out.rxsize -= n;
+
+  if (n == ENDP_MAX_SIZE && ep7_out.rxsize != 0)
+    {				/* More data to be received */
+      SetEPRxValid (ENDP7);
+      return;
+    }
+
+  /* Receiving has been completed, notify the waiting thread */
+  switch (msc_state)
+    {
+    case MSC_IDLE:
+    case MSC_DATA_OUT:
+      if (the_thread != NULL) {
+	Thread *tp;
+	chSysLockFromIsr ();
+	tp = the_thread;
+	the_thread = NULL;
+	tp->p_u.rdymsg = err? RDY_OK : RDY_RESET;
+	chSchReadyI (tp);
+	chSysUnlockFromIsr ();
+      }
+      break;
+    default:
+      break;
+    }
+}
+
+static const uint8_t lun_buf[4] = {0, 0, 0, 0}; /* One drives: 0 */
+
+static const uint8_t scsi_inquiry_data_00[] = { 0, 0, 0, 0, 0 };
+
+static const uint8_t scsi_inquiry_data[] = {
+  0x00,				/* Direct Access Device.      */
+  0x80,				/* RMB = 1: Removable Medium. */
+  0x05,				/* Version: SPC-3.            */
+  0x02,				/* Response format: SPC-3.    */
+  36 - 4,			/* Additional Length.         */
+  0x00,
+  0x00,
+  0x00,
+				/* Vendor Identification */
+  'F', 'S', 'I', 'J', ' ', ' ', ' ', ' ',
+				/* Product Identification */
+  'V', 'i', 'r', 't', 'u', 'a', 'l', ' ',
+  'D', 'i', 's', 'k', ' ', ' ', ' ', ' ',
+				/* Product Revision Level */
+  '1', '.', '0', ' '
+};
+
+static uint8_t scsi_sense_data_desc[] = {
+  0x72,			  /* Response Code: descriptor, current */
+  0x02,			  /* Sense Key */
+  0x3a,			  /* ASC (additional sense code) */
+  0x00,			  /* ASCQ (additional sense code qualifier) */
+  0x00, 0x00, 0x00,
+  0x00,			  /* Additional Sense Length */
+};
+
+static uint8_t scsi_sense_data_fixed[] = {
+  0x70,			  /* Response Code: fixed, current */
+  0x00,
+  0x02,			  /* Sense Key */
+  0x00, 0x00, 0x00, 0x00,
+  0x0a,			  /* Additional Sense Length */
+  0x00, 0x00, 0x00, 0x00,
+  0x3a,			  /* ASC (additional sense code) */
+  0x00,			  /* ASCQ (additional sense code qualifier) */
+  0x00,
+  0x00, 0x00, 0x00,
+};
+
+static void set_scsi_sense_data(uint8_t sense_key, uint8_t asc) {
+  scsi_sense_data_desc[1] = scsi_sense_data_fixed[2] = sense_key;
+  scsi_sense_data_desc[2] = scsi_sense_data_fixed[12] = asc;
+}
+
+
+static uint8_t buf[512];
+
+static uint8_t media_available;
+static uint8_t media_changed;
+
+void msc_media_insert_change (int available)
+{
+  media_available = available;
+  media_changed = 1;
+  if (available)
+    set_scsi_sense_data (0x06, 0x28); /* UNIT_ATTENTION */
+  else
+    set_scsi_sense_data (0x02, 0x3a); /* NOT_READY */
+}
+
+
+static uint8_t scsi_read_format_capacities (uint32_t *nblocks,
+					    uint32_t *secsize)
+{
+  *nblocks = 68;
+  *secsize = 512;
+  if (media_available)
+    return 2; /* Formatted Media.*/
+  else
+    return 3; /* No Media.*/
+}
+
+static struct CBW CBW;
+
+static struct CSW CSW;
+
+int msc_recv_cbw (void)
+{
+  msg_t msg;
+
+  chSysLock();
+  msc_state = MSC_IDLE;
+  the_thread = chThdSelf ();
+  usb_start_receive ((uint8_t *)&CBW, sizeof CBW);
+  chSchGoSleepTimeoutS (THD_STATE_SUSPENDED, MS2ST (1000));
+  msg = chThdSelf ()->p_u.rdymsg;
+  chSysUnlock ();
+  if (msg == RDY_OK)
+    return 0;
+  else
+    return -1;
+}
+
+static int msc_recv_data (void)
+{
+  msg_t msg;
+
+  chSysLock ();
+  msc_state = MSC_DATA_OUT;
+  the_thread = chThdSelf ();
+  usb_start_receive (buf, 512);
+  chSchGoSleepS (THD_STATE_SUSPENDED);
+  msg = chThdSelf ()->p_u.rdymsg;
+  chSysUnlock ();
+  return 0;
+}
+
+static void msc_send_data (const uint8_t *p, size_t n)
+{
+  msg_t msg;
+
+  chSysLock ();
+  msc_state = MSC_DATA_IN;
+  the_thread = chThdSelf ();
+  usb_start_transmit (p, n);
+  chSchGoSleepS (THD_STATE_SUSPENDED);
+  msg = chThdSelf ()->p_u.rdymsg;
+  CSW.dCSWDataResidue -= (uint32_t)n;
+  chSysUnlock();
+}
+
+static void msc_send_result (const uint8_t *p, size_t n)
+{
+  msg_t msg;
+
+  if (p != NULL)
+    {
+      if (n > CBW.dCBWDataTransferLength)
+	n = CBW.dCBWDataTransferLength;
+
+      CSW.dCSWDataResidue = CBW.dCBWDataTransferLength;
+      msc_send_data (p, n);
+      CSW.bCSWStatus = MSC_CSW_STATUS_PASSED;
+    }
+
+  chSysLock ();
+  msc_state = MSC_SENDING_CSW;
+  the_thread = chThdSelf ();
+  usb_start_transmit ((uint8_t *)&CSW, sizeof CSW);
+  chSchGoSleepS (THD_STATE_SUSPENDED);
+  msg = chThdSelf ()->p_u.rdymsg;
+  chSysUnlock ();
+}
+
+
+void msc_handle_err (int err)
+{
+  if (err == 0)
+    {
+      msc_state = MSC_ERROR;
+      chSysLock ();
+      usb_stall_receive ();
+      chSysUnlock ();
+    }
+  else
+    {
+      msc_state = MSC_ERROR;
+      chSysLock ();
+      usb_stall_transmit ();
+      usb_stall_receive ();
+      chSysUnlock ();
+    }
+}
+
+int msc_handle_cbw (void)
+{
+  size_t n;
+  uint32_t nblocks, secsize;
+  uint8_t lun;
+  uint32_t lba;
+
+  n = ep7_out.rxcnt;
+
+  if ((n != sizeof (struct CBW)) || (CBW.dCBWSignature != MSC_CBW_SIGNATURE))
+    return 0;
+
+  CSW.dCSWTag = CBW.dCBWTag;
+  switch (CBW.CBWCB[0]) {
+  case SCSI_REQUEST_SENSE:
+    if (CBW.CBWCB[1] & 0x01) /* DESC */
+      msc_send_result ((uint8_t *)&scsi_sense_data_desc,
+		       sizeof scsi_sense_data_desc);
+    else
+      msc_send_result ((uint8_t *)&scsi_sense_data_fixed,
+		       sizeof scsi_sense_data_fixed);
+    if (media_changed && media_available)
+      {
+	media_changed = 0;
+	set_scsi_sense_data (0x00, 0x00);
+      }
+    return 1;
+  case SCSI_INQUIRY:
+    if (CBW.CBWCB[1] & 0x01) /* EVPD */
+      /* assume page 00 */
+      msc_send_result ((uint8_t *)&scsi_inquiry_data_00,
+		       sizeof scsi_inquiry_data_00);
+    else
+      msc_send_result ((uint8_t *)&scsi_inquiry_data,
+		       sizeof scsi_inquiry_data);
+    return 1;
+  case SCSI_READ_FORMAT_CAPACITIES:
+    buf[8]  = scsi_read_format_capacities (&nblocks, &secsize);
+    buf[0]  = buf[1] = buf[2] = 0;
+    buf[3]  = 8;
+    buf[4]  = (uint8_t)(nblocks >> 24);
+    buf[5]  = (uint8_t)(nblocks >> 16);
+    buf[6]  = (uint8_t)(nblocks >> 8);
+    buf[7]  = (uint8_t)(nblocks >> 0);
+    buf[9]  = (uint8_t)(secsize >> 16);
+    buf[10] = (uint8_t)(secsize >> 8);
+    buf[11] = (uint8_t)(secsize >> 0);
+    msc_send_result (buf, 12);
+    return 1;
+  case SCSI_TEST_UNIT_READY:
+    if (media_available == 0 || media_changed)
+      {
+	CSW.bCSWStatus = MSC_CSW_STATUS_FAILED;
+	CSW.dCSWDataResidue = 0;
+	msc_send_result (NULL, 0);
+	return 1;
+      }
+    /* fall through */
+  case SCSI_SYNCHRONIZE_CACHE:
+  case SCSI_VERIFY10:
+  case SCSI_START_STOP_UNIT:
+  case SCSI_ALLOW_MEDIUM_REMOVAL:
+    CSW.bCSWStatus = MSC_CSW_STATUS_PASSED;
+    CSW.dCSWDataResidue = CBW.dCBWDataTransferLength;
+    msc_send_result (NULL, 0);
+    return 1;
+  case SCSI_MODE_SENSE6:
+    buf[0] = 0x03;
+    buf[1] = buf[2] = buf[3] = 0;
+    msc_send_result (buf, 4);
+    return 1;
+  case SCSI_READ_CAPACITY10:
+    scsi_read_format_capacities (&nblocks, &secsize);
+    buf[0]  = (uint8_t)((nblocks - 1) >> 24);
+    buf[1]  = (uint8_t)((nblocks - 1) >> 16);
+    buf[2]  = (uint8_t)((nblocks - 1) >> 8);
+    buf[3]  = (uint8_t)((nblocks - 1) >> 0);
+    buf[4]  = (uint8_t)(secsize >> 24);
+    buf[5]  = (uint8_t)(secsize >> 16);
+    buf[6] = (uint8_t)(secsize >> 8);
+    buf[7] = (uint8_t)(secsize >> 0);
+    msc_send_result (buf, 8);
+    return 1;
+  case SCSI_READ10:
+  case SCSI_WRITE10:
+    break;
+  default:
+    if (CBW.dCBWDataTransferLength == 0)
+      {
+	CSW.bCSWStatus = MSC_CSW_STATUS_FAILED;
+	CSW.dCSWDataResidue = 0;
+	msc_send_result (NULL, 0);
+	return 1;
+      }
+    return -1;
+  }
+
+  lun = CBW.bCBWLUN;
+  lba = (CBW.CBWCB[2] << 24) | (CBW.CBWCB[3] << 16)
+      | (CBW.CBWCB[4] <<  8) | CBW.CBWCB[5];
+
+  /* Transfer direction.*/
+  if (CBW.bmCBWFlags & 0x80)
+    {
+      /* IN, Device to Host.*/
+      msc_state = MSC_DATA_IN;
+      if (CBW.CBWCB[0] == SCSI_READ10)
+	{
+	  const uint8_t *p;
+
+	  CSW.dCSWDataResidue = 0;
+	  while (1)
+	    {
+	      if (CBW.CBWCB[7] == 0 && CBW.CBWCB[8] == 0)
+		{
+		  CSW.bCSWStatus = MSC_CSW_STATUS_PASSED;
+		  break;
+		}
+
+	      if ((p = msc_scsi_read (lun, lba)))
+		{
+		  msc_send_data (p, 512);
+		  if (++CBW.CBWCB[5] == 0)
+		    if (++CBW.CBWCB[4] == 0)
+		      if (++CBW.CBWCB[3] == 0)
+			++CBW.CBWCB[2];
+		  if (CBW.CBWCB[8]-- == 0)
+		    CBW.CBWCB[7]--;
+		  CSW.dCSWDataResidue += 512;
+		}
+	      else
+		{
+		  CSW.bCSWStatus = MSC_CSW_STATUS_FAILED;
+		  break;
+		}
+	    }
+
+	  msc_send_result (NULL, 0);
+	}
+    }
+  else
+    {
+      /* OUT, Host to Device.*/
+      if (CBW.CBWCB[0] == SCSI_WRITE10)
+	{
+	  CSW.dCSWDataResidue = CBW.dCBWDataTransferLength;
+
+	  while (1)
+	    {
+	      if (CBW.CBWCB[8] == 0 && CBW.CBWCB[7] == 0)
+		{
+		  CSW.bCSWStatus = MSC_CSW_STATUS_PASSED;
+		  break;
+		}
+
+	      msc_recv_data ();
+	      if (msc_scsi_write (lun, lba, buf, 512))
+		{
+		  if (++CBW.CBWCB[5] == 0)
+		    if (++CBW.CBWCB[4] == 0)
+		      if (++CBW.CBWCB[3] == 0)
+			++CBW.CBWCB[2];
+		  if (CBW.CBWCB[8]-- == 0)
+		    CBW.CBWCB[7]--;
+		  CSW.dCSWDataResidue -= 512;
+		}
+	      else
+		{
+		  CSW.bCSWStatus = MSC_CSW_STATUS_FAILED;
+		  break;
+		}
+	    }
+
+	  msc_send_result (NULL, 0);
+	}
+    }
+
+  return 1;
+}

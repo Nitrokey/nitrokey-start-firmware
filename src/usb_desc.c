@@ -29,13 +29,28 @@ static const uint8_t gnukDeviceDescriptor[] = {
   0x01    /* bNumConfigurations */
 };
 
+#define ICC_TOTAL_LENGTH (9+9+54+7+7)
+#define ICC_NUM_INTERFACES 1
+
 #ifdef ENABLE_VIRTUAL_COM_PORT
-#define W_TOTAL_LENGTH (9+9+54+7+7+9+5+5+4+5+7+9+7+7)
-#define NUM_INTERFACES 3	/* two for CDC, one for GPG */
+#define VCOM_TOTAL_LENGTH (9+5+5+4+5+7+9+7+7)
+#define VCOM_NUM_INTERFACES 2
 #else
-#define W_TOTAL_LENGTH (9+9+54+7+7)
-#define NUM_INTERFACES 1	/* GPG only */
+#define VCOM_TOTAL_LENGTH 0
+#define VCOM_NUM_INTERFACES 0
 #endif
+
+#ifdef PINPAD_DND_SUPPORT
+#define MSC_TOTAL_LENGTH (9+7+7)
+#define MSC_NUM_INTERFACES 1
+#else
+#define MSC_TOTAL_LENGTH 0
+#define MSC_NUM_INTERFACES 0
+#endif
+
+#define W_TOTAL_LENGTH (ICC_TOTAL_LENGTH+VCOM_TOTAL_LENGTH+MSC_TOTAL_LENGTH)
+#define NUM_INTERFACES (ICC_NUM_INTERFACES+VCOM_NUM_INTERFACES+MSC_NUM_INTERFACES)
+
 
 /* Configuation Descriptor */
 static const uint8_t gnukConfigDescriptor[] = {
@@ -105,7 +120,7 @@ static const uint8_t gnukConfigDescriptor[] = {
   0xff,			  /* bClassEnvelope: */
   0, 0,			  /* wLCDLayout: FIXED VALUE */
 #if defined(PINPAD_SUPPORT)
-#if defined(PINPAD_CIR_SUPPORT)
+#if defined(PINPAD_CIR_SUPPORT) || defined(PINPAD_DND_SUPPORT)
   1,			  /* bPinSupport: with PIN pad (verify) */
 #elif defined(PINPAD_DIAL_SUPPORT)
   3,			  /* bPinSupport: with PIN pad (verify, modify) */
@@ -193,7 +208,40 @@ static const uint8_t gnukConfigDescriptor[] = {
   0x83,				    /* bEndpointAddress: (IN3) */
   0x02,				    /* bmAttributes: Bulk */
   VIRTUAL_COM_PORT_DATA_SIZE, 0x00, /* wMaxPacketSize: */
-  0x00				    /* bInterval */
+  0x00,				    /* bInterval */
+#endif
+#ifdef PINPAD_DND_SUPPORT
+  /* Interface Descriptor.*/
+  9,			      /* bLength: Interface Descriptor size */
+  USB_INTERFACE_DESCRIPTOR_TYPE, /* bDescriptorType: Interface */
+#ifdef ENABLE_VIRTUAL_COM_PORT
+  0x03,				/* bInterfaceNumber.                */
+#else
+  0x01,				/* bInterfaceNumber.                */
+#endif
+  0x00,				/* bAlternateSetting.               */
+  0x02,				/* bNumEndpoints.                   */
+  0x08,				/* bInterfaceClass (Mass Stprage).  */
+  0x06,				/* bInterfaceSubClass (SCSI
+				   transparent command set, MSCO
+				   chapter 2).                      */
+  0x50,				/* bInterfaceProtocol (Bulk-Only
+				   Mass Storage, MSCO chapter 3).  */
+  0x00,				/* iInterface.                      */
+  /* Endpoint Descriptor.*/
+  7,			       /* bLength: Endpoint Descriptor size */
+  USB_ENDPOINT_DESCRIPTOR_TYPE,	   /* bDescriptorType: Endpoint */
+  0x86,				   /* bEndpointAddress: (IN6)   */
+  0x02,				/* bmAttributes (Bulk).             */
+  0x40, 0x00,			/* wMaxPacketSize.                  */
+  0x00,				/* bInterval (ignored for bulk).    */
+  /* Endpoint Descriptor.*/
+  7,			       /* bLength: Endpoint Descriptor size */
+  USB_ENDPOINT_DESCRIPTOR_TYPE,	   /* bDescriptorType: Endpoint */
+  0x07,				   /* bEndpointAddress: (OUT7)    */
+  0x02,			 /* bmAttributes (Bulk).             */
+  0x40, 0x00,		 /* wMaxPacketSize.                  */
+  0x00,         /* bInterval (ignored for bulk).    */
 #endif
 };
 
