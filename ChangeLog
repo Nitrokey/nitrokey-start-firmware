@@ -1,3 +1,9 @@
+2011-12-08  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/usb-icc.c: Not include "usb_desc.h".
+
+	* src/usb_endp.c (EP5_OUT_Callback): Fix minor bug.
+
 2011-12-07  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/usb_desc.c (gnukDeviceDescriptor): Changed bcdUSB = 1.1.

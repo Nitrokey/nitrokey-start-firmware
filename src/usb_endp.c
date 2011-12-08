@@ -18,5 +18,5 @@ EP3_IN_Callback(void)
 void
 EP5_OUT_Callback(void)
 {
-  SetEPRxValid (ENDP3);
+  SetEPRxValid (ENDP5);
 }
