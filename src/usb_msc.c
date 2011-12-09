@@ -193,17 +193,22 @@ static void set_scsi_sense_data(uint8_t sense_key, uint8_t asc) {
 
 static uint8_t buf[512];
 
-static uint8_t media_available;
-static uint8_t media_changed;
+static uint8_t contingent_allegiance;
+static uint8_t keep_contingent_allegiance;
+
+uint8_t media_available;
 
 void msc_media_insert_change (int available)
 {
+  contingent_allegiance = 1;
   media_available = available;
-  media_changed = 1;
   if (available)
     set_scsi_sense_data (0x06, 0x28); /* UNIT_ATTENTION */
   else
-    set_scsi_sense_data (0x02, 0x3a); /* NOT_READY */
+    {
+      set_scsi_sense_data (0x02, 0x3a); /* NOT_READY */
+      keep_contingent_allegiance = 1;
+    }
 }
 
 
@@ -222,22 +227,6 @@ static struct CBW CBW;
 
 static struct CSW CSW;
 
-int msc_recv_cbw (void)
-{
-  msg_t msg;
-
-  chSysLock();
-  msc_state = MSC_IDLE;
-  the_thread = chThdSelf ();
-  usb_start_receive ((uint8_t *)&CBW, sizeof CBW);
-  chSchGoSleepTimeoutS (THD_STATE_SUSPENDED, MS2ST (1000));
-  msg = chThdSelf ()->p_u.rdymsg;
-  chSysUnlock ();
-  if (msg == RDY_OK)
-    return 0;
-  else
-    return -1;
-}
 
 static int msc_recv_data (void)
 {
@@ -291,36 +280,42 @@ static void msc_send_result (const uint8_t *p, size_t n)
 }
 
 
-void msc_handle_err (int err)
-{
-  if (err == 0)
-    {
-      msc_state = MSC_ERROR;
-      chSysLock ();
-      usb_stall_receive ();
-      chSysUnlock ();
-    }
-  else
-    {
-      msc_state = MSC_ERROR;
-      chSysLock ();
-      usb_stall_transmit ();
-      usb_stall_receive ();
-      chSysUnlock ();
-    }
-}
-
-int msc_handle_cbw (void)
+void msc_handle_command (void)
 {
   size_t n;
   uint32_t nblocks, secsize;
-  uint8_t lun;
   uint32_t lba;
+  int r;
+  msg_t msg;
+
+  chSysLock();
+  msc_state = MSC_IDLE;
+  the_thread = chThdSelf ();
+  usb_start_receive ((uint8_t *)&CBW, sizeof CBW);
+  chSchGoSleepTimeoutS (THD_STATE_SUSPENDED, MS2ST (1000));
+  msg = chThdSelf ()->p_u.rdymsg;
+  chSysUnlock ();
+
+  if (msg != RDY_OK)
+    {
+      /* Error occured, ignore the request and go into error state */
+      msc_state = MSC_ERROR;
+      chSysLock ();
+      usb_stall_receive ();
+      chSysUnlock ();
+      return;
+    }
 
   n = ep7_out.rxcnt;
 
   if ((n != sizeof (struct CBW)) || (CBW.dCBWSignature != MSC_CBW_SIGNATURE))
-    return 0;
+    {
+      msc_state = MSC_ERROR;
+      chSysLock ();
+      usb_stall_receive ();
+      chSysUnlock ();
+      return;
+    }
 
   CSW.dCSWTag = CBW.dCBWTag;
   switch (CBW.CBWCB[0]) {
@@ -331,12 +326,13 @@ int msc_handle_cbw (void)
     else
       msc_send_result ((uint8_t *)&scsi_sense_data_fixed,
 		       sizeof scsi_sense_data_fixed);
-    if (media_changed && media_available)
+    /* After the error is reported, clear it, if it's .  */
+    if (!keep_contingent_allegiance)
       {
-	media_changed = 0;
+	contingent_allegiance = 0;
 	set_scsi_sense_data (0x00, 0x00);
       }
-    return 1;
+    return;
   case SCSI_INQUIRY:
     if (CBW.CBWCB[1] & 0x01) /* EVPD */
       /* assume page 00 */
@@ -345,7 +341,7 @@ int msc_handle_cbw (void)
     else
       msc_send_result ((uint8_t *)&scsi_inquiry_data,
 		       sizeof scsi_inquiry_data);
-    return 1;
+    return;
   case SCSI_READ_FORMAT_CAPACITIES:
     buf[8]  = scsi_read_format_capacities (&nblocks, &secsize);
     buf[0]  = buf[1] = buf[2] = 0;
@@ -358,14 +354,14 @@ int msc_handle_cbw (void)
     buf[10] = (uint8_t)(secsize >> 8);
     buf[11] = (uint8_t)(secsize >> 0);
     msc_send_result (buf, 12);
-    return 1;
+    return;
   case SCSI_TEST_UNIT_READY:
-    if (media_available == 0 || media_changed)
+    if (contingent_allegiance)
       {
 	CSW.bCSWStatus = MSC_CSW_STATUS_FAILED;
 	CSW.dCSWDataResidue = 0;
 	msc_send_result (NULL, 0);
-	return 1;
+	return;
       }
     /* fall through */
   case SCSI_SYNCHRONIZE_CACHE:
@@ -375,12 +371,12 @@ int msc_handle_cbw (void)
     CSW.bCSWStatus = MSC_CSW_STATUS_PASSED;
     CSW.dCSWDataResidue = CBW.dCBWDataTransferLength;
     msc_send_result (NULL, 0);
-    return 1;
+    return;
   case SCSI_MODE_SENSE6:
     buf[0] = 0x03;
     buf[1] = buf[2] = buf[3] = 0;
     msc_send_result (buf, 4);
-    return 1;
+    return;
   case SCSI_READ_CAPACITY10:
     scsi_read_format_capacities (&nblocks, &secsize);
     buf[0]  = (uint8_t)((nblocks - 1) >> 24);
@@ -392,7 +388,7 @@ int msc_handle_cbw (void)
     buf[6] = (uint8_t)(secsize >> 8);
     buf[7] = (uint8_t)(secsize >> 0);
     msc_send_result (buf, 8);
-    return 1;
+    return;
   case SCSI_READ10:
   case SCSI_WRITE10:
     break;
@@ -402,12 +398,19 @@ int msc_handle_cbw (void)
 	CSW.bCSWStatus = MSC_CSW_STATUS_FAILED;
 	CSW.dCSWDataResidue = 0;
 	msc_send_result (NULL, 0);
-	return 1;
+	return;
       }
-    return -1;
+    else
+      {
+	msc_state = MSC_ERROR;
+	chSysLock ();
+	usb_stall_transmit ();
+	usb_stall_receive ();
+	chSysUnlock ();
+	return;
+      }
   }
 
-  lun = CBW.bCBWLUN;
   lba = (CBW.CBWCB[2] << 24) | (CBW.CBWCB[3] << 16)
       | (CBW.CBWCB[4] <<  8) | CBW.CBWCB[5];
 
@@ -429,7 +432,7 @@ int msc_handle_cbw (void)
 		  break;
 		}
 
-	      if ((p = msc_scsi_read (lun, lba)))
+	      if ((r = msc_scsi_read (lba, &p)) == 0)
 		{
 		  msc_send_data (p, 512);
 		  if (++CBW.CBWCB[5] == 0)
@@ -443,6 +446,11 @@ int msc_handle_cbw (void)
 	      else
 		{
 		  CSW.bCSWStatus = MSC_CSW_STATUS_FAILED;
+		  contingent_allegiance = 1;
+		  if (r == SCSI_ERROR_NOT_READY)
+		    set_scsi_sense_data (SCSI_ERROR_NOT_READY, 0x3a);
+		  else
+		    set_scsi_sense_data (r, 0x00);
 		  break;
 		}
 	    }
@@ -466,7 +474,7 @@ int msc_handle_cbw (void)
 		}
 
 	      msc_recv_data ();
-	      if (msc_scsi_write (lun, lba, buf, 512))
+	      if ((r = msc_scsi_write (lba, buf, 512)) == 0)
 		{
 		  if (++CBW.CBWCB[5] == 0)
 		    if (++CBW.CBWCB[4] == 0)
@@ -479,6 +487,11 @@ int msc_handle_cbw (void)
 	      else
 		{
 		  CSW.bCSWStatus = MSC_CSW_STATUS_FAILED;
+		  contingent_allegiance = 1;
+		  if (r == SCSI_ERROR_NOT_READY)
+		    set_scsi_sense_data (SCSI_ERROR_NOT_READY, 0x3a);
+		  else
+		    set_scsi_sense_data (r, 0x00);
 		  break;
 		}
 	    }
@@ -486,6 +499,4 @@ int msc_handle_cbw (void)
 	  msc_send_result (NULL, 0);
 	}
     }
-
-  return 1;
 }

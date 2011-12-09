@@ -43,3 +43,10 @@ struct CSW {
   uint32_t dCSWDataResidue;
   uint8_t bCSWStatus;
 } __attribute__((packed));
+
+#define SCSI_ERROR_NOT_READY 2
+#define SCSI_ERROR_ILLEAGAL_REQUEST 5
+#define SCSI_ERROR_UNIT_ATTENTION 6
+#define SCSI_ERROR_DATA_PROTECT 7
+
+extern uint8_t media_available;
