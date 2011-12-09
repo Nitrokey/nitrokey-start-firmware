@@ -86,8 +86,8 @@ Configuration:
 			   STM8S_DISCOVERY
 			   STBEE
   --enable-debug	debug with virtual COM port	[no]
-  --enable-pinpad={cir,dial}
-			PIN input device support	[no]
+  --enable-pinpad={dnd,cir,dial}
+			PIN entry support		[no]
   --with-dfu		build image for DFU 		[<target specific>]
 EOF
   exit 0
@@ -159,10 +159,10 @@ if test "$pinpad" = "no"; then
   PINPAD_MORE_DEFINE=""
   echo "PIN pad option disabled"
 elif test "$pinpad" = "yes"; then
-  PINPAD_MAKE_OPTION="ENABLE_PINPAD=cir"
+  PINPAD_MAKE_OPTION="ENABLE_PINPAD=dnd"
   PINPAD_DEFINE="#define PINPAD_SUPPORT 1"
-  PINPAD_MORE_DEFINE="#define PINPAD_CIR_SUPPORT 1"
-  echo "PIN pad option enabled (cir)"
+  PINPAD_MORE_DEFINE="#define PINPAD_DND_SUPPORT 1"
+  echo "PIN pad option enabled (dnd)"
 else
   PINPAD_MAKE_OPTION="ENABLE_PINPAD=$pinpad"
   PINPAD_DEFINE="#define PINPAD_SUPPORT 1"

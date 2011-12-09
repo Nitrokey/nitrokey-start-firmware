@@ -36,6 +36,10 @@
 #include "usb-cdc-vport.c"
 #endif
 
+#ifdef PINPAD_DND_SUPPORT
+#include "usb_msc.h"
+#endif
+
 
 static void
 gnuk_device_init (void)
@@ -247,11 +251,24 @@ gnuk_data_rates (uint16_t len)
   return (uint8_t *)data_rate_table;
 }
 
+static const uint8_t lun_table[] = { 0, 0, 0, 0, };
+static uint8_t *
+msc_lun_info (uint16_t len)
+{
+  if (len == 0)
+    {
+      pInformation->Ctrl_Info.Usb_wLength = sizeof (lun_table);
+      return NULL;
+    }
+
+  return (uint8_t *)lun_table;
+}
+
 static RESULT
 gnuk_setup_with_data (uint8_t RequestNo)
 {
-  if (Type_Recipient == (CLASS_REQUEST | INTERFACE_RECIPIENT))
-    if (pInformation->USBwIndex0 == 0) /* Interface */
+  if (Type_Recipient == (CLASS_REQUEST | INTERFACE_RECIPIENT)) /* Interface */
+    if (pInformation->USBwIndex0 == 0)
       {
 	if (RequestNo == USB_CCID_REQ_GET_CLOCK_FREQUENCIES)
 	  {
@@ -270,23 +287,41 @@ gnuk_setup_with_data (uint8_t RequestNo)
 	else
 	  return USB_UNSUPPORT;
       }
-    else
+#if defined(PINPAD_DND_SUPPORT)
+# if defined(ENABLE_VIRTUAL_COM_PORT)
+    else if (pInformation->USBwIndex0 == 2)
+      return Virtual_Com_Port_Data_Setup (RequestNo);
+    else if (pInformation->USBwIndex0 == 3)
+# else
+    else if (pInformation->USBwIndex0 == 1)
+# endif
       {
-#if defined(ENABLE_VIRTUAL_COM_PORT)
-	return Virtual_Com_Port_Data_Setup (RequestNo);
-#else
-	return USB_UNSUPPORT;
-#endif
+	if (RequestNo == MSC_GET_MAX_LUN_COMMAND)
+	  {
+	    pInformation->Ctrl_Info.CopyData = msc_lun_info;
+	    pInformation->Ctrl_Info.Usb_wOffset = 0;
+	    msc_lun_info (0);
+	    return USB_SUCCESS;
+	  }
+	else
+	  return USB_UNSUPPORT;
       }
+#elif defined(ENABLE_VIRTUAL_COM_PORT)
+    else if (pInformation->USBwIndex0 == 2)
+      return Virtual_Com_Port_Data_Setup (RequestNo);
+#endif
+    else
+	return USB_UNSUPPORT;
   else
     return USB_UNSUPPORT;
 }
 
+
 static RESULT
 gnuk_setup_with_nodata (uint8_t RequestNo)
 {
-  if (Type_Recipient == (CLASS_REQUEST | INTERFACE_RECIPIENT))
-    if (pInformation->USBwIndex0 == 0) /* Interface */
+  if (Type_Recipient == (CLASS_REQUEST | INTERFACE_RECIPIENT)) /* Interface */
+    if (pInformation->USBwIndex0 == 0)
       {
 	if (RequestNo == USB_CCID_REQ_ABORT)
 	  /* wValue: bSeq, bSlot */
@@ -295,14 +330,29 @@ gnuk_setup_with_nodata (uint8_t RequestNo)
 	else
 	  return USB_UNSUPPORT;
       }
-    else
+#if defined(PINPAD_DND_SUPPORT)
+# if defined(ENABLE_VIRTUAL_COM_PORT)
+    else if (pInformation->USBwIndex0 == 2)
+      return Virtual_Com_Port_NoData_Setup (RequestNo);
+    else if (pInformation->USBwIndex0 == 3)
+# else
+    else if (pInformation->USBwIndex0 == 1)
+# endif
       {
-#if defined(ENABLE_VIRTUAL_COM_PORT)
-	return Virtual_Com_Port_NoData_Setup (RequestNo);
-#else
-	return USB_UNSUPPORT;
-#endif
+	if (RequestNo == MSC_MASS_STORAGE_RESET_COMMAND)
+	  {
+	    /* Should call resetting MSC thread, something like msc_reset() */
+	    return USB_SUCCESS;
+	  }
+	else
+	  return USB_UNSUPPORT;
       }
+#elif defined(ENABLE_VIRTUAL_COM_PORT)
+    else if (pInformation->USBwIndex0 == 2)
+      return Virtual_Com_Port_NoData_Setup (RequestNo);
+#endif
+    else
+      return USB_UNSUPPORT;
   else
     return USB_UNSUPPORT;
 }

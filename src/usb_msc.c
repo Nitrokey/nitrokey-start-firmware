@@ -141,8 +141,6 @@ void EP7_OUT_Callback (void)
     }
 }
 
-static const uint8_t lun_buf[4] = {0, 0, 0, 0}; /* One drives: 0 */
-
 static const uint8_t scsi_inquiry_data_00[] = { 0, 0, 0, 0, 0 };
 
 static const uint8_t scsi_inquiry_data[] = {
@@ -278,6 +276,7 @@ static void msc_send_result (const uint8_t *p, size_t n)
   msg = chThdSelf ()->p_u.rdymsg;
   chSysUnlock ();
 }
+
 
 
 void msc_handle_command (void)
@@ -499,4 +498,23 @@ void msc_handle_command (void)
 	  msc_send_result (NULL, 0);
 	}
     }
+}
+
+static msg_t
+msc_main (void *arg)
+{
+  (void)arg;
+
+  while (1)
+    msc_handle_command ();
+
+  return 0;
+}
+
+static WORKING_AREA(wa_msc_thread, 128);
+
+void msc_init (void)
+{
+  chThdCreateStatic (wa_msc_thread, sizeof (wa_msc_thread),
+		     NORMALPRIO, msc_main, NULL);
 }

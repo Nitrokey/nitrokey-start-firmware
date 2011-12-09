@@ -439,13 +439,6 @@ main (int argc, char **argv)
 		  "Hello world\r\n\r\n", 35+21+15);
 	}
 #endif
-      if (msc_recv_cbw () == 0)
-	{
-	  int r = msc_handle_cbw ();
-
-	  if (r != 1)
-	    msc_handle_err (r);
-	}
     }
 
   return 0;

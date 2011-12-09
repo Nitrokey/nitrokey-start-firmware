@@ -1,10 +1,65 @@
-#include <stdint.h>
-
 #include "config.h"
 #include "ch.h"
 #include "board.h"
+#include "gnuk.h"
+#include "usb_msc.h"
 
-extern Thread *main_thread;
+uint8_t pin_input_buffer[MAX_PIN_CHARS];
+uint8_t pin_input_len;
+
+static Thread *pin_thread;
+
+/* 
+ * Let user input PIN string.
+ * Return length of the string.
+ * The string itself is in PIN_INPUT_BUFFER.
+ */
+int
+pinpad_getline (int msg_code, systime_t timeout)
+{
+  msg_t msg;
+
+  (void)msg_code;
+
+
+  DEBUG_INFO (">>>\r\n");
+
+  pin_input_len = 0;
+
+  while (1)
+    {
+      chSysLock ();
+      msc_media_insert_change (1);
+      pin_thread = chThdSelf ();
+      chSchGoSleepS (THD_STATE_SUSPENDED);
+      msg = chThdSelf ()->p_u.rdymsg;
+      chSysUnlock ();
+
+      led_blink (0);
+      if (msg == 1)
+	break;
+    }
+
+  msc_media_insert_change (0);
+
+  return pin_input_len;
+}
+
+static void pinpad_input (void)
+{
+  chSysLock ();
+  pin_thread->p_u.rdymsg = 0;
+  chSchReadyI (pin_thread);
+  chSysUnlock ();
+}
+
+static void pinpad_finish_entry (void)
+{
+  chSysLock ();
+  pin_thread->p_u.rdymsg = 1;
+  chSchReadyI (pin_thread);
+  chSysUnlock ();
+}
 
 #define TOTAL_SECTOR 68
 
@@ -195,8 +250,6 @@ msc_scsi_read (uint32_t lba, const uint8_t **sector_p)
     }
 }
 
-uint8_t datetime_string[29];
-static uint8_t *dts = datetime_string;
 
 static void parse_directory_sector (const uint8_t *p, uint8_t index)
 {
@@ -206,6 +259,8 @@ static void parse_directory_sector (const uint8_t *p, uint8_t index)
 			   0x20, 0x20, 0x20 };
   uint8_t child;
   uint8_t *p_orig = p;
+  int input = 0;
+  int num_children = 0;
 
   if (index != 0)
     {
@@ -218,24 +273,38 @@ static void parse_directory_sector (const uint8_t *p, uint8_t index)
       cluster_no = p[26] | (p[27] << 8);
       dest_index = CLUSTER_NO_TO_FOLDER_INDEX (cluster_no);
 
-      if (dest_index >= 1 && dest_index <= 7)
-	dts += sprintf (dts, "%c%c ", FOLDER_INDEX_TO_DIRCHAR (index),
-			FOLDER_INDEX_TO_DIRCHAR (dest_index));
+      if (dest_index < 1 || dest_index > 7)
+	; /* it can be 255 : root_dir */
       else
-	; /* can be 255 : root_dir */
+	if (pin_input_len < MAX_PIN_CHARS - 2)
+	  {
+	    pin_input_buffer[pin_input_len++]
+	      = FOLDER_INDEX_TO_DIRCHAR (index);
+	    pin_input_buffer[pin_input_len++]
+	      = FOLDER_INDEX_TO_DIRCHAR (dest_index);
+	    input = 1;
+	  }
 
       p += 32;
     }
 
   for (i = 0; i < 7; i++)
-    if (*p)
-      {
-	child = DIRCHAR_TO_FOLDER_INDEX (*p);
-	folders[index].children[i] = child;
-	p += 32;
-      }
-    else
-      break;
+    {
+      if (*p)
+	{
+	  child = DIRCHAR_TO_FOLDER_INDEX (*p);
+	  folders[index].children[i] = child;
+	  num_children++;
+	}
+      else
+	folders[index].children[i] = 0;
+      p += 32;
+    }
+
+  if (index == 0 && num_children == 1)
+    pinpad_finish_entry ();
+  else if (input)
+    pinpad_input ();
 }
 
 int

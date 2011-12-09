@@ -101,6 +101,10 @@ ifneq ($(ENABLE_PINPAD),)
 CSRC += pin-$(ENABLE_PINPAD).c
 endif
 
+ifeq ($(ENABLE_PINPAD),dnd)
+CSRC += usb_msc.c
+endif
+
 # List ASM source files here
 ASMSRC = $(PORTASM) \
          $(CHIBIOS)/os/ports/GCC/ARMCMx/STM32F10x/vectors.s
