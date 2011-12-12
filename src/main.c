@@ -386,12 +386,17 @@ main (int argc, char **argv)
   chThdCreateStatic (waUSBthread, sizeof(waUSBthread),
 		     NORMALPRIO, USBthread, NULL);
 
+#ifdef PINPAD_DND_SUPPORT
+  msc_init ();
+#endif
+
   while (1)
     {
       eventmask_t m;
 
       count++;
       m = chEvtWaitOneTimeout (ALL_EVENTS, LED_TIMEOUT_INTERVAL);
+continue;
       switch (m)
 	{
 	case LED_STATUS_MODE:

@@ -26,10 +26,11 @@ pinpad_getline (int msg_code, systime_t timeout)
 
   pin_input_len = 0;
 
+  msc_media_insert_change (1);
+
   while (1)
     {
       chSysLock ();
-      msc_media_insert_change (1);
       pin_thread = chThdSelf ();
       chSchGoSleepS (THD_STATE_SUSPENDED);
       msg = chThdSelf ()->p_u.rdymsg;
@@ -253,12 +254,8 @@ msc_scsi_read (uint32_t lba, const uint8_t **sector_p)
 
 static void parse_directory_sector (const uint8_t *p, uint8_t index)
 {
-  uint16_t cluster_no = FOLDER_INDEX_TO_CLUSTER_NO (index);
   int i;
-  uint8_t filename[11] = { 0x2e, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20,
-			   0x20, 0x20, 0x20 };
   uint8_t child;
-  uint8_t *p_orig = p;
   int input = 0;
   int num_children = 0;
 
@@ -290,7 +287,7 @@ static void parse_directory_sector (const uint8_t *p, uint8_t index)
 
   for (i = 0; i < 7; i++)
     {
-      if (*p)
+      if (*p >= 'A' && *p <= 'G')
 	{
 	  child = DIRCHAR_TO_FOLDER_INDEX (*p);
 	  folders[index].children[i] = child;
@@ -308,13 +305,16 @@ static void parse_directory_sector (const uint8_t *p, uint8_t index)
 }
 
 int
-msc_scsi_write (uint8_t lun, uint32_t lba, const uint8_t *buf, size_t size)
+msc_scsi_write (uint32_t lba, const uint8_t *buf, size_t size)
 {
   if (!media_available)
     return SCSI_ERROR_NOT_READY;
 
   if (lba >= TOTAL_SECTOR)
     return SCSI_ERROR_ILLEAGAL_REQUEST;
+
+  if (lba == 1)
+    return 0;			/* ??? */
 
   if (lba <= 2 || lba >= 11)
     return SCSI_ERROR_DATA_PROTECT;

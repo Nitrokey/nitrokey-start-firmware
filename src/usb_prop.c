@@ -112,6 +112,20 @@ gnuk_device_reset (void)
   SetEPTxStatus (ENDP5, EP_TX_DIS);
 #endif
 
+#ifdef PINPAD_DND_SUPPORT
+  /* Initialize Endpoint 6 */
+  SetEPType (ENDP6, EP_BULK);
+  SetEPTxAddr (ENDP6, ENDP6_TXADDR);
+  SetEPTxStatus (ENDP6, EP_TX_NAK);
+  SetEPRxStatus (ENDP6, EP_RX_DIS);
+
+  /* Initialize Endpoint 7 */
+  SetEPType (ENDP7, EP_BULK);
+  SetEPRxAddr (ENDP7, ENDP7_RXADDR);
+  SetEPRxStatus (ENDP7, EP_RX_STALL);
+  SetEPTxStatus (ENDP7, EP_TX_DIS);
+#endif
+
   /* Set this device to response on default address */
   SetDeviceAddress (0);
 
@@ -156,6 +170,21 @@ gnuk_device_SetInterface (void)
       ClearDTOG_RX (ENDP5);
       ClearDTOG_TX (ENDP3);
     }
+#endif
+#ifdef PINPAD_DND_SUPPORT
+# ifdef ENABLE_VIRTUAL_COM_PORT
+  else if (intf == 3)
+    {
+      ClearDTOG_TX (ENDP6);
+      ClearDTOG_RX (ENDP7);
+    }
+# else
+  else if (intf == 1)
+    {
+      ClearDTOG_TX (ENDP6);
+      ClearDTOG_RX (ENDP7);
+    }
+# endif
 #endif
 }
 
@@ -204,10 +233,18 @@ gnuk_device_GetStringDescriptor (uint16_t Length)
 				  (PONE_DESCRIPTOR)&String_Descriptor[wValue0]);
 }
 
-#ifdef ENABLE_VIRTUAL_COM_PORT
-#define NUM_INTERFACES 3	/* two for CDC, one for CCID */
+#ifdef PINPAD_DND_SUPPORT
+# ifdef ENABLE_VIRTUAL_COM_PORT
+# define NUM_INTERFACES 4	/* two for CDC, one for CCID, and MSC */
+# else
+# define NUM_INTERFACES 2	/* CCID and MSC */
+# endif
 #else
-#define NUM_INTERFACES 1	/* CCID only */
+# ifdef ENABLE_VIRTUAL_COM_PORT
+# define NUM_INTERFACES 3	/* two for CDC, one for CCID */
+# else
+# define NUM_INTERFACES 1	/* CCID only */
+# endif
 #endif
 
 static RESULT

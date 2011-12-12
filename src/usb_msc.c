@@ -95,6 +95,10 @@ static void usb_start_receive (uint8_t *p, size_t n)
   ep7_out.rxbuf = p;
   ep7_out.rxsize = n;
   ep7_out.rxcnt = 0;
+  if (n < ENDP_MAX_SIZE)
+    SetEPRxCount (ENDP7, n);
+  else
+    SetEPRxCount (ENDP7, ENDP_MAX_SIZE);
   SetEPRxValid (ENDP7);
 }
 
@@ -131,7 +135,7 @@ void EP7_OUT_Callback (void)
 	chSysLockFromIsr ();
 	tp = the_thread;
 	the_thread = NULL;
-	tp->p_u.rdymsg = err? RDY_OK : RDY_RESET;
+	tp->p_u.rdymsg = err? RDY_RESET : RDY_OK;
 	chSchReadyI (tp);
 	chSysUnlockFromIsr ();
       }
@@ -299,9 +303,12 @@ void msc_handle_command (void)
     {
       /* Error occured, ignore the request and go into error state */
       msc_state = MSC_ERROR;
-      chSysLock ();
-      usb_stall_receive ();
-      chSysUnlock ();
+      if (msg != RDY_TIMEOUT)
+	{
+	  chSysLock ();
+	  usb_stall_receive ();
+	  chSysUnlock ();
+	}
       return;
     }
 

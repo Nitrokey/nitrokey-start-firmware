@@ -8,10 +8,14 @@
 #ifndef __USB_CONF_H
 #define __USB_CONF_H
 
-#ifdef ENABLE_VIRTUAL_COM_PORT
-#define EP_NUM                          (6)
+#ifdef PINPAD_DND_SUPPORT
+# define EP_NUM                          (8)
 #else
-#define EP_NUM                          (3)
+# ifdef ENABLE_VIRTUAL_COM_PORT
+# define EP_NUM                          (6)
+# else
+# define EP_NUM                          (3)
+# endif
 #endif
 
 #define BTABLE_ADDRESS      (0x00)

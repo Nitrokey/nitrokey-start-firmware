@@ -350,13 +350,15 @@ extern Thread *main_thread;
 extern void led_blink (int spec);
 
 #if defined(PINPAD_SUPPORT)
-#if defined(PINPAD_CIR_SUPPORT)
+# if defined(PINPAD_CIR_SUPPORT)
 extern void cir_ext_disable (void);
 extern void cir_ext_enable (void);
-#elif defined(PINPAD_DIAL_SUPPORT)
+# elif defined(PINPAD_DIAL_SUPPORT)
 extern void dial_sw_disable (void);
 extern void dial_sw_enable (void);
-#endif
+# elif defined(PINPAD_DND_SUPPORT)
+extern void msc_init (void);
+# endif
 #define PIN_INPUT_CURRENT 1
 #define PIN_INPUT_NEW     2
 #define PIN_INPUT_CONFIRM 3
