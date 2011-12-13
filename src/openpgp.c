@@ -243,7 +243,7 @@ cmd_change_password (void)
     {
       const uint8_t *ks_pw1 = gpg_do_read_simple (NR_DO_KEYSTRING_PW1);
 
-      pw_len = verify_user_0 (pw, len, -1, ks_pw1);
+      pw_len = verify_user_0 (AC_PSO_CDS_AUTHORIZED, pw, len, -1, ks_pw1);
 
       if (pw_len < 0)
 	{

@@ -57,11 +57,11 @@ ac_reset_other (void)
 }
 
 int
-verify_user_0 (const uint8_t *pw, int buf_len, int pw_len_known,
+verify_user_0 (uint8_t access, const uint8_t *pw, int buf_len, int pw_len_known,
 	       const uint8_t *ks_pw1)
 {
   int pw_len;
-  int r;
+  int r1, r2;
   uint8_t keystring[KEYSTRING_MD_SIZE];
 
   if (gpg_pw_locked (PW_ERR_PW1))
@@ -90,10 +90,23 @@ verify_user_0 (const uint8_t *pw, int buf_len, int pw_len_known,
 
  success_one_step:
   sha1 (pw, pw_len, keystring);
-  if ((r = gpg_do_load_prvkey (GPG_KEY_FOR_SIGNING, BY_USER, keystring))
-      < 0)
-    goto failure;
-  else if (r == 0)
+  if (access == AC_PSO_CDS_AUTHORIZED)
+    {
+      r1 = gpg_do_load_prvkey (GPG_KEY_FOR_SIGNING, BY_USER, keystring);
+      r2 = 0;
+    }
+  else
+    {
+      r1 = gpg_do_load_prvkey (GPG_KEY_FOR_DECRYPTION, BY_USER, keystring);
+      r2 = gpg_do_load_prvkey (GPG_KEY_FOR_AUTHENTICATION, BY_USER, keystring);
+    }
+
+  if (r1 < 0 || r2 < 0)
+    {
+      gpg_pw_increment_err_counter (PW_ERR_PW1);
+      return -1;
+    }
+  else if (r1 == 0 && r2 == 0)
     if (ks_pw1 != NULL && memcmp (ks_pw1+1, keystring, KEYSTRING_MD_SIZE) != 0)
       goto failure;
 
@@ -113,7 +126,7 @@ verify_pso_cds (const uint8_t *pw, int pw_len)
   DEBUG_INFO ("verify_pso_cds\r\n");
   DEBUG_BYTE (pw_len);
 
-  r = verify_user_0 (pw, pw_len, pw_len, ks_pw1);
+  r = verify_user_0 (AC_PSO_CDS_AUTHORIZED, pw, pw_len, pw_len, ks_pw1);
   if (r > 0)
     auth_status |= AC_PSO_CDS_AUTHORIZED;
   return r;
@@ -122,29 +135,16 @@ verify_pso_cds (const uint8_t *pw, int pw_len)
 int
 verify_other (const uint8_t *pw, int pw_len)
 {
-  int r1, r2;
-  uint8_t keystring[KEYSTRING_MD_SIZE];
+  const uint8_t *ks_pw1 = gpg_do_read_simple (NR_DO_KEYSTRING_PW1);
+  int r;
 
   DEBUG_INFO ("verify_other\r\n");
+  DEBUG_BYTE (pw_len);
 
-  if (gpg_pw_locked (PW_ERR_PW1))
-    return 0;
-
-  sha1 (pw, pw_len, keystring);
-  if ((r1 = gpg_do_load_prvkey (GPG_KEY_FOR_DECRYPTION, BY_USER, keystring)) < 0
-      || (r2 = gpg_do_load_prvkey (GPG_KEY_FOR_AUTHENTICATION, BY_USER,
-				   keystring)) < 0)
-    {
-      gpg_pw_increment_err_counter (PW_ERR_PW1);
-      return -1;
-    }
-  else if (r1 == 0 && r2 == 0)
-    /* No key is available.  Fail even if password can match.  */
-    return -1;
-
-  gpg_pw_reset_err_counter (PW_ERR_PW1);
-  auth_status |= AC_OTHER_AUTHORIZED;
-  return 1;
+  r = verify_user_0 (AC_OTHER_AUTHORIZED, pw, pw_len, pw_len, ks_pw1);
+  if (r > 0)
+    auth_status |= AC_OTHER_AUTHORIZED;
+  return r;
 }
 
 /*
@@ -230,7 +230,8 @@ verify_admin_0 (const uint8_t *pw, int buf_len, int pw_len_known)
 
       if (ks_pw1 != NULL)
 	{	  /* empty PW3, but PW1 exists */
-	  int r = verify_user_0 (pw, buf_len, pw_len_known, ks_pw1);
+	  int r = verify_user_0 (AC_PSO_CDS_AUTHORIZED,
+				 pw, buf_len, pw_len_known, ks_pw1);
 
 	  if (r > 0)
 	    admin_authorized = BY_USER;

@@ -1,3 +1,10 @@
+2011-12-13  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/ac.c (verify_user_0): Add access argument.
+	(verify_pso_cds, verify_other, verify_admin_0): Follow the change.
+
+	* src/openpgp.c (cmd_change_password): Likewise.
+
 2011-12-08  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/usb-icc.c: Not include "usb_desc.h".

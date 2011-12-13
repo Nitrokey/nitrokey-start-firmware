@@ -86,8 +86,8 @@ extern void gpg_pw_increment_err_counter (uint8_t which);
 extern int ac_check_status (uint8_t ac_flag);
 extern int verify_pso_cds (const uint8_t *pw, int pw_len);
 extern int verify_other (const uint8_t *pw, int pw_len);
-extern int verify_user_0 (const uint8_t *pw, int buf_len, int pw_len_known,
-			  const uint8_t *ks_pw1);
+extern int verify_user_0 (uint8_t access, const uint8_t *pw, int buf_len,
+			  int pw_len_known, const uint8_t *ks_pw1);
 extern int verify_admin (const uint8_t *pw, int pw_len);
 extern int verify_admin_0 (const uint8_t *pw, int buf_len, int pw_len_known);
 
