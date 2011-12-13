@@ -205,7 +205,10 @@ void msc_media_insert_change (int available)
   contingent_allegiance = 1;
   media_available = available;
   if (available)
-    set_scsi_sense_data (0x06, 0x28); /* UNIT_ATTENTION */
+    {
+      set_scsi_sense_data (0x06, 0x28); /* UNIT_ATTENTION */
+      keep_contingent_allegiance = 0;
+    }
   else
     {
       set_scsi_sense_data (0x02, 0x3a); /* NOT_READY */
@@ -272,6 +275,7 @@ static void msc_send_result (const uint8_t *p, size_t n)
       CSW.bCSWStatus = MSC_CSW_STATUS_PASSED;
     }
 
+  CSW.dCSWSignature = MSC_CSW_SIGNATURE;
   chSysLock ();
   msc_state = MSC_SENDING_CSW;
   the_thread = chThdSelf ();
@@ -512,6 +516,8 @@ msc_main (void *arg)
 {
   (void)arg;
 
+  /* Initially, it starts with no media */
+  msc_media_insert_change (0);
   while (1)
     msc_handle_command ();
 
