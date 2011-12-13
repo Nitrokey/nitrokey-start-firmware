@@ -357,7 +357,11 @@ extern void cir_ext_enable (void);
 extern void dial_sw_disable (void);
 extern void dial_sw_enable (void);
 # elif defined(PINPAD_DND_SUPPORT)
+extern uint8_t media_available;
 extern void msc_init (void);
+extern void msc_media_insert_change (int available);
+extern int msc_scsi_write (uint32_t lba, const uint8_t *buf, size_t size);
+extern int msc_scsi_read (uint32_t lba, const uint8_t **sector_p);
 # endif
 #define PIN_INPUT_CURRENT 1
 #define PIN_INPUT_NEW     2

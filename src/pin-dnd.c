@@ -1,8 +1,40 @@
+/*
+ * pin-dnd.c -- PIN input support (Drag and Drop with File Manager)
+ *
+ * Copyright (C) 2011 Free Software Initiative of Japan
+ * Author: NIIBE Yutaka <gniibe@fsij.org>
+ *
+ * This file is a part of Gnuk, a GnuPG USB Token implementation.
+ *
+ * Gnuk is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Gnuk is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+ * or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+ * License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+
 #include "config.h"
 #include "ch.h"
 #include "board.h"
 #include "gnuk.h"
 #include "usb_msc.h"
+
+struct folder {
+  uint8_t parent;
+  uint8_t children[7];
+};
+
+static struct folder folders[8];
+static const struct folder folder_ini = { 0, { 1, 2, 3, 4, 5, 6, 7 } };
+
 
 uint8_t pin_input_buffer[MAX_PIN_CHARS];
 uint8_t pin_input_len;
@@ -20,13 +52,16 @@ pinpad_getline (int msg_code, systime_t timeout)
   msg_t msg;
 
   (void)msg_code;
-
+  (void)timeout;
 
   DEBUG_INFO (">>>\r\n");
 
   pin_input_len = 0;
 
   msc_media_insert_change (1);
+
+  memset (folders, 0, sizeof folders);
+  memcpy (folders, &folder_ini, sizeof folder_ini);
 
   while (1)
     {
@@ -99,8 +134,8 @@ static const uint8_t d0_0_sector[] = {
   0x29, 			/* extended boot signature */
   0xbf, 0x86, 0x75, 0xea, /* Volume ID (serial number) (Little endian) */
 
-  /* Volume label */
-  'G', 'O', 'N', 'E', 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20,
+  /* Volume label: DNDpinentry */
+  'D', 'n', 'D', 'p', 'i', 'n', 'e', 'n', 't', 'r', 'y',
 
   0x46, 0x41, 0x54, 0x31, 0x32, 0x20, 0x20, 0x20, /* FAT12 */
 
@@ -147,12 +182,6 @@ static const uint8_t d0_fat0_sector[] = {
 
 static uint8_t the_sector[512];
 
-struct folder {
-  uint8_t parent;
-  uint8_t children[7];
-};
-
-static struct folder folders[8] = { { 0, { 1, 2, 3, 4, 5, 6, 7 } }, };
 #define FOLDER_INDEX_TO_CLUSTER_NO(i) (i+1)
 #define CLUSTER_NO_TO_FOLDER_INDEX(n) (n-1)
 #define FOLDER_INDEX_TO_LBA(i) (i+3)
@@ -307,6 +336,8 @@ static void parse_directory_sector (const uint8_t *p, uint8_t index)
 int
 msc_scsi_write (uint32_t lba, const uint8_t *buf, size_t size)
 {
+  (void)size;
+
   if (!media_available)
     return SCSI_ERROR_NOT_READY;
 
@@ -314,7 +345,7 @@ msc_scsi_write (uint32_t lba, const uint8_t *buf, size_t size)
     return SCSI_ERROR_ILLEAGAL_REQUEST;
 
   if (lba == 1)
-    return 0;			/* ??? */
+    return 0;			/* updating FAT, just ignore */
 
   if (lba <= 2 || lba >= 11)
     return SCSI_ERROR_DATA_PROTECT;

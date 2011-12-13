@@ -326,7 +326,7 @@ gnuk_setup_with_data (uint8_t RequestNo)
       }
 #if defined(PINPAD_DND_SUPPORT)
 # if defined(ENABLE_VIRTUAL_COM_PORT)
-    else if (pInformation->USBwIndex0 == 2)
+    else if (pInformation->USBwIndex0 == 1)
       return Virtual_Com_Port_Data_Setup (RequestNo);
     else if (pInformation->USBwIndex0 == 3)
 # else
@@ -344,7 +344,7 @@ gnuk_setup_with_data (uint8_t RequestNo)
 	  return USB_UNSUPPORT;
       }
 #elif defined(ENABLE_VIRTUAL_COM_PORT)
-    else if (pInformation->USBwIndex0 == 2)
+    else if (pInformation->USBwIndex0 == 1)
       return Virtual_Com_Port_Data_Setup (RequestNo);
 #endif
     else
@@ -369,7 +369,7 @@ gnuk_setup_with_nodata (uint8_t RequestNo)
       }
 #if defined(PINPAD_DND_SUPPORT)
 # if defined(ENABLE_VIRTUAL_COM_PORT)
-    else if (pInformation->USBwIndex0 == 2)
+    else if (pInformation->USBwIndex0 == 1)
       return Virtual_Com_Port_NoData_Setup (RequestNo);
     else if (pInformation->USBwIndex0 == 3)
 # else
@@ -385,7 +385,7 @@ gnuk_setup_with_nodata (uint8_t RequestNo)
 	  return USB_UNSUPPORT;
       }
 #elif defined(ENABLE_VIRTUAL_COM_PORT)
-    else if (pInformation->USBwIndex0 == 2)
+    else if (pInformation->USBwIndex0 == 1)
       return Virtual_Com_Port_NoData_Setup (RequestNo);
 #endif
     else

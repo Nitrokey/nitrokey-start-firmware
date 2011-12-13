@@ -106,9 +106,13 @@ STDOUTthread (void *arg)
 
       p = stdout.str;
       len = stdout.size;
-      while (len > 0)
+      while (1)
 	{
 	  int i;
+
+	  if (len == 0)
+	    if (count_in != VIRTUAL_COM_PORT_DATA_SIZE)
+	      break;
 
 	  if (len < VIRTUAL_COM_PORT_DATA_SIZE)
 	    {
@@ -396,7 +400,6 @@ main (int argc, char **argv)
 
       count++;
       m = chEvtWaitOneTimeout (ALL_EVENTS, LED_TIMEOUT_INTERVAL);
-continue;
       switch (m)
 	{
 	case LED_STATUS_MODE:

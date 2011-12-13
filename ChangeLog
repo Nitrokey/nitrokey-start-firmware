@@ -1,8 +1,28 @@
 2011-12-13  Niibe Yutaka  <gniibe@fsij.org>
 
+	Add pinpad DND support.
+	* src/Makefile.in (CSRC) [ENABLE_PINPAD]: Add usb_msc.c.
+	* src/configure (pinpad): Add dnd support.
+	* src/gnuk.h [PINPAD_DND_SUPPORT]: Add declarations.
+	* src/main.c (STDOUTthread): Add PUSH packet.
+	(main) [PINPAD_DND_SUPPORT]: Call msc_init.
+	* src/usb_conf.h (EP_NUM): Add the case of PINPAD_DND_SUPPORT.
+	(ENDP6_TXADDR, ENDP7_RXADDR): New.
+	(ENDP4_TXADDR, ENDP5_RXADDR): Changed for smaller buffer.
+	* src/usb_desc.c (gnukConfigDescriptor): Add Mass storage device.
+	* src/usb_msc.c, src/usb_msc.h, src/pin-dnd.c: New.
+	* src/usb_prop.c: Include "usb_msc.h".
+	(gnuk_device_reset): Add initialization of ENDP6 and ENDP7.
+	(gnuk_device_SetInterface): Add initialization of ENDP6 and ENDP7.
+	(NUM_INTERFACES): Handle cases for PINPAD_DND_SUPPORT.
+	(msc_lun_info): New.
+	(gnuk_setup_with_data, gnuk_setup_with_nodata): Handle standard
+	request for Mass storage device.
+	* Virtual_COM_Port/usb_desc.h (VIRTUAL_COM_PORT_DATA_SIZE): Since
+	there isn't enough hardware buffer, smaller value (was: 64).
+
 	* src/ac.c (verify_user_0): Add access argument.
 	(verify_pso_cds, verify_other, verify_admin_0): Follow the change.
-
 	* src/openpgp.c (cmd_change_password): Likewise.
 
 2011-12-08  Niibe Yutaka  <gniibe@fsij.org>
