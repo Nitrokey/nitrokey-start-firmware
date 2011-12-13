@@ -1,5 +1,22 @@
 Gnuk NEWS - User visible changes
 
+* Major changes in Gnuk 0.16
+
+  Released 2011-12-1x, by NIIBE Yutaka
+
+** DnD pinentry support is added and it's default to pinentry support
+DnD pinentry support doesn't require any hardware extension, but
+emulates mass storage class device of USB.  User inputs pass phrase
+by "drag and drop"-ing folders using file manager or something.
+
+** Bug fix for VERIFY for CHV2
+With no keys, VERIFY command for CHV2 used to fail even if pass phrase
+is correct.  It was intentional, because CHV2 verification would be
+useless with no keys.  But there is a corner case for PRIVATE-DOs,
+which may requires CHV2 verification.  Even though Gnuk doesn't
+support any PRIVATE-DOs, it is good to be fixed.
+
+
 * Major changes in Gnuk 0.15
 
   Released 2011-11-24, by NIIBE Yutaka
@@ -9,7 +26,7 @@ Flying Stone Technology's open hardware, Flying Stone Tiny 01 is
 supported.
 
 ** Flash writing tool for "DfuSe" is improved
-Now, it support holes and unaligned blocks in hex file.
+Now, it supports holes and unaligned blocks in hex file.
 
 ** Experimental PIN-pad support (by TV controller) change
 Now, Gnuk has codetables for conversion from CIR code to ASCII code.

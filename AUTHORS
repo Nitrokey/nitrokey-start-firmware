@@ -6,6 +6,14 @@ Kaz Kojima:
 
 NIIBE Yutaka:
     Founder of the project.
+    Added FST_01 support:
+	boards/FST_01/board.c
+	boards/FST_01/board.h
+	boards/FST_01/mcuconf.h
+    Added FST_01_00 support:
+	boards/FST_01_00/board.c
+	boards/FST_01_00/board.h
+	boards/FST_01_00/mcuconf.h
     Added STBee support:
 	boards/STBEE/board.c
 	boards/STBEE/board.h
@@ -28,6 +36,9 @@ NIIBE Yutaka:
 	tool/intel_hex.py
     Wrote a tool for Gnuk:
 	tool/gnuk_put_binary.py
+	tool/gnuk_put_binary_libusb.py
+    Wrote a tool for USB Hub:
+	tool/hub_ctrl.py
     Wrote:
 	gnuk.svg
 	src/configure
@@ -49,5 +60,9 @@ NIIBE Yutaka:
 	src/random.c
 	src/pin-cir.c
 	src/pin-dial.c
+	src/pin-dnd.c
+	src/usb_msc.c
+	src/usb_msc.h
+	src/neug.c
 	*
 	and others.
