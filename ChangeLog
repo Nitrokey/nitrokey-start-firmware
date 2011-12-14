@@ -1,5 +1,9 @@
 2011-12-14  Niibe Yutaka  <gniibe@fsij.org>
 
+	* Version 0.16.
+
+	* src/usb_desc.c (gnukStringSerial): Updated.
+
 	* boards/STM8S_DISCOVERY/board.h, board.c: Fix for PINPAD_SUPPORT.
 	* boards/STBEE_MINI/board.h, board.c: Likewise.
 	* boards/STBEE/board.h, board.c: Likewise.

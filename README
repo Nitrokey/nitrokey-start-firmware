@@ -1,7 +1,7 @@
 Gnuk - software for GnuPG USB Token
 
 							   Version 0.16
-							     2011-12-1x
+							     2011-12-14
 						           Niibe Yutaka
 				      Free Software Initiative of Japan
 
@@ -173,10 +173,15 @@ Another PIN-pad support is connecting rotary encoder, push switch and
 7-segment LED display.  Both of PIN verification and PIN modification
 are supported for this circuit extension.
 
-Recently, "DnDpinentry" qsupport is added.  This is using normal file
+Recently, "DnDpinentry" support is added.  This is using usual file
 manager for pinentry.  User does "drag and drop" folders and it will
 be pin entry.  This feature doesn't require any additional hardware.
 See doc/settings-for-DnDpinentry for your desktop configuration.
+
+Note that you need pinpad support for GnuPG, it's currently in the
+master branch of GnuPG git repository at git.gnupg.org, and it's under
+evaluation.  When it will be considered stable, it will be put onto
+stable branch.
 
 
 Souce code

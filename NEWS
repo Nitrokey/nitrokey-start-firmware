@@ -2,7 +2,7 @@ Gnuk NEWS - User visible changes
 
 * Major changes in Gnuk 0.16
 
-  Released 2011-12-1x, by NIIBE Yutaka
+  Released 2011-12-14, by NIIBE Yutaka
 
 ** DnD pinentry support is added and it's default to pinentry support
 DnD pinentry support doesn't require any hardware extension, but
@@ -15,6 +15,12 @@ is correct.  It was intentional, because CHV2 verification would be
 useless with no keys.  But there is a corner case for PRIVATE-DOs,
 which may requires CHV2 verification.  Even though Gnuk doesn't
 support any PRIVATE-DOs, it is good to be fixed.
+
+** Changed bcdUSB = 1.1
+Gnuk device conforms to USB 2.0 full speed device, but when it was
+2.0, some OS informs users, "you can connect the device to 2.0
+compliant hub so that it can have better bandwidth", which is not
+the case for full speed device.
 
 
 * Major changes in Gnuk 0.15
