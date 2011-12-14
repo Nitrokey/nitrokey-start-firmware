@@ -96,7 +96,7 @@
 #define VAL_GPIOACRH            0x88888883      /* PA15...PA8 */
 #define VAL_GPIOAODR            0xFFFFFFFF
 
-#if defined(PINPAD_SUPPORT)
+#if defined(PINPAD_CIR_SUPPORT)
 /*
  * Port B setup.
  * Everything input with pull-up except:

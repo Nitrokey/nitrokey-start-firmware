@@ -15,7 +15,7 @@ hwinit1 (void)
 {
   hwinit1_common ();
 
-#if defined(PINPAD_SUPPORT)
+#if defined(PINPAD_CIR_SUPPORT)
   /* EXTI5 <= PB5 */
   AFIO->EXTICR[1] = AFIO_EXTICR2_EXTI5_PB;
   EXTI->IMR = 0;
@@ -62,7 +62,7 @@ set_led (int value)
     palClearPad (IOPORT1, GPIOA_LED);
 }
 
-#if defined(PINPAD_SUPPORT)
+#if defined(PINPAD_CIR_SUPPORT)
 void
 cir_ext_disable (void)
 {

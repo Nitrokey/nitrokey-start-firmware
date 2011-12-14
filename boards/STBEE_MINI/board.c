@@ -15,11 +15,12 @@ hwinit1 (void)
 {
   hwinit1_common ();
 
-#if defined(PINPAD_SUPPORT)
+#if defined(PINPAD_SUPPORT) && !defined(DFU_SUPPORT)
   palWritePort(IOPORT2, 0x7fff); /* Only clear GPIOB_7SEG_DP */
   while (palReadPad (IOPORT2, GPIOB_BUTTON) != 0)
     ;				/* Wait for JTAG debugger connection */
   palWritePort(IOPORT2, 0xffff); /* All set */
+#endif
 
 #if defined(PINPAD_CIR_SUPPORT)
   /* EXTI0 <= PB0 */
@@ -74,7 +75,6 @@ hwinit1 (void)
   /* Generate UEV to upload PSC and ARR	 */
   TIM4->EGR = TIM_EGR_UG;
 #endif
-#endif
   /*
    * Disable JTAG and SWD, done after hwinit1_common as HAL resets AFIO
    */
@@ -101,7 +101,6 @@ set_led (int value)
     palSetPad (IOPORT1, GPIOA_LED1);
 }
 
-#if defined(PINPAD_SUPPORT)
 #if defined(PINPAD_CIR_SUPPORT)
 void
 cir_ext_disable (void)
@@ -166,5 +165,4 @@ CH_IRQ_HANDLER (EXTI2_IRQHandler)
   chSysUnlockFromIsr ();
   CH_IRQ_EPILOGUE ();
 }
-#endif
 #endif

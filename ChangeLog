@@ -1,3 +1,10 @@
+2011-12-14  Niibe Yutaka  <gniibe@fsij.org>
+
+	* boards/STM8S_DISCOVERY/board.h, board.c: Fix for PINPAD_SUPPORT.
+	* boards/STBEE_MINI/board.h, board.c: Likewise.
+	* boards/STBEE/board.h, board.c: Likewise.
+	* boards/FST_01/board.c: Likewise.
+
 2011-12-13  Niibe Yutaka  <gniibe@fsij.org>
 
 	Add pinpad DND support.

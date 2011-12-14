@@ -15,7 +15,7 @@ hwinit1 (void)
 {
   hwinit1_common ();
 
-#if defined(PINPAD_SUPPORT)
+#if defined(PINPAD_CIR_SUPPORT)
   /* PA0/TIM2_CH1 = 1 (pull up)   */
   /* PA1/TIM2_CH2 = 0 (pull down) */
   /* PA2/TIM2_CH3 <= Vout of CIR receiver module */
@@ -66,7 +66,7 @@ set_led (int value)
     palClearPad (IOPORT2, GPIOB_LED);
 }
 
-#if defined(PINPAD_SUPPORT)
+#if defined(PINPAD_CIR_SUPPORT)
 void
 cir_ext_disable (void)
 {

@@ -39,7 +39,7 @@
 #define BOARD_NAME "STBee Mini"
 #define CPU_WITH_NO_GPIOE	1
 
-#if defined(PINPAD_SUPPORT)
+#if defined(PINPAD_CIR_SUPPORT) || defined(PINPAD_DIAL_SUPPORT)
 #define HAVE_7SEGLED	1
 /*
  * Timer assignment for CIR
@@ -92,7 +92,7 @@
  * Please refer to the STM32 Reference Manual for details.
  */
 
-#if defined(PINPAD_SUPPORT)
+#if defined(PINPAD_CIR_SUPPORT) || defined(PINPAD_DIAL_SUPPORT)
 /*
  * Port A setup.
  * PA6  - (TIM3_CH1) input with pull-up
