@@ -189,7 +189,7 @@ class gnuk_token:
             count += 1
 
     def cmd_select_openpgp(self):
-        cmd_data = iso7816_compose(0xa4, 0x04, 0x0c, "\xD2\x76\x00\x01\x24\x01")
+        cmd_data = iso7816_compose(0xa4, 0x04, 0x00, "\xD2\x76\x00\x01\x24\x01")
         sw = self.icc_send_cmd(cmd_data)
         if len(sw) != 2:
             raise ValueError, "cmd_select_openpgp"

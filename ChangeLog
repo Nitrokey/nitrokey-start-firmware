@@ -1,3 +1,12 @@
+2011-12-16  Niibe Yutaka  <gniibe@fsij.org>
+
+	* tool/gnuk_put_binary_libusb.py (gnuk_token.cmd_select_openpgp):
+	Fix apdu parameter.
+
+	* tool/gnuk_put_binary.py (GnukToken.cmd_select_openpgp): Ditto.
+
+	* tool/pinpad-test.py: New.
+
 2011-12-14  Niibe Yutaka  <gniibe@fsij.org>
 
 	* Version 0.16.
