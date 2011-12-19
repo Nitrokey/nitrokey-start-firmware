@@ -178,19 +178,45 @@ def main(who, method, add_a_byte, pinmax, change_by_two_steps):
 
     card.cmd_select_openpgp()
     if method == "verify":
+        if who == BY_USER:
+            print "Please input User's PIN"
+        else:
+            print "Please input Admin's PIN"
         card.cmd_verify_pinpad(who)
     elif method == "change":
         if change_by_two_steps:
+            if who == BY_USER:
+                print "Please input User's PIN"
+            else:
+                print "Please input Admin's PIN"
             card.cmd_verify_pinpad(who)
+            if who == BY_USER:
+                print "Please input New User's PIN twice"
+            else:
+                print "Please input New Admin's PIN twice"
             card.cmd_change_reference_data_pinpad(self, who, True)
         else:
+            if who == BY_USER:
+                print "Please input User's PIN"
+                print "and New User's PIN twice"
+            else:
+                print "Please input Admin's PIN"
+                print "and New Admin's PIN twice"
             card.cmd_change_reference_data_pinpad(self, who, False)
     elif method == "unblock":
         # It's always by single step
+        if who == BY_USER:
+            print "Please input reset code"
+            print "and New User's PIN twice"
+        else:
+            print "Please input Admin's PIN"
+            print "and New User's PIN twice"
         card.cmd_reset_retry_counter_pinpad(who)
     elif method == "put":
         # It's always by two steps
+        print "Please input Admin's PIN"
         card.cmd_verify_pinpad(BY_ADMIN)
+        print "Please input New Reset Code twice"
         card.cmd_put_resetcode_pinpad()
     else:
         raise ValueError, method
@@ -215,9 +241,14 @@ def print_usage():
     print "\t\t--pinmax:\tspecify maximum length of PIN\t\t[15]"
     print "EXAMPLES:"
     print "   $ pinpad-test                   # verify user's PIN "
-    print "   $ pinpad-test --admin --change  # change admin's PIN "
-    print "   $ pinpad-test --admin --unblock # change user's PIN by admin's PIN"
+    print "   $ pinpad-test --admin           # verify admin's PIN "
+    print "   $ pinpad-test --change          # change user's PIN "
+    print "   $ pinpad-test --change --admin  # change admin's PIN "
+    print "   $ pinpad-test --change2         # change user's PIN by two steps"
+    print "   $ pinpad-test --change2 --admin # change admin's PIN by two steps"
     print "   $ pinpad-test --unblock         # change user's PIN by reset code"
+    print "   $ pinpad-test --unblock --admin # change user's PIN by admin's PIN"
+    print "   $ pinpad-test --put             # setup resetcode "
 
 if __name__ == '__main__':
     who = BY_USER
@@ -252,3 +283,5 @@ if __name__ == '__main__':
         else:
             raise ValueError, option
     main(who, method, add_a_byte, pinmax, change_by_two_steps)
+
+# 69 82: security error: pin doesn't match
