@@ -362,6 +362,7 @@ extern void msc_init (void);
 extern void msc_media_insert_change (int available);
 extern int msc_scsi_write (uint32_t lba, const uint8_t *buf, size_t size);
 extern int msc_scsi_read (uint32_t lba, const uint8_t **sector_p);
+extern void msc_scsi_stop (uint8_t code);
 # endif
 #define PIN_INPUT_CURRENT 1
 #define PIN_INPUT_NEW     2

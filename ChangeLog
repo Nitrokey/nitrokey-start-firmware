@@ -1,3 +1,13 @@
+2011-12-20  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/usb_msc.c (msc_handle_command): SCSI_START_STOP_UNIT command
+	with stop/eject/close means cancelling pinentry.
+
+	* src/pin-dnd.c (pinpad_finish_entry, parse_directory_sector):
+	Implement "cancel".
+	(pinpad_getline): Likewise.
+	(msc_scsi_stop): New.
+
 2011-12-16  Niibe Yutaka  <gniibe@fsij.org>
 
 	* tool/gnuk_put_binary_libusb.py (gnuk_token.cmd_select_openpgp):

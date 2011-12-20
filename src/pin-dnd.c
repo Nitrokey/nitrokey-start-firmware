@@ -72,13 +72,16 @@ pinpad_getline (int msg_code, systime_t timeout)
       chSysUnlock ();
 
       led_blink (0);
-      if (msg == 1)
+      if (msg != 0)
 	break;
     }
 
   msc_media_insert_change (0);
 
-  return pin_input_len;
+  if (msg == 1)
+    return pin_input_len;
+  else
+    return -1;			/* cancel */
 }
 
 static void pinpad_input (void)
@@ -89,10 +92,13 @@ static void pinpad_input (void)
   chSysUnlock ();
 }
 
-static void pinpad_finish_entry (void)
+static void pinpad_finish_entry (int cancel)
 {
   chSysLock ();
-  pin_thread->p_u.rdymsg = 1;
+  if (cancel)
+    pin_thread->p_u.rdymsg = 2;
+  else
+    pin_thread->p_u.rdymsg = 1;
   chSchReadyI (pin_thread);
   chSysUnlock ();
 }
@@ -328,7 +334,7 @@ static void parse_directory_sector (const uint8_t *p, uint8_t index)
     }
 
   if (index == 0 && num_children == 1)
-    pinpad_finish_entry ();
+    pinpad_finish_entry (0);
   else if (input)
     pinpad_input ();
 }
@@ -356,4 +362,11 @@ msc_scsi_write (uint32_t lba, const uint8_t *buf, size_t size)
       parse_directory_sector (buf, index);
       return 0;
     }
+}
+
+void
+msc_scsi_stop (uint8_t code)
+{
+  (void)code;
+  pinpad_finish_entry (1);
 }

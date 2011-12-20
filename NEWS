@@ -1,5 +1,18 @@
 Gnuk NEWS - User visible changes
 
+* Major changes in Gnuk 0.17
+
+  Released 2012-01-XX, by NIIBE Yutaka
+
+** With DnD pinentry, user can cancel pin input
+Now, user can cancel pin input by unmounting device before finishing
+DnD.
+
+** New tool: pinpad-test.py
+The tool pinpad-test.py is PC/SC test tool for pinentry of pinpad with
+OpenPGP card v2.
+
+
 * Major changes in Gnuk 0.16
 
   Released 2011-12-14, by NIIBE Yutaka
