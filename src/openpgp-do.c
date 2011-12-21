@@ -1241,6 +1241,7 @@ copy_do (const struct do_table_entry *do_p, int with_tag)
 void
 gpg_do_get_data (uint16_t tag, int with_tag)
 {
+#if defined(CERTDO_SUPPORT)
   if (tag == GPG_DO_CH_CERTIFICATE)
     {
       res_APDU_pointer = &ch_certificate_start;
@@ -1255,6 +1256,7 @@ gpg_do_get_data (uint16_t tag, int with_tag)
 	res_APDU_size += 4 + 2;
     }
   else
+#endif
     {
       const struct do_table_entry *do_p = get_do_entry (tag);
 

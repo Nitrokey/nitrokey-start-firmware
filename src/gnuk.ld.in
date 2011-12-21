@@ -115,6 +115,7 @@ SECTIONS
     PROVIDE(end = .);
     _end            = .;
 
+@CERTDO_SUPPORT_START@
     .gnuk_ch_certificate :
     {
         . = ALIGN (@FLASH_PAGE_SIZE@);
@@ -123,6 +124,7 @@ SECTIONS
 	. += 1920;
         . = ALIGN (@FLASH_PAGE_SIZE@);
     } > flash =0xffffffff
+@CERTDO_SUPPORT_END@
 
     .gnuk_flash :
     {

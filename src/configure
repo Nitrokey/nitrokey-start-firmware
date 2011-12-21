@@ -26,12 +26,7 @@ verbose=no
 with_dfu=default
 debug=no
 pinpad=no
-
-# check /dev/random
-if test ! -e /dev/random; then
-  echo "/dev/random is required." >&2
-  exit 1
-fi
+certdo=no
 
 # Process each option
 for option; do
@@ -57,6 +52,10 @@ for option; do
     pinpad=$optarg ;;
   --disable-pinpad)
     pinpad=no ;;
+  --enable-certdo)
+    certdo=yes ;;
+  --disable-certdo)
+    certdo=no ;;
   --with-dfu)
     with_dfu=yes ;;
   --without-dfu)
@@ -88,6 +87,7 @@ Configuration:
   --enable-debug	debug with virtual COM port	[no]
   --enable-pinpad={dnd,cir,dial}
 			PIN entry support		[no]
+  --enable-certdo	support CERT.3 data object	[no]
   --with-dfu		build image for DFU 		[<target specific>]
 EOF
   exit 0
@@ -170,16 +170,34 @@ else
   echo "PIN pad option enabled ($pinpad)"
 fi
 
+# --enable-certdo option
+if test "$certdo" = "yes"; then
+  CERTDO_DEFINE="#define CERTDO_SUPPORT 1"
+  echo "CERT.3 Data Object is supported (Note: it is not supported by GnuPG)"
+else
+  CERTDO_DEFINE="#undef CERTDO_SUPPORT"
+  echo "CERT.3 Data Object is not supported"
+fi
+
 sed -e "s%@BOARD_DIR@%$BOARD_DIR%" \
     -e "s%@DEBUG_MAKE_OPTION@%$DEBUG_MAKE_OPTION%" \
     -e "s%@PINPAD_MAKE_OPTION@%$PINPAD_MAKE_OPTION%" \
 	< Makefile.in > Makefile
-sed -e "s/@ORIGIN@/$ORIGIN/" -e "s/@FLASH_SIZE@/$FLASH_SIZE/" \
-    -e "s/@FLASH_PAGE_SIZE@/$FLASH_PAGE_SIZE/" \
+if test "$certdo" = "yes"; then
+  sed -e "/^@CERTDO_SUPPORT_START@$/ d" -e "/^@CERTDO_SUPPORT_END@$/ d" \
+      -e "s/@ORIGIN@/$ORIGIN/" -e "s/@FLASH_SIZE@/$FLASH_SIZE/" \
+      -e "s/@FLASH_PAGE_SIZE@/$FLASH_PAGE_SIZE/" \
 	< gnuk.ld.in > gnuk.ld
+else
+  sed -e "/^@CERTDO_SUPPORT_START@$/,/^@CERTDO_SUPPORT_END@$/ d" \
+      -e "s/@ORIGIN@/$ORIGIN/" -e "s/@FLASH_SIZE@/$FLASH_SIZE/" \
+      -e "s/@FLASH_PAGE_SIZE@/$FLASH_PAGE_SIZE/" \
+	< gnuk.ld.in > gnuk.ld
+fi
 sed -e "s/@DEBUG_DEFINE@/$DEBUG_DEFINE/" \
+    -e "s/@DFU_DEFINE@/$DFU_DEFINE/" \
     -e "s/@PINPAD_DEFINE@/$PINPAD_DEFINE/" \
     -e "s/@PINPAD_MORE_DEFINE@/$PINPAD_MORE_DEFINE/" \
-    -e "s/@DFU_DEFINE@/$DFU_DEFINE/" \
+    -e "s/@CERTDO_DEFINE@/$CERTDO_DEFINE/" \
 	< config.h.in > config.h
 exit 0

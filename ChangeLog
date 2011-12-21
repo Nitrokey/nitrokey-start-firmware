@@ -1,3 +1,20 @@
+2011-12-21  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/openpgp-do.c (gpg_do_get_data) [CERTDO_SUPPORT]: ifdef out.
+
+	* src/gnuk.ld.in (.gnuk_ch_certificate): Only valid
+	when --enable-certdo.
+
+	* src/flash.c (flash_check_blank) [CERTDO_SUPPORT]: ifdef out.
+	(flash_erase_binary) [CERTDO_SUPPORT]: Likewise.
+	(flash_write_binary) [CERTDO_SUPPORT]: Likewise.
+
+	* src/configure (certdo): New.
+	(--enable-certdo, --disable-certdo): New options.
+	Remove cheking for /dev/random.
+
+	* src/config.h.in (@CERTDO_DEFINE@): New.
+
 2011-12-20  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/usb_msc.c (msc_handle_command): SCSI_START_STOP_UNIT command

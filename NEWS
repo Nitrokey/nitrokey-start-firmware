@@ -4,6 +4,12 @@ Gnuk NEWS - User visible changes
 
   Released 2012-01-XX, by NIIBE Yutaka
 
+** CERT.3 Data Object (0x7f21) is now optional
+As there's no valid use case for this data object and it does not
+work as current version of GnuPG, this is now optional feature.
+You can enable this data object by specifying --enable-certdo at
+configure time.
+
 ** With DnD pinentry, user can cancel pin input
 Now, user can cancel pin input by unmounting device before finishing
 DnD.
