@@ -1,3 +1,8 @@
+2011-12-22  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/openpgp-do.c (extended_capabilities) [CERTDO_SUPPORT]:
+	conditionalize.
+
 2011-12-21  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/openpgp-do.c (gpg_do_get_data) [CERTDO_SUPPORT]: ifdef out.
