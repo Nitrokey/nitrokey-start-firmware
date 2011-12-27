@@ -78,8 +78,10 @@ class Card(object):
     def cmd_select_openpgp(self):
         apdu = [0x00, 0xa4, 0x04, 0x00, 6, 0xd2, 0x76, 0x00, 0x01, 0x24, 0x01 ]
         response, sw1, sw2 = self.connection.transmit(apdu)
-        if not (sw1 == 0x90 and sw2 == 0x00):
-            raise ValueError, "cmd_select_openpgp"
+        if sw1 == 0x61:         # More data
+            response, sw1, sw2 = self.connection.transmit([0x00, 0xc0, 0, 0, sw2])
+        elif not (sw1 == 0x90 and sw2 == 0x00):
+            raise ValueError, ("cmd_select_openpgp %02x %02x" % (sw1, sw2))
 
     def possibly_add_dummy_byte(self):
         if self.another_byte:
@@ -112,7 +114,7 @@ class Card(object):
         if not (sw1 == 0x90 and sw2 == 0x00):
             raise ValueError, ("cmd_verify_pinpad %02x %02x" % (sw1, sw2))
 
-    def send_modify_pinpad(self, adpu, single_step, command):
+    def send_modify_pinpad(self, apdu, single_step, command):
         if self.modify_ioctl == -1:
             raise ValueError, "Not supported"
         pin_modify = [ 0x00, # bTimerOut
@@ -194,7 +196,7 @@ def main(who, method, add_a_byte, pinmax, change_by_two_steps):
                 print "Please input New User's PIN twice"
             else:
                 print "Please input New Admin's PIN twice"
-            card.cmd_change_reference_data_pinpad(self, who, True)
+            card.cmd_change_reference_data_pinpad(who, True)
         else:
             if who == BY_USER:
                 print "Please input User's PIN"
@@ -202,7 +204,7 @@ def main(who, method, add_a_byte, pinmax, change_by_two_steps):
             else:
                 print "Please input Admin's PIN"
                 print "and New Admin's PIN twice"
-            card.cmd_change_reference_data_pinpad(self, who, False)
+            card.cmd_change_reference_data_pinpad(who, False)
     elif method == "unblock":
         # It's always by single step
         if who == BY_USER:
@@ -227,18 +229,18 @@ def main(who, method, add_a_byte, pinmax, change_by_two_steps):
 
 def print_usage():
     print "pinpad-test: testing pinentry of PC/SC card reader"
-    print "\thelp:"
-    print "\t\t--help:\t\tthis message"
-    print "\tmethod:\t\t\t\t\t\t\t\t[verify]"
-    print "\t\t--verify:\tverify PIN"
-    print "\t\t--change:\tchange PIN (old PIN, new PIN twice)"
-    print "\t\t--change2:\tchange PIN by two steps (old PIN, new PIN twice)"
-    print "\t\t--unblock:\tunblock PIN (admin PIN or resetcode, new PIN twice)"
-    print "\t\t--put:\t\tsetup resetcode (admin PIN, new PIN twice)"
-    print "\toptions:"
-    print "\t\t--admin:\tby administrator\t\t\t[False]"
-    print "\t\t--add:\t\tadd a dummy byte at the end of APDU\t[False]"
-    print "\t\t--pinmax:\tspecify maximum length of PIN\t\t[15]"
+    print "    help:"
+    print "\t--help:\t\tthis message"
+    print "    method:\t\t\t\t\t\t\t[verify]"
+    print "\t--verify:\tverify PIN"
+    print "\t--change:\tchange PIN (old PIN, new PIN twice)"
+    print "\t--change2:\tchange PIN by two steps (old PIN, new PIN twice)"
+    print "\t--unblock:\tunblock PIN (admin PIN/resetcode, new PIN twice)"
+    print "\t--put:\t\tsetup resetcode (admin PIN, new PIN twice)"
+    print "    options:"
+    print "\t--admin:\tby administrator\t\t\t[False]"
+    print "\t--add:\t\tadd a dummy byte at the end of APDU\t[False]"
+    print "\t--pinmax:\tspecify maximum length of PIN\t\t[15]"
     print "EXAMPLES:"
     print "   $ pinpad-test                   # verify user's PIN "
     print "   $ pinpad-test --admin           # verify admin's PIN "
