@@ -286,4 +286,6 @@ if __name__ == '__main__':
             raise ValueError, option
     main(who, method, add_a_byte, pinmax, change_by_two_steps)
 
-# 69 82: security error: pin doesn't match
+# 69 82: Security status not satisfied: pin doesn't match
+# 69 85: Conditions of use not satisfied
+# 6b 00: Wrong parameters P1-P2
