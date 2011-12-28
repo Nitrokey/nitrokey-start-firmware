@@ -4,6 +4,14 @@ Gnuk NEWS - User visible changes
 
   Released 2012-01-XX, by NIIBE Yutaka
 
+** USB CCID/ICCD low level bug is fixed
+When the size of command APDU data is just 49, the lower level packet
+size is 64.  This is maximum size of BULK-OUT transfer packet, and
+caused trouble in the past implementations.  Example is setting url
+(0x5f50) as: http://www.gniibe.org/adpu-string-size-is-just-49
+This is because the past implementations expect ZLP (zero size
+packet).  Now, it has been fixed.  You can use any size.
+
 ** CERT.3 Data Object (0x7f21) is now optional
 As there's no valid use case for this data object and it does not
 work as current version of GnuPG, this is now optional feature.

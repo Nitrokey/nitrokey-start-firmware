@@ -1,3 +1,10 @@
+2011-12-28  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/usb_prop.c (msc_lun_info) [PINPAD_DND_SUPPORT]: ifdef-out.
+
+	* src/usb-icc.c (EP2_OUT_Callback): Fix apdu size == 49 bug,
+	we don't assume host sends ZLP (But accepts ZLP, just in case).
+
 2011-12-22  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/openpgp-do.c (extended_capabilities) [CERTDO_SUPPORT]:

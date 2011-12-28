@@ -288,6 +288,7 @@ gnuk_data_rates (uint16_t len)
   return (uint8_t *)data_rate_table;
 }
 
+#if defined(PINPAD_DND_SUPPORT)
 static const uint8_t lun_table[] = { 0, 0, 0, 0, };
 static uint8_t *
 msc_lun_info (uint16_t len)
@@ -300,6 +301,7 @@ msc_lun_info (uint16_t len)
 
   return (uint8_t *)lun_table;
 }
+#endif
 
 static RESULT
 gnuk_setup_with_data (uint8_t RequestNo)

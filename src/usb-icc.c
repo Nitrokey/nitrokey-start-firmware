@@ -169,12 +169,31 @@ void
 EP2_OUT_Callback (void)
 {
   int len;
+  struct icc_header *icc_header;
+  int data_len_so_far;
+  int data_len;
 
   len = USB_SIL_Read (EP2_OUT, icc_next_p);
+  if (len == 0)
+    {		    /* Just ignore Zero Length Packet (ZLP), if any */
+      SetEPRxValid (ENDP2);
+      return;
+    }
 
-  if (len == USB_LL_BUF_SIZE) /* The sequence of transactions continues */
+  icc_next_p += len;
+
+  if (icc_chain_p)
+    icc_header = (struct icc_header *)icc_chain_p;
+  else
+    icc_header = (struct icc_header *)icc_buffer;
+
+  data_len = icc_header->data_len; /* NOTE: We're little endian */
+  data_len_so_far = (icc_next_p - (uint8_t *)icc_header) - ICC_MSG_HEADER_SIZE;
+
+  if (len == USB_LL_BUF_SIZE
+      && data_len != data_len_so_far)
+    /* The sequence of transactions continues */
     {
-      icc_next_p += USB_LL_BUF_SIZE;
       SetEPRxValid (ENDP2);
       if ((icc_next_p - icc_buffer) >= USB_BUF_SIZE)
 	/* No room to receive any more */
@@ -186,27 +205,18 @@ EP2_OUT_Callback (void)
 	   * (and discard the whole block)
 	   */
 	}
+
+      /*
+       * NOTE: It is possible a transaction may stall when the size of
+       * BULK_OUT transaction it's bigger than USB_BUF_SIZE and stops
+       * with just USB_LL_BUF_SIZE packet.  Device will remain waiting
+       * another packet.
+       */
     }
   else 				/* Finished */
     {
-      struct icc_header *icc_header;
-      int data_len;
-
-      icc_next_p += len;
-      if (icc_chain_p)
-	{
-	  icc_header = (struct icc_header *)icc_chain_p;
-	  icc_data_size = (icc_next_p - icc_chain_p) - ICC_MSG_HEADER_SIZE;
-	}
-      else
-	{
-	  icc_header = (struct icc_header *)icc_buffer;
-	  icc_data_size = (icc_next_p - icc_buffer) - ICC_MSG_HEADER_SIZE;
-	}
-
-      /* NOTE: We're little endian, nothing to convert */
-      data_len = icc_header->data_len;
-      icc_seq = icc_header->seq;
+      icc_data_size = data_len_so_far;
+      icc_seq = icc_header->seq; /* NOTE: We're little endian */
 
       if (icc_data_size != data_len)
 	{
