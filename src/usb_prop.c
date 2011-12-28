@@ -41,6 +41,19 @@
 #endif
 
 
+void
+SetEPRxCount_allocated_size (uint8_t bEpNum, uint16_t wCount)
+{				/* Assume wCount is even */
+  uint16_t value;
+
+  if (wCount < 62)
+    value = (wCount & 0x3e) << 9;
+  else
+    value = 0x8000 | (((wCount >> 5) - 1) << 10);
+
+  SetEPRxCount (bEpNum, value);
+}
+
 static void
 gnuk_device_init (void)
 {
@@ -75,7 +88,7 @@ gnuk_device_reset (void)
   SetEPRxAddr (ENDP0, ENDP0_RXADDR);
   SetEPTxAddr (ENDP0, ENDP0_TXADDR);
   Clear_Status_Out (ENDP0);
-  SetEPRxCount (ENDP0, GNUK_MAX_PACKET_SIZE);
+  SetEPRxCount_allocated_size (ENDP0, GNUK_MAX_PACKET_SIZE);
   SetEPRxValid (ENDP0);
 
   /* Initialize Endpoint 1 */
@@ -87,7 +100,7 @@ gnuk_device_reset (void)
   /* Initialize Endpoint 2 */
   SetEPType (ENDP2, EP_BULK);
   SetEPRxAddr (ENDP2, ENDP2_RXADDR);
-  SetEPRxCount (ENDP2, GNUK_MAX_PACKET_SIZE);
+  SetEPRxCount_allocated_size (ENDP2, GNUK_MAX_PACKET_SIZE);
   SetEPRxStatus (ENDP2, EP_RX_VALID);
   SetEPTxStatus (ENDP2, EP_TX_DIS);
 
@@ -107,7 +120,7 @@ gnuk_device_reset (void)
   /* Initialize Endpoint 5 */
   SetEPType (ENDP5, EP_BULK);
   SetEPRxAddr (ENDP5, ENDP5_RXADDR);
-  SetEPRxCount (ENDP5, VIRTUAL_COM_PORT_DATA_SIZE);
+  SetEPRxCount_allocated_size (ENDP5, VIRTUAL_COM_PORT_DATA_SIZE);
   SetEPRxStatus (ENDP5, EP_RX_VALID);
   SetEPTxStatus (ENDP5, EP_TX_DIS);
 #endif
@@ -122,6 +135,7 @@ gnuk_device_reset (void)
   /* Initialize Endpoint 7 */
   SetEPType (ENDP7, EP_BULK);
   SetEPRxAddr (ENDP7, ENDP7_RXADDR);
+  SetEPRxCount_allocated_size (ENDP7, 64);
   SetEPRxStatus (ENDP7, EP_RX_STALL);
   SetEPTxStatus (ENDP7, EP_TX_DIS);
 #endif

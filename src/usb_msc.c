@@ -118,10 +118,6 @@ static void usb_start_receive (uint8_t *p, size_t n)
   ep7_out.rxbuf = p;
   ep7_out.rxsize = n;
   ep7_out.rxcnt = 0;
-  if (n < ENDP_MAX_SIZE)
-    SetEPRxCount (ENDP7, n);
-  else
-    SetEPRxCount (ENDP7, ENDP_MAX_SIZE);
   SetEPRxValid (ENDP7);
 }
 

@@ -1,5 +1,12 @@
 2011-12-28  Niibe Yutaka  <gniibe@fsij.org>
 
+	* src/usb_prop.c (SetEPRxCount_allocated_size): New.
+	(gnuk_device_reset): Use SetEPRxCount_allocated_size.
+	* src/usb_msc.c (usb_start_receive): Don't set RxCount register
+	here.
+	* STM32_USB-FS-Device_Driver/src/usb_core.c (Standard_ClearFeature)
+	(Post0_Process): Don't need to set RxCount register.
+
 	* src/usb_prop.c (msc_lun_info) [PINPAD_DND_SUPPORT]: ifdef-out.
 
 	* src/usb-icc.c (EP2_OUT_Callback): Fix apdu size == 49 bug,
