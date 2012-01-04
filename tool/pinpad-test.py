@@ -355,15 +355,16 @@ if __name__ == '__main__':
 #   OK: --verify --admin
 #   OK: --change
 #   OK: --change --admin
-#   FAIL: --change2 fails with 6b 00
-#   FAIL: --change2 --admin fails with 6b 00
-#   FAIL: --put fails with 6b 80
+#   FAIL: --change2 fails with 6b 00 (after input of PIN)
+#   FAIL: --change2 --admin fails with 6b 00 (after input of PIN)
+#   FAIL: --put fails with 6b 80 (before input of resetcode)
 #   OK: --put2
 #   OK: --unblock
-#   FAIL: --unblock --admin fails with 69 85
+#   FAIL: --unblock --admin fails with 69 85   (after input of PIN)
 #   FAIL: --unblock2 fails with 69 85
-#   FAIL: --unblock2 --admin fails with 69 85
+#   FAIL: --unblock2 --admin fails with 69 85  (after input of PIN)
 
 # Gemalto GemPC Pinpad 00 00
 # It asks users PIN with --add but it results 67 00
 # It seems that it doesn't support variable length PIN
+# Firmware version: GemTwRC2-V2.10-GL04
