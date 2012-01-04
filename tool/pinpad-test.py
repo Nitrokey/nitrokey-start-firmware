@@ -107,7 +107,8 @@ class Card(object):
                        0x00,    # bTeoPrologue[1]
                        0x00     # bTeoPrologue[2]
                        ]
-        pin_verify += [ len(apdu), 0, 0, 0 ] + apdu + self.possibly_add_dummy_byte()
+        apdu += self.possibly_add_dummy_byte()
+        pin_verify += [ len(apdu), 0, 0, 0 ] + apdu
         data = self.connection.control(self.verify_ioctl,pin_verify)
         sw1 = data[0]
         sw2 = data[1]
@@ -138,7 +139,8 @@ class Card(object):
                        0x00,    # bTeoPrologue[1]
                        0x00     # bTeoPrologue[2]
                        ]
-        pin_modify += [ len(apdu), 0, 0, 0 ] + apdu + self.possibly_add_dummy_byte()
+        apdu += self.possibly_add_dummy_byte()
+        pin_modify += [ len(apdu), 0, 0, 0 ] + apdu
         data = self.connection.control(self.modify_ioctl,pin_modify)
         sw1 = data[0]
         sw2 = data[1]
@@ -286,6 +288,9 @@ if __name__ == '__main__':
             raise ValueError, option
     main(who, method, add_a_byte, pinmax, change_by_two_steps)
 
+# Failure
+# 67 00: Wrong length; no further indication
 # 69 82: Security status not satisfied: pin doesn't match
 # 69 85: Conditions of use not satisfied
 # 6b 00: Wrong parameters P1-P2
+
