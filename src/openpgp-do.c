@@ -417,10 +417,12 @@ do_kgtime_all (uint16_t tag, int with_tag)
 }
 
 const uint8_t openpgpcard_aid[] = {
-  0xd2, 0x76, 0x00, 0x01, 0x24, 0x01,
-  0x02, 0x00,			/* Version 2.0 */
-  0xff, 0xff, 0xff, 0xff,  0xff, 0xff, /* To be overwritten */
+  0xd2, 0x76,		    /* D: National, 276: DEU ISO 3166-1 */
+  0x00, 0x01, 0x24,	    /* Registered Application Provider Identifier */
+  0x01,			    /* Application: OpenPGPcard */
+  0x02, 0x00,		    /* Version 2.0 */
   /* v. id */ /*   serial number   */
+  0xff, 0xff, 0xff, 0xff,  0xff, 0xff, /* To be overwritten */
 };
 
 static int

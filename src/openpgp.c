@@ -529,16 +529,19 @@ cmd_read_binary (void)
 static void
 cmd_select_file (void)
 {
-  if (cmd_APDU[2] == 4)	/* Selection by DF name: it must be OpenPGP card */
+  if (cmd_APDU[2] == 4)	/* Selection by DF name */
     {
       DEBUG_INFO (" - select DF by name\r\n");
 
-      /*
-       * P2 == 0, LC=6, name = D2 76 00 01 24 01
-       */
+      /* name = D2 76 00 01 24 01 */
+      if (cmd_APDU[4] != 6 || memcmp (openpgpcard_aid, &cmd_APDU[5], 6) != 0)
+	{
+	  GPG_NO_FILE()
+	  return;
+	}
 
       file_selection = FILE_DF_OPENPGP;
-      if (cmd_APDU[3] == 0x0c)	/* No FCI */
+      if ((cmd_APDU[3] & 0x0c) == 0x0c)	/* No FCI */
 	GPG_SUCCESS ();
       else
 	{

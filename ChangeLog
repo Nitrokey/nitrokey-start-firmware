@@ -1,5 +1,7 @@
 2012-01-05  Niibe Yutaka  <gniibe@fsij.org>
 
+	* src/openpgp.c (cmd_select_file): Check DF name.
+
 	* tool/pinpadtest.py: Rename from pinpad-test.py.
 
 2011-12-28  Niibe Yutaka  <gniibe@fsij.org>
