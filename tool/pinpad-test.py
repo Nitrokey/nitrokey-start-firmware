@@ -347,20 +347,25 @@ if __name__ == '__main__':
 # 6b 80
 # 64 02: PIN different
 
+# General
+# OpenPGP card v2 doesn't support CHANGE REFERENCE DATA in exchanging
+# mode (with P1 == 01, replacing PIN).
+#   FAIL: --change2 fails with 6b 00 (after input of PIN)
+#   FAIL: --change2 --admin fails with 6b 00 (after input of PIN)
+
 # "FSIJ Gnuk (0.16-34006F06) 00 00"
 # Works well except --change2
+# It could support --put and --unblock, but currently it's disabled.
 
 # "Vasco DIGIPASS 920 [CCID] 00 00"
 #   OK: --verify
 #   OK: --verify --admin
 #   OK: --change
 #   OK: --change --admin
-#   FAIL: --change2 fails with 6b 00 (after input of PIN)
-#   FAIL: --change2 --admin fails with 6b 00 (after input of PIN)
-#   FAIL: --put fails with 6b 80 (before input of resetcode)
-#   OK: --put2
 #   OK: --unblock
 #   FAIL: --unblock --admin fails with 69 85   (after input of PIN)
+#   FAIL: --put fails with 6b 80 (before input of resetcode)
+#   OK: --put2
 #   FAIL: --unblock2 fails with 69 85
 #   FAIL: --unblock2 --admin fails with 69 85  (after input of PIN)
 
