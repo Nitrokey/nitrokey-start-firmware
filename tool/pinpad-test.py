@@ -1,7 +1,7 @@
 #! /usr/bin/python
 
 """
-pinpad-test.py - a tool to test pinpad support by card reader.
+pinpadtest.py - a tool to test variable length pin entry with pinpad
 
 Copyright (C) 2011 Free Software Initiative of Japan
 Author: NIIBE Yutaka <gniibe@fsij.org>
