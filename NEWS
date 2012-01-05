@@ -4,13 +4,18 @@ Gnuk NEWS - User visible changes
 
   Released 2012-01-XX, by NIIBE Yutaka
 
+** ISO 7816 SELECT command behavior is strict now
+Old implementations do not check DF name for SELECT command.
+This causes some trouble when Gnuk Token is identified as if it were
+different card/token.  Now, DF name of OpenPGP card is checked.
+
 ** USB CCID/ICCD low level bug is fixed
 When the size of command APDU data is just 49, the lower level packet
 size is 64.  This is maximum size of BULK-OUT transfer packet, and
 caused trouble in the past implementations.  Example is setting url
 (0x5f50) as: http://www.gniibe.org/adpu-string-size-is-just-49
-This is because the past implementations expect ZLP (zero size
-packet).  Now, it has been fixed.  You can use any size.
+This is because the past implementations expect ZLP (zero length
+packet).  Now, it has been fixed.  You can use any size of string.
 
 ** CERT.3 Data Object (0x7f21) is now optional
 As there's no valid use case for this data object and it does not
@@ -22,8 +27,8 @@ configure time.
 Now, user can cancel pin input by unmounting device before finishing
 DnD.
 
-** New tool: pinpad-test.py
-The tool pinpad-test.py is PC/SC test tool for pinentry of pinpad with
+** New tool: pinpadtest.py
+The tool pinpadtest.py is PC/SC test tool for pinentry of pinpad with
 OpenPGP card v2.
 
 
