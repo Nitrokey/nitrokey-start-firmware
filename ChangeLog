@@ -1,3 +1,8 @@
+2012-01-10  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/openpgp.c (GPGthread): Allow INS_RESET_RETRY_COUNTER and
+	INS_PUT_DATA for pinentry targets.
+
 2012-01-05  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/openpgp.c (cmd_select_file): Check DF name.

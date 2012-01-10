@@ -966,7 +966,9 @@ GPGthread (void *arg)
 	  uint8_t bConfirmPIN = cmd_APDU[4];
 	  uint8_t *p = &cmd_APDU[5];
 
-	  if (cmd_APDU[1] != INS_CHANGE_REFERENCE_DATA)
+	  if (cmd_APDU[1] != INS_CHANGE_REFERENCE_DATA
+	      && cmd_APDU[1] != INS_RESET_RETRY_COUNTER
+	      && cmd_APDU[1] != INS_PUT_DATA)
 	    {
 	      GPG_CONDITION_NOT_SATISFIED ();
 	      goto done;
