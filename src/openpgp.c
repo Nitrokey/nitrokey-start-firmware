@@ -536,7 +536,7 @@ cmd_select_file (void)
       /* name = D2 76 00 01 24 01 */
       if (cmd_APDU[4] != 6 || memcmp (openpgpcard_aid, &cmd_APDU[5], 6) != 0)
 	{
-	  GPG_NO_FILE ()
+	  GPG_NO_FILE ();
 	  return;
 	}
 
