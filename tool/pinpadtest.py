@@ -3,7 +3,7 @@
 """
 pinpadtest.py - a tool to test variable length pin entry with pinpad
 
-Copyright (C) 2011 Free Software Initiative of Japan
+Copyright (C) 2011, 2012 Free Software Initiative of Japan
 Author: NIIBE Yutaka <gniibe@fsij.org>
 
 This file is a part of Gnuk, a GnuPG USB Token implementation.
@@ -53,7 +53,7 @@ def confirm_pin_setting(single_step):
 class Card(object):
     def __init__(self, add_a_byte, pinmin, pinmax):
         cardtype = AnyCardType()
-        cardrequest = CardRequest(timeout=1, cardType=cardtype)
+        cardrequest = CardRequest(timeout=10, cardType=cardtype)
         cardservice = cardrequest.waitforcard()
         self.connection = cardservice.connection
         self.verify_ioctl = -1
@@ -369,7 +369,30 @@ if __name__ == '__main__':
 #   FAIL: --unblock2 fails with 69 85
 #   FAIL: --unblock2 --admin fails with 69 85  (after input of PIN)
 
+# 0c4b:0500 Reiner SCT Kartensysteme GmbH
+# "REINER SCT cyberJack RFID standard (7592671050) 00 00"
+#   OK: --verify
+#   OK: --verify --admin
+#   OK: --change
+#   OK: --change --admin
+#   OK: --unblock
+#   OK: --unblock --admin
+#   FAIL: --put fails with 69 85
+
 # Gemalto GemPC Pinpad 00 00
 # It asks users PIN with --add but it results 67 00
 # It seems that it doesn't support variable length PIN
 # Firmware version: GemTwRC2-V2.10-GL04
+
+# 072f:90d2 Advanced Card Systems, Ltd
+# ACS ACR83U 01 00
+# --verify failed with 6b 80
+
+# 08e6:34c2 Gemplus
+# Gemalto Ezio Shield PinPad 01 00
+# works well
+#   FAIL: --unblock2 fails with 6d 00
+
+# 076b:3821 OmniKey AG CardMan 3821
+# OmniKey CardMan 3821 01 00
+# Works well with --pinmax 31 --pinmin 1
