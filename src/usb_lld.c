@@ -1,5 +1,6 @@
 #include "ch.h"
 #include "hal.h"
+#include "usb_lib.h"
 #include "usb_lld.h"
 
 extern void USB_Istr (void);

@@ -41,17 +41,18 @@
 #endif
 
 
-void
+static void
 SetEPRxCount_allocated_size (uint8_t bEpNum, uint16_t wCount)
 {				/* Assume wCount is even */
+  uint32_t *pdwReg = _pEPRxCount (bEpNum);
   uint16_t value;
 
-  if (wCount < 62)
+  if (wCount <= 62)
     value = (wCount & 0x3e) << 9;
   else
     value = 0x8000 | (((wCount >> 5) - 1) << 10);
 
-  SetEPRxCount (bEpNum, value);
+  *pdwReg = (uint32_t)value;
 }
 
 static void
@@ -63,7 +64,9 @@ gnuk_device_init (void)
   PowerOn ();
 
   /* Perform basic device initialization operations */
-  USB_SIL_Init ();
+  _SetISTR (0);
+  wInterrupt_Mask = IMR_MSK;
+  _SetCNTR (wInterrupt_Mask);
 
   bDeviceState = UNCONNECTED;
 }

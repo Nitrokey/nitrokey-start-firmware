@@ -29,6 +29,7 @@
 #include "usb_mem.h"
 #include "hw_config.h"
 #include "usb_istr.h"
+#include "usb_lld.h"
 
 #define ICC_SET_PARAMS		0x61 /* non-ICCD command  */
 #define ICC_POWER_ON		0x62
@@ -131,8 +132,7 @@ EP1_IN_Callback (void)
     {
       /* Send the last 0-DATA transcation of Bulk-IN in the transactions */
       icc_next_p = NULL;
-      USB_SIL_Write (EP1_IN, icc_buffer, 0);
-      SetEPTxValid (ENDP1);
+      usb_lld_write (ENDP1, icc_buffer, 0);
     }
   else
     {
@@ -146,8 +146,7 @@ EP1_IN_Callback (void)
 	  tx_size = &icc_buffer[icc_tx_size] - p;
 	}
 
-      USB_SIL_Write (EP1_IN, p, tx_size);
-      SetEPTxValid (ENDP1);
+      usb_lld_write (ENDP1, p, tx_size);
     }
 }
 
@@ -159,7 +158,7 @@ icc_prepare_receive (int chain)
   else
     icc_next_p = icc_buffer;
 
-  SetEPRxValid (ENDP2);
+  usb_lld_rx_enable (ENDP2);
 }
 
 /*
@@ -173,10 +172,11 @@ EP2_OUT_Callback (void)
   int data_len_so_far;
   int data_len;
 
-  len = USB_SIL_Read (EP2_OUT, icc_next_p);
+  len = usb_lld_get_data_len (ENDP2);
+  usb_lld_rxcpy (icc_next_p, ENDP2, 0, len);
   if (len == 0)
     {		    /* Just ignore Zero Length Packet (ZLP), if any */
-      SetEPRxValid (ENDP2);
+      usb_lld_rx_enable (ENDP2);
       return;
     }
 
@@ -194,7 +194,7 @@ EP2_OUT_Callback (void)
       && data_len != data_len_so_far)
     /* The sequence of transactions continues */
     {
-      SetEPRxValid (ENDP2);
+      usb_lld_rx_enable (ENDP2);
       if ((icc_next_p - icc_buffer) >= USB_BUF_SIZE)
 	/* No room to receive any more */
 	{
@@ -298,8 +298,7 @@ icc_error (int offset)
 
   icc_next_p = NULL;	/* This is a single transaction Bulk-IN */
   icc_tx_size = ICC_MSG_HEADER_SIZE;
-  USB_SIL_Write (EP1_IN, icc_reply, icc_tx_size);
-  SetEPTxValid (ENDP1);
+  usb_lld_write (ENDP1, icc_reply, icc_tx_size);
 }
 
 static Thread *gpg_thread;
@@ -332,8 +331,7 @@ icc_power_on (void)
 
   icc_next_p = NULL;	/* This is a single transaction Bulk-IN */
   icc_tx_size = ICC_MSG_HEADER_SIZE + size_atr;
-  USB_SIL_Write (EP1_IN, icc_buffer, icc_tx_size);
-  SetEPTxValid (ENDP1);
+  usb_lld_write (ENDP1, icc_buffer, icc_tx_size);
   DEBUG_INFO ("ON\r\n");
 
   return ICC_STATE_WAIT;
@@ -367,8 +365,7 @@ icc_send_status (void)
 
   icc_next_p = NULL;	/* This is a single transaction Bulk-IN */
   icc_tx_size = ICC_MSG_HEADER_SIZE;
-  USB_SIL_Write (EP1_IN, icc_reply, icc_tx_size);
-  SetEPTxValid (ENDP1);
+  usb_lld_write (ENDP1, icc_reply, icc_tx_size);
 
 #ifdef DEBUG_MORE
   DEBUG_INFO ("St\r\n");
@@ -428,8 +425,7 @@ icc_send_data_block (int len, uint8_t status, uint8_t chain)
   else
     icc_next_p = p + USB_LL_BUF_SIZE;
 
-  USB_SIL_Write (EP1_IN, p, tx_size);
-  SetEPTxValid (ENDP1);
+  usb_lld_write (ENDP1, p, tx_size);
 #ifdef DEBUG_MORE
   DEBUG_INFO ("DATA\r\n");
 #endif
@@ -458,8 +454,7 @@ icc_send_params (void)
 
   icc_next_p = NULL;	/* This is a single transaction Bulk-IN */
   icc_tx_size = ICC_MSG_HEADER_SIZE + 7;
-  USB_SIL_Write (EP1_IN, icc_buffer, icc_tx_size);
-  SetEPTxValid (ENDP1);
+  usb_lld_write (ENDP1, icc_buffer, icc_tx_size);
 #ifdef DEBUG_MORE
   DEBUG_INFO ("DATA\r\n");
 #endif

@@ -1,3 +1,24 @@
+2012-01-16  Niibe Yutaka  <gniibe@fsij.org>
+
+	Adopt new API.
+	* src/usb-icc.c (EP1_IN_Callback, icc_error, icc_power_on)
+	(icc_send_status, icc_send_data_block, icc_send_params): Use
+	usb_lld_write (was: USB_SIL_Write).
+	(EP2_OUT_Callback): Use usb_lld_get_data_len, usb_lld_rxcpy,
+	and usb_lld_rx_enable (was: USB_SIL_Read and SetEPRxValid).
+	(icc_prepare_receive): Use usb_lld_rx_enable.
+
+	* src/stmusb.mk (STMUSBSRC): Dont' include usb_sil.c.
+
+	* src/usb_lld.h (usb_lld_txcpy, usb_lld_tx_enable)
+	(usb_lld_write, usb_lld_rx_enable, usb_lld_get_data_len)
+	(usb_lld_rxcpy): New.
+
+	* src/usb_prop.c (SetEPRxCount_allocated_size): Fix the
+	implementation.  (ST's SetEPRxCount is actually meant to
+	setup allocated size, which is confusing).
+	(gnuk_device_init): Don't call USB_SIL_Init.
+
 2012-01-10  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/openpgp.c (GPGthread): Allow INS_RESET_RETRY_COUNTER and
