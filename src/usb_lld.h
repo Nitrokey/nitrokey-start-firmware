@@ -1,6 +1,21 @@
 #define STM32_USB_IRQ_PRIORITY     11
 void usb_lld_init (void);
 
+extern inline void usb_lld_stall_tx (int ep_num)
+{
+  SetEPTxStatus (ep_num, EP_TX_STALL);
+}
+
+extern inline void usb_lld_stall_rx (int ep_num)
+{
+  SetEPRxStatus (ep_num, EP_RX_STALL);
+}
+
+extern inline int usb_lld_tx_data_len (int ep_num)
+{
+  return GetEPTxCount (ep_num);
+}
+
 extern inline void usb_lld_txcpy (const uint8_t *src,
 				  int ep_num, int offset, size_t len)
 {
@@ -25,7 +40,7 @@ extern inline void usb_lld_rx_enable (int ep_num)
   SetEPRxValid (ep_num);
 }
 
-extern inline int usb_lld_get_data_len (int ep_num)
+extern inline int usb_lld_rx_data_len (int ep_num)
 {
   return GetEPRxCount (ep_num);
 }

@@ -1,7 +1,7 @@
 /*
  * usb-icc.c -- USB CCID/ICCD protocol handling
  *
- * Copyright (C) 2010, 2011 Free Software Initiative of Japan
+ * Copyright (C) 2010, 2011, 2012 Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
  * This file is a part of Gnuk, a GnuPG USB Token implementation.
@@ -172,7 +172,7 @@ EP2_OUT_Callback (void)
   int data_len_so_far;
   int data_len;
 
-  len = usb_lld_get_data_len (ENDP2);
+  len = usb_lld_rx_data_len (ENDP2);
   usb_lld_rxcpy (icc_next_p, ENDP2, 0, len);
   if (len == 0)
     {		    /* Just ignore Zero Length Packet (ZLP), if any */

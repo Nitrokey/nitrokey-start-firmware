@@ -1,17 +1,29 @@
 2012-01-16  Niibe Yutaka  <gniibe@fsij.org>
 
-	Adopt new API.
+	Adopt new USB API.
+	* src/usb_msc.c (usb_start_transmit): Use usb_lld_write.
+	(EP6_IN_Callback): Use usb_lld_tx_data_len and usb_lld_write.
+	(usb_start_receive): Use usb_lld_rx_enable.
+	(EP7_OUT_Callback): Use usb_lld_rx_data_len, usb_lld_rxcpy
+	and usb_lld_rx_enable
+	(msc_handle_command): Use usb_lld_stall_rx and usb_lld_stall_tx.
+
+	* src/usb_lld.h (usb_lld_stall_tx, usb_lld_stall_rx)
+	(usb_lld_tx_data_len): New.
+
+	* src/main.c (STDOUTthread): Use usb_lld_write.
+
 	* src/usb-icc.c (EP1_IN_Callback, icc_error, icc_power_on)
 	(icc_send_status, icc_send_data_block, icc_send_params): Use
 	usb_lld_write (was: USB_SIL_Write).
-	(EP2_OUT_Callback): Use usb_lld_get_data_len, usb_lld_rxcpy,
+	(EP2_OUT_Callback): Use usb_lld_rx_data_len, usb_lld_rxcpy,
 	and usb_lld_rx_enable (was: USB_SIL_Read and SetEPRxValid).
 	(icc_prepare_receive): Use usb_lld_rx_enable.
 
 	* src/stmusb.mk (STMUSBSRC): Dont' include usb_sil.c.
 
 	* src/usb_lld.h (usb_lld_txcpy, usb_lld_tx_enable)
-	(usb_lld_write, usb_lld_rx_enable, usb_lld_get_data_len)
+	(usb_lld_write, usb_lld_rx_enable, usb_lld_rx_data_len)
 	(usb_lld_rxcpy): New.
 
 	* src/usb_prop.c (SetEPRxCount_allocated_size): Fix the

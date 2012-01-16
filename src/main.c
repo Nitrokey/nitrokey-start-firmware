@@ -132,8 +132,7 @@ STDOUTthread (void *arg)
 
 	  chEvtClear (EV_TX_READY);
 
-	  USB_SIL_Write (EP3_IN, buffer_in, count_in);
-	  SetEPTxValid (ENDP3);
+	  usb_lld_write (ENDP3, buffer_in, count_in);
 
 	  chEvtWaitOne (EV_TX_READY);
 	}

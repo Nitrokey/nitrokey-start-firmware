@@ -1,7 +1,7 @@
 /*
  * usb_msc.c -- USB Mass Storage Class protocol handling
  *
- * Copyright (C) 2011 Free Software Initiative of Japan
+ * Copyright (C) 2011, 2012 Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
  * This file is a part of Gnuk, a GnuPG USB Token implementation.
@@ -26,6 +26,7 @@
 #include "config.h"
 #include "ch.h"
 #include "gnuk.h"
+#include "usb_lld.h"
 #include "usb_msc.h"
 
 struct usb_endp_in {
@@ -50,11 +51,6 @@ static Thread *the_thread;
 static uint8_t msc_state;
 
 
-static void usb_stall_transmit (void)
-{
-  SetEPTxStatus (ENDP6, EP_TX_STALL);
-}
-
 static void usb_start_transmit (const uint8_t *p, size_t n)
 {
   size_t pkt_len = n > ENDP_MAX_SIZE ? ENDP_MAX_SIZE : n;
@@ -63,14 +59,13 @@ static void usb_start_transmit (const uint8_t *p, size_t n)
   ep6_in.txsize = n;
   ep6_in.txcnt = 0;
 
-  USB_SIL_Write (EP6_IN, (uint8_t *)ep6_in.txbuf, pkt_len);
-  SetEPTxValid (ENDP6);
+  usb_lld_write (ENDP6, (uint8_t *)ep6_in.txbuf, pkt_len);
 }
 
 /* "Data Transmitted" callback */
 void EP6_IN_Callback (void)
 {
-  size_t n = (size_t)GetEPTxCount (ENDP6);
+  size_t n = (size_t)usb_lld_tx_data_len (ENDP6);
 
   ep6_in.txbuf += n;
   ep6_in.txcnt += n;
@@ -82,8 +77,7 @@ void EP6_IN_Callback (void)
 	n = ENDP_MAX_SIZE;
       else
 	n = ep6_in.txsize;
-      USB_SIL_Write (EP6_IN, (uint8_t *)ep6_in.txbuf, n);
-      SetEPTxValid (ENDP6);
+      usb_lld_write (ENDP6, (uint8_t *)ep6_in.txbuf, n);
       return;
     }
 
@@ -108,39 +102,34 @@ void EP6_IN_Callback (void)
 }
 
 
-static void usb_stall_receive (void)
-{
-  SetEPRxStatus (ENDP7, EP_RX_STALL);
-}
-
 static void usb_start_receive (uint8_t *p, size_t n)
 {
   ep7_out.rxbuf = p;
   ep7_out.rxsize = n;
   ep7_out.rxcnt = 0;
-  SetEPRxValid (ENDP7);
+  usb_lld_rx_enable (ENDP7);
 }
 
 /* "Data Received" call back */
 void EP7_OUT_Callback (void)
 {
-  size_t n = (size_t)GetEPRxCount (ENDP7);
+  size_t n = (size_t)usb_lld_rx_data_len (ENDP7);
   int err = 0;
 
   if (n > ep7_out.rxsize)
     {				/* buffer overflow */
       err = 1;
-      SetEPRxCount (ENDP7, ep7_out.rxsize);
+      n = ep7_out.rxsize;
     }
 
-  n = USB_SIL_Read (EP7_OUT, ep7_out.rxbuf);
+  usb_lld_rxcpy (ep7_out.rxbuf, ENDP7, 0, n);
   ep7_out.rxbuf += n;
   ep7_out.rxcnt += n;
   ep7_out.rxsize -= n;
 
   if (n == ENDP_MAX_SIZE && ep7_out.rxsize != 0)
     {				/* More data to be received */
-      SetEPRxValid (ENDP7);
+      usb_lld_rx_enable (ENDP7);
       return;
     }
 
@@ -329,7 +318,7 @@ void msc_handle_command (void)
       if (msg != RDY_TIMEOUT)
 	{
 	  chSysLock ();
-	  usb_stall_receive ();
+	  usb_lld_stall_rx (ENDP7);
 	  chSysUnlock ();
 	}
       return;
@@ -341,7 +330,7 @@ void msc_handle_command (void)
     {
       msc_state = MSC_ERROR;
       chSysLock ();
-      usb_stall_receive ();
+      usb_lld_stall_rx (ENDP7);
       chSysUnlock ();
       return;
     }
@@ -444,8 +433,8 @@ void msc_handle_command (void)
       {
 	msc_state = MSC_ERROR;
 	chSysLock ();
-	usb_stall_transmit ();
-	usb_stall_receive ();
+	usb_lld_stall_tx (ENDP6);
+	usb_lld_stall_rx (ENDP7);
 	chSysUnlock ();
 	return;
       }
