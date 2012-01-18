@@ -1,3 +1,25 @@
+2012-01-18  Niibe Yutaka  <gniibe@fsij.org>
+
+	Clean up API between application layer and CCID layer.
+	* tool/gnuk_put_binary.py, gnuk_put_binary_libusb.py: Don't append
+	0x9000 at the data, any more.
+	* src/usb-icc.c (icc_data_size, icc_buffer, icc_seq): Make them
+	internal.
+	(res_APDU_size, res_APDU_pointer): Removed.
+	(icc_handle_data, USBthread): Follow new API of struct apdu.
+	* src/call-rsa.c (rsa_sign, rsa_decrypt): Likewise.
+	* src/openpgp.c (CLS, INS, P1, P2): New.
+	(set_res_apdu, cmd_verify, cmd_change_password)
+	(cmd_reset_user_password, cmd_put_data, cmd_pgp_gakp)
+	(cmd_read_binary, cmd_select_file, cmd_pso)
+	(cmd_internal_authenticate, cmd_update_binary, cmd_write_binary)
+	(process_command_apdu, GPGthread): Follow new API of struct apdu.
+	* src/openpgp-do.c (gpg_do_get_data, gpg_do_public_key): Follow
+	new API of struct apdu.
+	* src/gnuk.h (struct apdu, apdu): New.
+	(cmd_APDU, icc_data_size, cmd_APDU_size, icc_buffer): Removed.
+	(res_APDU, res_APDU_size): Use members of struct apdu.
+
 2012-01-16  Niibe Yutaka  <gniibe@fsij.org>
 
 	Adopt new USB API.

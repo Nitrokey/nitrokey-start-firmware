@@ -1,3 +1,17 @@
+/*
+ * We declare some of libc functions here, because we will
+ * remove dependency on libc in future, possibly.
+ */
+extern size_t strlen (const char *s);
+extern int strncmp(const char *s1, const char *s2, size_t n);
+extern void *memcpy (void *dest, const void *src, size_t n);
+extern void *memset (void *s, int c, size_t n);
+extern int memcmp (const void *s1, const void *s2, size_t n);
+extern void *memmove(void *dest, const void *src, size_t n);
+
+/*
+ * Debug functions
+ */
 extern Thread *stdout_thread;
 #define EV_TX_READY ((eventmask_t)1)
 
@@ -11,16 +25,26 @@ extern void put_binary (const char *s, int len);
 
 extern void _write (const char *, int);
 
+
 /*
- * We declare some of libc functions here, because we will
- * remove dependency on libc in future.
+ * Application layer <-> CCID layer data structure
  */
-extern size_t strlen (const char *s);
-extern int strncmp(const char *s1, const char *s2, size_t n);
-extern void *memcpy (void *dest, const void *src, size_t n);
-extern void *memset (void *s, int c, size_t n);
-extern int memcmp (const void *s1, const void *s2, size_t n);
-extern void *memmove(void *dest, const void *src, size_t n);
+struct apdu {
+  uint8_t seq;
+
+  /* command APDU */
+  uint8_t *cmd_apdu_head;	/* CLS INS P1 P2 [ internal Lc ] */
+  uint8_t *cmd_apdu_data;
+  uint16_t cmd_apdu_data_len;	/* Nc, calculated by Lc field */
+  uint32_t expected_res_size;	/* Ne, calculated by Le field */
+
+  /* response APDU */
+  uint16_t sw;
+  uint8_t *res_apdu_data;
+  uint16_t res_apdu_data_len;
+};
+
+extern struct apdu apdu;
 
 #define EV_EXEC_FINISHED ((eventmask_t)2)	 /* GPG Execution finished */
 
@@ -38,12 +62,8 @@ extern void *memmove(void *dest, const void *src, size_t n);
 
 #define ICC_MSG_HEADER_SIZE	10
 
-#define cmd_APDU (&icc_buffer[ICC_MSG_HEADER_SIZE])
-#define res_APDU (&icc_buffer[ICC_MSG_HEADER_SIZE])
-extern int icc_data_size;
-#define cmd_APDU_size icc_data_size
-extern int res_APDU_size;
-extern const uint8_t *res_APDU_pointer;
+#define res_APDU apdu.res_apdu_data
+#define res_APDU_size apdu.res_apdu_data_len
 
 /* USB buffer size of LL (Low-level): size of single Bulk transaction */
 #define USB_LL_BUF_SIZE 64
@@ -54,7 +74,6 @@ extern const uint8_t *res_APDU_pointer;
  */
 #define USB_BUF_SIZE ((10 + 10 + MAX_CMD_APDU_SIZE + USB_LL_BUF_SIZE - 1) \
 			/ USB_LL_BUF_SIZE * USB_LL_BUF_SIZE)
-extern uint8_t icc_buffer[USB_BUF_SIZE];
 
 enum icc_state
 {

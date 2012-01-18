@@ -31,6 +31,8 @@
 #include "usb_istr.h"
 #include "usb_lld.h"
 
+struct apdu apdu;
+
 #define ICC_SET_PARAMS		0x61 /* non-ICCD command  */
 #define ICC_POWER_ON		0x62
 #define ICC_POWER_OFF		0x63
@@ -74,7 +76,7 @@ struct icc_header {
   uint16_t param;
 } __attribute__((packed));
 
-int icc_data_size;
+static int icc_data_size;
 
 /*
  * USB-ICC communication could be considered "half duplex".
@@ -94,8 +96,8 @@ int icc_data_size;
  * The buffer will be filled by multiple RX transactions (Bulk-OUT)
  * or will be used for multiple TX transactions (Bulk-IN)
  */
-uint8_t icc_buffer[USB_BUF_SIZE];
-uint8_t icc_seq;
+static uint8_t icc_buffer[USB_BUF_SIZE];
+static uint8_t icc_seq;
 
 /*
  * Pointer to ICC_BUFFER
@@ -391,9 +393,6 @@ icc_power_off (void)
   return ICC_STATE_START;
 }
 
-int res_APDU_size;
-const uint8_t *res_APDU_pointer;
-
 static void
 icc_send_data_block (int len, uint8_t status, uint8_t chain)
 {
@@ -501,6 +500,87 @@ icc_handle_data (void)
 	{
 	  if (icc_header->param == 0)
 	    {			/* Give this message to GPG thread */
+	    run_gpg_thread:
+	      apdu.seq = icc_seq;
+	      apdu.cmd_apdu_head = &icc_buffer[ICC_MSG_HEADER_SIZE];
+
+	      apdu.sw = 0x9000;
+	      apdu.res_apdu_data_len = 0;
+	      apdu.res_apdu_data = &icc_buffer[ICC_MSG_HEADER_SIZE];
+
+	      if (icc_data_size < 4)
+		{
+		  icc_error (ICC_MSG_HEADER_SIZE + icc_data_size);
+		  next_state = ICC_STATE_WAIT;
+		  break;
+		}
+	      else if (icc_data_size == 4)
+		{		/* No Lc and No Le */
+		  apdu.cmd_apdu_data = NULL;
+		  apdu.cmd_apdu_data_len = 0;
+		  apdu.expected_res_size = 0;
+		  apdu.cmd_apdu_head[4] = 0;
+		}
+	      else if (icc_data_size == 5)
+		{		/* No Lc but Le */
+		  apdu.cmd_apdu_data = NULL;
+		  apdu.cmd_apdu_data_len = 0;
+		  apdu.expected_res_size = apdu.cmd_apdu_head[4];
+		  if (apdu.expected_res_size == 0)
+		    apdu.expected_res_size = 256;
+		  apdu.cmd_apdu_head[4] = 0;
+		}
+	      else if (apdu.cmd_apdu_head[4] == 0)
+		{		/* extended Lc or extended Le */
+		  apdu.cmd_apdu_data = apdu.cmd_apdu_head + 7;
+		  apdu.cmd_apdu_data_len
+		    = (apdu.cmd_apdu_head[5] << 8) + apdu.cmd_apdu_head[6];
+		  if (icc_data_size == 7)
+		    {		/* No Lc but extended Le */
+		      apdu.expected_res_size = apdu.cmd_apdu_data_len;
+		      apdu.cmd_apdu_data_len = 0;
+		    }
+		  else if (icc_data_size == apdu.cmd_apdu_data_len + 7)
+		    apdu.expected_res_size = 0;
+		  else if (icc_data_size == apdu.cmd_apdu_data_len + 7 + 2)
+		    {
+		      apdu.expected_res_size
+			= (icc_buffer[ICC_MSG_HEADER_SIZE + 7
+				      + apdu.cmd_apdu_data_len] << 8)
+			| icc_buffer[ICC_MSG_HEADER_SIZE + 7
+				     + apdu.cmd_apdu_data_len + 1];
+		      if (apdu.expected_res_size == 0)
+			apdu.expected_res_size = 65536;
+		    }
+		  else
+		    {
+		      icc_error (ICC_MSG_HEADER_SIZE + 5);
+		      next_state = ICC_STATE_WAIT;
+		      break;
+		    }
+		}
+	      else		/* short Lc */
+		{
+		  apdu.cmd_apdu_data = apdu.cmd_apdu_head + 5;
+		  apdu.cmd_apdu_data_len = apdu.cmd_apdu_head[4];
+		  if (icc_data_size == apdu.cmd_apdu_data_len + 5)
+		    apdu.expected_res_size = 0;
+		  else if (icc_data_size == apdu.cmd_apdu_data_len + 5 + 1)
+		    {
+		      apdu.expected_res_size
+			= icc_buffer[ICC_MSG_HEADER_SIZE + 5
+				     + apdu.cmd_apdu_data_len];
+		      if (apdu.expected_res_size == 0)
+			apdu.expected_res_size = 256;
+		    }
+		  else
+		    {
+		      icc_error (ICC_MSG_HEADER_SIZE + 5);
+		      next_state = ICC_STATE_WAIT;
+		      break;
+		    }
+		}
+
 	      chEvtSignal (gpg_thread, EV_CMD_AVAILABLE);
 	      next_state = ICC_STATE_EXECUTE;
 	    }
@@ -523,19 +603,28 @@ icc_handle_data (void)
 	{
 	  if (icc_buffer[10] == 0x00) /* PIN verification */
 	    {
-	      cmd_APDU[0] = icc_buffer[25];
-	      cmd_APDU[1] = icc_buffer[26];
-	      cmd_APDU[2] = icc_buffer[27];
-	      cmd_APDU[3] = icc_buffer[28];
-	      icc_data_size = 4;
-	      cmd_APDU[4] = 0; /* bConfirmPIN */
-	      cmd_APDU[5] = icc_buffer[17]; /* bEntryValidationCondition */
-	      cmd_APDU[6] = icc_buffer[18]; /* bNumberMessage */
-	      cmd_APDU[7] = icc_buffer[19]; /* wLangId L */
-	      cmd_APDU[8] = icc_buffer[20]; /* wLangId H */
-	      cmd_APDU[9] = icc_buffer[21]; /* bMsgIndex, bMsgIndex1 */
-	      cmd_APDU[10] = 0; /* bMsgIndex2 */
-	      cmd_APDU[11] = 0; /* bMsgIndex3 */
+	      icc_buffer[ICC_MSG_HEADER_SIZE+0] = icc_buffer[25];
+	      icc_buffer[ICC_MSG_HEADER_SIZE+1] = icc_buffer[26];
+	      icc_buffer[ICC_MSG_HEADER_SIZE+2] = icc_buffer[27];
+	      icc_buffer[ICC_MSG_HEADER_SIZE+3] = icc_buffer[28];
+	      /**/
+	      icc_buffer[ICC_MSG_HEADER_SIZE+5] = 0; /* bConfirmPIN */
+	      icc_buffer[ICC_MSG_HEADER_SIZE+6] = icc_buffer[17]; /* bEntryValidationCondition */
+	      icc_buffer[ICC_MSG_HEADER_SIZE+7] = icc_buffer[18]; /* bNumberMessage */
+	      icc_buffer[ICC_MSG_HEADER_SIZE+8] = icc_buffer[19]; /* wLangId L */
+	      icc_buffer[ICC_MSG_HEADER_SIZE+9] = icc_buffer[20]; /* wLangId H */
+	      icc_buffer[ICC_MSG_HEADER_SIZE+10] = icc_buffer[21]; /* bMsgIndex */
+
+	      apdu.seq = icc_seq;
+	      apdu.cmd_apdu_head = &icc_buffer[ICC_MSG_HEADER_SIZE+0];
+	      apdu.cmd_apdu_data = &icc_buffer[ICC_MSG_HEADER_SIZE+5];
+	      apdu.cmd_apdu_data_len = 6;
+	      apdu.expected_res_size = 0;
+
+	      apdu.sw = 0x9000;
+	      apdu.res_apdu_data_len = 0;
+	      apdu.res_apdu_data = &icc_buffer[ICC_MSG_HEADER_SIZE];
+
 	      chEvtSignal (gpg_thread, EV_VERIFY_CMD_AVAILABLE);
 	      next_state = ICC_STATE_EXECUTE;
 	    }
@@ -547,22 +636,32 @@ icc_handle_data (void)
 		num_msgs = 1;
 	      else if (num_msgs == 0xff)
 		num_msgs = 3;
-	      cmd_APDU[0] = icc_buffer[27 + num_msgs];
-	      cmd_APDU[1] = icc_buffer[28 + num_msgs];
-	      cmd_APDU[2] = icc_buffer[29 + num_msgs];
-	      cmd_APDU[3] = icc_buffer[30 + num_msgs];
-	      icc_data_size = 4;
-	      cmd_APDU[4] = icc_buffer[19]; /* bConfirmPIN */
-	      cmd_APDU[5] = icc_buffer[20]; /* bEntryValidationCondition */
-	      cmd_APDU[6] = icc_buffer[21]; /* bNumberMessage */
-	      cmd_APDU[7] = icc_buffer[22]; /* wLangId L */
-	      cmd_APDU[8] = icc_buffer[23]; /* wLangId H */
-	      cmd_APDU[9] = icc_buffer[24]; /* bMsgIndex, bMsgIndex1 */
-	      cmd_APDU[10] = cmd_APDU[11] = 0;
+	      icc_buffer[ICC_MSG_HEADER_SIZE+0] = icc_buffer[27 + num_msgs];
+	      icc_buffer[ICC_MSG_HEADER_SIZE+1] = icc_buffer[28 + num_msgs];
+	      icc_buffer[ICC_MSG_HEADER_SIZE+2] = icc_buffer[29 + num_msgs];
+	      icc_buffer[ICC_MSG_HEADER_SIZE+3] = icc_buffer[30 + num_msgs];
+	      /**/
+	      icc_buffer[ICC_MSG_HEADER_SIZE+5] = icc_buffer[19]; /* bConfirmPIN */
+	      icc_buffer[ICC_MSG_HEADER_SIZE+6] = icc_buffer[20]; /* bEntryValidationCondition */
+	      icc_buffer[ICC_MSG_HEADER_SIZE+7] = icc_buffer[21]; /* bNumberMessage */
+	      icc_buffer[ICC_MSG_HEADER_SIZE+8] = icc_buffer[22]; /* wLangId L */
+	      icc_buffer[ICC_MSG_HEADER_SIZE+9] = icc_buffer[23]; /* wLangId H */
+	      icc_buffer[ICC_MSG_HEADER_SIZE+10] = icc_buffer[24]; /* bMsgIndex, bMsgIndex1 */
 	      if (num_msgs >= 2)
-		cmd_APDU[10] = icc_buffer[25]; /* bMsgIndex2 */
+		icc_buffer[ICC_MSG_HEADER_SIZE+11] = icc_buffer[25]; /* bMsgIndex2 */
 	      if (num_msgs == 3)
-		cmd_APDU[11] = icc_buffer[26]; /* bMsgIndex3 */
+		icc_buffer[ICC_MSG_HEADER_SIZE+12] = icc_buffer[26]; /* bMsgIndex3 */
+
+	      apdu.seq = icc_seq;
+	      apdu.cmd_apdu_head = &icc_buffer[ICC_MSG_HEADER_SIZE+0];
+	      apdu.cmd_apdu_data = &icc_buffer[ICC_MSG_HEADER_SIZE+5];
+	      apdu.cmd_apdu_data_len = 5 + num_msgs;
+	      apdu.expected_res_size = 0;
+
+	      apdu.sw = 0x9000;
+	      apdu.res_apdu_data_len = 0;
+	      apdu.res_apdu_data = &icc_buffer[ICC_MSG_HEADER_SIZE];
+
 	      chEvtSignal (gpg_thread, EV_MODIFY_CMD_AVAILABLE);
 	      next_state = ICC_STATE_EXECUTE;
 	    }
@@ -594,8 +693,7 @@ icc_handle_data (void)
 	      icc_next_p -= ICC_MSG_HEADER_SIZE;
 	      icc_data_size = icc_next_p - icc_buffer - ICC_MSG_HEADER_SIZE;
 	      icc_chain_p = NULL;
-	      next_state = ICC_STATE_EXECUTE;
-	      chEvtSignal (gpg_thread, EV_CMD_AVAILABLE);
+	      goto run_gpg_thread;
 	    }
 	  else			/* icc_header->param == 3 is not supported. */
 	    {
@@ -633,25 +731,59 @@ icc_handle_data (void)
 	{
 	  if (icc_header->param == 0x10)
 	    {
-	      if (res_APDU_pointer != NULL)
+	      int len = apdu.res_apdu_data_len;
+
+	      if (apdu.res_apdu_data == NULL)
+		{		/* send last byte of 0x9000 */
+		  icc_buffer[ICC_MSG_HEADER_SIZE] = 0x00;
+		  len = 1;
+		}
+	      else if (apdu.res_apdu_data != &icc_buffer[ICC_MSG_HEADER_SIZE])
 		{
-		  memcpy (res_APDU, res_APDU_pointer,
-			  ICC_RESPONSE_MSG_DATA_SIZE);
-		  res_APDU_pointer += ICC_RESPONSE_MSG_DATA_SIZE;
+		  if (apdu.res_apdu_data_len >= ICC_RESPONSE_MSG_DATA_SIZE)
+		    {
+		      memcpy (&icc_buffer[ICC_MSG_HEADER_SIZE],
+			      apdu.res_apdu_data, ICC_RESPONSE_MSG_DATA_SIZE);
+		      apdu.res_apdu_data += ICC_RESPONSE_MSG_DATA_SIZE;
+		    }
+		  else if (apdu.res_apdu_data_len
+			   <= ICC_RESPONSE_MSG_DATA_SIZE - 2)
+		    {
+		      memcpy (&icc_buffer[ICC_MSG_HEADER_SIZE],
+			      apdu.res_apdu_data, apdu.res_apdu_data_len);
+		      icc_buffer[ICC_MSG_HEADER_SIZE+apdu.res_apdu_data_len]
+			= 0x90;
+		      icc_buffer[ICC_MSG_HEADER_SIZE+apdu.res_apdu_data_len+1]
+			= 0x00;
+		      apdu.res_apdu_data = NULL;
+		      len += 2;
+		    }
+		  else if (apdu.res_apdu_data_len
+			   == ICC_RESPONSE_MSG_DATA_SIZE - 1)
+		    {
+		      memcpy (&icc_buffer[ICC_MSG_HEADER_SIZE],
+			      apdu.res_apdu_data, apdu.res_apdu_data_len);
+		      icc_buffer[ICC_MSG_HEADER_SIZE+apdu.res_apdu_data_len]
+			= 0x90;
+		      apdu.res_apdu_data = NULL;
+		      len += 1;
+		    }
 		}
 	      else
-		memmove (res_APDU, res_APDU+ICC_RESPONSE_MSG_DATA_SIZE,
-			 res_APDU_size);
+		memmove (&icc_buffer[ICC_MSG_HEADER_SIZE],
+			 &icc_buffer[ICC_MSG_HEADER_SIZE]
+			 +ICC_RESPONSE_MSG_DATA_SIZE,
+			 apdu.res_apdu_data_len);
 
-	      if (res_APDU_size <= ICC_RESPONSE_MSG_DATA_SIZE)
+	      if (len <= ICC_RESPONSE_MSG_DATA_SIZE)
 		{
-		  icc_send_data_block (res_APDU_size, 0, 0x02);
+		  icc_send_data_block (len, 0, 0x02);
 		  next_state = ICC_STATE_WAIT;
 		}
 	      else
 		{
 		  icc_send_data_block (ICC_RESPONSE_MSG_DATA_SIZE, 0, 0x03);
-		  res_APDU_size -= ICC_RESPONSE_MSG_DATA_SIZE;
+		  apdu.res_apdu_data_len -= ICC_RESPONSE_MSG_DATA_SIZE;
 		}
 	    }
 	  else
@@ -721,26 +853,36 @@ USBthread (void *arg)
       else if (m == EV_EXEC_FINISHED)
 	if (icc_state == ICC_STATE_EXECUTE)
 	  {
-	    if (res_APDU_pointer != NULL)
+	    if (apdu.res_apdu_data != &icc_buffer[ICC_MSG_HEADER_SIZE])
 	      {
-		memcpy (res_APDU, res_APDU_pointer, ICC_RESPONSE_MSG_DATA_SIZE);
-		res_APDU_pointer += ICC_RESPONSE_MSG_DATA_SIZE;
+		/* Assume that 
+		 * apdu.res_apdu_data_len > ICC_RESPONSE_MSG_DATA_SIZE
+		 */
+		memcpy (&icc_buffer[ICC_MSG_HEADER_SIZE],
+			apdu.res_apdu_data, ICC_RESPONSE_MSG_DATA_SIZE);
+		apdu.res_apdu_data += ICC_RESPONSE_MSG_DATA_SIZE;
+	      }
+	    else
+	      {
+		icc_buffer[ICC_MSG_HEADER_SIZE+apdu.res_apdu_data_len] = (apdu.sw >> 8);
+		icc_buffer[ICC_MSG_HEADER_SIZE+apdu.res_apdu_data_len+1] = (apdu.sw & 0xff);
+		apdu.res_apdu_data_len += 2;
 	      }
 
-	    if (res_APDU_size <= ICC_RESPONSE_MSG_DATA_SIZE)
+	    if (apdu.res_apdu_data_len <= ICC_RESPONSE_MSG_DATA_SIZE)
 	      {
-		icc_send_data_block (res_APDU_size, 0, 0);
+		icc_send_data_block (apdu.res_apdu_data_len, 0, 0);
 		icc_state = ICC_STATE_WAIT;
 	      }
 	    else
 	      {
 		icc_send_data_block (ICC_RESPONSE_MSG_DATA_SIZE, 0, 0x01);
-		res_APDU_size -= ICC_RESPONSE_MSG_DATA_SIZE;
+		apdu.res_apdu_data_len -= ICC_RESPONSE_MSG_DATA_SIZE;
 		icc_state = ICC_STATE_SEND;
 	      }
 	  }
 	else
-	  {			/* XXX: error */
+	  {			/* error */
 	    DEBUG_INFO ("ERR07\r\n");
 	  }
       else if (m == EV_TX_FINISHED)

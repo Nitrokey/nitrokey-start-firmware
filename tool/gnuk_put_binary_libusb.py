@@ -289,6 +289,5 @@ if __name__ == '__main__':
         data = f.read()
         f.close()
         print "%s: %d" % (filename, len(data))
-        data += "\x90\x00"
         print "Updating card holder certificate"
     main(fileid, is_update, data)

@@ -47,7 +47,7 @@ class GnukToken(object):
         apdu = [0x00, 0x20, 0x00, 0x80+who, 0, 0, len(passwd)] + s2l(passwd)
         response, sw1, sw2 = self.connection.transmit(apdu)
         if not (sw1 == 0x90 and sw2 == 0x00):
-            raise ValueError, "cmd_verify"
+            raise ValueError, ("%02x%02x" % (sw1, sw2))
 
     def cmd_write_binary(self, fileid, data, is_update):
         count = 0
@@ -66,22 +66,22 @@ class GnukToken(object):
             response, sw1, sw2 = self.connection.transmit(apdu)
             if not (sw1 == 0x90 and sw2 == 0x00):
                 if is_update:
-                    raise ValueError, "cmd_update_binary"
+                    raise ValueError, ("%02x%02x" % (sw1, sw2))
                 else:
-                    raise ValueError, "cmd_write_binary"
+                    raise ValueError, ("%02x%02x" % (sw1, sw2))
             count += 1
 
     def cmd_select_openpgp(self):
         apdu = [0x00, 0xa4, 0x04, 0x00, 6, 0xd2, 0x76, 0x00, 0x01, 0x24, 0x01 ]
         response, sw1, sw2 = self.connection.transmit(apdu)
         if not (sw1 == 0x90 and sw2 == 0x00):
-            raise ValueError, "cmd_select_openpgp"
+            raise ValueError, ("%02x%02x" % (sw1, sw2))
 
     def cmd_get_data(self, tagh, tagl):
         apdu = [0x00, 0xca, tagh, tagl]
         response, sw1, sw2 = self.connection.transmit(apdu)
         if not (sw1 == 0x90 and sw2 == 0x00):
-            raise ValueError, "cmd_get_data"
+            raise ValueError, ("%02x%02x" % (sw1, sw2))
         return response
 
 def compare(data_original, data_in_device):
@@ -165,6 +165,5 @@ if __name__ == '__main__':
         data = f.read()
         f.close()
         print "%s: %d" % (filename, len(data))
-        data += "\x90\x00"
         print "Updating card holder certificate"
     main(fileid, is_update, data, passwd)

@@ -1250,16 +1250,13 @@ gpg_do_get_data (uint16_t tag, int with_tag)
 #if defined(CERTDO_SUPPORT)
   if (tag == GPG_DO_CH_CERTIFICATE)
     {
-      res_APDU_pointer = &ch_certificate_start;
-      res_APDU_size = ((res_APDU_pointer[2] << 8) | res_APDU_pointer[3]);
-      if (res_APDU_size == 0xffff)
-	{
-	  res_APDU_pointer = NULL;
-	  GPG_NO_RECORD ();
-	}
+      apdu.res_apdu_data = &ch_certificate_start;
+      apdu.res_apdu_data_len = ((apdu.res_apdu_data[2] << 8) | apdu.res_apdu_data[3]);
+      if (apdu.res_apdu_data_len == 0xffff)
+	GPG_NO_RECORD ();
       else
-	/* Add length of (tag+len) and status word (0x9000) at the end */
-	res_APDU_size += 4 + 2;
+	/* Add length of (tag+len) */
+	apdu.res_apdu_data_len += 4;
     }
   else
 #endif
@@ -1278,9 +1275,8 @@ gpg_do_get_data (uint16_t tag, int with_tag)
 	    GPG_SECURITY_FAILURE ();
 	  else
 	    {
-	      *res_p++ = 0x90;
-	      *res_p++ = 0x00;
 	      res_APDU_size = res_p - res_APDU;
+	      GPG_SUCCESS ();
 	    }
 	}
       else
@@ -1414,8 +1410,8 @@ gpg_do_public_key (uint8_t kk_byte)
     *res_p++ = 0x01; *res_p++ = 0x00; *res_p++ = 0x01;
 
     /* Success */
-    *res_p++ = 0x90; *res_p++ = 0x00;
     res_APDU_size = res_p - res_APDU;
+    GPG_SUCCESS ();
   }
 
   DEBUG_INFO ("done.\r\n");

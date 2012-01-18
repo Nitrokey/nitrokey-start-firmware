@@ -29,6 +29,11 @@
 #include "polarssl/config.h"
 #include "polarssl/sha1.h"
 
+#define CLS(a) a.cmd_apdu_head[0]
+#define INS(a) a.cmd_apdu_head[1]
+#define P1(a) a.cmd_apdu_head[2]
+#define P2(a) a.cmd_apdu_head[3]
+
 #define INS_VERIFY        			0x20
 #define INS_CHANGE_REFERENCE_DATA		0x24
 #define INS_PSO		  			0x2a
@@ -64,9 +69,7 @@ select_file_TOP_result[] __attribute__ ((aligned (1))) = {
 void
 set_res_apdu (uint8_t sw1, uint8_t sw2)
 {
-  res_APDU_size = 2;
-  res_APDU[0] = sw1;
-  res_APDU[1] = sw2;
+  apdu.sw = (sw1 << 8) | sw2;
 }
 
 #define FILE_NONE	0
@@ -117,22 +120,15 @@ static void
 cmd_verify (void)
 {
   int len;
-  uint8_t p2 = cmd_APDU[3];
+  uint8_t p2 = P2 (apdu);
   int r;
-  int data_start = 5;
   const uint8_t *pw;
 
   DEBUG_INFO (" - VERIFY\r\n");
   DEBUG_BYTE (p2);
 
-  len = cmd_APDU[4];
-  if (len == 0)			/* extended length */
-    {
-      len = (cmd_APDU[5]<<8) | cmd_APDU[6];
-      data_start = 7;
-    }
-
-  pw = &cmd_APDU[data_start];
+  len = apdu.cmd_apdu_data_len;
+  pw = apdu.cmd_apdu_data;
 
   if (p2 == 0x81)
     r = verify_pso_cds (pw, len);
@@ -213,8 +209,8 @@ cmd_change_password (void)
   uint8_t old_ks[KEYSTRING_MD_SIZE];
   uint8_t new_ks0[KEYSTRING_MD_SIZE+1];
   uint8_t *new_ks = &new_ks0[1];
-  uint8_t p1 = cmd_APDU[2];	/* 0: change (old+new), 1: exchange (new) */
-  uint8_t p2 = cmd_APDU[3];
+  uint8_t p1 = P1 (apdu);	/* 0: change (old+new), 1: exchange (new) */
+  uint8_t p2 = P2 (apdu);
   int len;
   const uint8_t *pw;
   const uint8_t *newpw;
@@ -225,13 +221,8 @@ cmd_change_password (void)
   DEBUG_INFO ("Change PW\r\n");
   DEBUG_BYTE (who);
 
-  len = cmd_APDU[4];
-  pw = &cmd_APDU[5];
-  if (len == 0)			/* extended length */
-    {
-      len = (cmd_APDU[5]<<8) | cmd_APDU[6];
-      pw += 2;
-    }
+  len = apdu.cmd_apdu_data_len;
+  pw = apdu.cmd_apdu_data;
 
   if (p1 != 0)
     {
@@ -329,7 +320,7 @@ cmd_change_password (void)
 static void
 cmd_reset_user_password (void)
 {
-  uint8_t p1 = cmd_APDU[2];
+  uint8_t p1 = P1 (apdu);
   int len;
   const uint8_t *pw;
   const uint8_t *newpw;
@@ -341,13 +332,8 @@ cmd_reset_user_password (void)
   DEBUG_INFO ("Reset PW1\r\n");
   DEBUG_BYTE (p1);
 
-  len = cmd_APDU[4];
-  pw = &cmd_APDU[5];
-  if (len == 0)			/* extended length */
-    {
-      len = (cmd_APDU[5]<<8) | cmd_APDU[6];
-      pw += 2;
-    }
+  len = apdu.cmd_apdu_data_len;
+  pw = apdu.cmd_apdu_data;
 
   if (p1 == 0x00)		/* by User with Reseting Code */
     {
@@ -469,17 +455,9 @@ cmd_put_data (void)
   if (file_selection != FILE_DF_OPENPGP)
     GPG_NO_RECORD();
 
-  tag = ((cmd_APDU[2]<<8) | cmd_APDU[3]);
-  data = &cmd_APDU[5];
-
-  len = cmd_APDU_size - 5;
-  if (len >= 256)
-    /* extended Lc */
-    {
-      data += 2;
-      len -= 2;
-    }
-
+  tag = ((P1 (apdu)<<8) | P2 (apdu));
+  len = apdu.cmd_apdu_data_len;
+  data = apdu.cmd_apdu_data;
   gpg_do_put_data (tag, data, len);
 }
 
@@ -487,16 +465,11 @@ static void
 cmd_pgp_gakp (void)
 {
   DEBUG_INFO (" - Generate Asymmetric Key Pair\r\n");
-  DEBUG_BYTE (cmd_APDU[2]);
+  DEBUG_BYTE (P1 (apdu));
 
-  if (cmd_APDU[2] == 0x81)
+  if (P1 (apdu) == 0x81)
     /* Get public key */
-    {
-      if (cmd_APDU[4] == 0)
-	gpg_do_public_key (cmd_APDU[7]);
-      else
-	gpg_do_public_key (cmd_APDU[5]);
-    }
+    gpg_do_public_key (apdu.cmd_apdu_data[0]);
   else
     {					/* Generate key pair */
       if (!ac_check_status (AC_ADMIN_AUTHORIZED))
@@ -514,7 +487,7 @@ cmd_read_binary (void)
 
   if (file_selection == FILE_EF_SERIAL)
     {
-      if (cmd_APDU[3] >= 6)
+      if (P2 (apdu) >= 6)
 	GPG_BAD_P0_P1 ();
       else
 	{
@@ -529,19 +502,23 @@ cmd_read_binary (void)
 static void
 cmd_select_file (void)
 {
-  if (cmd_APDU[2] == 4)	/* Selection by DF name */
+  if (P1 (apdu) == 4)	/* Selection by DF name */
     {
       DEBUG_INFO (" - select DF by name\r\n");
 
       /* name = D2 76 00 01 24 01 */
-      if (cmd_APDU[4] != 6 || memcmp (openpgpcard_aid, &cmd_APDU[5], 6) != 0)
+      if (apdu.cmd_apdu_data_len != 6
+	  || memcmp (openpgpcard_aid, apdu.cmd_apdu_data, 6) != 0)
 	{
+	  DEBUG_WORD (apdu.cmd_apdu_data_len);
+	  DEBUG_BINARY (apdu.cmd_apdu_data, apdu.cmd_apdu_data_len);
+
 	  GPG_NO_FILE ();
 	  return;
 	}
 
       file_selection = FILE_DF_OPENPGP;
-      if ((cmd_APDU[3] & 0x0c) == 0x0c)	/* No FCI */
+      if ((P2 (apdu) & 0x0c) == 0x0c)	/* No FCI */
 	GPG_SUCCESS ();
       else
 	{
@@ -553,8 +530,8 @@ cmd_select_file (void)
 	  res_APDU_size += 2;
 	}
     }
-  else if (cmd_APDU[4] == 2
-	   && cmd_APDU[5] == 0x2f && cmd_APDU[6] == 0x02)
+  else if (apdu.cmd_apdu_data_len == 2
+	   && apdu.cmd_apdu_data[0] == 0x2f && apdu.cmd_apdu_data[1] == 0x02)
     {
       DEBUG_INFO (" - select 0x2f02 EF\r\n");
       /*
@@ -563,11 +540,11 @@ cmd_select_file (void)
       GPG_SUCCESS ();
       file_selection = FILE_EF_SERIAL;
     }
-  else if (cmd_APDU[4] == 2
-	   && cmd_APDU[5] == 0x3f && cmd_APDU[6] == 0x00)
+  else if (apdu.cmd_apdu_data_len == 2
+	   && apdu.cmd_apdu_data[0] == 0x3f && apdu.cmd_apdu_data[1] == 0x00)
     {
       DEBUG_INFO (" - select ROOT MF\r\n");
-      if (cmd_APDU[3] == 0x0c)
+      if (P2 (apdu) == 0x0c)
 	{
 	  GPG_SUCCESS ();
 	}
@@ -575,12 +552,11 @@ cmd_select_file (void)
 	{
 	  int len = sizeof (select_file_TOP_result);
 
-	  res_APDU_size = 2 + len;
+	  res_APDU_size = len;
 	  memcpy (res_APDU, select_file_TOP_result, len);
 	  res_APDU[2] = (data_objects_number_of_bytes & 0xff);
 	  res_APDU[3] = (data_objects_number_of_bytes >> 8);
-	  res_APDU[len] = 0x90;
-	  res_APDU[len+1] = 0x00;
+	  GPG_SUCCESS ();
 	}
 
       file_selection = FILE_MF;
@@ -598,7 +574,7 @@ cmd_select_file (void)
 static void
 cmd_get_data (void)
 {
-  uint16_t tag = ((cmd_APDU[2]<<8) | cmd_APDU[3]);
+  uint16_t tag = ((P1 (apdu)<<8) | P2 (apdu));
 
   DEBUG_INFO (" - Get Data\r\n");
 
@@ -611,21 +587,14 @@ cmd_get_data (void)
 static void
 cmd_pso (void)
 {
-  int len = cmd_APDU[4];
-  int data_start = 5;
+  int len = apdu.cmd_apdu_data_len;
   int r;
-
-  if (len == 0)
-    {
-      len = (cmd_APDU[5]<<8) | cmd_APDU[6];
-      data_start = 7;
-    }
 
   DEBUG_INFO (" - PSO: ");
   DEBUG_WORD ((uint32_t)&r);
-  DEBUG_BINARY (cmd_APDU, cmd_APDU_size);
+  DEBUG_BINARY (apdu.cmd_apdu_data, apdu.cmd_apdu_data_len);
 
-  if (cmd_APDU[2] == 0x9e && cmd_APDU[3] == 0x9a)
+  if (P1 (apdu) == 0x9e && P2 (apdu) == 0x9a)
     {
       if (!ac_check_status (AC_PSO_CDS_AUTHORIZED))
 	{
@@ -634,24 +603,24 @@ cmd_pso (void)
 	  return;
 	}
 
-      if (cmd_APDU_size != 7 + 34 + 2  /* MD5 */
-	  /* Header (with Extended Lc)=7, size of digestInfo, and Le=2-byte */
-	  && cmd_APDU_size != 7 + 35 + 2  /* SHA1 / RIPEMD-160 */
-	  && cmd_APDU_size != 7 + 47 + 2  /* SHA224 */
-	  && cmd_APDU_size != 7 + 51 + 2  /* SHA256 */
-	  && cmd_APDU_size != 7 + 67 + 2  /* SHA384 */
-	  && cmd_APDU_size != 7 + 83 + 2) /* SHA512 */
+      /* Check size of digestInfo */
+      if (len != 34		/* MD5 */
+	  && len != 35		/* SHA1 / RIPEMD-160 */
+	  && len != 47		/* SHA224 */
+	  && len != 51		/* SHA256 */
+	  && len != 67		/* SHA384 */
+	  && len != 83)		/* SHA512 */
 	{
 	  DEBUG_INFO (" wrong length: ");
-	  DEBUG_SHORT (cmd_APDU_size);
+	  DEBUG_SHORT (len);
 	  GPG_ERROR ();
 	}
       else
 	{
-	  DEBUG_SHORT (len);  /* Should be cmd_APDU_size - 8 [- 1] */
+	  DEBUG_SHORT (len);
 	  DEBUG_BINARY (&kd[GPG_KEY_FOR_SIGNING], KEY_CONTENT_LEN);
 
-	  r = rsa_sign (&cmd_APDU[data_start], res_APDU, len,
+	  r = rsa_sign (apdu.cmd_apdu_data, res_APDU, len,
 			&kd[GPG_KEY_FOR_SIGNING]);
 	  if (r < 0)
 	    {
@@ -663,7 +632,7 @@ cmd_pso (void)
 	    gpg_increment_digital_signature_counter ();
 	}
     }
-  else if (cmd_APDU[2] == 0x80 && cmd_APDU[3] == 0x86)
+  else if (P1 (apdu) == 0x80 && P2 (apdu) == 0x86)
     {
       DEBUG_SHORT (len);
       DEBUG_BINARY (&kd[GPG_KEY_FOR_DECRYPTION], KEY_CONTENT_LEN);
@@ -676,9 +645,8 @@ cmd_pso (void)
 	}
 
       /* Skip padding 0x00 */
-      data_start++;
       len--;
-      r = rsa_decrypt (&cmd_APDU[data_start], res_APDU, len,
+      r = rsa_decrypt (apdu.cmd_apdu_data+1, res_APDU, len,
 		       &kd[GPG_KEY_FOR_DECRYPTION]);
       if (r < 0)
 	GPG_ERROR ();
@@ -686,9 +654,9 @@ cmd_pso (void)
   else
     {
       DEBUG_INFO (" - ??");
-      DEBUG_BYTE (cmd_APDU[2]);
+      DEBUG_BYTE (P1 (apdu));
       DEBUG_INFO (" - ??");
-      DEBUG_BYTE (cmd_APDU[3]);
+      DEBUG_BYTE (P2 (apdu));
       GPG_ERROR ();
     }
 
@@ -698,19 +666,12 @@ cmd_pso (void)
 static void
 cmd_internal_authenticate (void)
 {
-  int len = cmd_APDU[4];
-  int data_start = 5;
+  int len = apdu.cmd_apdu_data_len;
   int r;
-
-  if (len == 0)
-    {
-      len = (cmd_APDU[5]<<8) | cmd_APDU[6];
-      data_start = 7;
-    }
 
   DEBUG_INFO (" - INTERNAL AUTHENTICATE\r\n");
 
-  if (cmd_APDU[2] == 0x00 && cmd_APDU[3] == 0x00)
+  if (P1 (apdu) == 0x00 && P2 (apdu) == 0x00)
     {
       DEBUG_SHORT (len);
 
@@ -721,7 +682,7 @@ cmd_internal_authenticate (void)
 	  return;
 	}
 
-      r = rsa_sign (&cmd_APDU[data_start], res_APDU, len,
+      r = rsa_sign (apdu.cmd_apdu_data, res_APDU, len,
 		    &kd[GPG_KEY_FOR_AUTHENTICATION]);
       if (r < 0)
 	GPG_ERROR ();
@@ -729,9 +690,9 @@ cmd_internal_authenticate (void)
   else
     {
       DEBUG_INFO (" - ??");
-      DEBUG_BYTE (cmd_APDU[2]);
+      DEBUG_BYTE (P1 (apdu));
       DEBUG_INFO (" - ??");
-      DEBUG_BYTE (cmd_APDU[3]);
+      DEBUG_BYTE (P2 (apdu));
       GPG_ERROR ();
     }
 
@@ -742,16 +703,9 @@ cmd_internal_authenticate (void)
 static void
 cmd_update_binary (void)
 {
-  int len = cmd_APDU[4];
-  int data_start = 5;
+  int len = apdu.cmd_apdu_data_len;
   uint16_t offset;
   int r;
-
-  if (len == 0)
-    {
-      len = (cmd_APDU[5]<<8) | cmd_APDU[6];
-      data_start = 7;
-    }
 
   DEBUG_INFO (" - UPDATE BINARY\r\n");
 
@@ -762,10 +716,10 @@ cmd_update_binary (void)
       return;
     }
 
-  if ((cmd_APDU[2] & 0x80))
-    if ((cmd_APDU[2] & 0x7f) <= FILEID_RANDOM)
+  if ((P1 (apdu) & 0x80))
+    if ((P1 (apdu) & 0x7f) <= FILEID_RANDOM)
       {
-	file_selection = FILE_EF_CH_CERTIFICATE + (cmd_APDU[2] & 0x7f);
+	file_selection = FILE_EF_CH_CERTIFICATE + (P1 (apdu) & 0x7f);
 	r = flash_erase_binary (file_selection - FILE_EF_CH_CERTIFICATE);
 	if (r < 0)
 	  {
@@ -790,14 +744,14 @@ cmd_update_binary (void)
 	  return;
 	}
 
-      offset = (cmd_APDU[2] << 8) | cmd_APDU[3];
+      offset = (P1 (apdu) << 8) | P2 (apdu);
     }
 
   DEBUG_SHORT (len);
   DEBUG_SHORT (offset);
 
   r = flash_write_binary (file_selection - FILE_EF_CH_CERTIFICATE,
-			  &cmd_APDU[data_start], len, offset);
+			  apdu.cmd_apdu_data, len, offset);
   if (r < 0)
     {
       DEBUG_INFO ("memory error.\r\n");
@@ -813,16 +767,9 @@ cmd_update_binary (void)
 static void
 cmd_write_binary (void)
 {
-  int len = cmd_APDU[4];
-  int data_start = 5;
+  int len = apdu.cmd_apdu_data_len;
   uint16_t offset;
   int r;
-
-  if (len == 0)
-    {
-      len = (cmd_APDU[5]<<8) | cmd_APDU[6];
-      data_start = 7;
-    }
 
   DEBUG_INFO (" - WRITE BINARY\r\n");
 
@@ -833,10 +780,10 @@ cmd_write_binary (void)
       return;
     }
 
-  if ((cmd_APDU[2] & 0x80))
-    if ((cmd_APDU[2] & 0x7f) <= FILEID_SERIAL_NO)
+  if ((P1 (apdu) & 0x80))
+    if ((P1 (apdu) & 0x7f) <= FILEID_SERIAL_NO)
       {
-	file_selection = FILE_EF_CH_CERTIFICATE + (cmd_APDU[2] & 0x7f);
+	file_selection = FILE_EF_CH_CERTIFICATE + (P1 (apdu) & 0x7f);
 	offset = 0;
       }
     else
@@ -854,14 +801,14 @@ cmd_write_binary (void)
 	  return;
 	}
 
-      offset = (cmd_APDU[2] << 8) | cmd_APDU[3];
+      offset = (P1 (apdu) << 8) | P2 (apdu);
     }
 
   DEBUG_SHORT (len);
   DEBUG_SHORT (offset);
 
   r = flash_write_binary (file_selection - FILE_EF_CH_CERTIFICATE,
-			  &cmd_APDU[data_start], len, offset);
+			  apdu.cmd_apdu_data, len, offset);
   if (r < 0)
     {
       DEBUG_INFO ("memory error.\r\n");
@@ -901,7 +848,7 @@ static void
 process_command_apdu (void)
 {
   int i;
-  uint8_t cmd = cmd_APDU[1];
+  uint8_t cmd = INS (apdu);
 
   for (i = 0; i < NUM_CMDS; i++)
     if (cmds[i].command == cmd)
@@ -935,12 +882,10 @@ GPGthread (void *arg)
 
       DEBUG_INFO ("GPG!: ");
 
-      res_APDU_pointer = NULL;
-
       if (m == EV_VERIFY_CMD_AVAILABLE)
 	{
 #if defined(PINPAD_SUPPORT)
-	  if (cmd_APDU[1] != INS_VERIFY)
+	  if (INS (apdu) != INS_VERIFY)
 	    {
 	      GPG_CONDITION_NOT_SATISFIED ();
 	      goto done;
@@ -952,9 +897,8 @@ GPGthread (void *arg)
 	      GPG_ERROR ();
 	      goto done;
 	    }
-	  memcpy (&cmd_APDU[5], pin_input_buffer, pw_len);
-	  cmd_APDU[4] = pw_len;
-	  icc_data_size = 5 + pw_len;
+	  memcpy (apdu.cmd_apdu_data, pin_input_buffer, pw_len);
+	  apdu.cmd_apdu_data_len = pw_len;
 #else
 	  GPG_ERROR ();
 	  goto done;
@@ -963,12 +907,12 @@ GPGthread (void *arg)
       else if (m == EV_MODIFY_CMD_AVAILABLE)
 	{
 #if defined(PINPAD_SUPPORT)
-	  uint8_t bConfirmPIN = cmd_APDU[4];
-	  uint8_t *p = &cmd_APDU[5];
+	  uint8_t bConfirmPIN = apdu.cmd_apdu_data[5];
+	  uint8_t *p = apdu.cmd_apdu_data;
 
-	  if (cmd_APDU[1] != INS_CHANGE_REFERENCE_DATA
-	      && cmd_APDU[1] != INS_RESET_RETRY_COUNTER
-	      && cmd_APDU[1] != INS_PUT_DATA)
+	  if (INS (apdu) != INS_CHANGE_REFERENCE_DATA
+	      && INS (apdu) != INS_RESET_RETRY_COUNTER
+	      && INS (apdu) != INS_PUT_DATA)
 	    {
 	      GPG_CONDITION_NOT_SATISFIED ();
 	      goto done;
@@ -1012,8 +956,7 @@ GPGthread (void *arg)
 		}
 	    }
 
-	  len = cmd_APDU[4] = pw_len + newpw_len;
-	  icc_data_size = 5 + len;
+	  apdu.cmd_apdu_data_len = pw_len + newpw_len;
 #else
 	  GPG_ERROR ();
 	  goto done;
@@ -1022,12 +965,9 @@ GPGthread (void *arg)
       else if (m == EV_NOP)
 	continue;
 
-      if (icc_data_size != 0)
-	{
-	  process_command_apdu ();
-	done:
-	  chEvtSignal (icc_thread, EV_EXEC_FINISHED);
-	}
+      process_command_apdu ();
+    done:
+      chEvtSignal (icc_thread, EV_EXEC_FINISHED);
     }
 
   gpg_fini ();

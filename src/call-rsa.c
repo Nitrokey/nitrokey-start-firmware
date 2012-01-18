@@ -25,6 +25,7 @@
 #include "config.h"
 #include "ch.h"
 #include "gnuk.h"
+#include "openpgp.h"
 #include "polarssl/config.h"
 #include "polarssl/rsa.h"
 
@@ -84,10 +85,9 @@ rsa_sign (const uint8_t *raw_message, uint8_t *output, int msg_len,
     }
   else
     {
-      res_APDU[RSA_SIGNATURE_LENGTH] =  0x90;
-      res_APDU[RSA_SIGNATURE_LENGTH+1] =  0x00;
-      res_APDU_size = RSA_SIGNATURE_LENGTH + 2;
+      res_APDU_size = RSA_SIGNATURE_LENGTH;
       DEBUG_INFO ("done.\r\n");
+      GPG_SUCCESS ();
       return 0;
     }
 }
@@ -177,10 +177,9 @@ rsa_decrypt (const uint8_t *input, uint8_t *output, int msg_len,
     }
   else
     {
-      res_APDU[output_len] = 0x90;
-      res_APDU[output_len+1] = 0x00;
-      res_APDU_size = output_len + 2;
+      res_APDU_size = output_len;
       DEBUG_INFO ("done.\r\n");
+      GPG_SUCCESS ();
       return 0;
     }
 }
