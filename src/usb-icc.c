@@ -734,17 +734,44 @@ icc_handle_data (void)
 	      int len = apdu.res_apdu_data_len;
 
 	      if (apdu.res_apdu_data == NULL)
-		{		/* send last byte of 0x9000 */
-		  icc_buffer[ICC_MSG_HEADER_SIZE] = 0x00;
-		  len = 1;
+		{		/* send status word(s) of 0x9000 */
+		  len = 0;
+
+		  if (apdu.res_apdu_data_len == 2)
+		    {
+		      icc_buffer[ICC_MSG_HEADER_SIZE] = 0x90;
+		      len++;
+		    }
+
+		  icc_buffer[ICC_MSG_HEADER_SIZE+len] = 0x00;
+		  len++;
 		}
 	      else if (apdu.res_apdu_data != &icc_buffer[ICC_MSG_HEADER_SIZE])
 		{
-		  if (apdu.res_apdu_data_len >= ICC_RESPONSE_MSG_DATA_SIZE)
+		  if (apdu.res_apdu_data_len > ICC_RESPONSE_MSG_DATA_SIZE)
 		    {
 		      memcpy (&icc_buffer[ICC_MSG_HEADER_SIZE],
 			      apdu.res_apdu_data, ICC_RESPONSE_MSG_DATA_SIZE);
 		      apdu.res_apdu_data += ICC_RESPONSE_MSG_DATA_SIZE;
+		      apdu.res_apdu_data_len -= ICC_RESPONSE_MSG_DATA_SIZE;
+		    }
+		  else if (apdu.res_apdu_data_len == ICC_RESPONSE_MSG_DATA_SIZE)
+		    {
+		      memcpy (&icc_buffer[ICC_MSG_HEADER_SIZE],
+			      apdu.res_apdu_data, ICC_RESPONSE_MSG_DATA_SIZE);
+		      apdu.res_apdu_data = NULL;
+		      apdu.res_apdu_data_len = 2;
+		    }
+		  else if (apdu.res_apdu_data_len
+			   == ICC_RESPONSE_MSG_DATA_SIZE - 1)
+		    {
+		      memcpy (&icc_buffer[ICC_MSG_HEADER_SIZE],
+			      apdu.res_apdu_data, apdu.res_apdu_data_len);
+		      icc_buffer[ICC_MSG_HEADER_SIZE+apdu.res_apdu_data_len]
+			= 0x90;
+		      apdu.res_apdu_data = NULL;
+		      apdu.res_apdu_data_len = 1;
+		      len += 1;
 		    }
 		  else if (apdu.res_apdu_data_len
 			   <= ICC_RESPONSE_MSG_DATA_SIZE - 2)
@@ -756,24 +783,18 @@ icc_handle_data (void)
 		      icc_buffer[ICC_MSG_HEADER_SIZE+apdu.res_apdu_data_len+1]
 			= 0x00;
 		      apdu.res_apdu_data = NULL;
+		      apdu.res_apdu_data_len = 0;
 		      len += 2;
-		    }
-		  else if (apdu.res_apdu_data_len
-			   == ICC_RESPONSE_MSG_DATA_SIZE - 1)
-		    {
-		      memcpy (&icc_buffer[ICC_MSG_HEADER_SIZE],
-			      apdu.res_apdu_data, apdu.res_apdu_data_len);
-		      icc_buffer[ICC_MSG_HEADER_SIZE+apdu.res_apdu_data_len]
-			= 0x90;
-		      apdu.res_apdu_data = NULL;
-		      len += 1;
 		    }
 		}
 	      else
-		memmove (&icc_buffer[ICC_MSG_HEADER_SIZE],
-			 &icc_buffer[ICC_MSG_HEADER_SIZE]
-			 +ICC_RESPONSE_MSG_DATA_SIZE,
-			 apdu.res_apdu_data_len);
+		{
+		  memmove (&icc_buffer[ICC_MSG_HEADER_SIZE],
+			   &icc_buffer[ICC_MSG_HEADER_SIZE]
+			   +ICC_RESPONSE_MSG_DATA_SIZE,
+			   apdu.res_apdu_data_len);
+		  apdu.res_apdu_data_len -= ICC_RESPONSE_MSG_DATA_SIZE;
+		}
 
 	      if (len <= ICC_RESPONSE_MSG_DATA_SIZE)
 		{
@@ -781,10 +802,7 @@ icc_handle_data (void)
 		  next_state = ICC_STATE_WAIT;
 		}
 	      else
-		{
-		  icc_send_data_block (ICC_RESPONSE_MSG_DATA_SIZE, 0, 0x03);
-		  apdu.res_apdu_data_len -= ICC_RESPONSE_MSG_DATA_SIZE;
-		}
+		icc_send_data_block (ICC_RESPONSE_MSG_DATA_SIZE, 0, 0x03);
 	    }
 	  else
 	    {

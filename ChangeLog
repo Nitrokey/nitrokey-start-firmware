@@ -1,3 +1,10 @@
+2012-01-19  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/usb-icc.c (icc_handle_data): Handle the case when it only
+	sends 0x90 and 0x00 correctly.
+
+	* src/openpgp-do.c (gpg_do_get_data): Fix res_apdu_data_len.
+
 2012-01-18  Niibe Yutaka  <gniibe@fsij.org>
 
 	Clean up API between application layer and CCID layer.

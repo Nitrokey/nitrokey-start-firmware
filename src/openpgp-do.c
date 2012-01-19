@@ -1253,7 +1253,10 @@ gpg_do_get_data (uint16_t tag, int with_tag)
       apdu.res_apdu_data = &ch_certificate_start;
       apdu.res_apdu_data_len = ((apdu.res_apdu_data[2] << 8) | apdu.res_apdu_data[3]);
       if (apdu.res_apdu_data_len == 0xffff)
-	GPG_NO_RECORD ();
+	{
+	  apdu.res_apdu_data_len = 0;
+	  GPG_NO_RECORD ();
+	}
       else
 	/* Add length of (tag+len) */
 	apdu.res_apdu_data_len += 4;
