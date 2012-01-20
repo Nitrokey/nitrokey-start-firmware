@@ -88,7 +88,7 @@ class GnukToken(object):
             raise ValueError, ("%02x%02x" % (sw1, sw2))
 
     def cmd_get_data(self, tagh, tagl):
-        apdu = [0x00, 0xca, tagh, tagl ]
+        apdu = [0x00, 0xca, tagh, tagl]
         response, sw1, sw2 = self.connection.transmit(apdu)
         if not (sw1 == 0x90 and sw2 == 0x00):
             raise ValueError, ("%02x%02x" % (sw1, sw2))

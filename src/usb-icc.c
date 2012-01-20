@@ -234,6 +234,16 @@ struct ccid {
 #define APDU_STATE_RESULT              3
 #define APDU_STATE_RESULT_GET_RESPONSE 4
 
+static void ccid_reset (struct ccid *c)
+{
+  c->err = 0;
+  c->state = APDU_STATE_WAIT_COMMAND;
+  c->p = c->a->cmd_apdu_data;
+  c->len = MAX_CMD_APDU_DATA_SIZE;
+  c->a->cmd_apdu_data_len = 0;
+  c->a->expected_res_size = 0;
+}
+
 static void ccid_init (struct ccid *c, struct ep_in *epi, struct ep_out *epo,
 		       struct apdu *a, Thread *t)
 {
@@ -412,10 +422,18 @@ static int end_icc_rx (struct ep_out *epo, size_t orig_len)
   return 0;
 }
 
-static int end_notify (struct ep_out *epo, size_t orig_len)
+static int end_abdata (struct ep_out *epo, size_t orig_len)
 {
-  (void)epo;
-  (void)orig_len;
+  struct ccid *c = (struct ccid *)epo->priv;
+  size_t len = epo->cnt;
+
+  if (orig_len == USB_LL_BUF_SIZE && len < c->icc_header.data_len)
+    /* more packet comes */
+    return 1;
+
+  if (len != c->icc_header.data_len)
+    epo->err = 1;
+
   return 0;
 }
 
@@ -537,6 +555,7 @@ static void icc_abdata (struct ep_out *epo, size_t len)
   struct ccid *c = (struct ccid *)epo->priv;
 
   (void)len;
+  c->a->seq = c->icc_header.seq;
   if (c->icc_header.msg_type == ICC_XFR_BLOCK)
     {
       c->a->seq = c->icc_header.seq;
@@ -548,7 +567,7 @@ static void icc_abdata (struct ep_out *epo, size_t len)
     }
   else
     {
-      epo->end_rx = end_notify;
+      epo->end_rx = end_abdata;
       epo->buf = c->p;
       epo->buf_len = c->len;
       epo->cnt = 0;
@@ -990,12 +1009,7 @@ icc_handle_data (struct ccid *c)
 
   if (c->err != 0)
     {
-      c->err = 0;
-      c->state = APDU_STATE_WAIT_COMMAND;
-      c->p = c->a->cmd_apdu_data;
-      c->len = MAX_CMD_APDU_DATA_SIZE;
-      c->a->cmd_apdu_data_len = 0;
-      c->a->expected_res_size = 0;
+      ccid_reset (c);
       icc_error (c, ICC_OFFSET_DATA_LEN);
       return next_state;
     }
@@ -1004,9 +1018,15 @@ icc_handle_data (struct ccid *c)
     {
     case ICC_STATE_START:
       if (c->icc_header.msg_type == ICC_POWER_ON)
-	next_state = icc_power_on (c);
+	{
+	  ccid_reset (c);
+	  next_state = icc_power_on (c);
+	}
       else if (c->icc_header.msg_type == ICC_POWER_OFF)
-	next_state = icc_power_off (c);
+	{
+	  ccid_reset (c);
+	  next_state = icc_power_off (c);
+	}
       else if (c->icc_header.msg_type == ICC_SLOT_STATUS)
 	icc_send_status (c);
       else
@@ -1017,35 +1037,28 @@ icc_handle_data (struct ccid *c)
       break;
     case ICC_STATE_WAIT:
       if (c->icc_header.msg_type == ICC_POWER_ON)
-	/* Not in the spec., but pcscd/libccid */
-	next_state = icc_power_on (c);
+	{
+	  /* Not in the spec., but pcscd/libccid */
+	  ccid_reset (c);
+	  next_state = icc_power_on (c);
+	}
       else if (c->icc_header.msg_type == ICC_POWER_OFF)
-	next_state = icc_power_off (c);
+	{
+	  ccid_reset (c);
+	  next_state = icc_power_off (c);
+	}
       else if (c->icc_header.msg_type == ICC_SLOT_STATUS)
 	icc_send_status (c);
       else if (c->icc_header.msg_type == ICC_XFR_BLOCK)
 	{
 	  if (c->icc_header.param == 0)
 	    {
-	      DEBUG_INFO ("DUMP C\r\n");
-	      DEBUG_SHORT (c->icc_state);
-	      DEBUG_BYTE (c->state);
-	      DEBUG_WORD (c->p);
-	      DEBUG_WORD (c->len);
-	      DEBUG_BYTE (c->err);
-	      DEBUG_WORD (c->epo->buf);
-	      DEBUG_WORD (c->epo->cnt);
-	      DEBUG_WORD (c->epo->buf_len);
-	      DEBUG_WORD (c->a->cmd_apdu_data);
-	      DEBUG_BINARY (c->a->cmd_apdu_data, c->a->cmd_apdu_data_len);
-
 	      if ((c->a->cmd_apdu_head[0] & 0x10) == 0)
 		{
 		  if (c->state == APDU_STATE_COMMAND_CHAINING)
 		    {		/* command chaining finished */
 		      c->p += c->a->cmd_apdu_head[4];
 		      c->a->cmd_apdu_head[4] = 0;
-		      c->a->cmd_apdu_data_len = c->p - c->a->cmd_apdu_data;
 		      DEBUG_INFO ("CMD chaning finished.\r\n");
 		    }
 
@@ -1061,6 +1074,7 @@ icc_handle_data (struct ccid *c)
 		      if (c->len == 0)
 			c->state = APDU_STATE_RESULT;
 		      c->icc_state = ICC_STATE_WAIT;
+		      DEBUG_INFO ("GET Response.\r\n");
 		    }
 		  else
 		    {		  /* Give this message to GPG thread */
@@ -1094,53 +1108,61 @@ icc_handle_data (struct ccid *c)
 	icc_send_params (c);
       else if (c->icc_header.msg_type == ICC_SECURE)
 	{
-	  if (icc_buffer[10] == 0x00) /* PIN verification */
+	  if (c->p != c->a->cmd_apdu_data)
 	    {
-	      icc_buffer[0] = icc_buffer[25-10];
-	      icc_buffer[1] = icc_buffer[26-10];
-	      icc_buffer[2] = icc_buffer[27-10];
-	      icc_buffer[3] = icc_buffer[28-10];
+	      /* SECURE received in the middle of command chaining */
+	      ccid_reset (c); 
+	      icc_error (c, ICC_OFFSET_DATA_LEN);
+	      return next_state;
+	    }
+
+	  if (c->p[10-10] == 0x00) /* PIN verification */
+	    {
+	      c->a->cmd_apdu_head[0] = c->p[25-10];
+	      c->a->cmd_apdu_head[1] = c->p[26-10];
+	      c->a->cmd_apdu_head[2] = c->p[27-10];
+	      c->a->cmd_apdu_head[3] = c->p[28-10];
 	      /**/
-	      icc_buffer[5] = 0; /* bConfirmPIN */
-	      icc_buffer[6] = icc_buffer[17-10]; /* bEntryValidationCondition */
-	      icc_buffer[7] = icc_buffer[18-10]; /* bNumberMessage */
-	      icc_buffer[8] = icc_buffer[19-10]; /* wLangId L */
-	      icc_buffer[9] = icc_buffer[20-10]; /* wLangId H */
-	      icc_buffer[10] = icc_buffer[21-10]; /* bMsgIndex */
+	      c->a->cmd_apdu_data[0] = 0; /* bConfirmPIN */
+	      c->a->cmd_apdu_data[1] = c->p[17-10]; /* bEntryValidationCondition */
+	      c->a->cmd_apdu_data[2] = c->p[18-10]; /* bNumberMessage */
+	      c->a->cmd_apdu_data[3] = c->p[19-10]; /* wLangId L */
+	      c->a->cmd_apdu_data[4] = c->p[20-10]; /* wLangId H */
+	      c->a->cmd_apdu_data[5] = c->p[21-10]; /* bMsgIndex */
 
 	      c->a->cmd_apdu_data_len = 6;
 	      c->a->expected_res_size = 0;
 
 	      c->a->sw = 0x9000;
 	      c->a->res_apdu_data_len = 0;
-	      c->a->res_apdu_data = &icc_buffer[5];
+	      c->a->res_apdu_data = &c->p[5];
 
 	      chEvtSignal (c->application, EV_VERIFY_CMD_AVAILABLE);
 	      next_state = ICC_STATE_EXECUTE;
 	    }
-	  else if (icc_buffer[10] == 0x01) /* PIN Modification */
+	  else if (c->p[10-10] == 0x01) /* PIN Modification */
 	    {
-	      uint8_t num_msgs = icc_buffer[21-10];
+	      uint8_t num_msgs = c->p[21-10];
 
 	      if (num_msgs == 0x00)
 		num_msgs = 1;
 	      else if (num_msgs == 0xff)
 		num_msgs = 3;
-	      icc_buffer[0] = icc_buffer[27 + num_msgs-10];
-	      icc_buffer[1] = icc_buffer[28 + num_msgs-10];
-	      icc_buffer[2] = icc_buffer[29 + num_msgs-10];
-	      icc_buffer[3] = icc_buffer[30 + num_msgs-10];
+	      c->a->cmd_apdu_head[0] = c->p[27 + num_msgs-10];
+	      c->a->cmd_apdu_head[1] = c->p[28 + num_msgs-10];
+	      c->a->cmd_apdu_head[2] = c->p[29 + num_msgs-10];
+	      c->a->cmd_apdu_head[3] = c->p[30 + num_msgs-10];
 	      /**/
-	      icc_buffer[5] = icc_buffer[19-10]; /* bConfirmPIN */
-	      icc_buffer[6] = icc_buffer[20-10]; /* bEntryValidationCondition */
-	      icc_buffer[7] = icc_buffer[21-10]; /* bNumberMessage */
-	      icc_buffer[8] = icc_buffer[22-10]; /* wLangId L */
-	      icc_buffer[9] = icc_buffer[23-10]; /* wLangId H */
-	      icc_buffer[10] = icc_buffer[24-10]; /* bMsgIndex, bMsgIndex1 */
+	      c->a->cmd_apdu_data[0] = c->p[19-10]; /* bConfirmPIN */
+	      c->a->cmd_apdu_data[1] = c->p[20-10]; /* bEntryValidationCondition */
+	      c->a->cmd_apdu_data[2] = c->p[21-10]; /* bNumberMessage */
+	      c->a->cmd_apdu_data[3] = c->p[22-10]; /* wLangId L */
+	      c->a->cmd_apdu_data[4] = c->p[23-10]; /* wLangId H */
+	      c->a->cmd_apdu_data[5] = c->p[24-10]; /* bMsgIndex, bMsgIndex1 */
 	      if (num_msgs >= 2)
-		icc_buffer[11] = icc_buffer[25-10]; /* bMsgIndex2 */
+		c->a->cmd_apdu_data[6] = c->p[25-10]; /* bMsgIndex2 */
 	      if (num_msgs == 3)
-		icc_buffer[12] = icc_buffer[26-10]; /* bMsgIndex3 */
+		c->a->cmd_apdu_data[7] = c->p[26-10]; /* bMsgIndex3 */
 
 	      c->a->cmd_apdu_data_len = 5 + num_msgs;
 	      c->a->expected_res_size = 0;

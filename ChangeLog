@@ -1,3 +1,67 @@
+2012-01-20  Niibe Yutaka  <gniibe@fsij.org>
+
+	Short APDU only CCID driver.
+	* STM32_USB-FS-Device_Driver/src/usb_core.c (DataStageOut)
+	(DataStageIn): Use usb_lld_to_pmabuf and usb_lld_from_pmabuf.
+
+	* src/configure (CERTDO_SUPPORT): Comment fix.
+
+	* src/gnuk.h (struct adpu): expected_res_size has type uint16_t.
+	(MAX_CMD_APDU_DATA_SIZE, MAX_RES_APDU_DATA_SIZE): New.
+	(MAX_CMD_APDU_SIZE, MAX_RES_APDU_SIZE, USB_BUF_SIZE): Remove.
+	(icc_state_p): New.
+	(set_res_sw): Rename from set_res_apdu.
+
+	* src/call-rsa.c (rsa_decrypt): Use MAX_RES_APDU_DATA_SIZE.
+
+	* src/openpgp.c (set_res_sw): Rename from set_res_apdu.
+	* src/openpgp.h: Use set_res_sw.
+
+	* src/main.c: Handle icc_state_p.
+
+	* src/openpgp-do.c (historical_bytes): command chaining but short
+	APDU only.
+	(extended_capabilities): Change for short APDU only.
+
+	* src/usb-icc.c (USB_BUF_SIZE): Define here (was in gnuk.h).
+	(struct ep_in, epi_init, struct ep_out, epo_init, endpoint_out)
+	(endpoint_in, icc_state_p, struct ccid, APDU_STATE_WAIT_COMMAND)
+	(APDU_STATE_COMMAND_CHAINING, APDU_STATE_COMMAND_RECEIVED)
+	(APDU_STATE_RESULT, APDU_STATE_RESULT_GET_RESPONSE, ccid_reset)
+	(ccid_init, CMD_APDU_HEAD_SIZE, apdu_init, notify_tx, no_buf)
+	(set_sw1sw2, get_sw1sw2, notify_icc, end_icc_rx, end_abdata)
+	(end_cmd_apdu_head, end_nomore_data, end_cmd_apdu_data)
+	(nomore_data, INS_GET_RESPONSE, icc_cmd_apdu_data, icc_abdata)
+	(icc_send_data_block_0x9000, icc_send_data_block_gr, ccid): New.
+	(icc_data_size, icc_seq, icc_next_p, icc_chain_p, icc_tx_size)
+	(icc_thread, icc_state, gpg_thread, ICC_RESPONSE_MSG_DATA_SIZE):
+	Remove.
+	(EP1_IN_Callback): Rewrite using epi.
+	(EP2_OUT_Callback): Rewrite using epo.
+	(icc_prepare_receive): Rewrite using epo and struct ccid.
+	(ATR): Change ofr short APDU only.
+	(icc_error, icc_power_on, icc_send_status, icc_power_off)
+	(icc_send_data_block, icc_send_params, icc_handle_data)
+	(icc_handle_timeout, USBthread): Rewrite using struct ccid.
+
+	* src/usb_desc.c (gnukConfigDescriptor): dwFeatures: Short APDU
+	level, dwMaxCCIDMessageLength: 271.
+
+	* src/usb_lld.c (usb_lld_to_pmabuf, usb_lld_from_pmabuf): New.
+	* src/usb_lld.h (usb_lld_txcpy, void usb_lld_write) Use
+	usb_lld_to_pmabuf.
+	(usb_lld_rxcpy): Use usb_lld_from_pmabuf.
+
+	* src/stmusb.mk (usb_mem.c): Remove.
+
+	* gnuk_put_binary.py (cmd_select_openpgp): No response APDU data.
+	(cmd_verify, cmd_write_binary): Send short APDU.
+	(__main__): Remove RANDOM_NUMBER_BITS support.
+
+	Bug fix for CERTDO_SUPPORT.
+	* src/gnuk.ld.in: Add missing alignment for _data_pool (when no
+	CERTDO_SUPPORT).
+
 2012-01-19  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/usb-icc.c (icc_handle_data): Handle the case when it only

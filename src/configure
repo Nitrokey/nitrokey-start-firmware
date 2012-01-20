@@ -173,7 +173,7 @@ fi
 # --enable-certdo option
 if test "$certdo" = "yes"; then
   CERTDO_DEFINE="#define CERTDO_SUPPORT 1"
-  echo "CERT.3 Data Object is supported (Note: it is not supported by GnuPG)"
+  echo "CERT.3 Data Object is supported"
 else
   CERTDO_DEFINE="#undef CERTDO_SUPPORT"
   echo "CERT.3 Data Object is not supported"

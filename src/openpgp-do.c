@@ -103,10 +103,10 @@ static const uint8_t extended_capabilities[] __attribute__ ((aligned (1))) = {
 #else
   0x00, 0x00,
 #endif
-  /* Max. length of command APDU */
+  /* Max. length of command APDU data */
   0x00, 0xff,
-  /* Max. length of response data */
-  0x00, 0xff,
+  /* Max. length of response APDU data */
+  0x01, 0x00,
 };
 
 /* Algorithm Attributes */
