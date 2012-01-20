@@ -77,12 +77,11 @@ uint16_t data_objects_number_of_bytes;
 static const uint8_t historical_bytes[] __attribute__ ((aligned (1))) = {
   10,
   0x00,
-  0x31, 0x80,			/* Full DF name */
+  0x31, 0x84,			/* Full DF name, GET DATA, MF */
   0x73,
-  0x80, 0x01, 0x40,		/* Full DF name */
+  0x80, 0x01, 0x80,		/* Full DF name */
 				/* 1-byte */
-				/* No command chaining */
-				/* Extended Lc and Le */
+				/* Command chaining, No extended Lc and Le */
   0x00, 0x90, 0x00		/* Status info (no life cycle management) */
 };
 
@@ -90,27 +89,24 @@ static const uint8_t historical_bytes[] __attribute__ ((aligned (1))) = {
 static const uint8_t extended_capabilities[] __attribute__ ((aligned (1))) = {
   10,
   0x30,				/*
-				 * No SM, No get challenge,
+				 * No SM,
+				 * No get challenge,
 				 * Key import supported,
 				 * PW status byte can be put,
 				 * No private_use_DO,
 				 * No algo change allowed
 				 */
   0,		  /* Secure Messaging Algorithm: N/A (TDES=0, AES=1) */
-  0x00, 0x00,	  /* Max get challenge */
+  0x00, 0x00,	  /* Max get challenge (0: Get challenge not supported) */
 #ifdef CERTDO_SUPPORT
-  0x07, 0xfe,	  /* max. length of cardholder certificate (2KB - 2)*/
+  0x08, 0x00,	  /* max. length of cardholder certificate (2KiB) */
 #else
   0x00, 0x00,
 #endif
-  /* Max. length of command data */
-  (MAX_CMD_APDU_SIZE>>8), (MAX_CMD_APDU_SIZE&0xff),
+  /* Max. length of command APDU */
+  0x00, 0xff,
   /* Max. length of response data */
-#ifdef CERTDO_SUPPORT
-  0x08, 0x00,		     /* the case of cardholder ceritificate */
-#else
-  (MAX_RES_APDU_SIZE>>8), (MAX_RES_APDU_SIZE&0xff),
-#endif
+  0x00, 0xff,
 };
 
 /* Algorithm Attributes */

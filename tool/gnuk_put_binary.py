@@ -44,7 +44,7 @@ class GnukToken(object):
         self.connection = cardservice.connection
 
     def cmd_verify(self, who, passwd):
-        apdu = [0x00, 0x20, 0x00, 0x80+who, 0, 0, len(passwd)] + s2l(passwd)
+        apdu = [0x00, 0x20, 0x00, 0x80+who, len(passwd)] + s2l(passwd)
         response, sw1, sw2 = self.connection.transmit(apdu)
         if not (sw1 == 0x90 and sw2 == 0x00):
             raise ValueError, ("%02x%02x" % (sw1, sw2))
@@ -59,10 +59,20 @@ class GnukToken(object):
         while count*256 < data_len:
             if count == 0:
                 d = data[:256]
-                apdu = [0x00, ins, 0x80+fileid, 0x00, 0, len(d)>>8, len(d)&0xff] + s2l(d)
+                if len(d) <= 255: 
+                    apdu = [0x00, ins, 0x80+fileid, 0x00, len(d) ] + s2l(d)
+                else:
+                    apdu0 = [0x10, ins, 0x80+fileid, 0x00, 255 ] + s2l(d[:255])
+                    response, sw1, sw2 = self.connection.transmit(apdu0)
+                    apdu = [0x00, ins, 0x80+fileid, 0x00, 1 ] + s2l(d[255:])
             else:
                 d = data[256*count:256*(count+1)]
-                apdu = [0x00, ins, count, 0x00, 0, len(d)>>8, len(d)&0xff] + s2l(d)
+                if len(d) <= 255: 
+                    apdu = [0x00, ins, count, 0x00, len(d) ] + s2l(d)
+                else:
+                    apdu0 = [0x10, ins, count, 0x00, 255 ] + s2l(d[:255])
+                    response, sw1, sw2 = self.connection.transmit(apdu0)
+                    apdu = [0x00, ins, 0x80+fileid, 0x00, 1 ] + s2l(d[255:])
             response, sw1, sw2 = self.connection.transmit(apdu)
             if not (sw1 == 0x90 and sw2 == 0x00):
                 if is_update:
@@ -72,13 +82,13 @@ class GnukToken(object):
             count += 1
 
     def cmd_select_openpgp(self):
-        apdu = [0x00, 0xa4, 0x04, 0x00, 6, 0xd2, 0x76, 0x00, 0x01, 0x24, 0x01 ]
+        apdu = [0x00, 0xa4, 0x04, 0x0c, 6, 0xd2, 0x76, 0x00, 0x01, 0x24, 0x01 ]
         response, sw1, sw2 = self.connection.transmit(apdu)
         if not (sw1 == 0x90 and sw2 == 0x00):
             raise ValueError, ("%02x%02x" % (sw1, sw2))
 
     def cmd_get_data(self, tagh, tagl):
-        apdu = [0x00, 0xca, tagh, tagl]
+        apdu = [0x00, 0xca, tagh, tagl ]
         response, sw1, sw2 = self.connection.transmit(apdu)
         if not (sw1 == 0x90 and sw2 == 0x00):
             raise ValueError, ("%02x%02x" % (sw1, sw2))
@@ -146,18 +156,6 @@ if __name__ == '__main__':
             exit(1)
         print "Writing serial number"
         data = binascii.unhexlify(serial_data_hex)
-    elif sys.argv[1] == '-r':
-        fileid = 1              # Random number bits
-        if len(sys.argv) == 3:
-            filename = sys.argv[2]
-            f = open(filename)
-        else:
-            filename = stdin
-            f = sys.stdin
-        data = f.read()
-        f.close()
-        print "%s: %d" % (filename, len(data))
-        print "Updating random bits"
     else:
         fileid = 0              # Card holder certificate
         filename = sys.argv[1]

@@ -287,6 +287,13 @@ static void display_fatal_code (void)
 
 static void display_status_code (void)
 {
+  enum icc_state icc_state;
+
+  if (icc_state_p == NULL)
+    icc_state = ICC_STATE_START;
+  else
+    icc_state = *icc_state_p;
+
   if (icc_state == ICC_STATE_START)
     {
       set_led (1);

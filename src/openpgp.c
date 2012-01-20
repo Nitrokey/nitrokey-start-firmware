@@ -67,7 +67,7 @@ select_file_TOP_result[] __attribute__ ((aligned (1))) = {
 };
 
 void
-set_res_apdu (uint8_t sw1, uint8_t sw2)
+set_res_sw (uint8_t sw1, uint8_t sw2)
 {
   apdu.sw = (sw1 << 8) | sw2;
 }
@@ -510,7 +510,7 @@ cmd_select_file (void)
       if (apdu.cmd_apdu_data_len != 6
 	  || memcmp (openpgpcard_aid, apdu.cmd_apdu_data, 6) != 0)
 	{
-	  DEBUG_WORD (apdu.cmd_apdu_data_len);
+	  DEBUG_SHORT (apdu.cmd_apdu_data_len);
 	  DEBUG_BINARY (apdu.cmd_apdu_data, apdu.cmd_apdu_data_len);
 
 	  GPG_NO_FILE ();
@@ -528,6 +528,7 @@ cmd_select_file (void)
 	  res_APDU[1] = 0x12;
 	  res_APDU[2] = 0x84;	/* overwrite: DF name */
 	  res_APDU_size += 2;
+	  GPG_SUCCESS ();
 	}
     }
   else if (apdu.cmd_apdu_data_len == 2

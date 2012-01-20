@@ -36,7 +36,7 @@ struct apdu {
   uint8_t *cmd_apdu_head;	/* CLS INS P1 P2 [ internal Lc ] */
   uint8_t *cmd_apdu_data;
   uint16_t cmd_apdu_data_len;	/* Nc, calculated by Lc field */
-  uint32_t expected_res_size;	/* Ne, calculated by Le field */
+  uint16_t expected_res_size;	/* Ne, calculated by Le field */
 
   /* response APDU */
   uint16_t sw;
@@ -55,10 +55,10 @@ extern struct apdu apdu;
 #define EV_VERIFY_CMD_AVAILABLE ((eventmask_t)8)
 #define EV_MODIFY_CMD_AVAILABLE ((eventmask_t)16)
 
-/* maximum cmd apdu data is key import 22+4+128+128 (proc_key_import) */
-#define MAX_CMD_APDU_SIZE (7+282) /* header + data */
-/* maximum res apdu data is public key 5+9+256+2 (gpg_do_public_key) */
-#define MAX_RES_APDU_SIZE ((5+9+256)+2) /* Data + status */
+/* Maximum cmd apdu data is key import 22+4+128+128 (proc_key_import) */
+#define MAX_CMD_APDU_DATA_SIZE (22+4+128+128) /* without header */
+/* Maximum res apdu data is public key 5+9+256 (gpg_do_public_key) */
+#define MAX_RES_APDU_DATA_SIZE (5+9+256) /* without trailer */
 
 #define ICC_MSG_HEADER_SIZE	10
 
@@ -67,13 +67,6 @@ extern struct apdu apdu;
 
 /* USB buffer size of LL (Low-level): size of single Bulk transaction */
 #define USB_LL_BUF_SIZE 64
-
-/*
- * USB buffer size of USB-ICC driver
- * (Changing this, dwMaxCCIDMessageLength too !!)
- */
-#define USB_BUF_SIZE ((10 + 10 + MAX_CMD_APDU_SIZE + USB_LL_BUF_SIZE - 1) \
-			/ USB_LL_BUF_SIZE * USB_LL_BUF_SIZE)
 
 enum icc_state
 {
@@ -85,7 +78,7 @@ enum icc_state
   ICC_STATE_SEND,		/* APDU Sent Partially */
 };
 
-extern volatile enum icc_state icc_state;
+extern enum icc_state *icc_state_p;
 
 extern volatile uint8_t auth_status;
 #define AC_NONE_AUTHORIZED	0x00
@@ -116,7 +109,7 @@ extern void ac_reset_admin (void);
 extern void ac_fini (void);
 
 
-extern void set_res_apdu (uint8_t sw1, uint8_t sw2);
+extern void set_res_sw (uint8_t sw1, uint8_t sw2);
 extern uint16_t data_objects_number_of_bytes;
 
 extern void gpg_data_scan (const uint8_t *p);

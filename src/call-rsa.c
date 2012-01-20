@@ -167,7 +167,7 @@ rsa_decrypt (const uint8_t *input, uint8_t *output, int msg_len,
 #endif
 
   r = rsa_pkcs1_decrypt (&rsa_ctx, RSA_PRIVATE, &output_len,
-			 input, output, MAX_RES_APDU_SIZE - 2);
+			 input, output, MAX_RES_APDU_DATA_SIZE);
   rsa_free (&rsa_ctx);
   if (r < 0)
     {

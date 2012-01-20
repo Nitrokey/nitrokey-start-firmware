@@ -102,7 +102,7 @@ static const uint8_t gnukConfigDescriptor[] = {
    * ccid-driver.
    */
   0x42, 0x08, 0x04, 0x00, /* dwFeatures (not ICCD):
-			   *  Short and extended APDU level: 0x40000 *
+			   *  Short APDU level             : 0x20000 *
 			   *  (what? means ICCD?)          : 0x00800 *
 			   *  Automatic IFSD               : 0x00400
 			   *  NAD value other than 0x00    : 0x00200
@@ -115,7 +115,7 @@ static const uint8_t gnukConfigDescriptor[] = {
 			   *  Auto activaction of ICC	   : 0x00004
 			   *  Automatic conf. based on ATR : 0x00002  g
 			   */
-  0x40, 0x01, 0, 0,	  /* dwMaxCCIDMessageLength */
+  0x0f, 0x01, 0, 0,	  /* dwMaxCCIDMessageLength: 271 */
   0xff,			  /* bClassGetResponse: */
   0xff,			  /* bClassEnvelope: */
   0, 0,			  /* wLCDLayout: FIXED VALUE */

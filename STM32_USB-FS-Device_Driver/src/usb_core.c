@@ -15,6 +15,9 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "usb_lib.h"
+extern void usb_lld_to_pmabuf (const void *src, uint16_t addr, uint32_t n);
+extern void usb_lld_from_pmabuf (void *dst, uint16_t addr, uint32_t n);
+
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
 #define ValBit(VAR,Place)    (VAR & (1 << Place))
@@ -460,7 +463,7 @@ void DataStageOut(void)
   #ifdef STM32F10X_CL  
     OTGD_FS_PCD_EP_Read(ENDP0, Buffer, Length); 
   #else  
-    PMAToUserBufferCopy(Buffer, GetEPRxAddr(ENDP0), Length);
+    usb_lld_from_pmabuf (Buffer, GetEPRxAddr(ENDP0), Length);
   #endif  /* STM32F10X_CL */
   }
 
@@ -544,7 +547,7 @@ void DataStageIn(void)
 #ifdef STM32F10X_CL
   OTGD_FS_PCD_EP_Write (ENDP0, DataBuffer, Length);
 #else   
-  UserToPMABufferCopy(DataBuffer, GetEPTxAddr(ENDP0), Length);
+  usb_lld_to_pmabuf (DataBuffer, GetEPTxAddr(ENDP0), Length);
 #endif /* STM32F10X_CL */ 
 
   SetEPTxCount(ENDP0, Length);
