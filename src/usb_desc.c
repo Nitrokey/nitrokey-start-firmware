@@ -101,7 +101,7 @@ static const uint8_t gnukConfigDescriptor[] = {
    * It is different now for better interaction to GPG's in-stock
    * ccid-driver.
    */
-  0x42, 0x08, 0x04, 0x00, /* dwFeatures (not ICCD):
+  0x42, 0x08, 0x02, 0x00, /* dwFeatures (not ICCD):
 			   *  Short APDU level             : 0x20000 *
 			   *  (what? means ICCD?)          : 0x00800 *
 			   *  Automatic IFSD               : 0x00400
