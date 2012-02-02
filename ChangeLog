@@ -1,3 +1,12 @@
+2012-02-02  Niibe Yutaka  <gniibe@fsij.org>
+
+	* Version 0.17.
+
+	* src/usb_desc.c (gnukStringSerial): Updated.
+
+	* tool/gnuk_put_binary.py (cmd_get_response): New.
+	(cmd_select_openpgp, cmd_get_data): Call cmd_get_response.
+
 2012-01-30  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/usb-icc.c (struct ccid): Add chained_cls_ins_p1_p2.

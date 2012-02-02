@@ -2,14 +2,19 @@ Gnuk NEWS - User visible changes
 
 * Major changes in Gnuk 0.17
 
-  Released 2012-01-XX, by NIIBE Yutaka
+  Released 2012-02-02, by NIIBE Yutaka
 
-** ISO 7816 SELECT command behavior is strict now
+** USB CCID/ICCD protocol implementation change
+Gnuk now only supports short APDU level exchange, not support.
+extended APDU level exchange.  Thus, Gnuk could be compatible to older
+host side software implementation.
+
+** ISO 7816 SELECT command behavior is somewhat strict now
 Old implementations do not check DF name for SELECT command.
 This causes some trouble when Gnuk Token is identified as if it were
 different card/token.  Now, DF name of OpenPGP card is checked.
 
-** USB CCID/ICCD low level bug is fixed
+** USB CCID/ICCD low-level bug is fixed
 When the size of command APDU data is just 49, the lower level packet
 size is 64.  This is maximum size of BULK-OUT transfer packet, and
 caused trouble in the past implementations.  Example is setting url
