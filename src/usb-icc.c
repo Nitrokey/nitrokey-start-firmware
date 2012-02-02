@@ -191,6 +191,7 @@ struct ccid {
   struct icc_header icc_header;
 
   uint8_t sw1sw2[2];
+  uint8_t chained_cls_ins_p1_p2[4];
 
   Thread *icc_thread;
   Thread *application;
@@ -444,7 +445,29 @@ static int end_cmd_apdu_head (struct ep_out *epo, size_t orig_len)
   (void)orig_len;
 
   if (epo->cnt < 4 || epo->cnt != c->icc_header.data_len)
-    epo->err = 1;
+    {
+      epo->err = 1;
+      return 0;
+    }
+
+  if ((c->state == APDU_STATE_COMMAND_CHAINING)
+      && (c->chained_cls_ins_p1_p2[0] != (c->a->cmd_apdu_head[0] & ~0x10)
+	  || c->chained_cls_ins_p1_p2[1] != c->a->cmd_apdu_head[1]
+	  || c->chained_cls_ins_p1_p2[2] != c->a->cmd_apdu_head[2]
+	  || c->chained_cls_ins_p1_p2[3] != c->a->cmd_apdu_head[3]))
+    /*
+     * Handling exceptional request.
+     *
+     * Host stops sending command APDU using command chaining,
+     * and start another command APDU.
+     *
+     * Discard old one, and start handling new one.
+     */
+    {
+      c->state = APDU_STATE_WAIT_COMMAND;
+      c->p = c->a->cmd_apdu_data;
+      c->len = MAX_CMD_APDU_DATA_SIZE;
+    }
 
   if (epo->cnt == 4)
     {
@@ -541,6 +564,27 @@ static void icc_cmd_apdu_data (struct ep_out *epo, size_t len)
       c->state = APDU_STATE_WAIT_COMMAND;
       c->p = c->a->cmd_apdu_data;
       c->len = MAX_CMD_APDU_DATA_SIZE;
+    }
+  else if (c->state == APDU_STATE_COMMAND_CHAINING)
+    {
+      if (c->chained_cls_ins_p1_p2[0] != (c->a->cmd_apdu_head[0] & ~0x10)
+	  || c->chained_cls_ins_p1_p2[1] != c->a->cmd_apdu_head[1]
+	  || c->chained_cls_ins_p1_p2[2] != c->a->cmd_apdu_head[2]
+	  || c->chained_cls_ins_p1_p2[3] != c->a->cmd_apdu_head[3])
+	/*
+	 * Handling exceptional request.
+	 *
+	 * Host stops sending command APDU using command chaining,
+	 * and start another command APDU.
+	 *
+	 * Discard old one, and start handling new one.
+	 */
+	{
+	  c->state = APDU_STATE_WAIT_COMMAND;
+	  c->p = c->a->cmd_apdu_data;
+	  c->len = MAX_CMD_APDU_DATA_SIZE;
+	  c->a->cmd_apdu_data_len = 0;
+	}
     }
 
   epo->end_rx = end_cmd_apdu_data;
@@ -1088,9 +1132,15 @@ icc_handle_data (struct ccid *c)
 		      next_state = ICC_STATE_EXECUTE;
 		    }
 		}
-	      else		/* command chaining is ongoing*/
+	      else
 		{
-		  c->state = APDU_STATE_COMMAND_CHAINING;
+		  if (c->state == APDU_STATE_WAIT_COMMAND)
+		    {		/* command chaining is started */
+		      c->a->cmd_apdu_head[0] &= ~0x10;
+		      memcpy (c->chained_cls_ins_p1_p2, c->a->cmd_apdu_head, 4);
+		      c->state = APDU_STATE_COMMAND_CHAINING;
+		    }
+
 		  c->p += c->a->cmd_apdu_head[4];
 		  c->len -= c->a->cmd_apdu_head[4];
 		  icc_send_data_block_0x9000 (c);

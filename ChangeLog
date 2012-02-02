@@ -1,3 +1,9 @@
+2012-01-30  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/usb-icc.c (struct ccid): Add chained_cls_ins_p1_p2.
+	(end_cmd_apdu_head, icc_cmd_apdu_data, icc_handle_data): Add checking
+	CMD APDU head for command chaining.
+
 2012-01-20  Niibe Yutaka  <gniibe@fsij.org>
 
 	Short APDU only CCID driver.
