@@ -280,7 +280,7 @@ static void ccid_init (struct ccid *c, struct ep_in *epi, struct ep_out *epo,
  *
  * While the device is receiving something, there is no possibility
  * for the device to send anything.
- * 
+ *
  * Thus, the buffer can be shared for RX and TX.
  *
  * Exception: When we support ABORT of CCID, it is possible to receive
@@ -970,7 +970,7 @@ icc_send_data_block_gr (struct ccid *c, size_t chunk_len)
 	size_for_sw = 0;
 
       usb_lld_txcpy (c->p, c->epi->ep_num, ICC_MSG_HEADER_SIZE, chunk_len);
-      if (size_for_sw) 
+      if (size_for_sw)
 	usb_lld_txcpy (c->sw1sw2, c->epi->ep_num,
 		       ICC_MSG_HEADER_SIZE + chunk_len, size_for_sw);
       tx_size = ICC_MSG_HEADER_SIZE + chunk_len + size_for_sw;
@@ -1161,7 +1161,7 @@ icc_handle_data (struct ccid *c)
 	  if (c->p != c->a->cmd_apdu_data)
 	    {
 	      /* SECURE received in the middle of command chaining */
-	      ccid_reset (c); 
+	      ccid_reset (c);
 	      icc_error (c, ICC_OFFSET_DATA_LEN);
 	      return next_state;
 	    }
