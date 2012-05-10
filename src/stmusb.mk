@@ -1,7 +1,0 @@
-STMUSBDIR = ../STM32_USB-FS-Device_Driver
-STMUSBSRCDIR = $(STMUSBDIR)/src
-STMUSBINCDIR = $(STMUSBDIR)/inc
-STMUSBSRC= \
-	$(STMUSBSRCDIR)/usb_init.c $(STMUSBSRCDIR)/usb_int.c \
-	$(STMUSBSRCDIR)/usb_core.c \
-	$(STMUSBSRCDIR)/usb_regs.c

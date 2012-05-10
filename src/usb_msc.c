@@ -21,8 +21,6 @@
  *
  */
 
-#include "usb_lib.h"
-
 #include "config.h"
 #include "ch.h"
 #include "gnuk.h"

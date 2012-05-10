@@ -225,16 +225,6 @@ Gnuk is distributed with external source code.
   The file include/polarssl/bn_mul.h is heavily modified for ARM
   Cortex-M3.
 
-* STM32_USB-FS-Device_Driver/ -- a part of USB-FS-Device_Lib
-* Virtual_COM_Port/ -- a part of USB-FS-Device_Lib
-
-  STM32F10x USB Full Speed Device Library (USB-FS-Device_Lib)
-  is a STM32F10x library for USB functionality.
-
-  I took Libraries/STM32_USB-FS-Device_Driver and 
-  Project/Virtual_COM_Port in STM32_USB-FS-Device_Lib distribution.
-  See http://www.st.com/ for detail.
-
 
 Host Requirements
 =================

@@ -1,7 +1,7 @@
 /*
- * usb_prop.c - glue/interface code between Gnuk and USB-FS-Device_Lib
+ * usb_prop.c - interface code between Gnuk and USB
  *
- * Copyright (C) 2010, 2011 Free Software Initiative of Japan
+ * Copyright (C) 2010, 2011, 2012 Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
  * This file is a part of Gnuk, a GnuPG USB Token implementation.
@@ -25,15 +25,49 @@
 #define GNUK_MAX_PACKET_SIZE 64
 
 #include "config.h"
-#include "usb_lib.h"
+#include "ch.h"
+#include "usb_lld.h"
 #include "usb_conf.h"
-#include "usb_prop.h"
-#include "usb_desc.h"
-#include "usb_pwr.h"
-#include "hw_config.h"
 
 #ifdef ENABLE_VIRTUAL_COM_PORT
-#include "usb-cdc-vport.c"
+#include "usb-cdc.h"
+
+struct line_coding
+{
+  uint32_t bitrate;
+  uint8_t format;
+  uint8_t paritytype;
+  uint8_t datatype;
+};
+
+static const struct line_coding line_coding = {
+  115200, /* baud rate: 115200    */
+  0x00,   /* stop bits: 1         */
+  0x00,   /* parity:    none      */
+  0x08    /* bits:      8         */
+};
+
+static void
+Virtual_Com_Port_Data_Setup (uint8_t RequestNo)
+{
+  if (RequestNo != USB_CDC_REQ_GET_LINE_CODING)
+    return USB_UNSUPPORT;
+
+  /* RequestNo == USB_CDC_REQ_SET_LINE_CODING is not supported */
+
+  usb_lld_set_data_to_send (&line_coding, sizeof(line_coding));
+  return USB_SUCCESS;
+}
+
+static int
+Virtual_Com_Port_NoData_Setup (uint8_t RequestNo)
+{
+  if (RequestNo == USB_CDC_REQ_SET_CONTROL_LINE_STATE)
+    /* Do nothing and success  */
+    return USB_SUCCESS;
+
+  return USB_UNSUPPORT;
+}
 #endif
 
 #ifdef PINPAD_DND_SUPPORT
@@ -41,213 +75,59 @@
 #endif
 
 
-static void
-SetEPRxCount_allocated_size (uint8_t bEpNum, uint16_t wCount)
-{				/* Assume wCount is even */
-  uint32_t *pdwReg = _pEPRxCount (bEpNum);
-  uint16_t value;
-
-  if (wCount <= 62)
-    value = (wCount & 0x3e) << 9;
-  else
-    value = 0x8000 | (((wCount >> 5) - 1) << 10);
-
-  *pdwReg = (uint32_t)value;
-}
+uint32_t bDeviceState = UNCONNECTED; /* USB device status */
 
 static void
 gnuk_device_init (void)
 {
-  pInformation->Current_Configuration = 0;
-
-  /* Connect the device */
-  PowerOn ();
-
-  /* Perform basic device initialization operations */
-  _SetISTR (0);
-  wInterrupt_Mask = IMR_MSK;
-  _SetCNTR (wInterrupt_Mask);
-
+  usb_lld_set_configuration (0);
+  USB_Cable_Config (1);
   bDeviceState = UNCONNECTED;
 }
 
 static void
-gnuk_device_reset (void)
+gnuk_setup_endpoints_for_interface (uint16_t interface)
 {
-  /* Set DEVICE as not configured */
-  pInformation->Current_Configuration = 0;
-
-  /* Current Feature initialization */
-  pInformation->Current_Feature = Config_Descriptor.Descriptor[7];
-
-  /* Set DEVICE with the default Interface*/
-  pInformation->Current_Interface = 0;
-
-  SetBTABLE (BTABLE_ADDRESS);
-
-  /* Initialize Endpoint 0 */
-  SetEPType (ENDP0, EP_CONTROL);
-  SetEPTxStatus (ENDP0, EP_TX_STALL);
-  SetEPRxAddr (ENDP0, ENDP0_RXADDR);
-  SetEPTxAddr (ENDP0, ENDP0_TXADDR);
-  Clear_Status_Out (ENDP0);
-  SetEPRxCount_allocated_size (ENDP0, GNUK_MAX_PACKET_SIZE);
-  SetEPRxValid (ENDP0);
-
-  /* Initialize Endpoint 1 */
-  SetEPType (ENDP1, EP_BULK);
-  SetEPTxAddr (ENDP1, ENDP1_TXADDR);
-  SetEPTxStatus (ENDP1, EP_TX_NAK);
-  SetEPRxStatus (ENDP1, EP_RX_DIS);
-
-  /* Initialize Endpoint 2 */
-  SetEPType (ENDP2, EP_BULK);
-  SetEPRxAddr (ENDP2, ENDP2_RXADDR);
-  SetEPRxCount_allocated_size (ENDP2, GNUK_MAX_PACKET_SIZE);
-  SetEPRxStatus (ENDP2, EP_RX_VALID);
-  SetEPTxStatus (ENDP2, EP_TX_DIS);
-
-#ifdef ENABLE_VIRTUAL_COM_PORT
-  /* Initialize Endpoint 3 */
-  SetEPType (ENDP3, EP_BULK);
-  SetEPTxAddr (ENDP3, ENDP3_TXADDR);
-  SetEPTxStatus (ENDP3, EP_TX_NAK);
-  SetEPRxStatus (ENDP3, EP_RX_DIS);
-
-  /* Initialize Endpoint 4 */
-  SetEPType (ENDP4, EP_INTERRUPT);
-  SetEPTxAddr (ENDP4, ENDP4_TXADDR);
-  SetEPTxStatus (ENDP4, EP_TX_NAK);
-  SetEPRxStatus (ENDP4, EP_RX_DIS);
-
-  /* Initialize Endpoint 5 */
-  SetEPType (ENDP5, EP_BULK);
-  SetEPRxAddr (ENDP5, ENDP5_RXADDR);
-  SetEPRxCount_allocated_size (ENDP5, VIRTUAL_COM_PORT_DATA_SIZE);
-  SetEPRxStatus (ENDP5, EP_RX_VALID);
-  SetEPTxStatus (ENDP5, EP_TX_DIS);
-#endif
-
-#ifdef PINPAD_DND_SUPPORT
-  /* Initialize Endpoint 6 */
-  SetEPType (ENDP6, EP_BULK);
-  SetEPTxAddr (ENDP6, ENDP6_TXADDR);
-  SetEPTxStatus (ENDP6, EP_TX_NAK);
-  SetEPRxStatus (ENDP6, EP_RX_DIS);
-
-  /* Initialize Endpoint 7 */
-  SetEPType (ENDP7, EP_BULK);
-  SetEPRxAddr (ENDP7, ENDP7_RXADDR);
-  SetEPRxCount_allocated_size (ENDP7, 64);
-  SetEPRxStatus (ENDP7, EP_RX_STALL);
-  SetEPTxStatus (ENDP7, EP_TX_DIS);
-#endif
-
-  /* Set this device to response on default address */
-  SetDeviceAddress (0);
-
-  bDeviceState = ATTACHED;
-}
-
-static void
-gnuk_device_SetConfiguration (void)
-{
-  DEVICE_INFO *pInfo = &Device_Info;
-
-  if (pInfo->Current_Configuration != 0)
-    {				/* Device configured */
-      extern void *main_thread;
-      extern void chEvtSignalI (void *, unsigned long);
-#define LED_STATUS_MODE   (8)
-
-      bDeviceState = CONFIGURED;
-      chEvtSignalI (main_thread, LED_STATUS_MODE);
-    }
-}
-
-static void
-gnuk_device_SetInterface (void)
-{
-  uint16_t intf = pInformation->USBwIndex0;
-  
-  /* alternateSetting: pInformation->USBwValue0 should be 0 */
-
-  if (intf == 0)
+  if (interface == 0)
     {
-      ClearDTOG_RX (ENDP2);
-      ClearDTOG_TX (ENDP1);
+      /* Initialize Endpoint 1 */
+      usb_lld_setup_endpoint (ENDP1, EP_BULK, 0, 0, ENDP1_TXADDR, 0);
+
+      /* Initialize Endpoint 2 */
+      usb_lld_setup_endpoint (ENDP2, EP_BULK, 0, ENDP2_RXADDR, 0,
+			      GNUK_MAX_PACKET_SIZE);
     }
 #ifdef ENABLE_VIRTUAL_COM_PORT
-  else if (intf == 1)
+  else if (interface == 1)
     {
-      ClearDTOG_TX (ENDP4);
+      /* Initialize Endpoint 4 */
+      usb_lld_setup_endpoint (ENDP4, EP_INTERRUPT, 0, 0, ENDP4_TXADDR, 0);
     }
-  else if (intf == 2)
+  else if (interface == 2)
     {
-      ClearDTOG_RX (ENDP5);
-      ClearDTOG_TX (ENDP3);
+      /* Initialize Endpoint 3 */
+      usb_lld_setup_endpoint (ENDP3, EP_BULK, 0, 0, ENDP3_TXADDR, 0);
+
+      /* Initialize Endpoint 5 */
+      usb_lld_setup_endpoint (ENDP5, EP_BULK, 0, ENDP5_RXADDR, 0,
+			      VIRTUAL_COM_PORT_DATA_SIZE);
     }
 #endif
 #ifdef PINPAD_DND_SUPPORT
 # ifdef ENABLE_VIRTUAL_COM_PORT
-  else if (intf == 3)
-    {
-      ClearDTOG_TX (ENDP6);
-      ClearDTOG_RX (ENDP7);
-    }
+  else if (interface == 3)
 # else
-  else if (intf == 1)
-    {
-      ClearDTOG_TX (ENDP6);
-      ClearDTOG_RX (ENDP7);
-    }
+  else if (interface == 1)
 # endif
+    {
+      /* Initialize Endpoint 6 */
+      usb_lld_setup_endpoint (ENDP6, EP_BULK, 0, 0, ENDP6_TXADDR, 0);
+
+      /* Initialize Endpoint 7 */
+      usb_lld_setup_endpoint (ENDP7, EP_BULK, 0, ENDP7_RXADDR, 0, 64);
+      usb_lld_stall_rx (ENDP7);
+    }
 #endif
-}
-
-static void
-gnuk_device_SetDeviceAddress (void)
-{
-  bDeviceState = ADDRESSED;
-}
-
-/* IN from port 0 */
-static void
-gnuk_device_Status_In (void)
-{
-}
-
-/* OUT to port 0 */
-static void
-gnuk_device_Status_Out (void)
-{
-}
-
-static uint8_t *
-gnuk_device_GetDeviceDescriptor (uint16_t Length)
-{
-  return Standard_GetDescriptorData (Length,
-				     (PONE_DESCRIPTOR)&Device_Descriptor);
-}
-
-static uint8_t *
-gnuk_device_GetConfigDescriptor (uint16_t Length)
-{
-  return Standard_GetDescriptorData (Length,
-				     (PONE_DESCRIPTOR)&Config_Descriptor);
-}
-
-static uint8_t *
-gnuk_device_GetStringDescriptor (uint16_t Length)
-{
-  uint8_t wValue0 = pInformation->USBwValue0;
-
-  if (wValue0 >= (sizeof (String_Descriptor) / sizeof (ONE_DESCRIPTOR)))
-    return NULL;
-  else
-    return
-      Standard_GetDescriptorData (Length,
-				  (PONE_DESCRIPTOR)&String_Descriptor[wValue0]);
 }
 
 #ifdef PINPAD_DND_SUPPORT
@@ -264,15 +144,28 @@ gnuk_device_GetStringDescriptor (uint16_t Length)
 # endif
 #endif
 
-static RESULT
-gnuk_device_Get_Interface_Setting (uint8_t Interface, uint8_t AlternateSetting)
+static void
+gnuk_device_reset (void)
 {
-  if (AlternateSetting > 0)	/* Any interface, we have no alternate */
-    return USB_UNSUPPORT;
-  else if (Interface > NUM_INTERFACES)
-    return USB_UNSUPPORT;
+  int i;
 
-  return USB_SUCCESS;
+  /* Set DEVICE as not configured */
+  usb_lld_set_configuration (0);
+
+  /* Current Feature initialization */
+  usb_lld_set_feature (Config_Descriptor.Descriptor[7]);
+
+  usb_lld_reset ();
+
+  /* Initialize Endpoint 0 */
+  usb_lld_setup_endpoint (ENDP0, EP_CONTROL, 0,
+			  ENDP0_RXADDR, ENDP0_TXADDR,
+			  GNUK_MAX_PACKET_SIZE);
+
+  for (i = 0; i < NUM_INTERFACES; i++)
+    gnuk_setup_endpoints_for_interface (i);
+
+  bDeviceState = ATTACHED;
 }
 
 #define USB_CCID_REQ_ABORT			0x01
@@ -280,104 +173,48 @@ gnuk_device_Get_Interface_Setting (uint8_t Interface, uint8_t AlternateSetting)
 #define USB_CCID_REQ_GET_DATA_RATES		0x03
 
 static const uint8_t freq_table[] = { 0xf3, 0x0d, 0, 0, }; /* dwDefaultClock */
-static uint8_t *
-gnuk_clock_frequencies (uint16_t len)
-{
-  if (len == 0)
-    {
-      pInformation->Ctrl_Info.Usb_wLength = sizeof (freq_table);
-      return NULL;
-    }
-
-  return (uint8_t *)freq_table;
-}
 
 static const uint8_t data_rate_table[] = { 0x80, 0x25, 0, 0, }; /* dwDataRate */
-static uint8_t *
-gnuk_data_rates (uint16_t len)
-{
-  if (len == 0)
-    {
-      pInformation->Ctrl_Info.Usb_wLength = sizeof (data_rate_table);
-      return NULL;
-    }
-
-  return (uint8_t *)data_rate_table;
-}
 
 #if defined(PINPAD_DND_SUPPORT)
 static const uint8_t lun_table[] = { 0, 0, 0, 0, };
-static uint8_t *
-msc_lun_info (uint16_t len)
-{
-  if (len == 0)
-    {
-      pInformation->Ctrl_Info.Usb_wLength = sizeof (lun_table);
-      return NULL;
-    }
-
-  return (uint8_t *)lun_table;
-}
 #endif
 
-static RESULT
-gnuk_setup_with_data (uint8_t RequestNo)
+static void
+gnuk_setup_with_data (uint8_t recipient, uint8_t RequestNo, uint16_t index)
 {
-  if (Type_Recipient == (CLASS_REQUEST | INTERFACE_RECIPIENT)) /* Interface */
-    if (pInformation->USBwIndex0 == 0)
+  if (recipient == (CLASS_REQUEST | INTERFACE_RECIPIENT)) /* Interface */
+    if (index == 0)
       {
 	if (RequestNo == USB_CCID_REQ_GET_CLOCK_FREQUENCIES)
-	  {
-	    pInformation->Ctrl_Info.CopyData = gnuk_clock_frequencies;
-	    pInformation->Ctrl_Info.Usb_wOffset = 0;
-	    gnuk_clock_frequencies (0);
-	    return USB_SUCCESS;
-	  }
+	  usb_lld_set_data_to_send (freq_table, sizeof (freq_table));
 	else if (RequestNo == USB_CCID_REQ_GET_DATA_RATES)
-	  {
-	    pInformation->Ctrl_Info.CopyData = gnuk_data_rates;
-	    pInformation->Ctrl_Info.Usb_wOffset = 0;
-	    gnuk_data_rates (0);
-	    return USB_SUCCESS;
-	  }
-	else
-	  return USB_UNSUPPORT;
+	  usb_lld_set_data_to_send (data_rate_table, sizeof (data_rate_table));
       }
 #if defined(PINPAD_DND_SUPPORT)
 # if defined(ENABLE_VIRTUAL_COM_PORT)
-    else if (pInformation->USBwIndex0 == 1)
-      return Virtual_Com_Port_Data_Setup (RequestNo);
-    else if (pInformation->USBwIndex0 == 3)
+    else if (index == 1)
+      Virtual_Com_Port_Data_Setup (RequestNo);
+    else if (index == 3)
 # else
-    else if (pInformation->USBwIndex0 == 1)
+    else if (index == 1)
 # endif
       {
 	if (RequestNo == MSC_GET_MAX_LUN_COMMAND)
-	  {
-	    pInformation->Ctrl_Info.CopyData = msc_lun_info;
-	    pInformation->Ctrl_Info.Usb_wOffset = 0;
-	    msc_lun_info (0);
-	    return USB_SUCCESS;
-	  }
-	else
-	  return USB_UNSUPPORT;
+	  usb_lld_set_data_to_send (lun_table, sizeof (lun_table));
       }
 #elif defined(ENABLE_VIRTUAL_COM_PORT)
-    else if (pInformation->USBwIndex0 == 1)
-      return Virtual_Com_Port_Data_Setup (RequestNo);
+    else if (index == 1)
+      Virtual_Com_Port_Data_Setup (RequestNo);
 #endif
-    else
-	return USB_UNSUPPORT;
-  else
-    return USB_UNSUPPORT;
 }
 
 
-static RESULT
-gnuk_setup_with_nodata (uint8_t RequestNo)
+static int
+gnuk_setup_with_nodata (uint8_t recipient, uint8_t RequestNo, uint16_t index)
 {
-  if (Type_Recipient == (CLASS_REQUEST | INTERFACE_RECIPIENT)) /* Interface */
-    if (pInformation->USBwIndex0 == 0)
+  if (recipient == (CLASS_REQUEST | INTERFACE_RECIPIENT)) /* Interface */
+    if (index == 0)
       {
 	if (RequestNo == USB_CCID_REQ_ABORT)
 	  /* wValue: bSeq, bSlot */
@@ -388,11 +225,11 @@ gnuk_setup_with_nodata (uint8_t RequestNo)
       }
 #if defined(PINPAD_DND_SUPPORT)
 # if defined(ENABLE_VIRTUAL_COM_PORT)
-    else if (pInformation->USBwIndex0 == 1)
+    else if (index == 1)
       return Virtual_Com_Port_NoData_Setup (RequestNo);
-    else if (pInformation->USBwIndex0 == 3)
+    else if (index == 3)
 # else
-    else if (pInformation->USBwIndex0 == 1)
+    else if (index == 1)
 # endif
       {
 	if (RequestNo == MSC_MASS_STORAGE_RESET_COMMAND)
@@ -404,7 +241,7 @@ gnuk_setup_with_nodata (uint8_t RequestNo)
 	  return USB_UNSUPPORT;
       }
 #elif defined(ENABLE_VIRTUAL_COM_PORT)
-    else if (pInformation->USBwIndex0 == 1)
+    else if (index == 1)
       return Virtual_Com_Port_NoData_Setup (RequestNo);
 #endif
     else
@@ -413,38 +250,117 @@ gnuk_setup_with_nodata (uint8_t RequestNo)
     return USB_UNSUPPORT;
 }
 
+static int
+gnuk_get_descriptor (uint8_t desc_type, uint16_t index, uint16_t value)
+{
+  (void)index;
+  if (desc_type == DEVICE_DESCRIPTOR)
+    {
+      usb_lld_set_data_to_send (Device_Descriptor.Descriptor,
+				Device_Descriptor.Descriptor_Size);
+      return USB_SUCCESS;
+    }
+  else if (desc_type == CONFIG_DESCRIPTOR)
+    {
+      usb_lld_set_data_to_send (Config_Descriptor.Descriptor,
+				Config_Descriptor.Descriptor_Size);
+      return USB_SUCCESS;
+    }
+  else if (desc_type == STRING_DESCRIPTOR)
+    {
+      uint8_t desc_index = value & 0xff;
+
+      if (desc_index < NUM_STRING_DESC)
+	{
+	  usb_lld_set_data_to_send (String_Descriptors[desc_index].Descriptor,
+			    String_Descriptors[desc_index].Descriptor_Size);
+	  return USB_SUCCESS;
+	}
+    }
+
+  return USB_UNSUPPORT;
+}
+
+static int gnuk_usb_event (uint8_t event_type, uint16_t value)
+{
+  switch (event_type)
+    {
+    case USB_EVENT_RESET:
+      break;
+    case USB_EVENT_ADDRESS:
+      bDeviceState = ADDRESSED;
+      break;
+    case USB_EVENT_CONFIG:
+      if (usb_lld_current_configuration () == 0)
+	{
+	  int i;
+	  extern void *main_thread;
+#define LED_STATUS_MODE   (8)
+
+	  if (value != 1)
+	    return USB_UNSUPPORT;
+
+	  usb_lld_set_configuration (value);
+	  for (i = 0; i < NUM_INTERFACES; i++)
+	    gnuk_setup_endpoints_for_interface (i);
+	  bDeviceState = CONFIGURED;
+	  chEvtSignalI (main_thread, LED_STATUS_MODE);
+	  return USB_SUCCESS;
+	}
+      else
+	{
+	  if (value != 0)
+	    return USB_UNSUPPORT;
+
+	  usb_lld_set_configuration (0);
+	  // Disable all endpoints???
+	  bDeviceState = ADDRESSED;
+	}
+    default:
+      break;
+    }
+
+  return USB_UNSUPPORT;
+}
+
+static int gnuk_interface (uint8_t cmd, uint16_t interface, uint16_t alt)
+{
+  static uint8_t zero = 0;
+
+  if (interface >= NUM_INTERFACES)
+    return USB_UNSUPPORT;
+
+  switch (cmd)
+    {
+    case USB_SET_INTERFACE:
+      if (alt != 0)
+	return USB_UNSUPPORT;
+      else
+	{
+	  gnuk_setup_endpoints_for_interface (interface);
+	  return USB_SUCCESS;
+	}
+
+    case USB_GET_INTERFACE:
+      usb_lld_set_data_to_send (&zero, 1);
+      return USB_SUCCESS;
+
+    default:
+    case USB_QUERY_INTERFACE:
+      return USB_SUCCESS;
+    }
+}
+
 /*
  * Interface to USB core
  */
 
-const DEVICE_PROP Device_Property = {
+const struct usb_device_method Device_Method = {
   gnuk_device_init,
   gnuk_device_reset,
-  gnuk_device_Status_In,
-  gnuk_device_Status_Out,
   gnuk_setup_with_data,
   gnuk_setup_with_nodata,
-  gnuk_device_Get_Interface_Setting,
-  gnuk_device_GetDeviceDescriptor,
-  gnuk_device_GetConfigDescriptor,
-  gnuk_device_GetStringDescriptor,
-  0,
-  GNUK_MAX_PACKET_SIZE
-};
-
-const DEVICE Device_Table = {
-  EP_NUM,
-  1
-};
-
-const USER_STANDARD_REQUESTS User_Standard_Requests = {
-  NOP_Process,			/* GetConfiguration */ 
-  gnuk_device_SetConfiguration,
-  NOP_Process,			/* GetInterface */
-  gnuk_device_SetInterface,
-  NOP_Process,			/* GetStatus */
-  NOP_Process,			/* ClearFeature */
-  NOP_Process,			/* SetEndPointFeature */
-  NOP_Process,			/* SetDeviceFeature */
-  gnuk_device_SetDeviceAddress
+  gnuk_get_descriptor,
+  gnuk_usb_event,
+  gnuk_interface,
 };

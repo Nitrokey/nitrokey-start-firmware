@@ -3,8 +3,9 @@
  */
 
 #include "config.h"
-#include "usb_lib.h"
-#include "usb_desc.h"
+#include "ch.h"
+#include "usb_lld.h"
+#include "usb_conf.h"
 
 #define USB_ICC_INTERFACE_CLASS 0x0B
 #define USB_ICC_INTERFACE_SUBCLASS 0x00
@@ -282,19 +283,19 @@ const uint8_t gnukStringSerial[] = {
 };
 
 
-const ONE_DESCRIPTOR Device_Descriptor = {
-  (uint8_t*)gnukDeviceDescriptor,
+const struct Descriptor Device_Descriptor = {
+  gnukDeviceDescriptor,
   sizeof (gnukDeviceDescriptor)
 };
 
-const ONE_DESCRIPTOR Config_Descriptor = {
-  (uint8_t*)gnukConfigDescriptor,
+const struct Descriptor Config_Descriptor = {
+  gnukConfigDescriptor,
   sizeof (gnukConfigDescriptor)
 };
 
-const ONE_DESCRIPTOR String_Descriptor[] = {
-  {(uint8_t*)gnukStringLangID, sizeof (gnukStringLangID)},
-  {(uint8_t*)gnukStringVendor, sizeof (gnukStringVendor)},
-  {(uint8_t*)gnukStringProduct, sizeof (gnukStringProduct)},
-  {(uint8_t*)gnukStringSerial, sizeof (gnukStringSerial)},
+const struct Descriptor String_Descriptors[NUM_STRING_DESC] = {
+  {gnukStringLangID, sizeof (gnukStringLangID)},
+  {gnukStringVendor, sizeof (gnukStringVendor)},
+  {gnukStringProduct, sizeof (gnukStringProduct)},
+  {gnukStringSerial, sizeof (gnukStringSerial)},
 };

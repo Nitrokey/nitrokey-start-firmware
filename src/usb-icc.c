@@ -25,10 +25,6 @@
 #include "ch.h"
 #include "hal.h"
 #include "gnuk.h"
-#include "usb_lib.h"
-#include "usb_mem.h"
-#include "hw_config.h"
-#include "usb_istr.h"
 #include "usb_lld.h"
 
 /*

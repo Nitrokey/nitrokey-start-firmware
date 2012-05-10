@@ -1,5 +1,14 @@
 Gnuk NEWS - User visible changes
 
+* Major changes in Gnuk 0.18
+
+  Released 2012-05-XX, by NIIBE Yutaka
+
+** New USB stack
+Gnuk used to use USB stack of USB-FS-Device_Lib by ST.  Now, it has
+original implementation.  Hopefully, size and quality are improved.
+
+
 * Major changes in Gnuk 0.17
 
   Released 2012-02-02, by NIIBE Yutaka

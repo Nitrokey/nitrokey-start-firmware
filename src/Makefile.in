@@ -70,9 +70,11 @@ include $(CHIBIOS)/os/hal/platforms/STM32/platform.mk
 include $(CHIBIOS)/os/hal/hal.mk
 include $(CHIBIOS)/os/ports/GCC/ARMCMx/STM32F10x/port.mk
 include $(CHIBIOS)/os/kernel/kernel.mk
-include stmusb.mk
-include vcomport.mk
 include crypt.mk
+
+ifneq ($(ENABLE_VCOMPORT),)
+VCOMSRC += usb_endp.c
+endif
 
 # C sources that can be compiled in ARM or THUMB mode depending on the global
 # setting.
@@ -85,7 +87,6 @@ CSRC = $(PORTSRC) \
        $(BOARD_DIR)/board.c \
        $(CHIBIOS)/os/various/evtimer.c \
        $(CHIBIOS)/os/various/syscalls.c \
-       $(STMUSBSRC) \
        $(VCOMSRC) \
        $(CRYPTSRC) \
        main.c usb_lld.c \
@@ -109,7 +110,7 @@ endif
 ASMSRC = $(PORTASM) \
          $(CHIBIOS)/os/ports/GCC/ARMCMx/STM32F10x/vectors.s
 
-INCDIR = $(CRYPTINCDIR) $(STMUSBINCDIR) $(VCOMDIR) \
+INCDIR = $(CRYPTINCDIR) \
 	 $(PORTINC) $(KERNINC) $(TESTINC) \
          $(HALINC) $(PLATFORMINC) ../boards/common $(BOARD_DIR) \
          $(CHIBIOS)/os/various

@@ -22,16 +22,9 @@
  */
 
 #include "config.h"
-
-#include "usb_lib.h"
-
 #include "ch.h"
 #include "gnuk.h"
 #include "usb_lld.h"
-#include "usb_istr.h"
-#include "usb_desc.h"
-#include "hw_config.h"
-#include "usb_pwr.h"
 
 #ifdef DEBUG
 struct stdout {
@@ -380,7 +373,6 @@ main (int argc, char **argv)
   flash_unlock ();
   device_initialize_once ();
   usb_lld_init ();
-  USB_Init ();
   random_init ();
 
 #ifdef DEBUG
