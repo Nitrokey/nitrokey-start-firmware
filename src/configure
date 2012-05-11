@@ -21,6 +21,7 @@
 
 # Default settings
 help=no
+vidpid=none
 target=OLIMEX_STM32_H103
 verbose=no
 with_dfu=default
@@ -38,10 +39,12 @@ for option; do
   case $option in
   -h | --help)
     help=yes ;;
-  --target=*)
-    target=$optarg ;;
   -v | --verbose)
     verbose=yes ;;
+  --vidpid=*)
+    vidpid=$optarg ;;
+  --target=*)
+    target=$optarg ;;
   --enable-debug)
     debug=yes ;;
   --disable-debug)
@@ -76,6 +79,7 @@ Defaults for the options are specified in brackets.
 
 Configuration:
   -h, --help		display this help and exit	[no]
+  --vidpid=VID:PID	specify vendor/product ID	[<NONE>]
   --target=TARGET	specify target			[OLIMEX_STM32_H103]
 			supported targes are:
 			   OLIMEX_STM32_H103
@@ -92,6 +96,40 @@ Configuration:
   --with-dfu		build image for DFU 		[<target specific>]
 EOF
   exit 0
+fi
+
+if test "$vidpid" = "none"; then
+  echo "Please specify Vendor ID and Product ID by --vidpid option." 
+  exit 1
+fi
+
+if !(IFS="	"
+  while read VIDPID VERSION PRODUCT VENDOR; do
+    if test "$vidpid" = "$VIDPID"; then
+      (echo $VIDPID | sed -n -e "s%^\([0-9a-f][0-9a-f]\)\([0-9a-f][0-9a-f]\):\([0-9a-f][0-9a-f]\)\([0-9a-f][0-9a-f]\)$%  0x\2, 0x\1, /* idVendor  */\n  0x\4, 0x\3, /* idProduct */%p"
+       echo $VERSION | sed -n -e "s%^\([0-9a-f][0-9a-f]\)\([0-9a-f][0-9a-f]\)$%  0x\2, 0x\1, /* bcdDevice  */%p"
+      ) > usb-vid-pid-ver.c.inc
+      (echo 'static const uint8_t gnukStringVendor[] = {'
+       echo "  ${#VENDOR}*2+2,			/* bLength */"
+       echo "  USB_STRING_DESCRIPTOR_TYPE,	/* bDescriptorType */"
+       echo "  /* Manufacturer: \"$VENDOR\" */"
+       echo $VENDOR | sed -n -e "s/\(........\)/\1\n/gp" | sed -n -e "s/\(.\)/'\1', 0, /g" -e "s/^/  /" -e "s/ $//p"
+       echo '};'
+       echo
+       echo 'static const uint8_t gnukStringProduct[] = {'
+       echo "  ${#PRODUCT}*2+2,			/* bLength */"
+       echo "  USB_STRING_DESCRIPTOR_TYPE,	/* bDescriptorType */"
+       echo "  /* Product name: \"$PRODUCT\" */"
+       echo $PRODUCT | sed -n -e "s/\(........\)/\1\n/gp" | sed -n -e "s/\(.\)/'\1', 0, /g" -e "s/^/  /" -e "s/ $//p"
+       echo '};'
+       ) >usb-string-vendor-product.c.inc
+      exit 0
+    fi
+  done; exit 1) < ../GNUK_USB_DEVICE_ID
+then
+  echo "Please specify valid Vendor ID and Product ID." 
+  echo "Check ../GNUK_USB_DEVICE_ID."
+  exit 1
 fi
 
 BOARD_DIR=../boards/$target

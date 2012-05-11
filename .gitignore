@@ -11,4 +11,4 @@ src/gnuk.dmp
 src/gnuk.elf
 src/gnuk.hex
 src/gnuk.map
-src/random_bits
+src/*.inc

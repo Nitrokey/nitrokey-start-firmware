@@ -22,9 +22,7 @@ static const uint8_t gnukDeviceDescriptor[] = {
   0x00,   /* bDeviceSubClass */
   0x00,   /* bDeviceProtocol */
   0x40,   /* bMaxPacketSize0 */
-  0x4b, 0x23,   /* idVendor = 0x234b (FSIJ) */
-  0x00, 0x00,   /* idProduct = 0x0000 (FSIJ USB Token) */
-  0x00, 0x02,   /* bcdDevice = 2.00 */
+#include "usb-vid-pid-ver.c.inc"
   1, /* Index of string descriptor describing manufacturer */
   2, /* Index of string descriptor describing product */
   3, /* Index of string descriptor describing the device's serial number */
@@ -255,28 +253,12 @@ static const uint8_t gnukStringLangID[] = {
   0x09, 0x04			/* LangID = 0x0409: US-English */
 };
 
-static const uint8_t gnukStringVendor[] = {
-  33*2+2,			/* bLength */
-  USB_STRING_DESCRIPTOR_TYPE,	/* bDescriptorType*/
-  /* Manufacturer: "Free Software Initiative of Japan" */
-  'F', 0, 'r', 0, 'e', 0, 'e', 0, ' ', 0, 'S', 0, 'o', 0, 'f', 0,
-  't', 0, 'w', 0, 'a', 0, 'r', 0, 'e', 0, ' ', 0, 'I', 0, 'n', 0,
-  'i', 0, 't', 0, 'i', 0, 'a', 0, 't', 0, 'i', 0, 'v', 0, 'e', 0,
-  ' ', 0, 'o', 0, 'f', 0, ' ', 0, 'J', 0, 'a', 0, 'p', 0, 'a', 0,
-  'n', 0
-};
-
-static const uint8_t gnukStringProduct[] = {
-  14*2+2,			/* bLength */
-  USB_STRING_DESCRIPTOR_TYPE,	/* bDescriptorType */
-  /* Product name: "FSIJ USB Token" */
-  'F', 0, 'S', 0, 'I', 0, 'J', 0, ' ', 0, 'U', 0, 'S', 0, 'B', 0,
-  ' ', 0, 'T', 0, 'o', 0, 'k', 0, 'e', 0, 'n', 0
-};
+#include "usb-string-vender-product.c.inc"
 
 const uint8_t gnukStringSerial[] = {
-  13*2+2,			/* bLength */
+  18*2+2,			/* bLength */
   USB_STRING_DESCRIPTOR_TYPE,	/* bDescriptorType */
+  'F', 0, 'S', 0, 'I', 0, 'J', 0, '-', 0, 
   '0', 0, '.', 0, '1', 0, '7', 0, /* Version number of Gnuk */
   '-', 0,
   0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,

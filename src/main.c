@@ -161,7 +161,7 @@ extern msg_t USBthread (void *arg);
 #define LED_TIMEOUT_STOP	MS2ST(500)
 
 
-#define ID_OFFSET 12
+#define ID_OFFSET 22
 static void
 device_initialize_once (void)
 {

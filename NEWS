@@ -4,6 +4,10 @@ Gnuk NEWS - User visible changes
 
   Released 2012-05-XX, by NIIBE Yutaka
 
+** New mandatory option '--vidpid' for configure
+You must specify USB vendor ID and product ID for Gnuk.
+The file GNUK_USB_DEVICE_ID lists valid USB device IDs.
+
 ** New USB stack
 Gnuk used to use USB stack of USB-FS-Device_Lib by ST.  Now, it has
 original implementation.  Hopefully, size and quality are improved.

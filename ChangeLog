@@ -1,5 +1,16 @@
 2012-05-11  Niibe Yutaka  <gniibe@fsij.org>
 
+	* src/configure (--vidpid): New mandatory option.
+
+	* GNUK_USB_DEVICE_ID: New file.
+
+	* src/usb_desc.c (gnukDeviceDescriptor): Include
+	usb-vid-pid-ver.c.inc.
+	(gnukStringVendor, gnukStringProduct): Remove.  It's in the
+	file, usb-string-vender-product.c.inc.
+
+	* src/Makefile.in (distclean): Delete *.inc.
+
 	* src/usb_prop.c (vcom_port_setup_with_nodata) Rename.
 	(vcom_port_data_setup): Rename and fix return value.
 
