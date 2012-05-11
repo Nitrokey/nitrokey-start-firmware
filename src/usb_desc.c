@@ -253,7 +253,7 @@ static const uint8_t gnukStringLangID[] = {
   0x09, 0x04			/* LangID = 0x0409: US-English */
 };
 
-#include "usb-string-vender-product.c.inc"
+#include "usb-string-vendor-product.c.inc"
 
 const uint8_t gnukStringSerial[] = {
   18*2+2,			/* bLength */
