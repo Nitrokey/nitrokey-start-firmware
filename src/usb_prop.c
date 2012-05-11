@@ -90,10 +90,7 @@ gnuk_setup_endpoints_for_interface (uint16_t interface)
   if (interface == 0)
     {
       /* Initialize Endpoint 1 */
-      usb_lld_setup_endpoint (ENDP1, EP_BULK, 0, 0, ENDP1_TXADDR, 0);
-
-      /* Initialize Endpoint 2 */
-      usb_lld_setup_endpoint (ENDP2, EP_BULK, 0, ENDP2_RXADDR, 0,
+      usb_lld_setup_endpoint (ENDP1, EP_BULK, 0, ENDP1_RXADDR, ENDP1_TXADDR,
 			      GNUK_MAX_PACKET_SIZE);
     }
 #ifdef ENABLE_VIRTUAL_COM_PORT
@@ -120,11 +117,9 @@ gnuk_setup_endpoints_for_interface (uint16_t interface)
 # endif
     {
       /* Initialize Endpoint 6 */
-      usb_lld_setup_endpoint (ENDP6, EP_BULK, 0, 0, ENDP6_TXADDR, 0);
-
-      /* Initialize Endpoint 7 */
-      usb_lld_setup_endpoint (ENDP7, EP_BULK, 0, ENDP7_RXADDR, 0, 64);
-      usb_lld_stall_rx (ENDP7);
+      usb_lld_setup_endpoint (ENDP6, EP_BULK, 0, ENDP6_RXADDR, ENDP6_TXADDR,
+			      64);
+      usb_lld_stall_rx (ENDP6);
     }
 #endif
 }
@@ -157,8 +152,7 @@ gnuk_device_reset (void)
   usb_lld_reset ();
 
   /* Initialize Endpoint 0 */
-  usb_lld_setup_endpoint (ENDP0, EP_CONTROL, 0,
-			  ENDP0_RXADDR, ENDP0_TXADDR,
+  usb_lld_setup_endpoint (ENDP0, EP_CONTROL, 0, ENDP0_RXADDR, ENDP0_TXADDR,
 			  GNUK_MAX_PACKET_SIZE);
 
   for (i = 0; i < NUM_INTERFACES; i++)

@@ -635,7 +635,7 @@ icc_prepare_receive (struct ccid *c)
  */
 
 void
-EP2_OUT_Callback (void)
+EP1_OUT_Callback (void)
 {
   struct ep_out *epo = &endpoint_out;
   size_t len = usb_lld_rx_data_len (epo->ep_num);
@@ -1285,7 +1285,7 @@ USBthread (void *arg)
   (void)arg;
 
   epi_init (epi, ENDP1, notify_tx, c);
-  epo_init (epo, ENDP2, notify_icc, c);
+  epo_init (epo, ENDP1, notify_icc, c);
   ccid_init (c, epi, epo, a, chThdSelf ());
   apdu_init (a);
 

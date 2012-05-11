@@ -129,17 +129,17 @@ static const uint8_t gnukConfigDescriptor[] = {
   0,			  /* bPinSupport: No PIN pad */
 #endif
   1,			  /* bMaxCCIDBusySlots: 1 */
-  /*Endpoint 1 Descriptor*/
+  /*Endpoint IN1 Descriptor*/
   7,			       /* bLength: Endpoint Descriptor size */
   USB_ENDPOINT_DESCRIPTOR_TYPE,	/* bDescriptorType: Endpoint */
   0x81,				/* bEndpointAddress: (IN1) */
   0x02,				/* bmAttributes: Bulk */
   USB_ICC_DATA_SIZE, 0x00,      /* wMaxPacketSize: */
   0x00,				/* bInterval */
-  /*Endpoint 2 Descriptor*/
+  /*Endpoint OUT1 Descriptor*/
   7,			       /* bLength: Endpoint Descriptor size */
   USB_ENDPOINT_DESCRIPTOR_TYPE,	/* bDescriptorType: Endpoint */
-  0x02,				/* bEndpointAddress: (OUT2) */
+  0x01,				/* bEndpointAddress: (OUT1) */
   0x02,				/* bmAttributes: Bulk */
   USB_ICC_DATA_SIZE, 0x00,	/* wMaxPacketSize: */
   0x00,				/* bInterval */
@@ -238,7 +238,7 @@ static const uint8_t gnukConfigDescriptor[] = {
   /* Endpoint Descriptor.*/
   7,			       /* bLength: Endpoint Descriptor size */
   USB_ENDPOINT_DESCRIPTOR_TYPE,	   /* bDescriptorType: Endpoint */
-  0x07,				   /* bEndpointAddress: (OUT7)    */
+  0x06,				   /* bEndpointAddress: (OUT6)    */
   0x02,			 /* bmAttributes (Bulk).             */
   0x40, 0x00,		 /* wMaxPacketSize.                  */
   0x00,         /* bInterval (ignored for bulk).    */

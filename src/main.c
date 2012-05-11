@@ -1,7 +1,7 @@
 /*
  * main.c - main routine of Gnuk
  *
- * Copyright (C) 2010, 2011 Free Software Initiative of Japan
+ * Copyright (C) 2010, 2011, 2012 Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
  * This file is a part of Gnuk, a GnuPG USB Token implementation.
@@ -375,6 +375,14 @@ main (int argc, char **argv)
   device_initialize_once ();
   usb_lld_init ();
   random_init ();
+
+  while (1)
+    {
+      if (bDeviceState != UNCONNECTED)
+	break;
+
+      chThdSleepMilliseconds (250);
+    }
 
 #ifdef DEBUG
   stdout_init ();

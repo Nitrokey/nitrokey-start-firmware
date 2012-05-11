@@ -1,3 +1,26 @@
+2012-05-12  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/usb_msc.c (ep6_out): Rename (was: ep7_out).
+	(usb_start_receive): Use ep6_out and ENDP6.
+	(EP6_OUT_Callback): Rename (was: EP7_OUT_Callback).
+	Use ep6_out and ENDP6.
+	(msc_handle_command): Use ep6_out and ENDP6.
+
+	* src/main.c (main): Wait USB reset.
+
+	* src/usb-icc.c (EP1_OUT_Callback): Rename from EP2_OUT_Callback.
+	(USBthread): Use ENDP1 for both of epi_init and epo_init.
+
+	* src/usb_conf.h (ENDP1_RXADDR, ENDP2_TXADDR, ENDP6_RXADDR): New.
+	(ENDP3_TXADDR, ENDP4_TXADDR, ENDP5_RXADDR): New value.
+	(ENDP7_RXADDR): Remove.
+
+	* src/usb_desc.c (gnukConfigDescriptor): Use endpoint OUT1 (was
+	IN2), endpoint OUT6 (IN7).
+
+	* src/usb_prop.c (gnuk_setup_endpoints_for_interface): Use ENDP1
+	and ENDP6 for both directions.
+
 2012-05-11  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/configure (--vidpid): New mandatory option.

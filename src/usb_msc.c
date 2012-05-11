@@ -40,7 +40,7 @@ struct usb_endp_out {
 };
 
 static struct usb_endp_in ep6_in;
-static struct usb_endp_out ep7_out;
+static struct usb_endp_out ep6_out;
 
 static Thread *the_thread;
 
@@ -102,32 +102,32 @@ void EP6_IN_Callback (void)
 
 static void usb_start_receive (uint8_t *p, size_t n)
 {
-  ep7_out.rxbuf = p;
-  ep7_out.rxsize = n;
-  ep7_out.rxcnt = 0;
-  usb_lld_rx_enable (ENDP7);
+  ep6_out.rxbuf = p;
+  ep6_out.rxsize = n;
+  ep6_out.rxcnt = 0;
+  usb_lld_rx_enable (ENDP6);
 }
 
 /* "Data Received" call back */
-void EP7_OUT_Callback (void)
+void EP6_OUT_Callback (void)
 {
-  size_t n = (size_t)usb_lld_rx_data_len (ENDP7);
+  size_t n = (size_t)usb_lld_rx_data_len (ENDP6);
   int err = 0;
 
-  if (n > ep7_out.rxsize)
+  if (n > ep6_out.rxsize)
     {				/* buffer overflow */
       err = 1;
-      n = ep7_out.rxsize;
+      n = ep6_out.rxsize;
     }
 
-  usb_lld_rxcpy (ep7_out.rxbuf, ENDP7, 0, n);
-  ep7_out.rxbuf += n;
-  ep7_out.rxcnt += n;
-  ep7_out.rxsize -= n;
+  usb_lld_rxcpy (ep6_out.rxbuf, ENDP6, 0, n);
+  ep6_out.rxbuf += n;
+  ep6_out.rxcnt += n;
+  ep6_out.rxsize -= n;
 
-  if (n == ENDP_MAX_SIZE && ep7_out.rxsize != 0)
+  if (n == ENDP_MAX_SIZE && ep6_out.rxsize != 0)
     {				/* More data to be received */
-      usb_lld_rx_enable (ENDP7);
+      usb_lld_rx_enable (ENDP6);
       return;
     }
 
@@ -316,19 +316,19 @@ void msc_handle_command (void)
       if (msg != RDY_TIMEOUT)
 	{
 	  chSysLock ();
-	  usb_lld_stall_rx (ENDP7);
+	  usb_lld_stall_rx (ENDP6);
 	  chSysUnlock ();
 	}
       return;
     }
 
-  n = ep7_out.rxcnt;
+  n = ep6_out.rxcnt;
 
   if ((n != sizeof (struct CBW)) || (CBW.dCBWSignature != MSC_CBW_SIGNATURE))
     {
       msc_state = MSC_ERROR;
       chSysLock ();
-      usb_lld_stall_rx (ENDP7);
+      usb_lld_stall_rx (ENDP6);
       chSysUnlock ();
       return;
     }
@@ -432,7 +432,7 @@ void msc_handle_command (void)
 	msc_state = MSC_ERROR;
 	chSysLock ();
 	usb_lld_stall_tx (ENDP6);
-	usb_lld_stall_rx (ENDP7);
+	usb_lld_stall_rx (ENDP6);
 	chSysUnlock ();
 	return;
       }
