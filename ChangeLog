@@ -1,3 +1,7 @@
+2012-05-11  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/configure ($help): Add FST_01.
+
 2012-05-10  Niibe Yutaka  <gniibe@fsij.org>
 
 	* STM32_USB-FS-Device_Driver, Virtual_COM_Port: Remove.
