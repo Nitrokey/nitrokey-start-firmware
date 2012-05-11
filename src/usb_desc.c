@@ -6,6 +6,7 @@
 #include "ch.h"
 #include "usb_lld.h"
 #include "usb_conf.h"
+#include "usb-cdc.h"
 
 #define USB_ICC_INTERFACE_CLASS 0x0B
 #define USB_ICC_INTERFACE_SUBCLASS 0x00

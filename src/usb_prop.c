@@ -48,19 +48,18 @@ static const struct line_coding line_coding = {
 };
 
 static void
-Virtual_Com_Port_Data_Setup (uint8_t RequestNo)
+vcom_port_data_setup (uint8_t RequestNo)
 {
   if (RequestNo != USB_CDC_REQ_GET_LINE_CODING)
-    return USB_UNSUPPORT;
+    return;
 
   /* RequestNo == USB_CDC_REQ_SET_LINE_CODING is not supported */
 
   usb_lld_set_data_to_send (&line_coding, sizeof(line_coding));
-  return USB_SUCCESS;
 }
 
 static int
-Virtual_Com_Port_NoData_Setup (uint8_t RequestNo)
+vcom_port_setup_with_nodata (uint8_t RequestNo)
 {
   if (RequestNo == USB_CDC_REQ_SET_CONTROL_LINE_STATE)
     /* Do nothing and success  */
@@ -184,29 +183,31 @@ static void
 gnuk_setup_with_data (uint8_t recipient, uint8_t RequestNo, uint16_t index)
 {
   if (recipient == (CLASS_REQUEST | INTERFACE_RECIPIENT)) /* Interface */
-    if (index == 0)
-      {
-	if (RequestNo == USB_CCID_REQ_GET_CLOCK_FREQUENCIES)
-	  usb_lld_set_data_to_send (freq_table, sizeof (freq_table));
-	else if (RequestNo == USB_CCID_REQ_GET_DATA_RATES)
-	  usb_lld_set_data_to_send (data_rate_table, sizeof (data_rate_table));
-      }
+    {
+      if (index == 0)
+	{
+	  if (RequestNo == USB_CCID_REQ_GET_CLOCK_FREQUENCIES)
+	    usb_lld_set_data_to_send (freq_table, sizeof (freq_table));
+	  else if (RequestNo == USB_CCID_REQ_GET_DATA_RATES)
+	    usb_lld_set_data_to_send (data_rate_table, sizeof (data_rate_table));
+	}
 #if defined(PINPAD_DND_SUPPORT)
 # if defined(ENABLE_VIRTUAL_COM_PORT)
-    else if (index == 1)
-      Virtual_Com_Port_Data_Setup (RequestNo);
-    else if (index == 3)
+      else if (index == 1)
+	vcom_port_data_setup (RequestNo);
+      else if (index == 3)
 # else
-    else if (index == 1)
+      else if (index == 1)
 # endif
-      {
-	if (RequestNo == MSC_GET_MAX_LUN_COMMAND)
-	  usb_lld_set_data_to_send (lun_table, sizeof (lun_table));
-      }
+	{
+	  if (RequestNo == MSC_GET_MAX_LUN_COMMAND)
+	    usb_lld_set_data_to_send (lun_table, sizeof (lun_table));
+	}
 #elif defined(ENABLE_VIRTUAL_COM_PORT)
-    else if (index == 1)
-      Virtual_Com_Port_Data_Setup (RequestNo);
+      else if (index == 1)
+	vcom_port_data_setup (RequestNo);
 #endif
+    }
 }
 
 
@@ -226,7 +227,7 @@ gnuk_setup_with_nodata (uint8_t recipient, uint8_t RequestNo, uint16_t index)
 #if defined(PINPAD_DND_SUPPORT)
 # if defined(ENABLE_VIRTUAL_COM_PORT)
     else if (index == 1)
-      return Virtual_Com_Port_NoData_Setup (RequestNo);
+      return vcom_port_setup_with_nodata (RequestNo);
     else if (index == 3)
 # else
     else if (index == 1)
@@ -242,7 +243,7 @@ gnuk_setup_with_nodata (uint8_t recipient, uint8_t RequestNo, uint16_t index)
       }
 #elif defined(ENABLE_VIRTUAL_COM_PORT)
     else if (index == 1)
-      return Virtual_Com_Port_NoData_Setup (RequestNo);
+      return vcom_port_setup_with_nodata (RequestNo);
 #endif
     else
       return USB_UNSUPPORT;

@@ -1,5 +1,15 @@
 2012-05-11  Niibe Yutaka  <gniibe@fsij.org>
 
+	* src/usb_prop.c (vcom_port_setup_with_nodata) Rename.
+	(vcom_port_data_setup): Rename and fix return value.
+
+	* src/usb-cdc.h (VIRTUAL_COM_PORT_DATA_SIZE)
+	(VIRTUAL_COM_PORT_INT_SIZE): New.
+
+	* src/main.c (#include): Add usb-cdc.h.
+	* src/usb_desc.c (#include): Add usb-cdc.h.
+	* src/usb_endp.c (#include): Add usb_lld.h.
+
 	* src/configure ($help): Add FST_01.
 
 2012-05-10  Niibe Yutaka  <gniibe@fsij.org>

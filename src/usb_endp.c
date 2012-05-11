@@ -5,6 +5,7 @@
 #include "config.h"
 #include "ch.h"
 #include "gnuk.h"
+#include "usb_lld.h"
 
 void
 EP3_IN_Callback (void)

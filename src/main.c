@@ -25,6 +25,7 @@
 #include "ch.h"
 #include "gnuk.h"
 #include "usb_lld.h"
+#include "usb-cdc.h"
 
 #ifdef DEBUG
 struct stdout {
