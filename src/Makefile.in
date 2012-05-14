@@ -103,7 +103,7 @@ CSRC += pin-$(ENABLE_PINPAD).c
 endif
 
 ifeq ($(ENABLE_PINPAD),dnd)
-CSRC += usb_msc.c
+CSRC += usb-msc.c
 endif
 
 # List ASM source files here

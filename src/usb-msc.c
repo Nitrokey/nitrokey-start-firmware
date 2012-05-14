@@ -25,7 +25,7 @@
 #include "ch.h"
 #include "gnuk.h"
 #include "usb_lld.h"
-#include "usb_msc.h"
+#include "usb-msc.h"
 
 struct usb_endp_in {
   const uint8_t *txbuf;	     /* Pointer to the transmission buffer. */
