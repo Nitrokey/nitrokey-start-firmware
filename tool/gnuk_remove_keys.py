@@ -41,7 +41,7 @@ class GnukToken(object):
         self.connection = cardservice.connection
 
     def cmd_get_response(self, expected_len):
-        apdu = [0x00, 0xc0, 0x00, 0x00, expected_len ]
+        apdu = [0x00, 0xc0, 0x00, 0x00, expected_len]
         response, sw1, sw2 = self.connection.transmit(apdu)
         if not (sw1 == 0x90 and sw2 == 0x00):
             raise ValueError, ("%02x%02x" % (sw1, sw2))
@@ -54,32 +54,33 @@ class GnukToken(object):
             raise ValueError, ("%02x%02x" % (sw1, sw2))
 
     def cmd_select_openpgp(self):
-        apdu = [0x00, 0xa4, 0x04, 0x0c, 6, 0xd2, 0x76, 0x00, 0x01, 0x24, 0x01 ]
+        apdu = [0x00, 0xa4, 0x04, 0x0c, 6, 0xd2, 0x76, 0x00, 0x01, 0x24, 0x01]
         response, sw1, sw2 = self.connection.transmit(apdu)
         if sw1 == 0x61:
             response = self.cmd_get_response(sw2)
         elif not (sw1 == 0x90 and sw2 == 0x00):
             raise ValueError, ("%02x%02x" % (sw1, sw2))
+
+    def cmd_put_data_remove(self, tagh, tagl):
+        apdu = [0x00, 0xda, tagh, tagl, 0]
+        response, sw1, sw2 = self.connection.transmit(apdu)
+        return response
 
     def cmd_put_data_key_import_remove(self, keyno):
         if keyno == 1:
             keyspec = 0xb6      # SIG
         elif keyno == 2:
             keyspec = 0xb8      # DEC
-        else
+        else:
             keyspec = 0xa4      # AUT
-        apdu = [0x00, 0xdb, 0x3f, 0xff, 0x4d, 0x02, keyspec, 0x00 ]
+        apdu = [0x00, 0xdb, 0x3f, 0xff, 4, 0x4d, 0x02, keyspec, 0x00]
         response, sw1, sw2 = self.connection.transmit(apdu)
-        if sw1 == 0x61:
-            response = self.cmd_get_response(sw2)
-        elif not (sw1 == 0x90 and sw2 == 0x00):
-            raise ValueError, ("%02x%02x" % (sw1, sw2))
         return response
 
 DEFAULT_PW3 = "12345678"
 BY_ADMIN = 3
 
-def main(fileid, is_update, data, passwd):
+def main(passwd):
     gnuk = GnukToken()
 
     gnuk.connection.connect()
@@ -88,8 +89,14 @@ def main(fileid, is_update, data, passwd):
 
     gnuk.cmd_verify(BY_ADMIN, passwd)
     gnuk.cmd_select_openpgp()
+    gnuk.cmd_put_data_remove(0x00, 0xc7) # FP_SIG
+    gnuk.cmd_put_data_remove(0x00, 0xcd) # KGTIME_SIG
     gnuk.cmd_put_data_key_import_remove(1)
+    gnuk.cmd_put_data_remove(0x00, 0xc8) # FP_DEC
+    gnuk.cmd_put_data_remove(0x00, 0xce) # KGTIME_DEC
     gnuk.cmd_put_data_key_import_remove(2)
+    gnuk.cmd_put_data_remove(0x00, 0xc9) # FP_AUT
+    gnuk.cmd_put_data_remove(0x00, 0xcf) # KGTIME_AUT
     gnuk.cmd_put_data_key_import_remove(3)
 
     gnuk.connection.disconnect()
@@ -100,6 +107,6 @@ if __name__ == '__main__':
     passwd = DEFAULT_PW3
     if sys.argv[1] == '-p':
         from getpass import getpass
-        passwd = getpass("Admin password:")
+        passwd = getpass("Admin password: ")
         sys.argv.pop(1)
     main(passwd)

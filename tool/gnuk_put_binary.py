@@ -44,7 +44,7 @@ class GnukToken(object):
         self.connection = cardservice.connection
 
     def cmd_get_response(self, expected_len):
-        apdu = [0x00, 0xc0, 0x00, 0x00, expected_len ]
+        apdu = [0x00, 0xc0, 0x00, 0x00, expected_len]
         response, sw1, sw2 = self.connection.transmit(apdu)
         if not (sw1 == 0x90 and sw2 == 0x00):
             raise ValueError, ("%02x%02x" % (sw1, sw2))
@@ -67,19 +67,19 @@ class GnukToken(object):
             if count == 0:
                 d = data[:256]
                 if len(d) <= 255: 
-                    apdu = [0x00, ins, 0x80+fileid, 0x00, len(d) ] + s2l(d)
+                    apdu = [0x00, ins, 0x80+fileid, 0x00, len(d)] + s2l(d)
                 else:
-                    apdu0 = [0x10, ins, 0x80+fileid, 0x00, 255 ] + s2l(d[:255])
+                    apdu0 = [0x10, ins, 0x80+fileid, 0x00, 255] + s2l(d[:255])
                     response, sw1, sw2 = self.connection.transmit(apdu0)
                     apdu = [0x00, ins, 0x80+fileid, 0x00, 1 ] + s2l(d[255:])
             else:
                 d = data[256*count:256*(count+1)]
                 if len(d) <= 255: 
-                    apdu = [0x00, ins, count, 0x00, len(d) ] + s2l(d)
+                    apdu = [0x00, ins, count, 0x00, len(d)] + s2l(d)
                 else:
-                    apdu0 = [0x10, ins, count, 0x00, 255 ] + s2l(d[:255])
+                    apdu0 = [0x10, ins, count, 0x00, 255] + s2l(d[:255])
                     response, sw1, sw2 = self.connection.transmit(apdu0)
-                    apdu = [0x00, ins, 0x80+fileid, 0x00, 1 ] + s2l(d[255:])
+                    apdu = [0x00, ins, 0x80+fileid, 0x00, 1] + s2l(d[255:])
             response, sw1, sw2 = self.connection.transmit(apdu)
             if not (sw1 == 0x90 and sw2 == 0x00):
                 if is_update:
@@ -89,7 +89,7 @@ class GnukToken(object):
             count += 1
 
     def cmd_select_openpgp(self):
-        apdu = [0x00, 0xa4, 0x04, 0x0c, 6, 0xd2, 0x76, 0x00, 0x01, 0x24, 0x01 ]
+        apdu = [0x00, 0xa4, 0x04, 0x0c, 6, 0xd2, 0x76, 0x00, 0x01, 0x24, 0x01]
         response, sw1, sw2 = self.connection.transmit(apdu)
         if sw1 == 0x61:
             response = self.cmd_get_response(sw2)
@@ -144,7 +144,7 @@ if __name__ == '__main__':
     passwd = DEFAULT_PW3
     if sys.argv[1] == '-p':
         from getpass import getpass
-        passwd = getpass("Admin password:")
+        passwd = getpass("Admin password: ")
         sys.argv.pop(1)
     if sys.argv[1] == '-u':
         is_update = True
