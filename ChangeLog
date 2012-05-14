@@ -1,5 +1,7 @@
 2012-05-14  Niibe Yutaka  <gniibe@fsij.org>
 
+	* src/openpgp-do.c (proc_key_import): Fix checking extended header.
+
 	* src/hardclock.c: Remove.
 
 	* src/usb_prop.c (MSC_INTERFACE_NO): New.
@@ -12,6 +14,8 @@
 
 	* src/Makefile.in: Follow the rename of usb-msc.c and remove of
 	hardclock.c.
+
+	* src/pin-dnd.c, src/usb_prop.c: Follow the rename of usb-msc.h.
 
 2012-05-12  Niibe Yutaka  <gniibe@fsij.org>
 

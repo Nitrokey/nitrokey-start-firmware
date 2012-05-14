@@ -25,7 +25,7 @@
 #include "ch.h"
 #include "board.h"
 #include "gnuk.h"
-#include "usb_msc.h"
+#include "usb-msc.h"
 
 struct folder {
   uint8_t parent;

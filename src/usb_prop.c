@@ -74,7 +74,7 @@ vcom_port_setup_with_nodata (uint8_t RequestNo)
 #endif
 
 #ifdef PINPAD_DND_SUPPORT
-#include "usb_msc.h"
+#include "usb-msc.h"
 #define MSC_NUM_INTERFACES 1
 #else
 #define MSC_NUM_INTERFACES 0
