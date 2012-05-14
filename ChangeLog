@@ -1,5 +1,7 @@
 2012-05-14  Niibe Yutaka  <gniibe@fsij.org>
 
+	* tool/gnuk_remove_keys.py: New.
+
 	* src/openpgp-do.c (proc_key_import): Fix checking extended header.
 
 	* src/hardclock.c: Remove.

@@ -841,13 +841,13 @@ gpg_do_chks_prvkey (enum kind_of_key kk,
 }
 
 /*
- * 4d, xx, xx:    Extended Header List
+ * 4d, xx, xx, xx:    Extended Header List
  *   b6 00 (SIG) / b8 00 (DEC) / a4 00 (AUT)
  *   7f48, xx: cardholder private key template
  *       91 xx
- *       92 xx
- *       93 xx
- *   5f48, xx: cardholder private key
+ *       92 xx xx
+ *       93 xx xx
+ *   5f48, xx xx xx: cardholder private key
  */
 static int
 proc_key_import (const uint8_t *data, int len)
@@ -855,6 +855,7 @@ proc_key_import (const uint8_t *data, int len)
   int r;
   enum kind_of_key kk;
   const uint8_t *keystring_admin;
+  const uint8_t *p = data;
 
   if (admin_authorized == BY_ADMIN)
     keystring_admin = keystring_md_pw3;
@@ -863,9 +864,20 @@ proc_key_import (const uint8_t *data, int len)
 
   DEBUG_BINARY (data, len);
 
-  if (data[4] == 0xb6)
+  if (*p++ != 0x4d)
+    return 0;
+
+  /* length field */
+  if (*p == 0x82)
+    p += 3;
+  else if (*p == 0x81)
+    p += 2;
+  else
+    p += 1;
+
+  if (*p == 0xb6)
     kk = GPG_KEY_FOR_SIGNING;
-  else if (data[4] == 0xb8)
+  else if (*p == 0xb8)
     kk = GPG_KEY_FOR_DECRYPTION;
   else				/* 0xa4 */
     kk = GPG_KEY_FOR_AUTHENTICATION;
