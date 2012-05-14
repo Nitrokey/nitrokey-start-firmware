@@ -1,3 +1,15 @@
+2012-05-14  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/usb_prop.c (MSC_INTERFACE_NO): New.
+	(gnuk_setup_endpoints_for_interface): Cleanup with MSC_INTERFACE_NO.
+	(gnuk_setup_with_data, gnuk_setup_with_nodata): Likewise.
+
+	* src/usb-msc.c: Rename from usb_msc.c.
+
+	* src/usb-msc.h: Rename from usb_msc.h.
+
+	* src/Makefile.in: Follow the rename of usb-msc.c.
+
 2012-05-12  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/usb_msc.c (ep6_out): Rename (was: ep7_out).

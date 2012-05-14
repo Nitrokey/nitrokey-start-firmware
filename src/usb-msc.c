@@ -1,5 +1,5 @@
 /*
- * usb_msc.c -- USB Mass Storage Class protocol handling
+ * usb-msc.c -- USB Mass Storage Class protocol handling
  *
  * Copyright (C) 2011, 2012 Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>

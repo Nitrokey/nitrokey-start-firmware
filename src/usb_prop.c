@@ -67,12 +67,21 @@ vcom_port_setup_with_nodata (uint8_t RequestNo)
 
   return USB_UNSUPPORT;
 }
+
+#define VCOM_NUM_INTERFACES 2
+#else
+#define VCOM_NUM_INTERFACES 0
 #endif
 
 #ifdef PINPAD_DND_SUPPORT
 #include "usb_msc.h"
+#define MSC_NUM_INTERFACES 1
+#else
+#define MSC_NUM_INTERFACES 0
 #endif
 
+#define NUM_INTERFACES (1+VCOM_NUM_INTERFACES+MSC_NUM_INTERFACES)
+#define MSC_INTERFACE_NO (1+VCOM_NUM_INTERFACES)
 
 uint32_t bDeviceState = UNCONNECTED; /* USB device status */
 
@@ -110,11 +119,7 @@ gnuk_setup_endpoints_for_interface (uint16_t interface)
     }
 #endif
 #ifdef PINPAD_DND_SUPPORT
-# ifdef ENABLE_VIRTUAL_COM_PORT
-  else if (interface == 3)
-# else
-  else if (interface == 1)
-# endif
+  else if (interface == MSC_INTERFACE_NO)
     {
       /* Initialize Endpoint 6 */
       usb_lld_setup_endpoint (ENDP6, EP_BULK, 0, ENDP6_RXADDR, ENDP6_TXADDR,
@@ -123,20 +128,6 @@ gnuk_setup_endpoints_for_interface (uint16_t interface)
     }
 #endif
 }
-
-#ifdef PINPAD_DND_SUPPORT
-# ifdef ENABLE_VIRTUAL_COM_PORT
-# define NUM_INTERFACES 4	/* two for CDC, one for CCID, and MSC */
-# else
-# define NUM_INTERFACES 2	/* CCID and MSC */
-# endif
-#else
-# ifdef ENABLE_VIRTUAL_COM_PORT
-# define NUM_INTERFACES 3	/* two for CDC, one for CCID */
-# else
-# define NUM_INTERFACES 1	/* CCID only */
-# endif
-#endif
 
 static void
 gnuk_device_reset (void)
@@ -185,21 +176,16 @@ gnuk_setup_with_data (uint8_t recipient, uint8_t RequestNo, uint16_t index)
 	  else if (RequestNo == USB_CCID_REQ_GET_DATA_RATES)
 	    usb_lld_set_data_to_send (data_rate_table, sizeof (data_rate_table));
 	}
-#if defined(PINPAD_DND_SUPPORT)
-# if defined(ENABLE_VIRTUAL_COM_PORT)
+#ifdef ENABLE_VIRTUAL_COM_PORT
       else if (index == 1)
 	vcom_port_data_setup (RequestNo);
-      else if (index == 3)
-# else
-      else if (index == 1)
-# endif
+#endif
+#ifdef PINPAD_DND_SUPPORT
+      else if (index == MSC_INTERFACE_NO)
 	{
 	  if (RequestNo == MSC_GET_MAX_LUN_COMMAND)
 	    usb_lld_set_data_to_send (lun_table, sizeof (lun_table));
 	}
-#elif defined(ENABLE_VIRTUAL_COM_PORT)
-      else if (index == 1)
-	vcom_port_data_setup (RequestNo);
 #endif
     }
 }
@@ -218,14 +204,12 @@ gnuk_setup_with_nodata (uint8_t recipient, uint8_t RequestNo, uint16_t index)
 	else
 	  return USB_UNSUPPORT;
       }
-#if defined(PINPAD_DND_SUPPORT)
-# if defined(ENABLE_VIRTUAL_COM_PORT)
+#ifdef ENABLE_VIRTUAL_COM_PORT
     else if (index == 1)
       return vcom_port_setup_with_nodata (RequestNo);
-    else if (index == 3)
-# else
-    else if (index == 1)
-# endif
+#endif
+#ifdef PINPAD_DND_SUPPORT
+    else if (index == MSC_INTERFACE_NO)
       {
 	if (RequestNo == MSC_MASS_STORAGE_RESET_COMMAND)
 	  {
@@ -235,9 +219,6 @@ gnuk_setup_with_nodata (uint8_t recipient, uint8_t RequestNo, uint16_t index)
 	else
 	  return USB_UNSUPPORT;
       }
-#elif defined(ENABLE_VIRTUAL_COM_PORT)
-    else if (index == 1)
-      return vcom_port_setup_with_nodata (RequestNo);
 #endif
     else
       return USB_UNSUPPORT;
