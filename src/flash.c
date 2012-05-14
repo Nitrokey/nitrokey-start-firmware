@@ -1,7 +1,7 @@
 /*
  * flash.c -- Data Objects (DO) and GPG Key handling on Flash ROM
  *
- * Copyright (C) 2010, 2011 Free Software Initiative of Japan
+ * Copyright (C) 2010, 2011, 2012 Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
  * This file is a part of Gnuk, a GnuPG USB Token implementation.
@@ -311,7 +311,6 @@ flash_do_write_internal (const uint8_t *p, int nr, const uint8_t *data, int len)
       hw = data[i*2] | 0xff00;
       if (flash_program_halfword (addr, hw) != FLASH_COMPLETE)
 	flash_warning ("DO WRITE ERROR");
-      addr += 2;
     }
 }
 
@@ -369,7 +368,6 @@ flash_do_release (const uint8_t *do_data)
     {
       if (flash_program_halfword (addr, 0) != FLASH_COMPLETE)
 	flash_warning ("fill-zero pad failure");
-      addr += 2;
     }
 
   /* Fill 0x0000 for "tag_number and length" word */
