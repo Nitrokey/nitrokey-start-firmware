@@ -1,3 +1,14 @@
+2012-05-15  Niibe Yutaka  <gniibe@fsij.org>
+
+	* Version 0.18.
+
+	* src/usb_desc.c (gnukStringSerial): Updated.
+
+	* src/main.c (EP3_IN_Callback, EP5_OUT_Callback): Move from
+	usb_endp.c.
+
+	* src/usb_endp.c: Remove.
+
 2012-05-14  Niibe Yutaka  <gniibe@fsij.org>
 
 	* tool/gnuk_remove_keys.py: New.

@@ -140,6 +140,19 @@ STDOUTthread (void *arg)
   goto again;
   return 0;
 }
+
+void
+EP3_IN_Callback (void)
+{
+  if (stdout_thread)
+    chEvtSignalI (stdout_thread, EV_TX_READY);
+}
+
+void
+EP5_OUT_Callback (void)
+{
+  usb_lld_rx_enable (ENDP5);
+}
 #else
 void
 _write (const char *s, int size)

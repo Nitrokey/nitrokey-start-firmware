@@ -2,11 +2,15 @@ Gnuk NEWS - User visible changes
 
 * Major changes in Gnuk 0.18
 
-  Released 2012-05-XX, by NIIBE Yutaka
+  Released 2012-05-15, by NIIBE Yutaka
 
 ** New mandatory option '--vidpid' for configure
 You must specify USB vendor ID and product ID for Gnuk.
 The file GNUK_USB_DEVICE_ID lists valid USB device IDs.
+
+** New tool: gnuk_remove_keys.py
+The tool gnuk_remove_keys.py is to remove all keys in Gnuk Token
+and reset PW1 and RC (if any).
 
 ** New USB stack
 Gnuk used to use USB stack of USB-FS-Device_Lib by ST.  Now, it has

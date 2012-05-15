@@ -258,8 +258,9 @@ static const uint8_t gnukStringLangID[] = {
 const uint8_t gnukStringSerial[] = {
   18*2+2,			/* bLength */
   USB_STRING_DESCRIPTOR_TYPE,	/* bDescriptorType */
+  /* FSIJ-0.18 */
   'F', 0, 'S', 0, 'I', 0, 'J', 0, '-', 0, 
-  '0', 0, '.', 0, '1', 0, '7', 0, /* Version number of Gnuk */
+  '0', 0, '.', 0, '1', 0, '8', 0, /* Version number of Gnuk */
   '-', 0,
   0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
   0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,

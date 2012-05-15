@@ -1,8 +1,8 @@
 Gnuk - software for GnuPG USB Token
 
-							   Version 0.17
-							     2012-02-02
-						           Niibe Yutaka
+							   Version 0.18
+							     2012-05-15
+							   Niibe Yutaka
 				      Free Software Initiative of Japan
 
 What's Gnuk?
@@ -14,8 +14,8 @@ STM32F103 processor.
 
 I wish that Gnuk will be a developer's soother who uses GnuPG.  I have
 been nervous of storing secret key(s) on usual secondary storage.
-While I want to work at different places, but it is not the choice for
-me to bring a card reader all the time.  With Gnuk, this issue will be
+There is a solution with OpenPGP card, but it is not the choice for me
+to bring a card reader all the time.  With Gnuk, this issue will be
 solved by a USB token which is small enough.
 
 Please look at the graphics of "gnuk.svg" for the software name.  My
@@ -30,18 +30,19 @@ Q0: How Gnuk USB Token is superior than other solutions (OpenPGP
     card 2.0, GPF Crypto Stick, etc.) ?
     http://www.g10code.de/p-card.html
     http://www.privacyfoundation.de/crypto_stick/
-A0: IMRHO, not quite.  There is no ready-to-use out-of-box product.
-    (It is welcome for me that some vendor will manufacture Gnuk USB
-     Token.  Even I can help design of hardware, if needed.)
-    Good points are:
+A0: IMRHO, not quite, since there is no ready-to-use out-of-box Gnuk
+    product yet.  (It is welcome for me that some vendor will
+    manufacture Gnuk USB Token.  Even I can help design of hardware,
+    if needed.)
+    Good points for Gnuk are:
     * If you have skill of electronics and like DIY, you can build
       Gnuk Token cheaper (see Q8-A8).
     * You can study Gnuk to modify and to enhance.  For example, you
       can implement your own authentication method with some sensor
       such as acceleration sensor.
     * It is "of Free Software"; Gnuk is distributed under GPLv3+,
-            "by Free Software"; Gnuk development requires only Free Software
-	    	                (GNU Toolchain, Python, etc.), 
+	    "by Free Software"; Gnuk development requires only Free Software
+				(GNU Toolchain, Python, etc.), 
 	    "for Free Software"; Gnuk supports GnuPG.
 
 Q1: What kind of key algorithm is supported?
@@ -90,7 +91,7 @@ A9: GnuPG's SCDaemon has problems for handling insertion/removal of
     and confirm scdaemon doesn't exist, then,
       $ gpg-connect-agent learn /bye
 
-Qa: With GNOME, I can't use Gnuk Token for SSH.  How can we use it for SSH?
+Qa: With GNOME 2, I can't use Gnuk Token for SSH.  How can we use it for SSH?
 Aa: You need to deactivate seahorse-agent and gnome-keyring, but use
     gpg-agant for the role of ssh-agent.  For gnome-keyring please do:
 
@@ -112,7 +113,8 @@ Ac: Perhaps, you can use a part of STM32F4 Discovery Kit as SWD
 Release notes
 =============
 
-This is eighteenth release of Gnuk.  While it works well for specific
+This is nineteenth release of Gnuk.  In this release, the usage of USB
+device ID by FSIJ is clarified.  While it works well for specific
 usages and it is considered stable, it is still somewhat experimental.
 
 Tested features are:
@@ -131,16 +133,17 @@ Tested features are:
 	* Verify with pin pad
 	* Modify with pin pad
 	* Card holder certificate
+	* Removal of keys (Overriding key import is not supported,
+	  but you can remove all keys to import again).
 
 It is known not-working well:
 
 	* For some version of kernel and libccid, --enable-debug can't
-          work well.  Please make sure to disable DEBUG option if it
-          doesn't work well.
+	  work well.  Please make sure to disable DEBUG option if it
+	  doesn't work well.
 
 Not supported feature(s):
 
-	* Overriding key import.  You need to remove all keys first.
 	* Key generation on device side
 
 
@@ -316,9 +319,8 @@ Then, run `configure':
   $ ./configure --vidpid=<VID:PID>
 
 Here, you need to specify USB vendor ID and product ID.  For FSIJ's,
-it's: --vidpid=234b:0000
-
-Please read section 'USB vendor ID and product ID' above.
+it's: --vidpid=234b:0000 .  Please read section 'USB vendor ID and
+product ID' above.
 
 Type:
 

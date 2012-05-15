@@ -3,9 +3,6 @@
 BOARD_DIR=@BOARD_DIR@
 @PINPAD_MAKE_OPTION@
 @DEBUG_MAKE_OPTION@
-ifneq ($(ENABLE_DEBUG),)
-ENABLE_VCOMPORT=1
-endif
 
 ##############################################################################
 # Build global options
@@ -71,10 +68,6 @@ include $(CHIBIOS)/os/hal/hal.mk
 include $(CHIBIOS)/os/ports/GCC/ARMCMx/STM32F10x/port.mk
 include $(CHIBIOS)/os/kernel/kernel.mk
 include crypt.mk
-
-ifneq ($(ENABLE_VCOMPORT),)
-VCOMSRC += usb_endp.c
-endif
 
 # C sources that can be compiled in ARM or THUMB mode depending on the global
 # setting.
