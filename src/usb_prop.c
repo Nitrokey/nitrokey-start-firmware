@@ -94,37 +94,56 @@ gnuk_device_init (void)
 }
 
 static void
-gnuk_setup_endpoints_for_interface (uint16_t interface)
+gnuk_setup_endpoints_for_interface (uint16_t interface, int stop)
 {
   if (interface == 0)
     {
-      /* Initialize Endpoint 1 */
-      usb_lld_setup_endpoint (ENDP1, EP_BULK, 0, ENDP1_RXADDR, ENDP1_TXADDR,
-			      GNUK_MAX_PACKET_SIZE);
+      if (!stop)
+	usb_lld_setup_endpoint (ENDP1, EP_BULK, 0, ENDP1_RXADDR, ENDP1_TXADDR,
+				GNUK_MAX_PACKET_SIZE);
+      else
+	{
+	  usb_lld_stall_rx (ENDP1);
+	  usb_lld_stall_tx (ENDP1);
+	}
     }
 #ifdef ENABLE_VIRTUAL_COM_PORT
   else if (interface == 1)
     {
-      /* Initialize Endpoint 4 */
-      usb_lld_setup_endpoint (ENDP4, EP_INTERRUPT, 0, 0, ENDP4_TXADDR, 0);
+      if (!stop)
+	usb_lld_setup_endpoint (ENDP4, EP_INTERRUPT, 0, 0, ENDP4_TXADDR, 0);
+      else
+	usb_lld_stall_tx (ENDP4);
     }
   else if (interface == 2)
     {
-      /* Initialize Endpoint 3 */
-      usb_lld_setup_endpoint (ENDP3, EP_BULK, 0, 0, ENDP3_TXADDR, 0);
-
-      /* Initialize Endpoint 5 */
-      usb_lld_setup_endpoint (ENDP5, EP_BULK, 0, ENDP5_RXADDR, 0,
-			      VIRTUAL_COM_PORT_DATA_SIZE);
+      if (!stop)
+	{
+	  usb_lld_setup_endpoint (ENDP3, EP_BULK, 0, 0, ENDP3_TXADDR, 0);
+	  usb_lld_setup_endpoint (ENDP5, EP_BULK, 0, ENDP5_RXADDR, 0,
+				  VIRTUAL_COM_PORT_DATA_SIZE);
+	}
+      else
+	{
+	  usb_lld_stall_tx (ENDP3);
+	  usb_lld_stall_rx (ENDP5);
+	}
     }
 #endif
 #ifdef PINPAD_DND_SUPPORT
   else if (interface == MSC_INTERFACE_NO)
     {
-      /* Initialize Endpoint 6 */
-      usb_lld_setup_endpoint (ENDP6, EP_BULK, 0, ENDP6_RXADDR, ENDP6_TXADDR,
-			      64);
-      usb_lld_stall_rx (ENDP6);
+      if (!stop)
+	{
+	  usb_lld_setup_endpoint (ENDP6, EP_BULK, 0,
+				  ENDP6_RXADDR, ENDP6_TXADDR, 64);
+	  usb_lld_stall_rx (ENDP6);
+	}
+      else
+	{
+	  usb_lld_stall_tx (ENDP6);
+	  usb_lld_stall_rx (ENDP6);
+	}
     }
 #endif
 }
@@ -147,7 +166,7 @@ gnuk_device_reset (void)
 			  GNUK_MAX_PACKET_SIZE);
 
   for (i = 0; i < NUM_INTERFACES; i++)
-    gnuk_setup_endpoints_for_interface (i);
+    gnuk_setup_endpoints_for_interface (i, 0);
 
   bDeviceState = ATTACHED;
 }
@@ -278,7 +297,7 @@ static int gnuk_usb_event (uint8_t event_type, uint16_t value)
 
 	  usb_lld_set_configuration (value);
 	  for (i = 0; i < NUM_INTERFACES; i++)
-	    gnuk_setup_endpoints_for_interface (i);
+	    gnuk_setup_endpoints_for_interface (i, 0);
 	  bDeviceState = CONFIGURED;
 	  chEvtSignalI (main_thread, LED_STATUS_MODE);
 	  return USB_SUCCESS;
@@ -289,7 +308,8 @@ static int gnuk_usb_event (uint8_t event_type, uint16_t value)
 	    return USB_UNSUPPORT;
 
 	  usb_lld_set_configuration (0);
-	  // Disable all endpoints???
+	  for (i = 0; i < NUM_INTERFACES; i++)
+	    gnuk_setup_endpoints_for_interface (i, 1);
 	  bDeviceState = ADDRESSED;
 	}
     default:
@@ -313,7 +333,7 @@ static int gnuk_interface (uint8_t cmd, uint16_t interface, uint16_t alt)
 	return USB_UNSUPPORT;
       else
 	{
-	  gnuk_setup_endpoints_for_interface (interface);
+	  gnuk_setup_endpoints_for_interface (interface, 0);
 	  return USB_SUCCESS;
 	}
 

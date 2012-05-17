@@ -1,5 +1,9 @@
 2012-05-17  Niibe Yutaka  <gniibe@fsij.org>
 
+	* src/usb_prop.c (gnuk_setup_endpoints_for_interface): Add STOP
+	argument.
+	(gnuk_usb_event): Disable all endpoints when configure(0).
+
 	* src/usb_lld.c (LAST_OUT_DATA): Remove.
 	(handle_datastage_out): Cleanup and call st103_ep_set_rxtx_status.
 	(handle_datastage_in): Call st103_ep_set_rxtx_status and
