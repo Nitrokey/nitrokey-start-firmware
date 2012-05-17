@@ -4,8 +4,6 @@
 
 #define USB_MAX_PACKET_SIZE 64	/* For FS device */
 
-#define RECIPIENT         0x1F  /* Mask to get recipient    */
-
 enum STANDARD_REQUESTS
 {
   GET_STATUS = 0,
@@ -450,25 +448,27 @@ static void handle_datastage_in (void)
   st103_ep_set_tx_status (ENDP0, EP_TX_VALID);
 }
 
-typedef int (*HANDLER) (uint8_t rcp,
+typedef int (*HANDLER) (uint8_t req,
 			uint16_t value, uint16_t index, uint16_t length);
 
-static int std_none (uint8_t rcp,
+static int std_none (uint8_t req,
 		     uint16_t value, uint16_t index, uint16_t length)
 {
-  (void)rcp; (void)value; (void)index; (void)length;
+  (void)req; (void)value; (void)index; (void)length;
   return USB_UNSUPPORT;
 }
 
-static int std_get_status (uint8_t rcp,
+static int std_get_status (uint8_t req,
 			   uint16_t value, uint16_t index, uint16_t length)
 {
   static uint16_t status_info;
+  uint8_t rcp = req & RECIPIENT;
 
   status_info = 0;		/* Reset Status Information */
   data_p->addr = (uint8_t *)&status_info;
 
-  if (value != 0 || length != 2 || (index >> 8) != 0)
+  if (value != 0 || length != 2 || (index >> 8) != 0
+      || (req & REQUEST_DIR) == 0)
     return USB_UNSUPPORT;
 
   if (rcp == DEVICE_RECIPIENT)
@@ -540,9 +540,14 @@ static int std_get_status (uint8_t rcp,
   return USB_UNSUPPORT;
 }
 
-static int std_clear_feature (uint8_t rcp, uint16_t value,
+static int std_clear_feature (uint8_t req, uint16_t value,
 			      uint16_t index, uint16_t length)
 {
+  uint8_t rcp = req & RECIPIENT;
+
+  if ((req & REQUEST_DIR) == 1)
+    return USB_UNSUPPORT;
+
   if (rcp == DEVICE_RECIPIENT)
     {
       if (length != 0 || index != 0)
@@ -598,9 +603,14 @@ static int std_clear_feature (uint8_t rcp, uint16_t value,
   return USB_UNSUPPORT;
 }
 
-static int std_set_feature (uint8_t rcp, uint16_t value,
+static int std_set_feature (uint8_t req, uint16_t value,
 			    uint16_t index, uint16_t length)
 {
+  uint8_t rcp = req & RECIPIENT;
+
+  if ((req & REQUEST_DIR) == 1)
+    return USB_UNSUPPORT;
+
   if (rcp == DEVICE_RECIPIENT)
     {
       if (length != 0 || index != 0)
@@ -646,9 +656,14 @@ static int std_set_feature (uint8_t rcp, uint16_t value,
   return USB_UNSUPPORT;
 }
 
-static int std_set_address (uint8_t rcp, uint16_t value,
+static int std_set_address (uint8_t req, uint16_t value,
 			    uint16_t index, uint16_t length)
 {
+  uint8_t rcp = req & RECIPIENT;
+
+  if ((req & REQUEST_DIR) == 1)
+    return USB_UNSUPPORT;
+
   if (rcp == DEVICE_RECIPIENT)
     {
       if (length == 0 && value <= 127 && index == 0
@@ -659,9 +674,14 @@ static int std_set_address (uint8_t rcp, uint16_t value,
   return USB_UNSUPPORT;
 }
 
-static int std_get_descriptor (uint8_t rcp, uint16_t value,
+static int std_get_descriptor (uint8_t req, uint16_t value,
 			       uint16_t index, uint16_t length)
 {
+  uint8_t rcp = req & RECIPIENT;
+
+  if ((req & REQUEST_DIR) == 0)
+    return USB_UNSUPPORT;
+
   (void)length;
   if (rcp == DEVICE_RECIPIENT)
     return (*method_p->get_descriptor) ((value >> 8), index, value);
@@ -669,9 +689,14 @@ static int std_get_descriptor (uint8_t rcp, uint16_t value,
   return USB_UNSUPPORT;
 }
 
-static int std_get_configuration (uint8_t rcp, uint16_t value,
+static int std_get_configuration (uint8_t req, uint16_t value,
 				  uint16_t index, uint16_t length)
 {
+  uint8_t rcp = req & RECIPIENT;
+
+  if ((req & REQUEST_DIR) == 0)
+    return USB_UNSUPPORT;
+
   (void)value;  (void)index;  (void)length;
   if (rcp == DEVICE_RECIPIENT)
     {
@@ -683,9 +708,14 @@ static int std_get_configuration (uint8_t rcp, uint16_t value,
   return USB_UNSUPPORT;
 }
 
-static int std_set_configuration (uint8_t rcp, uint16_t value,
+static int std_set_configuration (uint8_t req, uint16_t value,
 				  uint16_t index, uint16_t length)
 {
+  uint8_t rcp = req & RECIPIENT;
+
+  if ((req & REQUEST_DIR) == 1)
+    return USB_UNSUPPORT;
+
   if (rcp == DEVICE_RECIPIENT && index == 0 && length == 0)
     {
       int r;
@@ -698,9 +728,14 @@ static int std_set_configuration (uint8_t rcp, uint16_t value,
   return USB_UNSUPPORT;
 }
 
-static int std_get_interface (uint8_t rcp, uint16_t value,
+static int std_get_interface (uint8_t req, uint16_t value,
 			      uint16_t index, uint16_t length)
 {
+  uint8_t rcp = req & RECIPIENT;
+
+  if ((req & REQUEST_DIR) == 0)
+    return USB_UNSUPPORT;
+
   if (rcp == INTERFACE_RECIPIENT)
     {
       if (value != 0 || (index >> 8) != 0 || length != 1)
@@ -715,9 +750,14 @@ static int std_get_interface (uint8_t rcp, uint16_t value,
   return USB_UNSUPPORT;
 }
 
-static int std_set_interface (uint8_t rcp, uint16_t value,
+static int std_set_interface (uint8_t req, uint16_t value,
 			      uint16_t index, uint16_t length)
 {
+  uint8_t rcp = req & RECIPIENT;
+
+  if ((req & REQUEST_DIR) == 1)
+    return USB_UNSUPPORT;
+
   if (rcp == INTERFACE_RECIPIENT)
     {
       int r;
@@ -759,7 +799,6 @@ static void handle_setup0 (void)
   uint8_t req;
   int r = USB_UNSUPPORT;
   HANDLER handler;
-  uint8_t type_rcp;
 
   pw = (uint16_t *)(PMA_ADDR + (uint8_t *)(st103_get_rx_addr (ENDP0) * 2));
   w = *pw++;
@@ -776,34 +815,35 @@ static void handle_setup0 (void)
   data_p->len = 0;
   data_p->offset = 0;
 
-  type_rcp = (ctrl_p->bmRequestType & (REQUEST_TYPE | RECIPIENT));
-  if (type_rcp == (CLASS_REQUEST | INTERFACE_RECIPIENT) /* Interface */
-      || (ctrl_p->bmRequestType & REQUEST_TYPE) == VENDOR_REQUEST)
-    {
-      if (ctrl_p->wLength == 0)
-	r = (*method_p->setup_with_nodata) (type_rcp, req, ctrl_p->wIndex);
-      else
-	{
-	  (*method_p->setup_with_data) (type_rcp, req, ctrl_p->wIndex);
-	  if (data_p->len != 0)
-	    r = USB_SUCCESS;
-	}
-    }
-  else if ((ctrl_p->bmRequestType & REQUEST_TYPE) == STANDARD_REQUEST)
+  if ((ctrl_p->bmRequestType & REQUEST_TYPE) == STANDARD_REQUEST)
     {
       if (req < TOTAL_REQUEST)
 	{
 	  handler = std_request_handler[req];
-	  r = (*handler) (ctrl_p->bmRequestType & RECIPIENT,
+	  r = (*handler) (ctrl_p->bmRequestType,
 			  ctrl_p->wValue, ctrl_p->wIndex, ctrl_p->wLength);
 	}
     }
+  else
+    {
+      if (ctrl_p->wLength == 0)
+	r = (*method_p->setup_with_nodata) (ctrl_p->bmRequestType,
+					    req, ctrl_p->wIndex);
+      else
+	{
+	  (*method_p->setup_with_data) (ctrl_p->bmRequestType, req,
+					ctrl_p->wIndex, ctrl_p->wLength);
+	  if (data_p->len != 0)
+	    r = USB_SUCCESS;
+	}
+    }
+
 
   if (r != USB_SUCCESS)
     dev_p->state = STALLED;
   else
     {
-      if (ctrl_p->bmRequestType & 0x80)
+      if (ctrl_p->bmRequestType & REQUEST_DIR)
 	{
 	  uint32_t len = ctrl_p->wLength;
      

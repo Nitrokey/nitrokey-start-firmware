@@ -1273,6 +1273,7 @@ icc_handle_timeout (struct ccid *c)
 
 static struct ccid ccid;
 
+#define GPG_THREAD_TERMINATED 0xffff
 
 msg_t
 USBthread (void *arg)
@@ -1303,6 +1304,16 @@ USBthread (void *arg)
       else if (m == EV_EXEC_FINISHED)
 	if (c->icc_state == ICC_STATE_EXECUTE)
 	  {
+	    if (c->a->sw == GPG_THREAD_TERMINATED)
+	      {
+		c->sw1sw2[0] = 0x90;
+		c->sw1sw2[1] = 0x00;
+		c->state = APDU_STATE_RESULT;
+		icc_send_data_block (c, 0);
+		c->icc_state = ICC_STATE_EXITED;
+		break;
+	      }
+
 	    c->a->cmd_apdu_data_len = 0;
 	    c->sw1sw2[0] = c->a->sw >> 8;
 	    c->sw1sw2[1] = c->a->sw & 0xff;

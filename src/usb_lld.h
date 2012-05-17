@@ -39,10 +39,12 @@ enum DESCRIPTOR_TYPE
   ENDPOINT_DESCRIPTOR
 };
 
+#define REQUEST_DIR       0x80  /* Mask to get request dir  */
 #define REQUEST_TYPE      0x60  /* Mask to get request type */
 #define STANDARD_REQUEST  0x00  /* Standard request         */
 #define CLASS_REQUEST     0x20  /* Class request            */
 #define VENDOR_REQUEST    0x40  /* Vendor request           */
+#define RECIPIENT         0x1F  /* Mask to get recipient    */
 
 struct Descriptor
 {
@@ -60,7 +62,8 @@ struct usb_device_method
 {
   void (*init) (void);
   void (*reset) (void);
-  void (*setup_with_data) (uint8_t rcp, uint8_t req_no, uint16_t index);
+  void (*setup_with_data) (uint8_t rcp, uint8_t req_no, uint16_t index,
+			   uint16_t len);
   int (*setup_with_nodata) (uint8_t rcp, uint8_t req_no, uint16_t index);
   int (*get_descriptor) (uint8_t desc_type, uint16_t index, uint16_t value);
   int (*event) (uint8_t event_type, uint16_t value);
@@ -141,3 +144,8 @@ extern uint8_t usb_lld_current_configuration (void);
 extern void usb_lld_set_feature (uint8_t feature);
 
 extern void usb_lld_set_data_to_send (const void *p, size_t len);
+
+extern inline void usb_lld_set_data_to_recv (void *p, size_t len)
+{
+  usb_lld_set_data_to_send ((const void *)p, len);
+}

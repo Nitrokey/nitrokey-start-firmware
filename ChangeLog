@@ -1,8 +1,25 @@
 2012-05-17  Niibe Yutaka  <gniibe@fsij.org>
 
+	* tool/gnuk_upgrade.py: New tool.
+
+	* src/gnuk.h (ICC_STATE_EXITED, ICC_STATE_EXEC_REQUESTED): New.
+
+	* src/openpgp.c (INS_EXTERNAL_AUTHENTICATE)
+	(cmd_external_authenticate): New.
+	(INS_GET_CHALLENGE, cmd_get_challenge): New.
+
+	* src/usb-icc.c (USBthread): Finish the thread with
+	ICC_STATE_EXITED, after EXTERNAL_AUTHENTICATE.
+
 	* src/usb_prop.c (gnuk_setup_endpoints_for_interface): Add STOP
 	argument.
 	(gnuk_usb_event): Disable all endpoints when configure(0).
+	(vcom_port_data_setup): Check direction and support
+	USB_CDC_REQ_SET_LINE_CODING.
+	(vcom_port_setup_with_nodata): Check direction.
+	(gnuk_setup_with_data): Check direction and add FSIJ_GNUK device
+	requests.
+	(gnuk_setup_with_nodata): Likewise.
 
 	* src/usb_lld.c (LAST_OUT_DATA): Remove.
 	(handle_datastage_out): Cleanup and call st103_ep_set_rxtx_status.
@@ -10,6 +27,11 @@
 	st103_ep_set_tx_status.
 	(handle_setup0): Likewise.
 	(handle_out0): Remove LAST_OUT_DATA.
+	(std_none, std_get_status, std_clear_feature, std_set_feature)
+	(std_set_address, std_get_descriptor, std_get_configuration)
+	(std_set_configuration, std_get_interface, std_set_interface):
+	Check direction.
+	(handle_setup0): Add length for setup_with_data
 
 2012-05-16  Niibe Yutaka  <gniibe@fsij.org>
 

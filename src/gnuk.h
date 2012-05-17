@@ -76,6 +76,9 @@ enum icc_state
   ICC_STATE_EXECUTE,		/* Busy4 */
   ICC_STATE_RECEIVE,		/* APDU Received Partially */
   ICC_STATE_SEND,		/* APDU Sent Partially */
+
+  ICC_STATE_EXITED,		/* ICC Thread Terminated */
+  ICC_STATE_EXEC_REQUESTED,	/* Exec requested */
 };
 
 extern enum icc_state *icc_state_p;
@@ -385,3 +388,5 @@ extern uint8_t pin_input_len;
 extern int pinpad_getline (int msg_code, systime_t timeout);
 
 #endif
+
+extern uint8_t __heap_base__, __heap_end__;

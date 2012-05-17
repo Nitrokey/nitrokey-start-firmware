@@ -1,7 +1,7 @@
 /*
  * openpgp.c -- OpenPGP card protocol support
  *
- * Copyright (C) 2010, 2011 Free Software Initiative of Japan
+ * Copyright (C) 2010, 2011, 2012 Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
  * This file is a part of Gnuk, a GnuPG USB Token implementation.
@@ -39,6 +39,8 @@
 #define INS_PSO		  			0x2a
 #define INS_RESET_RETRY_COUNTER			0x2c
 #define INS_PGP_GENERATE_ASYMMETRIC_KEY_PAIR	0x47
+#define INS_EXTERNAL_AUTHENTICATE		0x82
+#define INS_GET_CHALLENGE			0x84
 #define INS_INTERNAL_AUTHENTICATE		0x88
 #define INS_SELECT_FILE				0xa4
 #define INS_READ_BINARY				0xb0
@@ -821,6 +823,43 @@ cmd_write_binary (void)
 }
 
 
+static void
+cmd_external_authenticate (void)
+{
+  DEBUG_INFO (" - EXTERNAL AUTHENTICATE\r\n");
+
+  if (!ac_check_status (AC_ADMIN_AUTHORIZED))
+    {
+      GPG_SECURITY_FAILURE ();
+      return;
+    }
+
+  chThdTerminate (chThdSelf ());
+  set_res_sw (0xff, 0xff);
+  DEBUG_INFO ("EXTERNAL AUTHENTICATE done.\r\n");
+}
+
+static void
+cmd_get_challenge (void)
+{
+  const uint8_t *rand;
+  int i;
+
+  DEBUG_INFO (" - GET CHALLENGE\r\n");
+
+  for (i = 0; i < 6; i++)
+    {
+      rand = random_bytes_get ();
+      memcpy (res_APDU + i * 16, rand, 16);
+      random_bytes_free (rand);
+    }
+
+  res_APDU_size = 96;
+  GPG_SUCCESS ();
+  DEBUG_INFO ("GET CHALLENGE done.\r\n");
+}
+
+
 struct command
 {
   uint8_t command;
@@ -833,11 +872,14 @@ const struct command cmds[] = {
   { INS_PSO, cmd_pso },
   { INS_RESET_RETRY_COUNTER, cmd_reset_user_password },
   { INS_PGP_GENERATE_ASYMMETRIC_KEY_PAIR, cmd_pgp_gakp },
+  { INS_EXTERNAL_AUTHENTICATE,	            /* Not in OpenPGP card protocol */
+    cmd_external_authenticate },
+  { INS_GET_CHALLENGE, cmd_get_challenge }, /* Not in OpenPGP card protocol */
   { INS_INTERNAL_AUTHENTICATE, cmd_internal_authenticate },
   { INS_SELECT_FILE, cmd_select_file },
   { INS_READ_BINARY, cmd_read_binary },
   { INS_GET_DATA, cmd_get_data },
-  { INS_WRITE_BINARY, cmd_write_binary}, /* Not in OpenPGP card protocol */
+  { INS_WRITE_BINARY, cmd_write_binary},    /* Not in OpenPGP card protocol */
 #if defined(CERTDO_SUPPORT)
   { INS_UPDATE_BINARY, cmd_update_binary }, /* Not in OpenPGP card protocol */
 #endif
