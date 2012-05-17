@@ -579,25 +579,23 @@ flash_cnt123_clear (const uint8_t **addr_p)
 }
 
 
-#if defined(CERTDO_SUPPORT)
 static int
-flash_check_blank (const uint8_t *page, int size)
+flash_check_blank (const uint8_t *p_start, int size)
 {
   const uint8_t *p;
 
-  for (p = page; p < page + size; p++)
+  for (p = p_start; p < p_start + size; p++)
     if (*p != 0xff)
       return 0;
 
   return 1;
 }
-#endif
 
+#if defined(CERTDO_SUPPORT)
 #define FLASH_CH_CERTIFICATE_SIZE 2048
 int
 flash_erase_binary (uint8_t file_id)
 {
-#if defined(CERTDO_SUPPORT)
   if (file_id == FILEID_CH_CERTIFICATE)
     {
       const uint8_t *p = &ch_certificate_start;
@@ -611,12 +609,10 @@ flash_erase_binary (uint8_t file_id)
 
       return 0;
     }
-  else
-#else
-    (void)file_id;
-#endif
-    return -1;
+
+  return -1;
 }
+#endif
 
 
 int
@@ -626,19 +622,18 @@ flash_write_binary (uint8_t file_id, const uint8_t *data,
   uint16_t maxsize;
   const uint8_t *p;
 
-#if defined(CERTDO_SUPPORT)
-  if (file_id == FILEID_CH_CERTIFICATE)
-    {
-      maxsize = FLASH_CH_CERTIFICATE_SIZE;
-      p = &ch_certificate_start;
-    }
-  else
-#endif
   if (file_id == FILEID_SERIAL_NO)
     {
       maxsize = 6;
       p = &openpgpcard_aid[8];
     }
+#if defined(CERTDO_SUPPORT)
+  else if (file_id == FILEID_CH_CERTIFICATE)
+    {
+      maxsize = FLASH_CH_CERTIFICATE_SIZE;
+      p = &ch_certificate_start;
+    }
+#endif
   else
     return -1;
 
@@ -649,6 +644,9 @@ flash_write_binary (uint8_t file_id, const uint8_t *data,
       uint16_t hw;
       uint32_t addr;
       int i;
+
+      if (flash_check_blank (p, len)  == 0)
+	return -1;
 
       addr = (uint32_t)p + offset;
       for (i = 0; i < len/2; i++)

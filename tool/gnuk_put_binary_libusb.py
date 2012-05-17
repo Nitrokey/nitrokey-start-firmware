@@ -241,7 +241,7 @@ def main(fileid, is_update, data):
     else:
         icc.cmd_write_binary(fileid, data)
     icc.cmd_select_openpgp()
-    if fileid == 0:
+    if fileid == 1:
         data = data[:-2]
         data_in_device = icc.cmd_get_data(0x7f, 0x21)
         compare(data, data_in_device)
@@ -255,7 +255,7 @@ if __name__ == '__main__':
     else:
         is_update = False
     if sys.argv[1] == '-s':
-        fileid = 2              # serial number
+        fileid = 0              # serial number
         filename = sys.argv[2]
         f = open(filename)
         email = os.environ['EMAIL']
@@ -270,20 +270,8 @@ if __name__ == '__main__':
             exit(1)
         print "Writing serial number"
         data = binascii.unhexlify(serial_data_hex)
-    elif sys.argv[1] == '-r':
-        fileid = 1              # Random number bits
-        if len(sys.argv) == 3:
-            filename = sys.argv[2]
-            f = open(filename)
-        else:
-            filename = stdin
-            f = sys.stdin
-        data = f.read()
-        f.close()
-        print "%s: %d" % (filename, len(data))
-        print "Updating random bits"
     else:
-        fileid = 0              # Card holder certificate
+        fileid = 1              # Card holder certificate
         filename = sys.argv[1]
         f = open(filename)
         data = f.read()

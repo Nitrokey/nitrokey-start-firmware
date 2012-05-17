@@ -137,9 +137,8 @@ extern void flash_clear_halfword (uint32_t addr);
 extern void flash_increment_counter (uint8_t counter_tag_nr);
 extern void flash_reset_counter (uint8_t counter_tag_nr);
 
-#define FILEID_CH_CERTIFICATE	0
-#define FILEID_RANDOM		1
-#define FILEID_SERIAL_NO	2
+#define FILEID_SERIAL_NO	0
+#define FILEID_CH_CERTIFICATE	1
 extern int flash_erase_binary (uint8_t file_id);
 extern int flash_write_binary (uint8_t file_id, const uint8_t *data, uint16_t len, uint16_t offset);
 

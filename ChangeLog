@@ -1,3 +1,16 @@
+2012-05-16  Niibe Yutaka  <gniibe@fsij.org>
+
+	* tool/gnuk_put_binary.py (main): Fix fileid.
+	* tool/gnuk_put_binary_libusb.py: Ditto.
+
+	* src/openpgp.c (FILE_EF_RANDOM): Remove.
+	(cmd_update_binary, cmds): ifdef CERTDO_SUPPORT.
+	(cmd_write_binary): Fix fileid.
+
+	* src/flash.c (flash_check_blank): Always enable.
+	(flash_erase_binary): ifdef CERTDO_SUPPORT.
+	(flash_write_binary): Call flash_check_blank.
+
 2012-05-15  Niibe Yutaka  <gniibe@fsij.org>
 
 	* Version 0.18.

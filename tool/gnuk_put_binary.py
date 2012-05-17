@@ -126,15 +126,15 @@ def main(fileid, is_update, data, passwd):
     gnuk.cmd_write_binary(fileid, data, is_update)
     if fileid == 0:
         gnuk.cmd_select_openpgp()
-        data_in_device = gnuk.cmd_get_data(0x7f, 0x21)
-        compare(data[:-2], data_in_device)
-    elif fileid == 2:
-        gnuk.cmd_select_openpgp()
         data_in_device = gnuk.cmd_get_data(0x00, 0x4f)
         for d in data_in_device:
             print "%02x" % d,
         print
         compare(data, data_in_device[8:])
+    elif fileid == 1:
+        gnuk.cmd_select_openpgp()
+        data_in_device = gnuk.cmd_get_data(0x7f, 0x21)
+        compare(data[:-2], data_in_device)
 
     gnuk.connection.disconnect()
     return 0
@@ -152,7 +152,7 @@ if __name__ == '__main__':
     else:
         is_update = False
     if sys.argv[1] == '-s':
-        fileid = 2              # serial number
+        fileid = 0              # serial number
         filename = sys.argv[2]
         f = open(filename)
         email = os.environ['EMAIL']
@@ -168,7 +168,7 @@ if __name__ == '__main__':
         print "Writing serial number"
         data = binascii.unhexlify(serial_data_hex)
     else:
-        fileid = 0              # Card holder certificate
+        fileid = 1              # Card holder certificate
         filename = sys.argv[1]
         f = open(filename)
         data = f.read()

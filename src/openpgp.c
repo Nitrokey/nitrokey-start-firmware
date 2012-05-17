@@ -78,7 +78,6 @@ set_res_sw (uint8_t sw1, uint8_t sw2)
 #define FILE_EF_DIR	3
 #define FILE_EF_SERIAL	4
 #define FILE_EF_CH_CERTIFICATE  5
-#define FILE_EF_RANDOM		6
 
 static uint8_t file_selection;
 
@@ -701,6 +700,7 @@ cmd_internal_authenticate (void)
 }
 
 
+#if defined(CERTDO_SUPPORT)
 static void
 cmd_update_binary (void)
 {
@@ -718,10 +718,10 @@ cmd_update_binary (void)
     }
 
   if ((P1 (apdu) & 0x80))
-    if ((P1 (apdu) & 0x7f) <= FILEID_RANDOM)
+    if ((P1 (apdu) & 0x7f) == FILEID_CH_CERTIFICATE)
       {
-	file_selection = FILE_EF_CH_CERTIFICATE + (P1 (apdu) & 0x7f);
-	r = flash_erase_binary (file_selection - FILE_EF_CH_CERTIFICATE);
+	file_selection = FILE_EF_CH_CERTIFICATE;
+	r = flash_erase_binary (FILEID_CH_CERTIFICATE);
 	if (r < 0)
 	  {
 	    DEBUG_INFO ("memory error.\r\n");
@@ -738,8 +738,7 @@ cmd_update_binary (void)
       }
   else
     {
-      if (file_selection != FILE_EF_CH_CERTIFICATE
-	  && file_selection != FILE_EF_RANDOM)
+      if (file_selection != FILE_EF_CH_CERTIFICATE)
 	{
 	  GPG_COMMAND_NOT_ALLOWED ();
 	  return;
@@ -751,7 +750,7 @@ cmd_update_binary (void)
   DEBUG_SHORT (len);
   DEBUG_SHORT (offset);
 
-  r = flash_write_binary (file_selection - FILE_EF_CH_CERTIFICATE,
+  r = flash_write_binary (FILEID_CH_CERTIFICATE,
 			  apdu.cmd_apdu_data, len, offset);
   if (r < 0)
     {
@@ -763,6 +762,7 @@ cmd_update_binary (void)
   GPG_SUCCESS ();
   DEBUG_INFO ("UPDATE BINARY done.\r\n");
 }
+#endif
 
 
 static void
@@ -782,9 +782,9 @@ cmd_write_binary (void)
     }
 
   if ((P1 (apdu) & 0x80))
-    if ((P1 (apdu) & 0x7f) <= FILEID_SERIAL_NO)
+    if ((P1 (apdu) & 0x7f) <= FILEID_CH_CERTIFICATE)
       {
-	file_selection = FILE_EF_CH_CERTIFICATE + (P1 (apdu) & 0x7f);
+	file_selection = FILE_EF_SERIAL + (P1 (apdu) & 0x7f);
 	offset = 0;
       }
     else
@@ -794,9 +794,8 @@ cmd_write_binary (void)
       }
   else
     {
-      if (file_selection != FILE_EF_CH_CERTIFICATE
-	  && file_selection != FILE_EF_RANDOM
-	  && file_selection != FILE_EF_SERIAL)
+      if (file_selection != FILE_EF_SERIAL
+	  && file_selection != FILE_EF_CH_CERTIFICATE)
 	{
 	  GPG_COMMAND_NOT_ALLOWED ();
 	  return;
@@ -808,7 +807,7 @@ cmd_write_binary (void)
   DEBUG_SHORT (len);
   DEBUG_SHORT (offset);
 
-  r = flash_write_binary (file_selection - FILE_EF_CH_CERTIFICATE,
+  r = flash_write_binary (file_selection - FILE_EF_SERIAL,
 			  apdu.cmd_apdu_data, len, offset);
   if (r < 0)
     {
@@ -839,7 +838,9 @@ const struct command cmds[] = {
   { INS_READ_BINARY, cmd_read_binary },
   { INS_GET_DATA, cmd_get_data },
   { INS_WRITE_BINARY, cmd_write_binary}, /* Not in OpenPGP card protocol */
+#if defined(CERTDO_SUPPORT)
   { INS_UPDATE_BINARY, cmd_update_binary }, /* Not in OpenPGP card protocol */
+#endif
   { INS_PUT_DATA, cmd_put_data },
   { INS_PUT_DATA_ODD, cmd_put_data },
 };
