@@ -235,7 +235,7 @@ USB vendor ID and product ID (USB device ID)
 When you have a vender ID and assign a product ID for Gnuk, edit the
 file GNUK_USB_DEVICE_ID and add an entry for yours.  In this case,
 please contact Niibe, so that it is listed to the file in the official
-release of source code.
+release of the source code.
 
 When you are modifing Gnuk and installing the binary to device, you
 should replace "FSIJ" in the string gnukStringSerial (usb_desc.c) to
@@ -264,14 +264,16 @@ with Gnuk under one of following conditions:
       please use that number for your device.
       (There a file 'GNUK_SERIAL_NUMBER' in the official release.)
 
-FSIJ could permit companies or business entities to use USB device ID
-of FSIJ for devices with unmodified version of Gnuk, provided they
-support Free Software and respect users' freedom for computing.
-Please ask FSIJ for permission.
+FSIJ could give companies or business entities "second source
+manufacturer" license to use USB device ID of FSIJ for devices with
+unmodified version of Gnuk, provided they support Free Software and
+respect users' freedom for computing.  Please ask FSIJ for the
+license.
 
 Otherwise, companies which want to distribute Gnuk devices, please use
-your own USB vendor ID and product ID.  When you modify Gnuk, please
-replace "FSIJ" in the string gnukStringSerial (usb_desc.c) to yours.
+your own USB vendor ID and product ID.  Note that please replace
+"FSIJ" in the string gnukStringSerial (usb_desc.c) to yours, when you
+modify Gnuk.
 
 
 Host Requirements

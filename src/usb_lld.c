@@ -27,16 +27,15 @@ enum STANDARD_REQUESTS
 /* The state machine states of a control pipe */
 enum CONTROL_STATE
 {
-  WAIT_SETUP,       /* 0 */
-  SETTING_UP,       /* 1 */
-  IN_DATA,          /* 2 */
-  OUT_DATA,         /* 3 */
-  LAST_IN_DATA,     /* 4 */
-  LAST_OUT_DATA,    /* 5 */
-  WAIT_STATUS_IN,   /* 7 */
-  WAIT_STATUS_OUT,  /* 8 */
-  STALLED,          /* 9 */
-  PAUSE             /* 10 */
+  WAIT_SETUP,
+  SETTING_UP,
+  IN_DATA,
+  OUT_DATA,
+  LAST_IN_DATA,
+  WAIT_STATUS_IN,
+  WAIT_STATUS_OUT,
+  STALLED,
+  PAUSE
 };
 
 enum FEATURE_SELECTOR
@@ -400,24 +399,17 @@ static void handle_datastage_out (void)
       usb_lld_from_pmabuf (buf, st103_get_rx_addr (ENDP0), len);
     }
 
-  if (data_p->len != 0)
+  if (data_p->len == 0)
+    {
+      dev_p->state = WAIT_STATUS_IN;
+      st103_set_tx_count (ENDP0, 0);
+      st103_ep_set_rxtx_status (ENDP0, EP_RX_STALL, EP_TX_VALID);
+    }
+  else
     {
       st103_ep_set_rx_status (ENDP0, EP_RX_VALID);
-      st103_set_tx_count (ENDP0, 0);
-      st103_ep_set_tx_status (ENDP0, EP_TX_VALID);
+      dev_p->state = OUT_DATA;
     }
-
-  if (data_p->len >= USB_MAX_PACKET_SIZE)
-    dev_p->state = OUT_DATA;
-  else
-    if (data_p->len > 0)
-      dev_p->state = LAST_OUT_DATA;
-    else if (data_p->len == 0)
-      {
-	dev_p->state = WAIT_STATUS_IN;
-	st103_set_tx_count (ENDP0, 0);
-	st103_ep_set_tx_status (ENDP0, EP_TX_VALID);
-      }
 }
 
 static void handle_datastage_in (void)
@@ -437,10 +429,11 @@ static void handle_datastage_in (void)
 	}
       else
 	{
-	  /* No more data to send.  Thus, STALL the TX Status*/
+	  /* No more data to send, but receive OUT.*/
 	  dev_p->state = WAIT_STATUS_OUT;
-	  st103_ep_set_tx_status (ENDP0, EP_TX_STALL);
+	  st103_ep_set_rxtx_status (ENDP0, EP_RX_VALID, EP_TX_STALL);
 	}
+
       return;
     }
 
@@ -451,11 +444,10 @@ static void handle_datastage_in (void)
 
   buf = (const uint8_t *)data_p->addr + data_p->offset;
   usb_lld_to_pmabuf (buf, st103_get_tx_addr (ENDP0), len);
-  st103_set_tx_count (ENDP0, len);
-
   data_p->len -= len;
   data_p->offset += len;
-  st103_ep_set_rxtx_status (ENDP0, EP_RX_VALID, EP_TX_VALID);
+  st103_set_tx_count (ENDP0, len);
+  st103_ep_set_tx_status (ENDP0, EP_TX_VALID);
 }
 
 typedef int (*HANDLER) (uint8_t rcp,
@@ -781,7 +773,6 @@ static void handle_setup0 (void)
   pw++;
   ctrl_p->wLength = *pw;
 
-  dev_p->state = STALLED;
   data_p->len = 0;
   data_p->offset = 0;
 
@@ -812,13 +803,7 @@ static void handle_setup0 (void)
     dev_p->state = STALLED;
   else
     {
-      if (ctrl_p->wLength == 0)
-	{
-	  dev_p->state = WAIT_STATUS_IN;
-	  st103_set_tx_count (ENDP0, 0);
-	  st103_ep_set_tx_status (ENDP0, EP_TX_VALID);
-	}
-      else if (ctrl_p->bmRequestType & 0x80)
+      if (ctrl_p->bmRequestType & 0x80)
 	{
 	  uint32_t len = ctrl_p->wLength;
      
@@ -831,13 +816,19 @@ static void handle_setup0 (void)
 	  else
 	    data_p->require_zlp = FALSE;
 
+	  dev_p->state = IN_DATA;
 	  handle_datastage_in ();
 	}
-      else
+      else if (ctrl_p->wLength == 0)
+	{
+	  dev_p->state = WAIT_STATUS_IN;
+	  st103_set_tx_count (ENDP0, 0);
+	  st103_ep_set_rxtx_status (ENDP0, EP_RX_STALL, EP_TX_VALID);
+	}
+      else 
 	{
 	  dev_p->state = OUT_DATA;
-	  st103_ep_set_rx_status (ENDP0, EP_RX_VALID);
-	  /* enable for next data reception */
+	  st103_ep_set_rxtx_status (ENDP0, EP_RX_VALID, EP_TX_STALL);
 	}
     }
 }
@@ -866,7 +857,7 @@ static void handle_out0 (void)
   if (dev_p->state == IN_DATA || dev_p->state == LAST_IN_DATA)
     /* host aborts the transfer before finish */
     dev_p->state = STALLED;
-  else if (dev_p->state == OUT_DATA || dev_p->state == LAST_OUT_DATA)
+  else if (dev_p->state == OUT_DATA)
     handle_datastage_out ();
   else if (dev_p->state == WAIT_STATUS_OUT)
     dev_p->state = STALLED;
