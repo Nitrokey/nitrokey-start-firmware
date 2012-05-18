@@ -46,7 +46,7 @@ def iso7816_compose(ins, p1, p2, data):
     if data_len == 0:
         return pack('>BBBB', cls, ins, p1, p2)
     else:
-        return pack('>BBBBBh', cls, ins, p1, p2, 0, data_len) + data
+        return pack('>BBBBB', cls, ins, p1, p2, data_len) + data
 
 # This class only supports Gnuk (for now) 
 class gnuk_token:
@@ -74,16 +74,28 @@ class gnuk_token:
         self.__alt = interface.alternateSetting
         self.__conf = configuration
 
-        self.__bulkout = 2
+        self.__bulkout = 1
         self.__bulkin  = 0x81
 
         self.__timeout = 10000
         self.__seq = 0
 
+    def stop_icc(self):
+        # XXX: need to disclaim interface and close device and re-open???
+        # self.__devhandle.setConfiguration(0)
+        return
+
+    def mem_info(self):
+        mem = self.__devhandle.controlMsg(requestType = 0xc0, request = 0,
+                                          value = 0, index = 0, buffer = 8,
+                                          timeout = 10)
+        start = ((mem[3]*256 + mem[2])*256 + mem[1])*256 + mem[0]
+        end = ((mem[7]*256 + mem[6])*256 + mem[5])*256 + mem[4]
+        return (start, end)
+
     def icc_get_result(self):
         msg = self.__devhandle.bulkRead(self.__bulkin, 1024, self.__timeout)
         if len(msg) < 10:
-            print msg
             raise ValueError, "icc_get_result"
         msg_type = msg[0]
         data_len = msg[1] + (msg[2]<<8) + (msg[3]<<16) + (msg[4]<<24)
@@ -150,33 +162,42 @@ class gnuk_token:
             raise ValueError, "icc_send_cmd"
 
     def cmd_get_response(self, expected_len):
-        cmd_data = iso7816_compose(0xc0, 0x00, 0x00, [expected_len])
+        cmd_data = iso7816_compose(0xc0, 0x00, 0x00, '') + pack('>B', expected_len)
         response = self.icc_send_cmd(cmd_data)
-        return response
+        return response[:-2]
 
     def cmd_verify(self, who, passwd):
         cmd_data = iso7816_compose(0x20, 0x00, 0x80+who, passwd)
         sw = self.icc_send_cmd(cmd_data)
         if len(sw) != 2:
-            raise ValueError, "cmd_verify"
+            raise ValueError, sw
         if not (sw[0] == 0x90 and sw[1] == 0x00):
-            raise ValueError, "cmd_verify"
+            raise ValueError, sw
 
     def cmd_select_openpgp(self):
         cmd_data = iso7816_compose(0xa4, 0x04, 0x0c, "\xD2\x76\x00\x01\x24\x01")
         sw = self.icc_send_cmd(cmd_data)
         if len(sw) != 2:
-            raise ValueError, "cmd_select_openpgp"
+            raise ValueError, sw
         if not (sw[0] == 0x90 and sw[1] == 0x00):
             raise ValueError, ("%02x%02x" % (sw[0], sw[1]))
 
-    def cmd_external_authenticate(self, who, signed):
+    def cmd_external_authenticate(self, signed):
         cmd_data = iso7816_compose(0x82, 0x00, 0x00, signed)
         sw = self.icc_send_cmd(cmd_data)
         if len(sw) != 2:
-            raise ValueError, "cmd_external_authenticate"
+            raise ValueError, sw
         if not (sw[0] == 0x90 and sw[1] == 0x00):
-            raise ValueError, "cmd_external_authenticate"
+            raise ValueError, ("%02x%02x" % (sw[0], sw[1]))
+
+    def cmd_get_challenge(self):
+        cmd_data = iso7816_compose(0x84, 0x00, 0x00, '')
+        sw = self.icc_send_cmd(cmd_data)
+        if len(sw) != 2:
+            raise ValueError, sw
+        if sw[0] != 0x61:
+            raise ValueError, ("%02x%02x" % (sw[0], sw[1]))
+        return self.cmd_get_response(sw[1])
 
 def compare(data_original, data_in_device):
     i = 0 
@@ -199,7 +220,13 @@ def get_device():
                             return dev, config, alt
     raise ValueError, "Device not found"
 
-def main(passwd, data):
+def to_string(t):
+    result = ""
+    for c in t:
+        result += chr(c)
+    return result
+
+def main(passwd, data_regnual, data_upgrade):
     dev, config, intf = get_device()
     print "Device: ", dev.filename
     print "Configuration: ", config.value
@@ -212,14 +239,17 @@ def main(passwd, data):
     icc.cmd_verify(3, passwd)
     icc.cmd_select_openpgp()
     challenge = icc.cmd_get_challenge()
-    signed = challenge
+    signed = to_string(challenge)
     icc.cmd_external_authenticate(signed)
-    # set_configure(0) to disable all interfaces but control pipe
-    # check mem_info
+    icc.stop_icc() # disable all interfaces but control pipe
+    mem_info icc.mem_info()
+    print "%08x: %08x" % mem_info
     # download flash install program
     # exec
     # ...
+    print "Downloading flash upgrade program"
     # Then, send upgrade program...
+    print "Downloading the program"
     return 0
 
 DEFAULT_PW3 = "12345678"
@@ -230,10 +260,14 @@ if __name__ == '__main__':
         from getpass import getpass
         passwd = getpass("Admin password: ")
         sys.argv.pop(1)
-    filename = sys.argv[1]
-    f = open(filename)
-    data = f.read()
+    filename_regnual = sys.argv[1]
+    filename_upgrade = sys.argv[2]
+    f = open(filename_regnual)
+    data_regnual = f.read()
     f.close()
-    print "%s: %d" % (filename, len(data))
-    print "Downloading flash upgrade program"
-    main(passwd, data)
+    print "%s: %d" % (filename_regnual, len(data_regnual))
+    f = open(filename_upgrade)
+    data_upgrade = f.read()
+    f.close()
+    print "%s: %d" % (filename_upgrade, len(data_upgrade))
+    main(passwd, data_regnual, data_upgrade)

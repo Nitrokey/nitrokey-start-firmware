@@ -80,7 +80,6 @@ CSRC = $(PORTSRC) \
        $(BOARD_DIR)/board.c \
        $(CHIBIOS)/os/various/evtimer.c \
        $(CHIBIOS)/os/various/syscalls.c \
-       $(VCOMSRC) \
        $(CRYPTSRC) \
        main.c usb_lld.c \
 	usb_desc.c usb_prop.c \
@@ -194,13 +193,6 @@ ULIBS =
 #
 # End of user defines
 ##############################################################################
-
-ifeq ($(USE_FWLIB),yes)
-  include $(CHIBIOS)/ext/stm32lib/stm32lib.mk
-  CSRC += $(STM32SRC)
-  INCDIR += $(STM32INC)
-  USE_OPT += -DUSE_STDPERIPH_DRIVER
-endif
 
 include $(CHIBIOS)/os/ports/GCC/ARM/rules.mk
 MCFLAGS= -mcpu=$(MCU) -mfix-cortex-m3-ldrd

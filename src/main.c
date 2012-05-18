@@ -375,7 +375,7 @@ led_blink (int spec)
  *       See the hwinit1_common function.
  */
 int
-main (int argc, char **argv)
+main (int argc, char *argv[])
 {
   int count = 0;
 
@@ -417,6 +417,9 @@ main (int argc, char **argv)
   while (1)
     {
       eventmask_t m;
+
+      if (icc_state_p != NULL && *icc_state_p == ICC_STATE_EXEC_REQUESTED)
+	break;
 
       count++;
       m = chEvtWaitOneTimeout (ALL_EVENTS, LED_TIMEOUT_INTERVAL);
@@ -469,6 +472,10 @@ main (int argc, char **argv)
 #endif
     }
 
+  usb_lld_shutdown ();
+  /* erase by mass erase */
+  /* set vector */
+  /* SYSRESETREQ to invoke regnual */
   return 0;
 }
 

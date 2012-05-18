@@ -75,7 +75,6 @@ struct usb_device_method
 };
 
 enum {
-  USB_EVENT_RESET,
   USB_EVENT_ADDRESS,
   USB_EVENT_CONFIG,
   USB_EVENT_SUSPEND,

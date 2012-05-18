@@ -114,6 +114,8 @@ SECTIONS
 
     PROVIDE(end = .);
     _end            = .;
+    . = ALIGN(256);
+    _regnual_start = .;
 
 @CERTDO_SUPPORT_START@
     .gnuk_ch_certificate :

@@ -189,7 +189,7 @@ static const uint8_t data_rate_table[] = { 0x80, 0x25, 0, 0, }; /* dwDataRate */
 static const uint8_t lun_table[] = { 0, 0, 0, 0, };
 #endif
 
-static const uint8_t *mem_info[] = { &__heap_base__,  &__heap_end__, };
+static const uint8_t *mem_info[] = { &_regnual_start,  &__heap_end__, };
 
 #define USB_FSIJ_GNUK_MEMINFO  0
 #define USB_FSIJ_GNUK_DOWNLOAD 1
@@ -225,7 +225,7 @@ gnuk_setup (uint8_t req, uint8_t req_no,
 	      if (icc_state_p == NULL || *icc_state_p != ICC_STATE_EXITED)
 		return USB_UNSUPPORT;
 
-	      if (addr < &__heap_base__ || addr + len > &__heap_end__)
+	      if (addr < &_regnual_start || addr + len > &__heap_end__)
 		return USB_UNSUPPORT;
 
 	      if (index == 0)
@@ -349,11 +349,9 @@ static int gnuk_usb_event (uint8_t event_type, uint16_t value)
 
   switch (event_type)
     {
-    case USB_EVENT_RESET:
-      break;
     case USB_EVENT_ADDRESS:
       bDeviceState = ADDRESSED;
-      break;
+      return USB_SUCCESS;
     case USB_EVENT_CONFIG:
       if (usb_lld_current_configuration () == 0)
 	{
@@ -365,7 +363,6 @@ static int gnuk_usb_event (uint8_t event_type, uint16_t value)
 	    gnuk_setup_endpoints_for_interface (i, 0);
 	  bDeviceState = CONFIGURED;
 	  chEvtSignalI (main_thread, LED_STATUS_MODE);
-	  return USB_SUCCESS;
 	}
       else
 	{
@@ -377,6 +374,7 @@ static int gnuk_usb_event (uint8_t event_type, uint16_t value)
 	    gnuk_setup_endpoints_for_interface (i, 1);
 	  bDeviceState = ADDRESSED;
 	}
+      return USB_SUCCESS;
     default:
       break;
     }

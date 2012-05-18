@@ -75,7 +75,7 @@ class gnuk_token:
         self.__alt = interface.alternateSetting
         self.__conf = configuration
 
-        self.__bulkout = 2
+        self.__bulkout = 1
         self.__bulkin  = 0x81
 
         self.__timeout = 10000

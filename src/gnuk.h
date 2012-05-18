@@ -389,4 +389,4 @@ extern int pinpad_getline (int msg_code, systime_t timeout);
 
 #endif
 
-extern uint8_t __heap_base__, __heap_end__;
+extern uint8_t _regnual_start, __heap_end__;
