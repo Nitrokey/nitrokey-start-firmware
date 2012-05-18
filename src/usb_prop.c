@@ -189,7 +189,7 @@ static const uint8_t data_rate_table[] = { 0x80, 0x25, 0, 0, }; /* dwDataRate */
 static const uint8_t lun_table[] = { 0, 0, 0, 0, };
 #endif
 
-static const uint8_t *mem_info[] = { &_regnual_start,  &__heap_end__, };
+static const uint8_t *const mem_info[] = { &_regnual_start,  &__heap_end__, };
 
 #define USB_FSIJ_GNUK_MEMINFO  0
 #define USB_FSIJ_GNUK_DOWNLOAD 1
@@ -197,6 +197,14 @@ static const uint8_t *mem_info[] = { &_regnual_start,  &__heap_end__, };
 
 static int download_check_crc32 (const uint8_t *p)
 {
+  uint32_t crc32 = 0;
+
+  crc32 += (*--p << 24);
+  crc32 += (*--p << 16);
+  crc32 += (*--p << 8);
+  crc32 += (*--p);
+
+  /* Not yet: Calculate crc32 from &_regnual_start to p, then compare */
   return USB_SUCCESS;
 }
 
@@ -238,7 +246,7 @@ gnuk_setup (uint8_t req, uint8_t req_no,
 	      if (icc_state_p == NULL || *icc_state_p != ICC_STATE_EXITED)
 		return USB_UNSUPPORT;
 
-	      /* There is a trailer at addr: size, crc32 */
+	      /* There is a trailer at addr: crc32 */
 	      return download_check_crc32 (addr);
 	    }
 	}

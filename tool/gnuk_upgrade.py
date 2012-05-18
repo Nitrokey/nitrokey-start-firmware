@@ -95,29 +95,33 @@ class gnuk_token:
 
     def download(self, start, data):
         addr = start
-        addr_end = start + len(data)
+        addr_end = (start + len(data)) & 0xffffff00
         i = (addr - 0x20000000) / 0x100
+        j = 0
         print "start %08x" % addr
         print "end   %08x" % addr_end
         while addr < addr_end:
             print "# %08x: %d : %d" % (addr, i, 256)
             self.__devhandle.controlMsg(requestType = 0x40, request = 1,
                                         value = i, index = 0,
-                                        buffer = data[i*256:i*256+256],
+                                        buffer = data[j*256:j*256+256],
                                         timeout = 10)
             i = i+1
+            j = j+1
             addr = addr + 256
         residue = len(data) % 256
         if residue != 0:
             print "# %08x: %d : %d" % (addr, i, residue)
             self.__devhandle.controlMsg(requestType = 0x40, request = 1,
                                         value = i, index = 0,
-                                        buffer = data[i*256:],
+                                        buffer = data[j*256:],
                                         timeout = 10)
 
-    def execute(self):
+    def execute(self, last_addr):
+        i = (last_addr - 0x20000000) / 0x100
+        o = (last_addr - 0x20000000) % 0x100
         self.__devhandle.controlMsg(requestType = 0x40, request = 2,
-                                    value = 0, index = 0, buffer = None,
+                                    value = i, index = o, buffer = None,
                                     timeout = 10)
 
     def icc_get_result(self):
@@ -254,6 +258,8 @@ def to_string(t):
     return result
 
 def main(passwd, data_regnual, data_upgrade):
+    data_regnual += pack('<i', binascii.crc32(data_regnual))
+
     dev, config, intf = get_device()
     print "Device: ", dev.filename
     print "Configuration: ", config.value
@@ -274,9 +280,9 @@ def main(passwd, data_regnual, data_upgrade):
     print "Downloading flash upgrade program..."
     icc.download(mem_info[0], data_regnual)
     print "Run flash upgrade program..."
-    icc.execute()
+    icc.execute(mem_info[1] + len(data_regnual))
     # Then, send upgrade program...
-    print "Downloading the program"
+    print "NOT YET: Downloading the program"
     return 0
 
 DEFAULT_PW3 = "12345678"

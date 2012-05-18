@@ -23,6 +23,7 @@
 
 #include "config.h"
 #include "ch.h"
+#include "hal.h"
 #include "gnuk.h"
 #include "usb_lld.h"
 #include "usb-cdc.h"
@@ -473,9 +474,23 @@ main (int argc, char *argv[])
     }
 
   usb_lld_shutdown ();
-  /* erase by mass erase */
+  USB_Cable_Config (0);
+  set_led (1);
+  chThdSleep (MS2ST (100));
+  port_disable ();
   /* set vector */
+  SCB->VTOR = (uint32_t)&_regnual_start;
+#if 0 
   /* SYSRESETREQ to invoke regnual */
+  NVIC_SystemReset ();
+#else
+  {
+    /* Not yet: erase by mass erase and go to entry */
+    void (**func)(void) = (void (**)(void))(&_regnual_start + 4);
+
+    (**func) ();
+  }
+#endif
   return 0;
 }
 

@@ -114,7 +114,7 @@ SECTIONS
 
     PROVIDE(end = .);
     _end            = .;
-    . = ALIGN(256);
+    . = ALIGN(512);
     _regnual_start = .;
 
 @CERTDO_SUPPORT_START@
