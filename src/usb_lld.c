@@ -385,16 +385,15 @@ static void handle_datastage_out (void)
   if (data_p->addr && data_p->len)
     {
       uint8_t *buf;
-      uint32_t len = USB_MAX_PACKET_SIZE;
+      uint32_t len = st103_get_rx_count (ENDP0);
 
       if (len > data_p->len)
 	len = data_p->len;
 
       buf = data_p->addr + data_p->offset;
+      usb_lld_from_pmabuf (buf, st103_get_rx_addr (ENDP0), len);
       data_p->len -= len;
       data_p->offset += len;
-
-      usb_lld_from_pmabuf (buf, st103_get_rx_addr (ENDP0), len);
     }
 
   if (data_p->len == 0)
@@ -405,8 +404,8 @@ static void handle_datastage_out (void)
     }
   else
     {
-      st103_ep_set_rx_status (ENDP0, EP_RX_VALID);
       dev_p->state = OUT_DATA;
+      st103_ep_set_rx_status (ENDP0, EP_RX_VALID);
     }
 }
 
@@ -427,7 +426,7 @@ static void handle_datastage_in (void)
 	}
       else
 	{
-	  /* No more data to send, but receive OUT.*/
+	  /* No more data to send, but receive OUT acknowledge.*/
 	  dev_p->state = WAIT_STATUS_OUT;
 	  st103_ep_set_rxtx_status (ENDP0, EP_RX_VALID, EP_TX_STALL);
 	}
@@ -857,7 +856,7 @@ static void handle_setup0 (void)
       else 
 	{
 	  dev_p->state = OUT_DATA;
-	  st103_ep_set_rxtx_status (ENDP0, EP_RX_VALID, EP_TX_STALL);
+	  st103_ep_set_rx_status (ENDP0, EP_RX_VALID);
 	}
     }
 }
