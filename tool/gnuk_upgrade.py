@@ -93,6 +93,33 @@ class gnuk_token:
         end = ((mem[7]*256 + mem[6])*256 + mem[5])*256 + mem[4]
         return (start, end)
 
+    def download(self, start, data):
+        addr = start
+        addr_end = start + len(data)
+        i = (addr - 0x20000000) / 0x100
+        print "start %08x" % addr
+        print "end   %08x" % addr_end
+        while addr < addr_end:
+            print "# %08x: %d : %d" % (addr, i, 256)
+            self.__devhandle.controlMsg(requestType = 0x40, request = 1,
+                                        value = i, index = 0,
+                                        buffer = data[i*256:i*256+256],
+                                        timeout = 10)
+            i = i+1
+            addr = addr + 256
+        residue = len(data) % 256
+        if residue != 0:
+            print "# %08x: %d : %d" % (addr, i, residue)
+            self.__devhandle.controlMsg(requestType = 0x40, request = 1,
+                                        value = i, index = 0,
+                                        buffer = data[i*256:],
+                                        timeout = 10)
+
+    def execute(self):
+        self.__devhandle.controlMsg(requestType = 0x40, request = 2,
+                                    value = 0, index = 0, buffer = None,
+                                    timeout = 10)
+
     def icc_get_result(self):
         msg = self.__devhandle.bulkRead(self.__bulkin, 1024, self.__timeout)
         if len(msg) < 10:
@@ -242,12 +269,12 @@ def main(passwd, data_regnual, data_upgrade):
     signed = to_string(challenge)
     icc.cmd_external_authenticate(signed)
     icc.stop_icc() # disable all interfaces but control pipe
-    mem_info icc.mem_info()
-    print "%08x: %08x" % mem_info
-    # download flash install program
-    # exec
-    # ...
-    print "Downloading flash upgrade program"
+    mem_info = icc.mem_info()
+    print "%08x:%08x" % mem_info
+    print "Downloading flash upgrade program..."
+    icc.download(mem_info[0], data_regnual)
+    print "Run flash upgrade program..."
+    icc.execute()
     # Then, send upgrade program...
     print "Downloading the program"
     return 0
