@@ -1,5 +1,9 @@
 2012-05-18  Niibe Yutaka  <gniibe@fsij.org>
 
+	* src/usb_lld.c (handle_datastage_out): Fix rx copying.
+	(handle_setup0): Bug fix not stalling TX, it will be possible
+	to go IN transaction, soon after OUT transaction.
+
 	* src/usb_lld.h (USB_SETUP_SET, USB_SETUP_GET): New.
 	(usb_device_method.ctrl_write_finish): New.
 	(usb_device_method.setup): Merge setup_with_data, and
