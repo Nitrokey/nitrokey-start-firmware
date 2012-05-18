@@ -422,11 +422,11 @@ static void handle_datastage_in (void)
 
 	  /* No more data to send.  Send empty packet */
 	  st103_set_tx_count (ENDP0, 0);
-	  st103_ep_set_tx_status (ENDP0, EP_TX_VALID);
+	  st103_ep_set_rxtx_status (ENDP0, EP_RX_VALID, EP_TX_VALID);
 	}
       else
 	{
-	  /* No more data to send, but receive OUT acknowledge.*/
+	  /* No more data to send, proceed to receive OUT acknowledge.*/
 	  dev_p->state = WAIT_STATUS_OUT;
 	  st103_ep_set_rxtx_status (ENDP0, EP_RX_VALID, EP_TX_STALL);
 	}

@@ -1,3 +1,9 @@
+2012-05-19  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/usb_lld.c (handle_datastage_in): Bug fix, erable RX when
+	sending ZLP.  It will be possible to get OUT transaction soon
+	after IN transaction.
+
 2012-05-18  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/usb_lld.c (handle_datastage_out): Fix rx copying.
