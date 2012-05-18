@@ -1,3 +1,21 @@
+2012-05-18  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/usb_lld.h (USB_SETUP_SET, USB_SETUP_GET): New.
+	(usb_device_method.ctrl_write_finish): New.
+	(usb_device_method.setup): Merge setup_with_data, and
+	setup_with_nodata.
+
+	* src/usb_lld.c (usb_lld_shutdown, usb_lld_prepare_shutdown): New.
+	(handle_setup0): Call ->setup.
+	(handle_in0): Call ->ctrl_write_finish.
+
+	* src/usb_prop.c (vcom_port_data_setup): Merge
+	vcom_port_setup_with_nodata.
+	(download_check_crc32): New.
+	(gnuk_setup): Merge gnuk_setup_with_data and
+	gnuk_setup_with_nodata.
+	(gnuk_ctrl_write_finish): New.
+
 2012-05-17  Niibe Yutaka  <gniibe@fsij.org>
 
 	* tool/gnuk_upgrade.py: New tool.

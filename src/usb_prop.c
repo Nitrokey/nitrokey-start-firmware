@@ -48,22 +48,28 @@ static struct line_coding line_coding = {
   0x08    /* bits:      8         */
 };
 
-static void
+static int
 vcom_port_data_setup (uint8_t req, uint8_t req_no)
 {
-  if ((req & REQUEST_DIR) == 1 && req_no == USB_CDC_REQ_GET_LINE_CODING)
-    usb_lld_set_data_to_send (&line_coding, sizeof(line_coding));
-
-  if ((req & REQUEST_DIR) == 0 && req_no == USB_CDC_REQ_SET_LINE_CODING)
-    usb_lld_set_data_to_recv (&line_coding, sizeof(line_coding));
-}
-
-static int
-vcom_port_setup_with_nodata (uint8_t req, uint8_t req_no)
-{
-  if ((req & REQUEST_DIR) == 0 && req_no == USB_CDC_REQ_SET_CONTROL_LINE_STATE)
-    /* Do nothing and success  */
-    return USB_SUCCESS;
+  if (USB_SETUP_GET (req))
+    {
+      if (req_no == USB_CDC_REQ_GET_LINE_CODING)
+	{
+	  usb_lld_set_data_to_send (&line_coding, sizeof(line_coding));
+	  return USB_SUCCESS;
+	}
+    }
+  else  /* USB_SETUP_SET (req) */
+    {
+      if (req_no == USB_CDC_REQ_SET_LINE_CODING)
+	{
+	  usb_lld_set_data_to_recv (&line_coding, sizeof(line_coding));
+	  return USB_SUCCESS;
+	}
+      else if (req_no == USB_CDC_REQ_SET_CONTROL_LINE_STATE)
+	/* Do nothing and success  */
+	return USB_SUCCESS;
+    }
 
   return USB_UNSUPPORT;
 }
@@ -189,101 +195,122 @@ static const uint8_t *mem_info[] = { &__heap_base__,  &__heap_end__, };
 #define USB_FSIJ_GNUK_DOWNLOAD 1
 #define USB_FSIJ_GNUK_EXEC     2
 
-static void
-gnuk_setup_with_data (uint8_t req, uint8_t req_no, uint16_t index,
-		      uint16_t len)
+static int download_check_crc32 (const uint8_t *p)
 {
-  uint8_t recipient = req & RECIPIENT;
-
-  if (recipient == (VENDOR_REQUEST | DEVICE_RECIPIENT))
-    {
-      if ((req & REQUEST_DIR) == 1 && req_no == USB_FSIJ_GNUK_MEMINFO)
-	usb_lld_set_data_to_send (mem_info, sizeof (mem_info));
-      else if ((req & REQUEST_DIR) == 0 && req_no == USB_FSIJ_GNUK_DOWNLOAD)
-	{
-	  if (icc_state_p == NULL || *icc_state_p != ICC_STATE_EXITED)
-	    return;
-
-	  if ((uint32_t)(index * 0x100) < (uint32_t)&__heap_base__
-	      || (uint32_t)((index * 0x100) + len) > (uint32_t)&__heap_end__)
-	    return;
-
-	  usb_lld_set_data_to_recv ((void *)0x20000000 + index*0x100, len);
-	}
-    }
-  else if (recipient == (CLASS_REQUEST | INTERFACE_RECIPIENT))
-    {
-      if (index == 0)
-	{
-	  if ((req & REQUEST_DIR) == 1
-	      && req_no == USB_CCID_REQ_GET_CLOCK_FREQUENCIES)
-	    usb_lld_set_data_to_send (freq_table, sizeof (freq_table));
-	  else if ((req & REQUEST_DIR) == 1
-		   && req_no == USB_CCID_REQ_GET_DATA_RATES)
-	    usb_lld_set_data_to_send (data_rate_table,
-				      sizeof (data_rate_table));
-	}
-#ifdef ENABLE_VIRTUAL_COM_PORT
-      else if (index == 1)
-	vcom_port_data_setup (req, req_no);
-#endif
-#ifdef PINPAD_DND_SUPPORT
-      else if (index == MSC_INTERFACE_NO)
-	{
-	  if ((req & REQUEST_DIR) == 1 && req_no == MSC_GET_MAX_LUN_COMMAND)
-	    usb_lld_set_data_to_send (lun_table, sizeof (lun_table));
-	}
-#endif
-    }
+  return USB_SUCCESS;
 }
 
-
 static int
-gnuk_setup_with_nodata (uint8_t req, uint8_t req_no, uint16_t index)
+gnuk_setup (uint8_t req, uint8_t req_no,
+	    uint16_t value, uint16_t index, uint16_t len)
 {
-  uint8_t recipient = req & RECIPIENT;
+  uint8_t type_rcp = req & (REQUEST_TYPE|RECIPIENT);
 
-  if ((req & REQUEST_DIR) == 1)
-    return USB_UNSUPPORT;
-
-  if (recipient == (VENDOR_REQUEST | DEVICE_RECIPIENT))
+  if (type_rcp == (VENDOR_REQUEST | DEVICE_RECIPIENT))
     {
-      if (req_no == USB_FSIJ_GNUK_EXEC)
+      if (USB_SETUP_GET (req))
 	{
-	  if (icc_state_p == NULL || *icc_state_p != ICC_STATE_EXITED)
-	    return USB_UNSUPPORT;
+	  if (req_no == USB_FSIJ_GNUK_MEMINFO)
+	    {
+	      usb_lld_set_data_to_send (mem_info, sizeof (mem_info));
+	      return USB_SUCCESS;
+	    }
+	}
+      else /* SETUP_SET */
+	{
+	  uint8_t *addr = (uint8_t *)(0x20000000 + value * 0x100 + index);
 
-	  *icc_state_p = ICC_STATE_EXEC_REQUESTED;
-	  return USB_SUCCESS;
+	  if (req_no == USB_FSIJ_GNUK_DOWNLOAD)
+	    {
+	      if (icc_state_p == NULL || *icc_state_p != ICC_STATE_EXITED)
+		return USB_UNSUPPORT;
+
+	      if (addr < &__heap_base__ || addr + len > &__heap_end__)
+		return USB_UNSUPPORT;
+
+	      if (index == 0)
+		memset (addr, 0, 256);
+	      usb_lld_set_data_to_recv (addr, len);
+	      return USB_SUCCESS;
+	    }
+	  else if (req_no == USB_FSIJ_GNUK_EXEC && len == 0)
+	    {
+	      if (icc_state_p == NULL || *icc_state_p != ICC_STATE_EXITED)
+		return USB_UNSUPPORT;
+
+	      /* There is a trailer at addr: size, crc32 */
+	      return download_check_crc32 (addr);
+	    }
 	}
     }
-  else if (recipient == (CLASS_REQUEST | INTERFACE_RECIPIENT))
+  else if (type_rcp == (CLASS_REQUEST | INTERFACE_RECIPIENT))
     if (index == 0)
       {
-	if (req_no == USB_CCID_REQ_ABORT)
-	  /* wValue: bSeq, bSlot */
-	  /* Abortion is not supported in Gnuk */
-	  return USB_UNSUPPORT;
+	if (USB_SETUP_GET (req))
+	  {
+	    if (req_no == USB_CCID_REQ_GET_CLOCK_FREQUENCIES)
+	      {
+		usb_lld_set_data_to_send (freq_table, sizeof (freq_table));
+		return USB_SUCCESS;
+	      }
+	    else if (req_no == USB_CCID_REQ_GET_DATA_RATES)
+	      {
+		usb_lld_set_data_to_send (data_rate_table,
+					  sizeof (data_rate_table));
+		return USB_SUCCESS;
+	      }
+	  }
 	else
-	  return USB_UNSUPPORT;
+	  {
+	    if (req_no == USB_CCID_REQ_ABORT)
+	      /* wValue: bSeq, bSlot */
+	      /* Abortion is not supported in Gnuk */
+	      return USB_UNSUPPORT;
+	  }
       }
 #ifdef ENABLE_VIRTUAL_COM_PORT
     else if (index == 1)
-      return vcom_port_setup_with_nodata (req, req_no);
+      return vcom_port_data_setup (req, req_no);
 #endif
 #ifdef PINPAD_DND_SUPPORT
     else if (index == MSC_INTERFACE_NO)
       {
-	if (req_no == MSC_MASS_STORAGE_RESET_COMMAND)
+	if (USB_SETUP_GET (req))
 	  {
+	    if (req_no == MSC_GET_MAX_LUN_COMMAND)
+	      {
+		usb_lld_set_data_to_send (lun_table, sizeof (lun_table));
+		return USB_SUCCESS;
+	      }
+	  }
+	else
+	  if (req_no == MSC_MASS_STORAGE_RESET_COMMAND)
 	    /* Should call resetting MSC thread, something like msc_reset() */
 	    return USB_SUCCESS;
-	  }
       }
 #endif
 
   return USB_UNSUPPORT;
 }
+
+static void gnuk_ctrl_write_finish (uint8_t req, uint8_t req_no,
+				    uint16_t value, uint16_t index,
+				    uint16_t len)
+{
+  uint8_t type_rcp = req & (REQUEST_TYPE|RECIPIENT);
+
+  if (type_rcp == (VENDOR_REQUEST | DEVICE_RECIPIENT)
+      && USB_SETUP_SET (req) && req_no == USB_FSIJ_GNUK_EXEC && len == 0)
+    {
+      if (icc_state_p == NULL || *icc_state_p != ICC_STATE_EXITED)
+	return;
+
+      (void)value; (void)index;
+      usb_lld_prepare_shutdown (); /* No further USB communication */
+      *icc_state_p = ICC_STATE_EXEC_REQUESTED;
+    }
+}
+
 
 static int
 gnuk_get_descriptor (uint8_t desc_type, uint16_t index, uint16_t value)
@@ -392,8 +419,8 @@ static int gnuk_interface (uint8_t cmd, uint16_t interface, uint16_t alt)
 const struct usb_device_method Device_Method = {
   gnuk_device_init,
   gnuk_device_reset,
-  gnuk_setup_with_data,
-  gnuk_setup_with_nodata,
+  gnuk_ctrl_write_finish,
+  gnuk_setup,
   gnuk_get_descriptor,
   gnuk_usb_event,
   gnuk_interface,

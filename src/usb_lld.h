@@ -46,6 +46,9 @@ enum DESCRIPTOR_TYPE
 #define VENDOR_REQUEST    0x40  /* Vendor request           */
 #define RECIPIENT         0x1F  /* Mask to get recipient    */
 
+#define USB_SETUP_SET(req) ((req & REQUEST_DIR) == 0)
+#define USB_SETUP_GET(req) ((req & REQUEST_DIR) != 0)
+
 struct Descriptor
 {
   const uint8_t *Descriptor;
@@ -62,9 +65,10 @@ struct usb_device_method
 {
   void (*init) (void);
   void (*reset) (void);
-  void (*setup_with_data) (uint8_t rcp, uint8_t req_no, uint16_t index,
-			   uint16_t len);
-  int (*setup_with_nodata) (uint8_t rcp, uint8_t req_no, uint16_t index);
+  void (*ctrl_write_finish) (uint8_t req, uint8_t req_no,
+			     uint16_t value, uint16_t index, uint16_t len);
+  int (*setup) (uint8_t req, uint8_t req_no,
+		uint16_t value, uint16_t index, uint16_t len);
   int (*get_descriptor) (uint8_t desc_type, uint16_t index, uint16_t value);
   int (*event) (uint8_t event_type, uint16_t value);
   int (*interface) (uint8_t cmd, uint16_t interface, uint16_t value);
@@ -149,3 +153,6 @@ extern inline void usb_lld_set_data_to_recv (void *p, size_t len)
 {
   usb_lld_set_data_to_send ((const void *)p, len);
 }
+
+extern void usb_lld_prepare_shutdown (void);
+extern void usb_lld_shutdown (void);

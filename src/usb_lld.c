@@ -825,25 +825,14 @@ static void handle_setup0 (void)
 	}
     }
   else
-    {
-      if (ctrl_p->wLength == 0)
-	r = (*method_p->setup_with_nodata) (ctrl_p->bmRequestType,
-					    req, ctrl_p->wIndex);
-      else
-	{
-	  (*method_p->setup_with_data) (ctrl_p->bmRequestType, req,
-					ctrl_p->wIndex, ctrl_p->wLength);
-	  if (data_p->len != 0)
-	    r = USB_SUCCESS;
-	}
-    }
-
+    r = (*method_p->setup) (ctrl_p->bmRequestType, req,
+			    ctrl_p->wValue, ctrl_p->wIndex, ctrl_p->wLength);
 
   if (r != USB_SUCCESS)
     dev_p->state = STALLED;
   else
     {
-      if (ctrl_p->bmRequestType & REQUEST_DIR)
+      if (USB_SETUP_GET (ctrl_p->bmRequestType))
 	{
 	  uint32_t len = ctrl_p->wLength;
      
@@ -886,6 +875,11 @@ static void handle_in0 (void)
 	  st103_set_daddr (ctrl_p->wValue);
 	  (*method_p->event) (USB_EVENT_ADDRESS, ctrl_p->wValue);
 	}
+      else
+	(*method_p->ctrl_write_finish)  (ctrl_p->bmRequestType,
+					 ctrl_p->bRequest, ctrl_p->wValue,
+					 ctrl_p->wIndex, ctrl_p->wLength);
+
       dev_p->state = STALLED;
     }
   else
@@ -1063,6 +1057,18 @@ void usb_lld_init (void)
   /* Clear Interrupt Status Register, and enable interrupt for USB */
   st103_set_istr (0);
   st103_set_cntr (CNTR_CTRM | CNTR_RESETM);
+}
+
+void usb_lld_prepare_shutdown (void)
+{
+  st103_set_istr (0);
+  st103_set_cntr (0);
+}
+
+void usb_lld_shutdown (void)
+{
+  st103_set_cntr (CNTR_PDWN);
+  RCC->APB1ENR &= ~RCC_APB1ENR_USBEN;
 }
 
 void usb_lld_txcpy (const void *src,
