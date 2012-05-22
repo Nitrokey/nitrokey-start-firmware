@@ -839,6 +839,7 @@ static void handle_setup0 (void)
   pw++;
   ctrl_p->wLength = *pw;
 
+  data_p->addr = NULL;
   data_p->len = 0;
   data_p->offset = 0;
 

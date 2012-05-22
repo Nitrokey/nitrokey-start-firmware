@@ -7,4 +7,6 @@ typedef unsigned int uint32_t;
 #define TRUE  1
 #define FALSE 0
 
+#define NULL  0
+
 #define     __IO    volatile
