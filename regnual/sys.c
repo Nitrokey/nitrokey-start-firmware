@@ -240,6 +240,26 @@ void usb_lld_sys_shutdown (void)
 }
 
 
+
+#define FLASH_KEY1               0x45670123UL
+#define FLASH_KEY2               0xCDEF89ABUL
+
+enum flash_status
+{
+  FLASH_BUSY = 1,
+  FLASH_ERROR_PG,
+  FLASH_ERROR_WRP,
+  FLASH_COMPLETE,
+  FLASH_TIMEOUT
+};
+
+static void __attribute__ ((used))
+flash_unlock (void)
+{
+  FLASH->KEYR = FLASH_KEY1;
+  FLASH->KEYR = FLASH_KEY2;
+}
+
 static void fatal (void)
 {
   for (;;);
@@ -272,6 +292,7 @@ void reset (void)
 		"movs	r0, #2\n\t" /* Switch to PSP */
 		"msr	CONTROL, r0\n\t"
 		"isb\n\t"
+		"bl	flash_unlock\n\t"
 		"bl	gpio_init\n\t"
 		"movs	r0, #0\n\t"
 		"msr	BASEPRI, r0\n\t" /* Enable interrupts */
@@ -282,6 +303,11 @@ void reset (void)
 		"b	2b\n"
 		: /* no output */ : /* no input */ : "memory");
 }
+
+#define intr_disable()  asm volatile ("cpsid   i" : : "r" (0) : "memory")
+
+#define intr_enable()  asm volatile ("msr     BASEPRI, %0\n\t"		 \
+				     "cpsie   i" : : "r" (0) : "memory")
 
 typedef void (*handler)(void);
 extern uint8_t __ram_end__;
@@ -308,3 +334,162 @@ handler vector_table[] __attribute__ ((section(".vectors"))) = {
   /* 90 */
   usb_interrupt_handler,
 };
+
+#define FLASH_SR_BSY		0x01
+#define FLASH_SR_PGERR		0x04
+#define FLASH_SR_WRPRTERR	0x10
+#define FLASH_SR_EOP		0x20
+
+#define FLASH_CR_PG	0x0001
+#define FLASH_CR_PER	0x0002
+#define FLASH_CR_MER	0x0004
+#define FLASH_CR_OPTPG	0x0010
+#define FLASH_CR_OPTER	0x0020
+#define FLASH_CR_STRT	0x0040
+#define FLASH_CR_LOCK	0x0080
+#define FLASH_CR_OPTWRE	0x0200
+#define FLASH_CR_ERRIE	0x0400
+#define FLASH_CR_EOPIE	0x1000
+
+static int
+flash_get_status (void)
+{
+  int status;
+
+  if ((FLASH->SR & FLASH_SR_BSY) != 0)
+    status = FLASH_BUSY;
+  else if ((FLASH->SR & FLASH_SR_PGERR) != 0)
+    status = FLASH_ERROR_PG;
+  else if((FLASH->SR & FLASH_SR_WRPRTERR) != 0 )
+    status = FLASH_ERROR_WRP;
+  else
+    status = FLASH_COMPLETE;
+
+  return status;
+}
+
+static int
+flash_wait_for_last_operation (uint32_t timeout)
+{
+  int status;
+
+  do
+    if (--timeout == 0)
+      return FLASH_TIMEOUT;
+    else
+      status = flash_get_status ();
+  while (status == FLASH_BUSY);
+
+  return status;
+}
+
+#define FLASH_PROGRAM_TIMEOUT 0x00010000
+#define FLASH_ERASE_TIMEOUT   0x01000000
+
+static int
+flash_program_halfword (uint32_t addr, uint16_t data)
+{
+  int status;
+
+  status = flash_wait_for_last_operation (FLASH_PROGRAM_TIMEOUT);
+
+  intr_disable ();
+  if (status == FLASH_COMPLETE)
+    {
+      FLASH->CR |= FLASH_CR_PG;
+
+      *(volatile uint16_t *)addr = data;
+
+      status = flash_wait_for_last_operation (FLASH_PROGRAM_TIMEOUT);
+      if (status != FLASH_TIMEOUT)
+	FLASH->CR &= ~FLASH_CR_PG;
+    }
+  intr_enable ();
+
+  return status;
+}
+
+int
+flash_write (uint32_t dst_addr, const uint8_t *src, size_t len)
+{
+  int status;
+
+  while (len)
+    {
+      uint16_t hw = *src++;
+
+      hw |= (*src++ << 8);
+      status = flash_program_halfword (dst_addr, hw);
+      if (status != FLASH_COMPLETE)
+	return 0;
+
+      dst_addr += 2;
+      len -= 2;
+    }
+
+  return 1;
+}
+
+int
+flash_erase_page (uint32_t addr)
+{
+  int status;
+
+  status = flash_wait_for_last_operation (FLASH_ERASE_TIMEOUT);
+
+  intr_disable ();
+  if (status == FLASH_COMPLETE)
+    {
+      FLASH->CR |= FLASH_CR_PER;
+      FLASH->AR = addr; 
+      FLASH->CR |= FLASH_CR_STRT;
+
+      status = flash_wait_for_last_operation (FLASH_ERASE_TIMEOUT);
+      if (status != FLASH_TIMEOUT)
+	FLASH->CR &= ~FLASH_CR_PER;
+    }
+  intr_enable ();
+
+  return status == FLASH_COMPLETE;
+}
+
+int
+flash_protect (void)
+{
+  /* Not yet implemented */
+  return 1;
+}
+
+struct SCB
+{
+  __IO uint32_t CPUID;
+  __IO uint32_t ICSR;
+  __IO uint32_t VTOR;
+  __IO uint32_t AIRCR;
+  __IO uint32_t SCR;
+  __IO uint32_t CCR;
+  __IO uint8_t  SHP[12];
+  __IO uint32_t SHCSR;
+  __IO uint32_t CFSR;
+  __IO uint32_t HFSR;
+  __IO uint32_t DFSR;
+  __IO uint32_t MMFAR;
+  __IO uint32_t BFAR;
+  __IO uint32_t AFSR;
+  __IO uint32_t PFR[2];
+  __IO uint32_t DFR;
+  __IO uint32_t ADR;
+  __IO uint32_t MMFR[4];
+  __IO uint32_t ISAR[5];
+};
+
+#define SCS_BASE	(0xE000E000)
+#define SCB_BASE	(SCS_BASE +  0x0D00)
+#define SCB		((struct SCB *) SCB_BASE)
+
+#define SYSRESETREQ 0x04
+void nvic_system_reset (void)
+{
+  SCB->AIRCR = (0x05FA0000 | (SCB->AIRCR & 0x70) | SYSRESETREQ);
+  asm volatile ("dsb");
+}
