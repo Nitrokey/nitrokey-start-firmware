@@ -1,5 +1,5 @@
 /*
- * usb_prop.c - interface code between Gnuk and USB
+ * usb_ctrl.c - USB control pipe device specific code for Gnuk
  *
  * Copyright (C) 2010, 2011, 2012 Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
