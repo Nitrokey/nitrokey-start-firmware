@@ -1,5 +1,7 @@
 2012-05-22  Niibe Yutaka  <gniibe@fsij.org>
 
+	* src/configure (../regnual/sys.h): Create symblic link.
+
 	* src/usb_ctrl.c: Rename (was: usb_prop.c).
 
 	* regnual/types.h, regnual/sys.c, regnual/regnual.ld: New.

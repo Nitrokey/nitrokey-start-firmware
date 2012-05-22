@@ -135,6 +135,7 @@ fi
 BOARD_DIR=../boards/$target
 if test -d $BOARD_DIR; then
   echo "Configured for target: $target"
+  TARGET_LOWER=`echo $target | tr '[:upper:]_' '[:lower:]-'`
 else
   echo "Unsupported target \`$target'" >&2
   exit 1
@@ -217,6 +218,8 @@ else
   CERTDO_DEFINE="#undef CERTDO_SUPPORT"
   echo "CERT.3 Data Object is not supported"
 fi
+
+ln -sf sys-$TARGET_LOWER.h ../regnual/sys.h
 
 sed -e "s%@BOARD_DIR@%$BOARD_DIR%" \
     -e "s%@DEBUG_MAKE_OPTION@%$DEBUG_MAKE_OPTION%" \
