@@ -1,5 +1,9 @@
 2012-05-22  Niibe Yutaka  <gniibe@fsij.org>
 
+	* regnual/types.h, regnual/sys.c, regnual/regnual.ld: New.
+	* regnual/regnual.c, regnual/Makefile: New.
+	* regnual/sys-stbee.h: New.
+
 	* src/usb_lld.c: Support FREE_STANDING environment as well as
 	under ChibiOS/RT.
 	(usb_lld_init): Call usb_lld_sys_init.  Don't call user defined

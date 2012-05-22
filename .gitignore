@@ -1,14 +1,20 @@
-# generated files by 'configure'
-src/Makefile
-src/config.h
-src/gnuk.ld
 *.lst
 *.o
 *.pyc
 src/.dep
+src/Makefile
+src/config.h
+src/gnuk.ld
 src/gnuk.bin
 src/gnuk.dmp
 src/gnuk.elf
 src/gnuk.hex
 src/gnuk.map
 src/*.inc
+regnual/sys.h
+regnual/*.inc
+regnual/regnual.bin
+regnual/regnual.hex
+regnual/regnual.elf
+regnual/usb_lld.c
+regnual/usb_lld.h
