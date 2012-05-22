@@ -1,3 +1,18 @@
+2012-05-22  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/usb_lld.c: Support FREE_STANDING environment as well as
+	under ChibiOS/RT.
+	(usb_lld_init): Call usb_lld_sys_init.  Don't call user defined
+	method.  Call usb_lld_set_configuration.
+	(usb_lld_shutdown): Call usb_lld_sys_shutdown.
+	(Vector90): Move to usb_lld_sys.c.
+	(usb_interrupt_handler): Export to global.
+
+	* src/usb_lld_sys.c: New.
+
+	* src/usb_prop.c (Device_Method): Remove gnuk_device_init.
+	(gnuk_device_init): Remove.
+
 2012-05-19  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/usb_lld.c (handle_datastage_in): Bug fix, erable RX when

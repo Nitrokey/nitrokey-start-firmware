@@ -92,14 +92,6 @@ vcom_port_data_setup (uint8_t req, uint8_t req_no)
 uint32_t bDeviceState = UNCONNECTED; /* USB device status */
 
 static void
-gnuk_device_init (void)
-{
-  usb_lld_set_configuration (0);
-  USB_Cable_Config (1);
-  bDeviceState = UNCONNECTED;
-}
-
-static void
 gnuk_setup_endpoints_for_interface (uint16_t interface, int stop)
 {
   if (interface == 0)
@@ -423,7 +415,6 @@ static int gnuk_interface (uint8_t cmd, uint16_t interface, uint16_t alt)
  */
 
 const struct usb_device_method Device_Method = {
-  gnuk_device_init,
   gnuk_device_reset,
   gnuk_ctrl_write_finish,
   gnuk_setup,

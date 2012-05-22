@@ -1,5 +1,10 @@
+#ifdef FREE_STANDING
+#include "types.h"
+#else
 #include "ch.h"
 #include "hal.h"
+#endif
+
 #include "usb_lld.h"
 
 #define USB_MAX_PACKET_SIZE 64	/* For FS device */
@@ -66,9 +71,15 @@ struct DEVICE_INFO
   uint8_t state;
 };
 
-static struct CONTROL_INFO *ctrl_p;
-static struct DEVICE_INFO *dev_p;
-static struct DATA_INFO *data_p;
+static struct CONTROL_INFO control_info;
+static struct DEVICE_INFO device_info;
+static struct DATA_INFO data_info;
+extern const struct usb_device_method Device_Method;
+
+static struct CONTROL_INFO *const ctrl_p = &control_info;
+static struct DEVICE_INFO *const dev_p = &device_info;
+static struct DATA_INFO *const data_p = &data_info;
+static const struct usb_device_method *const method_p = &Device_Method;
 
 #define REG_BASE  (0x40005C00UL) /* USB_IP Peripheral Registers base address */
 #define PMA_ADDR  (0x40006000UL) /* USB_IP Packet Memory Area base address   */
@@ -347,9 +358,36 @@ static void st103_ep_clear_dtog_tx (uint8_t ep_num)
     }
 }
 
-static const struct usb_device_method* method_p;
+void usb_lld_init (void)
+{
+  usb_lld_sys_init ();
 
-static void
+  dev_p->state = IN_DATA;
+
+  usb_lld_set_configuration (0);
+
+  /* Reset USB */
+  st103_set_cntr (CNTR_FRES);
+  st103_set_cntr (0);
+
+  /* Clear Interrupt Status Register, and enable interrupt for USB */
+  st103_set_istr (0);
+  st103_set_cntr (CNTR_CTRM | CNTR_RESETM);
+}
+
+void usb_lld_prepare_shutdown (void)
+{
+  st103_set_istr (0);
+  st103_set_cntr (0);
+}
+
+void usb_lld_shutdown (void)
+{
+  st103_set_cntr (CNTR_PDWN);
+  usb_lld_sys_shutdown ();
+}
+
+void
 usb_interrupt_handler (void)
 {
   uint16_t istr_value = st103_get_istr ();
@@ -368,16 +406,6 @@ usb_interrupt_handler (void)
 
   if (istr_value & ISTR_ERR)
     st103_set_istr (CLR_ERR);
-}
-
-CH_IRQ_HANDLER (Vector90) {
-  CH_IRQ_PROLOGUE();
-  chSysLockFromIsr();
-
-  usb_interrupt_handler ();
-
-  chSysUnlockFromIsr();
-  CH_IRQ_EPILOGUE();
 }
 
 static void handle_datastage_out (void)
@@ -903,7 +931,7 @@ static void nop_proc (void)
 {
 }
 
-#define WEAK __attribute__ ((weak))
+#define WEAK __attribute__ ((weak, alias ("nop_proc")))
 void WEAK EP1_IN_Callback (void);
 void WEAK EP2_IN_Callback (void);
 void WEAK EP3_IN_Callback (void);
@@ -919,22 +947,6 @@ void WEAK EP4_OUT_Callback (void);
 void WEAK EP5_OUT_Callback (void);
 void WEAK EP6_OUT_Callback (void);
 void WEAK EP7_OUT_Callback (void);
-
-#pragma weak EP1_IN_Callback = nop_proc
-#pragma weak EP2_IN_Callback = nop_proc
-#pragma weak EP3_IN_Callback = nop_proc
-#pragma weak EP4_IN_Callback = nop_proc
-#pragma weak EP5_IN_Callback = nop_proc
-#pragma weak EP6_IN_Callback = nop_proc
-#pragma weak EP7_IN_Callback = nop_proc
-
-#pragma weak EP1_OUT_Callback = nop_proc
-#pragma weak EP2_OUT_Callback = nop_proc
-#pragma weak EP3_OUT_Callback = nop_proc
-#pragma weak EP4_OUT_Callback = nop_proc
-#pragma weak EP5_OUT_Callback = nop_proc
-#pragma weak EP6_OUT_Callback = nop_proc
-#pragma weak EP7_OUT_Callback = nop_proc
 
 void (*const ep_intr_handler_IN[7]) (void) = {
   EP1_IN_Callback,
@@ -1018,56 +1030,10 @@ usb_handle_transfer (void)
     }
 }
 
-static struct CONTROL_INFO Control_Info;
-static struct DEVICE_INFO Device_Info;
-static struct DATA_INFO Data_Info;
-
 void usb_lld_reset (void)
 {
   st103_set_btable ();
   st103_set_daddr (0);
-}
-
-void usb_lld_init (void)
-{
-  RCC->APB1ENR |= RCC_APB1ENR_USBEN;
-  NVICEnableVector (USB_LP_CAN1_RX0_IRQn,
-		    CORTEX_PRIORITY_MASK (STM32_USB_IRQ_PRIORITY));
-  /*
-   * Note that we also have other IRQ(s):
-   * 	USB_HP_CAN1_TX_IRQn (for double-buffered or isochronous)
-   * 	USBWakeUp_IRQn (suspend/resume)
-   */
-  RCC->APB1RSTR = RCC_APB1RSTR_USBRST;
-  RCC->APB1RSTR = 0;
-
-  dev_p = &Device_Info;
-  ctrl_p = &Control_Info;
-  data_p = &Data_Info;
-  dev_p->state = IN_DATA;
-  method_p = &Device_Method;
-
-  method_p->init();
-
-  /* Reset USB */
-  st103_set_cntr (CNTR_FRES);
-  st103_set_cntr (0);
-
-  /* Clear Interrupt Status Register, and enable interrupt for USB */
-  st103_set_istr (0);
-  st103_set_cntr (CNTR_CTRM | CNTR_RESETM);
-}
-
-void usb_lld_prepare_shutdown (void)
-{
-  st103_set_istr (0);
-  st103_set_cntr (0);
-}
-
-void usb_lld_shutdown (void)
-{
-  st103_set_cntr (CNTR_PDWN);
-  RCC->APB1ENR &= ~RCC_APB1ENR_USBEN;
 }
 
 void usb_lld_txcpy (const void *src,

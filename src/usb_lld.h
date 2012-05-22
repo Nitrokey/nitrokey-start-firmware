@@ -63,7 +63,6 @@ enum
 
 struct usb_device_method
 {
-  void (*init) (void);
   void (*reset) (void);
   void (*ctrl_write_finish) (uint8_t req, uint8_t req_no,
 			     uint16_t value, uint16_t index, uint16_t len);
@@ -155,3 +154,8 @@ extern inline void usb_lld_set_data_to_recv (void *p, size_t len)
 
 extern void usb_lld_prepare_shutdown (void);
 extern void usb_lld_shutdown (void);
+
+extern void usb_interrupt_handler (void);
+
+extern void usb_lld_sys_init (void);
+extern void usb_lld_sys_shutdown (void);
