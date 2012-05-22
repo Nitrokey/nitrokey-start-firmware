@@ -25,7 +25,7 @@
  * ReGNUal
  */
 
-#include "ch.h"
+#include "types.h"
 #include "usb_lld.h"
 
 extern void set_led (int);
@@ -99,13 +99,6 @@ const struct Descriptor String_Descriptors[] = {
 };
 
 #define NUM_STRING_DESC (sizeof (String_Descriptors)/sizeof (struct Descriptor))
-
-static void
-regnual_device_init (void)
-{
-  usb_lld_set_configuration (0);
-  USB_Cable_Config (1);
-}
 
 static void
 regnual_device_reset (void)
@@ -252,7 +245,6 @@ static int regnual_interface (uint8_t cmd, uint16_t interface, uint16_t alt)
 }
 
 const struct usb_device_method Device_Method = {
-  regnual_device_init,
   regnual_device_reset,
   regnual_ctrl_write_finish,
   regnual_setup,
@@ -260,6 +252,16 @@ const struct usb_device_method Device_Method = {
   regnual_usb_event,
   regnual_interface,
 };
+
+static void wait (int count)
+{
+  int i;
+
+  for (i = 0; i < count; i++)
+    asm volatile ("" : : "r" (i) : "memory");
+}
+
+#define WAIT 2400000
 
 int
 main (int argc, char *argv[])
@@ -273,8 +275,8 @@ main (int argc, char *argv[])
   while (1)
     {
       set_led (1);
-      chThdSleep (MS2ST (200));
+      wait (WAIT);
       set_led (0);
-      chThdSleep (MS2ST (200));
+      wait (WAIT);
     }
 }
