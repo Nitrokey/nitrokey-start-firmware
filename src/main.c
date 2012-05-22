@@ -480,17 +480,12 @@ main (int argc, char *argv[])
   port_disable ();
   /* set vector */
   SCB->VTOR = (uint32_t)&_regnual_start;
-#if 0 
-  /* SYSRESETREQ to invoke regnual */
-  NVIC_SystemReset ();
-#else
   {
     /* Not yet: erase by mass erase and go to entry */
     void (**func)(void) = (void (**)(void))(&_regnual_start + 4);
 
     (**func) ();
   }
-#endif
   return 0;
 }
 
