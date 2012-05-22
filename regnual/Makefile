@@ -16,7 +16,7 @@ OBJCOPY   = $(TRGT)objcopy
 OBJDUMP   = $(TRGT)objdump
 
 # THUMB-specific options here
-TOPT = -mthumb -DTHUMB
+TOPT = -mthumb -DTHUMB -mno-thumb-interwork
 # Define C warning options here
 CWARN = -Wall -Wextra -Wstrict-prototypes
 MCFLAGS= -mcpu=$(MCU) -mfix-cortex-m3-ldrd
@@ -25,7 +25,7 @@ DEFS = -DFREE_STANDING
 CFLAGS = -O2 -g
 CFLAGS += $(CWARN) -fno-common $(MCFLAGS) $(TOPT) $(DEFS)
 
-LDFLAGS = -T$(LDSCRIPT) -nostartfiles
+LDFLAGS = -T$(LDSCRIPT) -nostartfiles $(MCFLAGS) $(TOPT)
 
 
 ####################
