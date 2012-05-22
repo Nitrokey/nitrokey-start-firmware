@@ -82,7 +82,7 @@ CSRC = $(PORTSRC) \
        $(CHIBIOS)/os/various/syscalls.c \
        $(CRYPTSRC) \
        main.c usb_lld.c usb_lld_sys.c \
-	usb_desc.c usb_prop.c \
+	usb_desc.c usb_ctrl.c \
 	usb-icc.c openpgp.c ac.c openpgp-do.c flash.c \
 	random.c neug.c
 
