@@ -28,8 +28,15 @@
 #include "types.h"
 #include "usb_lld.h"
 
-extern void set_led (int);
 extern void *memset (void *s, int c, size_t n);
+
+extern void set_led (int);
+extern uint8_t _flash_start,  _flash_end;
+extern int flash_write (uint32_t dst_addr, const uint8_t *src, size_t len);
+extern int flash_erase_page (uint32_t addr);
+extern int flash_protect (void);
+extern void nvic_system_reset (void);
+
 
 #define ENDP0_RXADDR        (0x40)
 #define ENDP0_TXADDR        (0x80)
@@ -81,24 +88,24 @@ static const uint8_t regnual_string_serial[] = {
   '0', 0, '.', 0, '0', 0,
 };
 
-const struct Descriptor Device_Descriptor = {
+const struct Descriptor device_desc = {
   regnual_device_desc,
   sizeof (regnual_device_desc)
 };
 
-const struct Descriptor Config_Descriptor = {
+const struct Descriptor config_desc = {
   regnual_config_desc,
   sizeof (regnual_config_desc)
 };
 
-const struct Descriptor String_Descriptors[] = {
+const struct Descriptor string_descs[] = {
   {regnual_string_lang_id, sizeof (regnual_string_lang_id)},
   {gnukStringVendor, sizeof (gnukStringVendor)},
   {gnukStringProduct, sizeof (gnukStringProduct)},
   {regnual_string_serial, sizeof (regnual_string_serial)},
 };
 
-#define NUM_STRING_DESC (sizeof (String_Descriptors)/sizeof (struct Descriptor))
+#define NUM_STRING_DESC (sizeof (string_descs)/sizeof (struct Descriptor))
 
 static void
 regnual_device_reset (void)
@@ -107,7 +114,7 @@ regnual_device_reset (void)
   usb_lld_set_configuration (0);
 
   /* Current Feature initialization */
-  usb_lld_set_feature (Config_Descriptor.Descriptor[7]);
+  usb_lld_set_feature (config_desc.Descriptor[7]);
 
   usb_lld_reset ();
 
@@ -124,7 +131,10 @@ regnual_device_reset (void)
 #define USB_REGNUAL_PROTECT    5
 #define USB_REGNUAL_FINISH     6
 
-static uint8_t mem[1024];
+static uint8_t mem[256];
+
+static const uint8_t *const mem_info[] = { &_flash_start,  &_flash_end, };
+
 
 static void regnual_ctrl_write_finish (uint8_t req, uint8_t req_no,
 				    uint16_t value, uint16_t index,
@@ -133,15 +143,12 @@ static void regnual_ctrl_write_finish (uint8_t req, uint8_t req_no,
   uint8_t type_rcp = req & (REQUEST_TYPE|RECIPIENT);
 
   if (type_rcp == (VENDOR_REQUEST | DEVICE_RECIPIENT)
-      && USB_SETUP_SET (req) && req_no == USB_REGNUAL_FINISH && len == 0)
+      && USB_SETUP_SET (req) && len == 0)
     {
-      (void)value; (void)index;
-      /* RESET MCU */
-    }
+      if (req_no == USB_REGNUAL_FINISH && value == 0 && index == 0)
+	nvic_system_reset ();
+    }  
 }
-
-extern uint8_t _flash_start,  _flash_end;
-static const uint8_t *const mem_info[] = { &_flash_start,  &_flash_end, };
 
 static int
 regnual_setup (uint8_t req, uint8_t req_no,
@@ -170,21 +177,38 @@ regnual_setup (uint8_t req, uint8_t req_no,
 	{
 	  if (req_no == USB_REGNUAL_SEND)
 	    {
-	      if (value >= 4 || value * 0x100 + index + len > 1024)
+	      if (value != 0 || index + len > 256)
 		return USB_UNSUPPORT;
 
-	      if (value == 0 && index == 0)
-		memset (mem + value * 0x100, 0xff, 1024);
-	      usb_lld_set_data_to_recv (mem + value * 0x100 + index, len);
+	      if (index != 0)
+		memset (mem, 0xff, 256);
+
+	      usb_lld_set_data_to_recv (mem + index, len);
 	      return USB_SUCCESS;
 	    }
 	  else if (req_no == USB_REGNUAL_FLASH && len == 0)
 	    {
-	      uint8_t *addr = (uint8_t *)(0x08000000 + value * 0x400);
+	      uint32_t dst_addr = (0x08000000 + value * 0x100);
 
-	      /* flash write, verify */
-	      return USB_SUCCESS;
+	      if (flash_write (dst_addr, mem, 256) == 0)
+		return USB_SUCCESS;
 	    }
+	  else if (req_no == USB_REGNUAL_ERASE && len == 0 && index == 0)
+	    {
+	      uint32_t dst_addr = (0x08000000 + value * 0x100);
+
+	      if (flash_erase_page (dst_addr))
+		return USB_SUCCESS;
+	    }
+	  else if (req_no == USB_REGNUAL_PROTECT && len == 0
+		   && value == 0 && index == 0)
+	    {
+	      if (flash_protect ())
+		return USB_SUCCESS;
+	    }
+	  else if (req_no == USB_REGNUAL_FINISH && len == 0
+		   && value == 0 && index == 0)
+	    return USB_SUCCESS;
 	}
     }
 
@@ -197,14 +221,14 @@ regnual_get_descriptor (uint8_t desc_type, uint16_t index, uint16_t value)
   (void)index;
   if (desc_type == DEVICE_DESCRIPTOR)
     {
-      usb_lld_set_data_to_send (Device_Descriptor.Descriptor,
-				Device_Descriptor.Descriptor_Size);
+      usb_lld_set_data_to_send (device_desc.Descriptor,
+				device_desc.Descriptor_Size);
       return USB_SUCCESS;
     }
   else if (desc_type == CONFIG_DESCRIPTOR)
     {
-      usb_lld_set_data_to_send (Config_Descriptor.Descriptor,
-				Config_Descriptor.Descriptor_Size);
+      usb_lld_set_data_to_send (config_desc.Descriptor,
+				config_desc.Descriptor_Size);
       return USB_SUCCESS;
     }
   else if (desc_type == STRING_DESCRIPTOR)
@@ -213,8 +237,8 @@ regnual_get_descriptor (uint8_t desc_type, uint16_t index, uint16_t value)
 
       if (desc_index < NUM_STRING_DESC)
 	{
-	  usb_lld_set_data_to_send (String_Descriptors[desc_index].Descriptor,
-			    String_Descriptors[desc_index].Descriptor_Size);
+	  usb_lld_set_data_to_send (string_descs[desc_index].Descriptor,
+				    string_descs[desc_index].Descriptor_Size);
 	  return USB_SUCCESS;
 	}
     }

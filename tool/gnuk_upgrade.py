@@ -48,6 +48,59 @@ def iso7816_compose(ins, p1, p2, data):
     else:
         return pack('>BBBBB', cls, ins, p1, p2, data_len) + data
 
+class regnual:
+    def __init__(self, device):
+        self.__devhandle = device.open()
+
+    def mem_info(self):
+        mem = self.__devhandle.controlMsg(requestType = 0xc0, request = 0,
+                                          value = 0, index = 0, buffer = 8,
+                                          timeout = 10000)
+        start = ((mem[3]*256 + mem[2])*256 + mem[1])*256 + mem[0]
+        end = ((mem[7]*256 + mem[6])*256 + mem[5])*256 + mem[4]
+        return (start, end)
+
+    def download(self, start, data):
+        addr = start
+        addr_end = (start + len(data)) & 0xffffff00
+        i = (addr - 0x08000000) / 0x100
+        j = 0
+        print "start %08x" % addr
+        print "end   %08x" % addr_end
+        while addr < addr_end:
+            print "# %08x: %d: %d : %d" % (addr, i, j, 256)
+            self.__devhandle.controlMsg(requestType = 0x40, request = 1,
+                                        value = 0, index = 0,
+                                        buffer = data[j*256:j*256+256],
+                                        timeout = 10000)
+            print "flash"
+            self.__devhandle.controlMsg(requestType = 0x40, request = 3,
+                                        value = i, index = 0,
+                                        buffer = None,
+                                        timeout = 10000)
+            i = i+1
+            j = j+1
+            addr = addr + 256
+        residue = len(data) % 256
+        if residue != 0:
+            print "# %08x: %d : %d" % (addr, i, residue)
+            print "send"
+            self.__devhandle.controlMsg(requestType = 0x40, request = 1,
+                                        value = 0, index = 0,
+                                        buffer = data[j*256:],
+                                        timeout = 10000)
+        if (i % 4) != 0 or residue:
+            print "flash"
+            self.__devhandle.controlMsg(requestType = 0x40, request = 3,
+                                        value = i, index = 0,
+                                        buffer = None,
+                                        timeout = 10000)
+
+    def finish(self):
+        self.__devhandle.controlMsg(requestType = 0x40, request = 6,
+                                    value = 0, index = 0, buffer = None,
+                                    timeout = 10000)
+
 # This class only supports Gnuk (for now) 
 class gnuk_token:
     def __init__(self, device, configuration, interface):
@@ -80,9 +133,9 @@ class gnuk_token:
         self.__timeout = 10000
         self.__seq = 0
 
-    def stop_icc(self):
-        # XXX: need to disclaim interface and close device and re-open???
-        # self.__devhandle.setConfiguration(0)
+    def stop_gnuk(self):
+        self.__devhandle.releaseInterface()
+        self.__devhandle.setConfiguration(0)
         return
 
     def mem_info(self):
@@ -237,7 +290,7 @@ def compare(data_original, data_in_device):
             raise ValueError, "verify failed at %08x" % i
         i += 1
 
-def get_device():
+def get_ccid_device():
     busses = usb.busses()
     for bus in busses:
         devices = bus.devices
@@ -251,6 +304,21 @@ def get_device():
                             return dev, config, alt
     raise ValueError, "Device not found"
 
+USB_VENDOR_FSIJ=0x234b
+USB_PRODUCT_GNUK=0x0000
+
+def get_gnuk_device():
+    busses = usb.busses()
+    for bus in busses:
+        devices = bus.devices
+        for dev in devices:
+            if dev.idVendor != USB_VENDOR_FSIJ:
+                continue
+            if dev.idProduct != USB_PRODUCT_GNUK:
+                continue
+            return dev
+    raise ValueError, "Device not found"
+
 def to_string(t):
     result = ""
     for c in t:
@@ -260,7 +328,7 @@ def to_string(t):
 def main(passwd, data_regnual, data_upgrade):
     data_regnual += pack('<i', binascii.crc32(data_regnual))
 
-    dev, config, intf = get_device()
+    dev, config, intf = get_ccid_device()
     print "Device: ", dev.filename
     print "Configuration: ", config.value
     print "Interface: ", intf.interfaceNumber
@@ -274,15 +342,27 @@ def main(passwd, data_regnual, data_upgrade):
     challenge = icc.cmd_get_challenge()
     signed = to_string(challenge)
     icc.cmd_external_authenticate(signed)
-    icc.stop_icc() # disable all interfaces but control pipe
+    icc.stop_gnuk()
     mem_info = icc.mem_info()
     print "%08x:%08x" % mem_info
     print "Downloading flash upgrade program..."
     icc.download(mem_info[0], data_regnual)
     print "Run flash upgrade program..."
     icc.execute(mem_info[1] + len(data_regnual))
+    del icc
+    icc = None
+    #
+    print "Wait 3 seconds..."
+    time.sleep(3)
     # Then, send upgrade program...
-    print "NOT YET: Downloading the program"
+    dev = get_gnuk_device()
+    print "Device: ", dev.filename
+    reg = regnual(dev)
+    mem_info = reg.mem_info()
+    print "%08x:%08x" % mem_info
+    print "Downloading the program"
+    reg.download(mem_info[0]+0x3000, data_upgrade)
+    reg.finish()
     return 0
 
 DEFAULT_PW3 = "12345678"
