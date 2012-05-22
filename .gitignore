@@ -12,7 +12,6 @@ src/gnuk.hex
 src/gnuk.map
 src/*.inc
 regnual/sys.h
-regnual/*.inc
 regnual/regnual.bin
 regnual/regnual.hex
 regnual/regnual.elf

@@ -43,7 +43,7 @@ static const uint8_t regnual_device_desc[] = {
   0x00,   /* bDeviceSubClass */
   0x00,   /* bDeviceProtocol */
   0x40,   /* bMaxPacketSize0 */
-#include "usb-vid-pid-ver.c.inc"
+#include "../src/usb-vid-pid-ver.c.inc"
   1, /* Index of string descriptor describing manufacturer */
   2, /* Index of string descriptor describing product */
   3, /* Index of string descriptor describing the device's serial number */
@@ -71,7 +71,7 @@ static const uint8_t regnual_string_lang_id[] = {
   0x09, 0x04			/* LangID = 0x0409: US-English */
 };
 
-#include "usb-string-vendor-product.c.inc"
+#include "../src/usb-string-vendor-product.c.inc"
 
 static const uint8_t regnual_string_serial[] = {
   8*2+2,
