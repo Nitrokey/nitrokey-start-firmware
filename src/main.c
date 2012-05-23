@@ -369,6 +369,67 @@ led_blink (int spec)
     chEvtSignal (main_thread, LED_TWOSHOT);
 }
 
+
+static void __attribute__((naked))
+flash_mass_erase_and_exec (void)
+{
+  asm volatile (/* r0 = <flash erase timeout>; */
+		"mov	r0, #0x01000000\n\t"
+		/* r2 = (struct FLASH *)FLASH_R_BASE */
+		"mov	r2, #8192\n\t"
+		"movt	r2, 16386\n\t"
+		/* FLASH->CR |= FLASH_CR_MER; */
+		"ldr	r1, [r2, #16]\n\t"
+		"orr	r1, r1, #4\n\t"
+		"str	r1, [r2, #16]\n\t"
+		/* FLASH->CR |= FLASH_CR_STRT; */
+		"orr	r1, r1, #64\n\t"
+		"str	r1, [r2, #16]\n"
+	"0:	subs	r0, r0, #1\n\t"
+		"beq	1f\n\t"
+		/* r1 = FLASH->SR; */
+		"ldr	r1, [r2, #12]\n\t"
+		/* BUSY? */
+		"tst	r1, #1\n\t"
+		"bne	0b\n\t"
+		/* PGERR? */
+		"tst	r1, #4\n\t"
+		"bne	1f\n\t"
+		/* WRPRTERR? */
+		"tst	r1, #16\n\t"
+		"bne	1f\n\t"
+		/* Success. */
+		/* exec */
+		"bx	r3\n"
+	"1:	b	1b"
+		: /* no output*/ : /* no input */ : "memory");
+}
+
+static void __attribute__((noreturn))
+good_bye (void)
+{
+  register uint32_t dst __asm__ ("r0") = 0x20000000;
+  register uint32_t src __asm__ ("r1") = (uint32_t)flash_mass_erase_and_exec;
+  register uint32_t len __asm__ ("r2") = sizeof (flash_mass_erase_and_exec);
+  register void (**func )(void) __asm__ ("r3")
+    = (void (**)(void))(&_regnual_start + 4);
+
+  /* copy function flash_mass_erase_and_exec to SRAM and jump to it */
+  asm volatile ("mov	r5, r0\n"
+		"add	r2, r2, r1\n"
+	"0:	ldr	r4, [r1]\n\t"
+		"str	r4, [r0]\n\t"
+		"adds	r0, r0, #4\n\t"
+		"adds	r1, r1, #4\n\t"
+		"cmp	r2, r1\n\t"
+		"bgt	0b\n\t"
+		"bx	r5"
+		: /* no output */
+		: "r" (dst), "r" (src), "r" (len), "r" (func)
+		: "memory");
+  for (;;);
+}
+
 /*
  * Entry point.
  *
@@ -481,12 +542,10 @@ main (int argc, char *argv[])
   port_disable ();
   /* set vector */
   SCB->VTOR = (uint32_t)&_regnual_start;
-  {
-    /* Not yet: erase by mass erase and go to entry */
-    void (**func)(void) = (void (**)(void))(&_regnual_start + 4);
+  /* leave Gnuk */ 
+  good_bye ();
 
-    (**func) ();
-  }
+  /* Never reached */
   return 0;
 }
 

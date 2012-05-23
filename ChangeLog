@@ -1,5 +1,8 @@
 2012-05-23  Niibe Yutaka  <gniibe@fsij.org>
 
+	* src/main.c (flash_mass_erase_and_exec, good_bye): New.
+	(main): Call good_bye.
+
 	* regnual/regnual.c (regnual_setup): Don't call flash_write here.
 	(regnual_ctrl_write_finish): But call here.
 	(USB_REGNUAL_RESULT): New.
