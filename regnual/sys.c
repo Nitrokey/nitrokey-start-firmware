@@ -177,7 +177,9 @@ struct GPIO {
 #define GPIOE_BASE	(APB2PERIPH_BASE + 0x1800)
 #define GPIOE		((struct GPIO *) GPIOE_BASE)
 
+#ifdef GPIO_USB_BASE
 #define GPIO_USB	((struct GPIO *) GPIO_USB_BASE)
+#endif
 #define GPIO_LED	((struct GPIO *) GPIO_LED_BASE)
 
 static __attribute__ ((used))
@@ -188,36 +190,52 @@ void gpio_init (void)
   RCC->APB2RSTR = RCC_APB2RSTR_IOPDRST;
   RCC->APB2RSTR = 0;
 
-  GPIO_USB->ODR = VAL_GPIO_ODR;
-  GPIO_USB->CRH = VAL_GPIO_CRH;
-  GPIO_USB->CRL = VAL_GPIO_CRL;
+  GPIO_LED->ODR = VAL_GPIO_ODR;
+  GPIO_LED->CRH = VAL_GPIO_CRH;
+  GPIO_LED->CRL = VAL_GPIO_CRL;
 
-#if GPIO_USB_BASE != GPIO_LED_BASE
-  GPIO_LED->ODR = VAL_GPIO_LED_ODR;
-  GPIO_LED->CRH = VAL_GPIO_LED_CRH;
-  GPIO_LED->CRL = VAL_GPIO_LED_CRL;
+#if defined(GPIO_USB_BASE) && GPIO_USB_BASE != GPIO_LED_BASE
+  GPIO_USB->ODR = VAL_GPIO_USB_ODR;
+  GPIO_USB->CRH = VAL_GPIO_USB_CRH;
+  GPIO_USB->CRL = VAL_GPIO_USB_CRL;
 #endif
 }
 
 static void
 usb_cable_config (int on)
 {
-#if defined(GPIO_USB_CLEAR_TO_ENABLE)
+#ifdef GPIO_USB_BASE
+# ifdef GPIO_USB_CLEAR_TO_ENABLE
   if (on)
     GPIO_USB->BRR = (1 << GPIO_USB_CLEAR_TO_ENABLE);
   else
     GPIO_USB->BSRR = (1 << GPIO_USB_CLEAR_TO_ENABLE);
+# endif
+# ifdef GPIO_USB_SET_TO_ENABLE
+  if (on)
+    GPIO_USB->BSRR = (1 << GPIO_USB_SET_TO_ENABLE);
+  else
+    GPIO_USB->BRR = (1 << GPIO_USB_SET_TO_ENABLE);
+# endif
+#else
+  (void)on;
 #endif
 }
 
 void
 set_led (int on)
 {
-#if defined(GPIO_LED_CLEAR_TO_EMIT)
+#ifdef GPIO_LED_CLEAR_TO_EMIT
   if (on)
     GPIO_LED->BRR = (1 << GPIO_LED_CLEAR_TO_EMIT);
   else
     GPIO_LED->BSRR = (1 << GPIO_LED_CLEAR_TO_EMIT);
+#endif
+#ifdef GPIO_LED_SET_TO_EMIT
+  if (on)
+    GPIO_LED->BSRR = (1 << GPIO_LED_SET_TO_EMIT);
+  else
+    GPIO_LED->BRR = (1 << GPIO_LED_SET_TO_EMIT);
 #endif
 }
 
@@ -436,7 +454,6 @@ int
 flash_protect (void)
 {
   int status;
-  uint16_t rdp;
 
   status = flash_wait_for_last_operation (FLASH_ERASE_TIMEOUT);
 
