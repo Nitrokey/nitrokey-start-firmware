@@ -351,6 +351,8 @@ handler vector_table[] __attribute__ ((section(".vectors"))) = {
 #define FLASH_CR_ERRIE	0x0400
 #define FLASH_CR_EOPIE	0x1000
 
+#define FLASH_OBR_RDPRT 0x00000002
+
 static int
 flash_get_status (void)
 {
@@ -430,15 +432,13 @@ flash_write (uint32_t dst_addr, const uint8_t *src, size_t len)
   return 1;
 }
 
-#define FLASH_OPTION_BYTE_RDP 0x1ffff800
-
 int
 flash_protect (void)
 {
   int status;
   uint16_t rdp;
 
-  status = flash_wait_for_last_operation (FLASH_PROGRAM_TIMEOUT);
+  status = flash_wait_for_last_operation (FLASH_ERASE_TIMEOUT);
 
   intr_disable ();
   if (status == FLASH_COMPLETE)
@@ -449,7 +449,7 @@ flash_protect (void)
       FLASH->CR |= FLASH_CR_OPTER;
       FLASH->CR |= FLASH_CR_STRT;
 
-      status = flash_wait_for_last_operation (FLASH_PROGRAM_TIMEOUT);
+      status = flash_wait_for_last_operation (FLASH_ERASE_TIMEOUT);
       if (status != FLASH_TIMEOUT)
 	FLASH->CR &= ~FLASH_CR_OPTER;
     }
@@ -458,8 +458,7 @@ flash_protect (void)
   if (status != FLASH_COMPLETE)
     return 0;
 
-  rdp = *(volatile uint16_t *)FLASH_OPTION_BYTE_RDP;
-  if (rdp == 0x00ff)
+  if ((FLASH->OBR & FLASH_OBR_RDPRT) != 0)
     return 1;
   else
     return 0;

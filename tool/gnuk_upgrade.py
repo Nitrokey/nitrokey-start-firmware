@@ -77,7 +77,7 @@ class regnual:
                                         value = i, index = 0,
                                         buffer = None,
                                         timeout = 10000)
-            time.sleep(0.01)
+            time.sleep(0.010)
             res = self.__devhandle.controlMsg(requestType = 0xc0, request = 2,
                                               value = 0, index = 0, buffer = 4,
                                               timeout = 10000)
@@ -98,6 +98,7 @@ class regnual:
                                         value = i, index = 0,
                                         buffer = None,
                                         timeout = 10000)
+            time.sleep(0.010)
             res = self.__devhandle.controlMsg(requestType = 0xc0, request = 2,
                                               value = 0, index = 0, buffer = 4,
                                               timeout = 10000)
@@ -109,12 +110,13 @@ class regnual:
         self.__devhandle.controlMsg(requestType = 0x40, request = 4,
                                     value = 0, index = 0, buffer = None,
                                     timeout = 10000)
+        time.sleep(0.100)
         res = self.__devhandle.controlMsg(requestType = 0xc0, request = 2,
                                           value = 0, index = 0, buffer = 4,
                                           timeout = 10000)
         r_value = ((res[3]*256 + res[2])*256 + res[1])*256 + res[0]
         if r_value == 0:
-            print "protect failure"
+            print "protection failure"
 
     def finish(self):
         self.__devhandle.controlMsg(requestType = 0x40, request = 5,
