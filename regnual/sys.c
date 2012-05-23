@@ -430,11 +430,39 @@ flash_write (uint32_t dst_addr, const uint8_t *src, size_t len)
   return 1;
 }
 
+#define FLASH_OPTION_BYTE_RDP 0x1ffff800
+
 int
-flash_protect (uint16_t protection)
+flash_protect (void)
 {
-  /* Not yet implemented */
-  return 1;
+  int status;
+  uint16_t rdp;
+
+  status = flash_wait_for_last_operation (FLASH_PROGRAM_TIMEOUT);
+
+  intr_disable ();
+  if (status == FLASH_COMPLETE)
+    {
+      FLASH->OPTKEYR = FLASH_KEY1;
+      FLASH->OPTKEYR = FLASH_KEY2;
+
+      FLASH->CR |= FLASH_CR_OPTER;
+      FLASH->CR |= FLASH_CR_STRT;
+
+      status = flash_wait_for_last_operation (FLASH_PROGRAM_TIMEOUT);
+      if (status != FLASH_TIMEOUT)
+	FLASH->CR &= ~FLASH_CR_OPTER;
+    }
+  intr_enable ();
+
+  if (status != FLASH_COMPLETE)
+    return 0;
+
+  rdp = *(volatile uint16_t *)FLASH_OPTION_BYTE_RDP;
+  if (rdp == 0x00ff)
+    return 1;
+  else
+    return 0;
 }
 
 struct SCB

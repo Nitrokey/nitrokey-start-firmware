@@ -105,6 +105,17 @@ class regnual:
             if r_value == 0:
                 print "failure"
 
+    def protect(self):
+        self.__devhandle.controlMsg(requestType = 0x40, request = 4,
+                                    value = 0, index = 0, buffer = None,
+                                    timeout = 10000)
+        res = self.__devhandle.controlMsg(requestType = 0xc0, request = 2,
+                                          value = 0, index = 0, buffer = 4,
+                                          timeout = 10000)
+        r_value = ((res[3]*256 + res[2])*256 + res[1])*256 + res[0]
+        if r_value == 0:
+            print "protect failure"
+
     def finish(self):
         self.__devhandle.controlMsg(requestType = 0x40, request = 5,
                                     value = 0, index = 0, buffer = None,
@@ -379,6 +390,7 @@ def main(passwd, data_regnual, data_upgrade):
     print "%08x:%08x" % mem_info
     print "Downloading the program"
     reg.download(mem_info[0], data_upgrade)
+    reg.protect()
     reg.finish()
     return 0
 

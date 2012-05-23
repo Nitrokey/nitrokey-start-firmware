@@ -33,7 +33,7 @@ extern void *memset (void *s, int c, size_t n);
 extern void set_led (int);
 extern uint8_t _flash_start,  _flash_end;
 extern int flash_write (uint32_t dst_addr, const uint8_t *src, size_t len);
-extern int flash_protect (uint16_t protection);
+extern int flash_protect (void);
 extern void nvic_system_reset (void);
 
 
@@ -154,8 +154,8 @@ static void regnual_ctrl_write_finish (uint8_t req, uint8_t req_no,
 
 	  result = flash_write (dst_addr, mem, 256);
 	}
-      else if (req_no == USB_REGNUAL_PROTECT && index == 0)
-	result = flash_protect (value);
+      else if (req_no == USB_REGNUAL_PROTECT && value == 0 && index == 0)
+	result = flash_protect ();
       else if (req_no == USB_REGNUAL_FINISH && value == 0 && index == 0)
 	nvic_system_reset ();
     }
@@ -202,11 +202,9 @@ regnual_setup (uint8_t req, uint8_t req_no,
 	      if (dst_addr + 256 <= (uint32_t)&_flash_end)
 		return USB_SUCCESS;
 	    }
-	  else if (req_no == USB_REGNUAL_PROTECT && len == 0 && index == 0)
-	    {
-	      if (value == 0)
-		return USB_SUCCESS;
-	    }
+	  else if (req_no == USB_REGNUAL_PROTECT && len == 0
+		   && value == 0 && index == 0)
+	    return USB_SUCCESS;
 	  else if (req_no == USB_REGNUAL_FINISH && len == 0
 		   && value == 0 && index == 0)
 	    return USB_SUCCESS;

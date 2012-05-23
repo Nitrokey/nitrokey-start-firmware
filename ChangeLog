@@ -3,9 +3,14 @@
 	* src/main.c (flash_mass_erase_and_exec, good_bye): New.
 	(main): Call good_bye.
 
+	* tool/gnuk_upgrade.py (regnual.protect): New.
+	(main): Call regnual.protect().
+
 	* regnual/regnual.c (regnual_setup): Don't call flash_write here.
 	(regnual_ctrl_write_finish): But call here.
 	(USB_REGNUAL_RESULT): New.
+
+	* regnual/sys.c (flash_protect): New.
 
 2012-05-22  Niibe Yutaka  <gniibe@fsij.org>
 
