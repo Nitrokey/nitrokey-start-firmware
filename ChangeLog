@@ -1,3 +1,9 @@
+2012-05-23  Niibe Yutaka  <gniibe@fsij.org>
+
+	* regnual/regnual.c (regnual_setup): Don't call flash_write here.
+	(regnual_ctrl_write_finish): But call here.
+	(USB_REGNUAL_RESULT): New.
+
 2012-05-22  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/configure (../regnual/sys.h): Create symblic link.

@@ -431,30 +431,7 @@ flash_write (uint32_t dst_addr, const uint8_t *src, size_t len)
 }
 
 int
-flash_erase_page (uint32_t addr)
-{
-  int status;
-
-  status = flash_wait_for_last_operation (FLASH_ERASE_TIMEOUT);
-
-  intr_disable ();
-  if (status == FLASH_COMPLETE)
-    {
-      FLASH->CR |= FLASH_CR_PER;
-      FLASH->AR = addr; 
-      FLASH->CR |= FLASH_CR_STRT;
-
-      status = flash_wait_for_last_operation (FLASH_ERASE_TIMEOUT);
-      if (status != FLASH_TIMEOUT)
-	FLASH->CR &= ~FLASH_CR_PER;
-    }
-  intr_enable ();
-
-  return status == FLASH_COMPLETE;
-}
-
-int
-flash_protect (void)
+flash_protect (uint16_t protection)
 {
   /* Not yet implemented */
   return 1;

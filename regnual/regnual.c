@@ -33,8 +33,7 @@ extern void *memset (void *s, int c, size_t n);
 extern void set_led (int);
 extern uint8_t _flash_start,  _flash_end;
 extern int flash_write (uint32_t dst_addr, const uint8_t *src, size_t len);
-extern int flash_erase_page (uint32_t addr);
-extern int flash_protect (void);
+extern int flash_protect (uint16_t protection);
 extern void nvic_system_reset (void);
 
 
@@ -123,15 +122,15 @@ regnual_device_reset (void)
 			  64);
 }
 
-#define USB_REGNUAL_MEMINFO    0
-#define USB_REGNUAL_SEND       1
-#define USB_REGNUAL_CRC32      2
-#define USB_REGNUAL_FLASH      3
-#define USB_REGNUAL_ERASE      4
-#define USB_REGNUAL_PROTECT    5
-#define USB_REGNUAL_FINISH     6
+#define USB_REGNUAL_MEMINFO	0
+#define USB_REGNUAL_SEND	1
+#define USB_REGNUAL_RESULT	2
+#define USB_REGNUAL_FLASH	3
+#define USB_REGNUAL_PROTECT	4
+#define USB_REGNUAL_FINISH	5
 
 static uint8_t mem[256];
+static uint32_t result;
 
 static const uint8_t *const mem_info[] = { &_flash_start,  &_flash_end, };
 
@@ -145,9 +144,21 @@ static void regnual_ctrl_write_finish (uint8_t req, uint8_t req_no,
   if (type_rcp == (VENDOR_REQUEST | DEVICE_RECIPIENT)
       && USB_SETUP_SET (req) && len == 0)
     {
-      if (req_no == USB_REGNUAL_FINISH && value == 0 && index == 0)
+      if (req_no == USB_REGNUAL_SEND && index == 0)
+	{
+	  result = 0;		// calculate crc32 here!!!
+	}
+      else if (req_no == USB_REGNUAL_FLASH && index == 0)
+	{
+	  uint32_t dst_addr = (0x08000000 + value * 0x100);
+
+	  result = flash_write (dst_addr, mem, 256);
+	}
+      else if (req_no == USB_REGNUAL_PROTECT && index == 0)
+	result = flash_protect (value);
+      else if (req_no == USB_REGNUAL_FINISH && value == 0 && index == 0)
 	nvic_system_reset ();
-    }  
+    }
 }
 
 static int
@@ -165,11 +176,9 @@ regnual_setup (uint8_t req, uint8_t req_no,
 	      usb_lld_set_data_to_send (mem_info, sizeof (mem_info));
 	      return USB_SUCCESS;
 	    }
-	  else if (req_no == USB_REGNUAL_CRC32)
+	  else if (req_no == USB_REGNUAL_RESULT)
 	    {
-	      static uint32_t crc32_check = 0; /* calculate CRC32 for mem */
-
-	      usb_lld_set_data_to_send (&crc32_check, sizeof (uint32_t));
+	      usb_lld_set_data_to_send (&result, sizeof (uint32_t));
 	      return USB_SUCCESS;
 	    }
 	}
@@ -180,30 +189,22 @@ regnual_setup (uint8_t req, uint8_t req_no,
 	      if (value != 0 || index + len > 256)
 		return USB_UNSUPPORT;
 
-	      if (index != 0)
-		memset (mem, 0xff, 256);
+	      if (index + len < 256)
+		memset (mem + index + len, 0xff, 256 - (index + len));
 
 	      usb_lld_set_data_to_recv (mem + index, len);
 	      return USB_SUCCESS;
 	    }
-	  else if (req_no == USB_REGNUAL_FLASH && len == 0)
+	  else if (req_no == USB_REGNUAL_FLASH && len == 0 && index == 0)
 	    {
 	      uint32_t dst_addr = (0x08000000 + value * 0x100);
 
-	      if (flash_write (dst_addr, mem, 256) == 0)
+	      if (dst_addr + 256 <= (uint32_t)&_flash_end)
 		return USB_SUCCESS;
 	    }
-	  else if (req_no == USB_REGNUAL_ERASE && len == 0 && index == 0)
+	  else if (req_no == USB_REGNUAL_PROTECT && len == 0 && index == 0)
 	    {
-	      uint32_t dst_addr = (0x08000000 + value * 0x100);
-
-	      if (flash_erase_page (dst_addr))
-		return USB_SUCCESS;
-	    }
-	  else if (req_no == USB_REGNUAL_PROTECT && len == 0
-		   && value == 0 && index == 0)
-	    {
-	      if (flash_protect ())
+	      if (value == 0)
 		return USB_SUCCESS;
 	    }
 	  else if (req_no == USB_REGNUAL_FINISH && len == 0

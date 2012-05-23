@@ -12,7 +12,7 @@ MEMORY
 }
 
 _flash_start = 0x08000000;
-_flash_end   = 0x08010000;
+_flash_end   = 0x08020000;
 
 __ram_start__           = ORIGIN(ram0);
 __ram_size__            = 20k;
