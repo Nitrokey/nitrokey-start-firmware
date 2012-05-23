@@ -418,7 +418,7 @@ good_bye (void)
     = (void (**)(void))(&_regnual_start + 4);
 
   /* copy function flash_mass_erase_and_exec to SRAM and jump to it */
-  asm volatile ("ldr	r3, [r3, #4]\n\t"
+  asm volatile ("ldr	r3, [r3]\n\t"
 		"mov	r5, r0\n\t"
 		"add	r2, r2, r1\n"
 	"0:	ldr	r4, [r1]\n\t"
