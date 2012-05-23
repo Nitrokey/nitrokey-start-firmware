@@ -1,5 +1,7 @@
 2012-05-23  Niibe Yutaka  <gniibe@fsij.org>
 
+	* regnual/sys-stm8s-discovery.h: New.
+
 	* src/main.c (flash_mass_erase_and_exec, good_bye): New.
 	(main): Call good_bye.
 

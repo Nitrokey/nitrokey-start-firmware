@@ -370,11 +370,13 @@ led_blink (int spec)
 }
 
 
+#define FMEAE_SIZE 56
+
 static void __attribute__((naked))
 flash_mass_erase_and_exec (void)
 {
   asm volatile (/* r0 = <flash erase timeout>; */
-		"mov	r0, #0x01000000\n\t"
+		"mov	r0, #0xF0000000\n\t"
 		/* r2 = (struct FLASH *)FLASH_R_BASE */
 		"mov	r2, #8192\n\t"
 		"movt	r2, 16386\n\t"
@@ -383,6 +385,7 @@ flash_mass_erase_and_exec (void)
 		"orr	r1, r1, #4\n\t"
 		"str	r1, [r2, #16]\n\t"
 		/* FLASH->CR |= FLASH_CR_STRT; */
+		"ldr	r1, [r2, #16]\n\t"
 		"orr	r1, r1, #64\n\t"
 		"str	r1, [r2, #16]\n"
 	"0:	subs	r0, r0, #1\n\t"
@@ -408,21 +411,23 @@ flash_mass_erase_and_exec (void)
 static void __attribute__((noreturn))
 good_bye (void)
 {
-  register uint32_t dst __asm__ ("r0") = 0x20000000;
+  register uint32_t dst __asm__ ("r0") = 0x20000000; /* SRAM top */
   register uint32_t src __asm__ ("r1") = (uint32_t)flash_mass_erase_and_exec;
-  register uint32_t len __asm__ ("r2") = sizeof (flash_mass_erase_and_exec);
+  register uint32_t len __asm__ ("r2") = FMEAE_SIZE;
   register void (**func )(void) __asm__ ("r3")
     = (void (**)(void))(&_regnual_start + 4);
 
   /* copy function flash_mass_erase_and_exec to SRAM and jump to it */
-  asm volatile ("mov	r5, r0\n"
+  asm volatile ("ldr	r3, [r3, #4]\n\t"
+		"mov	r5, r0\n\t"
 		"add	r2, r2, r1\n"
 	"0:	ldr	r4, [r1]\n\t"
 		"str	r4, [r0]\n\t"
-		"adds	r0, r0, #4\n\t"
-		"adds	r1, r1, #4\n\t"
+		"add	r0, r0, #4\n\t"
+		"add	r1, r1, #4\n\t"
 		"cmp	r2, r1\n\t"
-		"bgt	0b\n\t"
+		"bhi	0b\n\t"
+		"isb\n\t"
 		"bx	r5"
 		: /* no output */
 		: "r" (dst), "r" (src), "r" (len), "r" (func)
