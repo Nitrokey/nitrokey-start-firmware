@@ -73,31 +73,40 @@ class regnual:
                                         value = 0, index = 0,
                                         buffer = data[j*256:j*256+256],
                                         timeout = 10000)
-            print "flash"
             self.__devhandle.controlMsg(requestType = 0x40, request = 3,
                                         value = i, index = 0,
                                         buffer = None,
                                         timeout = 10000)
+            time.sleep(0.01)
+            res = self.__devhandle.controlMsg(requestType = 0xc0, request = 2,
+                                              value = 0, index = 0, buffer = 4,
+                                              timeout = 10000)
+            r_value = ((res[3]*256 + res[2])*256 + res[1])*256 + res[0]
+            if r_value == 0:
+                print "failure"
             i = i+1
             j = j+1
             addr = addr + 256
         residue = len(data) % 256
         if residue != 0:
             print "# %08x: %d : %d" % (addr, i, residue)
-            print "send"
             self.__devhandle.controlMsg(requestType = 0x40, request = 1,
                                         value = 0, index = 0,
                                         buffer = data[j*256:],
                                         timeout = 10000)
-        if (i % 4) != 0 or residue:
-            print "flash"
             self.__devhandle.controlMsg(requestType = 0x40, request = 3,
                                         value = i, index = 0,
                                         buffer = None,
                                         timeout = 10000)
+            res = self.__devhandle.controlMsg(requestType = 0xc0, request = 2,
+                                              value = 0, index = 0, buffer = 4,
+                                              timeout = 10000)
+            r_value = ((res[3]*256 + res[2])*256 + res[1])*256 + res[0]
+            if r_value == 0:
+                print "failure"
 
     def finish(self):
-        self.__devhandle.controlMsg(requestType = 0x40, request = 6,
+        self.__devhandle.controlMsg(requestType = 0x40, request = 5,
                                     value = 0, index = 0, buffer = None,
                                     timeout = 10000)
 
@@ -132,6 +141,9 @@ class gnuk_token:
 
         self.__timeout = 10000
         self.__seq = 0
+
+    def reset_device(self):
+        self.__devhandle.reset()
 
     def stop_gnuk(self):
         self.__devhandle.releaseInterface()
@@ -349,11 +361,16 @@ def main(passwd, data_regnual, data_upgrade):
     icc.download(mem_info[0], data_regnual)
     print "Run flash upgrade program..."
     icc.execute(mem_info[1] + len(data_regnual))
+    #
+    try:
+        icc.reset_device()
+    except:
+        pass
     del icc
     icc = None
     #
-    print "Wait 3 seconds..."
-    time.sleep(3)
+    print "Wait 1 seconds..."
+    time.sleep(1)
     # Then, send upgrade program...
     dev = get_gnuk_device()
     print "Device: ", dev.filename
@@ -361,7 +378,7 @@ def main(passwd, data_regnual, data_upgrade):
     mem_info = reg.mem_info()
     print "%08x:%08x" % mem_info
     print "Downloading the program"
-    reg.download(mem_info[0]+0x3000, data_upgrade)
+    reg.download(mem_info[0], data_upgrade)
     reg.finish()
     return 0
 
