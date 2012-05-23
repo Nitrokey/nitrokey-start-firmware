@@ -228,8 +228,9 @@ gnuk_setup (uint8_t req, uint8_t req_no,
 	      if (addr < &_regnual_start || addr + len > &__heap_end__)
 		return USB_UNSUPPORT;
 
-	      if (index == 0 && len != 256)
-		memset (addr, 0, 256);
+	      if (index + len < 256)
+		memset (addr + index + len, 0, 256 - (index + len));
+
 	      usb_lld_set_data_to_recv (addr, len);
 	      return USB_SUCCESS;
 	    }

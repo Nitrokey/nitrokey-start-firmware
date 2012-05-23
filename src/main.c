@@ -473,10 +473,11 @@ main (int argc, char *argv[])
 #endif
     }
 
+  set_led (1);
+  /* USB Dissconnect (when supported) */
   usb_lld_shutdown ();
   USB_Cable_Config (0);
-  set_led (1);
-  chThdSleep (MS2ST (100));
+  chThdSleep (MS2ST (1));	/* > 2.5us required */
   port_disable ();
   /* set vector */
   SCB->VTOR = (uint32_t)&_regnual_start;
