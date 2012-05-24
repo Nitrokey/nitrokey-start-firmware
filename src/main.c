@@ -389,6 +389,7 @@ flash_mass_erase_and_exec (void)
       while ((FLASH->SR & FLASH_SR_BSY) != 0 && t)
 	--t;
 
+      FLASH->CR &= ~FLASH_CR_MER;
       if ((FLASH->SR & (FLASH_SR_BSY|FLASH_SR_PGERR|FLASH_SR_WRPRTERR)) == 0)
 	(**func) ();
     }
