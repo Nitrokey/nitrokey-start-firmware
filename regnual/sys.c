@@ -271,11 +271,34 @@ enum flash_status
   FLASH_TIMEOUT
 };
 
+#define FLASH_SR_BSY		0x01
+#define FLASH_SR_PGERR		0x04
+#define FLASH_SR_WRPRTERR	0x10
+#define FLASH_SR_EOP		0x20
+
+#define FLASH_CR_PG	0x0001
+#define FLASH_CR_PER	0x0002
+#define FLASH_CR_MER	0x0004
+#define FLASH_CR_OPTPG	0x0010
+#define FLASH_CR_OPTER	0x0020
+#define FLASH_CR_STRT	0x0040
+#define FLASH_CR_LOCK	0x0080
+#define FLASH_CR_OPTWRE	0x0200
+#define FLASH_CR_ERRIE	0x0400
+#define FLASH_CR_EOPIE	0x1000
+
+#define FLASH_OBR_RDPRT 0x00000002
+
+#define OPTION_BYTES_ADDR 0x1ffff800
+
 static void __attribute__ ((used))
 flash_unlock (void)
 {
-  FLASH->KEYR = FLASH_KEY1;
-  FLASH->KEYR = FLASH_KEY2;
+  if ((FLASH->CR & FLASH_CR_LOCK) != 0)
+    {
+      FLASH->KEYR = FLASH_KEY1;
+      FLASH->KEYR = FLASH_KEY2;
+    }
 }
 
 static void fatal (void)
@@ -353,24 +376,6 @@ handler vector_table[] __attribute__ ((section(".vectors"))) = {
   usb_interrupt_handler,
 };
 
-#define FLASH_SR_BSY		0x01
-#define FLASH_SR_PGERR		0x04
-#define FLASH_SR_WRPRTERR	0x10
-#define FLASH_SR_EOP		0x20
-
-#define FLASH_CR_PG	0x0001
-#define FLASH_CR_PER	0x0002
-#define FLASH_CR_MER	0x0004
-#define FLASH_CR_OPTPG	0x0010
-#define FLASH_CR_OPTER	0x0020
-#define FLASH_CR_STRT	0x0040
-#define FLASH_CR_LOCK	0x0080
-#define FLASH_CR_OPTWRE	0x0200
-#define FLASH_CR_ERRIE	0x0400
-#define FLASH_CR_EOPIE	0x1000
-
-#define FLASH_OBR_RDPRT 0x00000002
-
 static int
 flash_get_status (void)
 {
@@ -421,8 +426,7 @@ flash_program_halfword (uint32_t addr, uint16_t data)
       *(volatile uint16_t *)addr = data;
 
       status = flash_wait_for_last_operation (FLASH_PROGRAM_TIMEOUT);
-      if (status != FLASH_TIMEOUT)
-	FLASH->CR &= ~FLASH_CR_PG;
+      FLASH->CR &= ~FLASH_CR_PG;
     }
   intr_enable ();
 
@@ -441,7 +445,7 @@ flash_write (uint32_t dst_addr, const uint8_t *src, size_t len)
       hw |= (*src++ << 8);
       status = flash_program_halfword (dst_addr, hw);
       if (status != FLASH_COMPLETE)
-	return 0;
+	return 0;		/* error return */
 
       dst_addr += 2;
       len -= 2;
@@ -454,6 +458,7 @@ int
 flash_protect (void)
 {
   int status;
+  uint32_t option_bytes_value;
 
   status = flash_wait_for_last_operation (FLASH_ERASE_TIMEOUT);
 
@@ -467,18 +472,15 @@ flash_protect (void)
       FLASH->CR |= FLASH_CR_STRT;
 
       status = flash_wait_for_last_operation (FLASH_ERASE_TIMEOUT);
-      if (status != FLASH_TIMEOUT)
-	FLASH->CR &= ~FLASH_CR_OPTER;
+      FLASH->CR &= ~FLASH_CR_OPTER;
     }
   intr_enable ();
 
   if (status != FLASH_COMPLETE)
     return 0;
 
-  if ((FLASH->OBR & FLASH_OBR_RDPRT) != 0)
-    return 1;
-  else
-    return 0;
+  option_bytes_value = *(uint32_t *)OPTION_BYTES_ADDR;
+  return (option_bytes_value & 0xff) == 0xff ? 1 : 0;
 }
 
 struct SCB

@@ -381,20 +381,18 @@ flash_mass_erase_and_exec (void)
 
   if ((FLASH->SR & FLASH_SR_BSY) == 0)
     {
-      uint32_t t = FLASH_MASS_ERASE_TIMEOUT;
-
       FLASH->CR |= FLASH_CR_MER;
       FLASH->CR |= FLASH_CR_STRT;
 
-      while ((FLASH->SR & FLASH_SR_BSY) != 0 && t)
-	--t;
+      while ((FLASH->SR & FLASH_SR_BSY) != 0)
+	;
 
       FLASH->CR &= ~FLASH_CR_MER;
+
       if ((FLASH->SR & (FLASH_SR_BSY|FLASH_SR_PGERR|FLASH_SR_WRPRTERR)) == 0)
 	(**func) ();
     }
 
-  palClearPad (IOPORT1, GPIOA_LED);
   for (;;);
 }
 
