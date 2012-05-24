@@ -370,68 +370,53 @@ led_blink (int spec)
 }
 
 
-#define FMEAE_SIZE 56
+#define FMEAE_SIZE 128
+
+#define FLASH_MASS_ERASE_TIMEOUT   0xF0000000
 
 static void __attribute__((naked))
 flash_mass_erase_and_exec (void)
 {
-  asm volatile (/* r0 = <flash erase timeout>; */
-		"mov	r0, #0xF0000000\n\t"
-		/* r2 = (struct FLASH *)FLASH_R_BASE */
-		"mov	r2, #8192\n\t"
-		"movt	r2, 16386\n\t"
-		/* FLASH->CR |= FLASH_CR_MER; */
-		"ldr	r1, [r2, #16]\n\t"
-		"orr	r1, r1, #4\n\t"
-		"str	r1, [r2, #16]\n\t"
-		/* FLASH->CR |= FLASH_CR_STRT; */
-		"ldr	r1, [r2, #16]\n\t"
-		"orr	r1, r1, #64\n\t"
-		"str	r1, [r2, #16]\n"
-	"0:	subs	r0, r0, #1\n\t"
-		"beq	1f\n\t"
-		/* r1 = FLASH->SR; */
-		"ldr	r1, [r2, #12]\n\t"
-		/* BUSY? */
-		"tst	r1, #1\n\t"
-		"bne	0b\n\t"
-		/* PGERR? */
-		"tst	r1, #4\n\t"
-		"bne	1f\n\t"
-		/* WRPRTERR? */
-		"tst	r1, #16\n\t"
-		"bne	1f\n\t"
-		/* Success. */
-		/* exec */
-		"bx	r3\n"
-	"1:	b	1b"
-		: /* no output*/ : /* no input */ : "memory");
+  void (**func )(void) = (void (**)(void))(&_regnual_start + 4);
+
+  if ((FLASH->SR & FLASH_SR_BSY) == 0)
+    {
+      uint32_t t = FLASH_MASS_ERASE_TIMEOUT;
+
+      FLASH->CR |= FLASH_CR_MER;
+      FLASH->CR |= FLASH_CR_STRT;
+
+      while ((FLASH->SR & FLASH_SR_BSY) != 0 && t)
+	--t;
+
+      if ((FLASH->SR & (FLASH_SR_BSY|FLASH_SR_PGERR|FLASH_SR_WRPRTERR)) == 0)
+	(**func) ();
+    }
+
+  palClearPad (IOPORT1, GPIOA_LED);
+  for (;;);
 }
 
 static void __attribute__((noreturn))
 good_bye (void)
 {
   register uint32_t dst __asm__ ("r0") = 0x20000000; /* SRAM top */
-  register uint32_t src __asm__ ("r1") = (uint32_t)flash_mass_erase_and_exec;
+  register uint32_t src __asm__ ("r1") = (uint32_t)flash_mass_erase_and_exec & ~1;
   register uint32_t len __asm__ ("r2") = FMEAE_SIZE;
-  register void (**func )(void) __asm__ ("r3")
-    = (void (**)(void))(&_regnual_start + 4);
+  register uint32_t entry __asm__ ("r3") = dst | 1;
+  register uint32_t use __asm__ ("r4");
 
   /* copy function flash_mass_erase_and_exec to SRAM and jump to it */
-  asm volatile ("ldr	r3, [r3]\n\t"
-		"mov	r5, r0\n\t"
-		"add	r2, r2, r1\n"
-	"0:	ldr	r4, [r1]\n\t"
-		"str	r4, [r0]\n\t"
-		"add	r0, r0, #4\n\t"
-		"add	r1, r1, #4\n\t"
-		"cmp	r2, r1\n\t"
-		"bhi	0b\n\t"
-		"isb\n\t"
-		"bx	r5"
-		: /* no output */
-		: "r" (dst), "r" (src), "r" (len), "r" (func)
-		: "memory");
+  asm volatile("add	r2, r2, r1\n"
+	"0:	ldr	r4, [r1], #4\n\t"
+	       "cmp	r2, r1\n\t"
+	       "str	r4, [r0], #4\n\t"
+	       "bhi	0b\n\t"
+	       "isb\n\t"
+	       "bx	r3"
+	       : "=r" (dst), "=r" (src), "=r" (len), "=r" (use)
+	       : "0" (dst), "1" (src), "2" (len), "r" (entry)
+	       : "memory");
   for (;;);
 }
 

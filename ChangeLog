@@ -1,3 +1,8 @@
+2012-05-24  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/main.c (good_bye): Care LSB of function pointer.
+	(flash_mass_erase_and_exec): Implemented in C.
+
 2012-05-23  Niibe Yutaka  <gniibe@fsij.org>
 
 	* regnual/sys-stm8s-discovery.h: New.
