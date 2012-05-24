@@ -62,7 +62,7 @@ flash_get_status (void)
     status = FLASH_BUSY;
   else if ((FLASH->SR & FLASH_SR_PGERR) != 0)
     status = FLASH_ERROR_PG;
-  else if((FLASH->SR & FLASH_SR_WRPRTERR) != 0 )
+  else if((FLASH->SR & FLASH_SR_WRPRTERR) != 0)
     status = FLASH_ERROR_WRP;
   else
     status = FLASH_COMPLETE;
