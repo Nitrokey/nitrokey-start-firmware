@@ -123,6 +123,12 @@ class regnual:
                                     value = 0, index = 0, buffer = None,
                                     timeout = 10000)
 
+    def reset_device(self):
+        try:
+            self.__devhandle.reset()
+        except:
+            pass
+
 # This class only supports Gnuk (for now) 
 class gnuk_token:
     def __init__(self, device, configuration, interface):
@@ -156,7 +162,10 @@ class gnuk_token:
         self.__seq = 0
 
     def reset_device(self):
-        self.__devhandle.reset()
+        try:
+            self.__devhandle.reset()
+        except:
+            pass
 
     def stop_gnuk(self):
         self.__devhandle.releaseInterface()
@@ -375,10 +384,7 @@ def main(passwd, data_regnual, data_upgrade):
     print "Run flash upgrade program..."
     icc.execute(mem_info[1] + len(data_regnual))
     #
-    try:
-        icc.reset_device()
-    except:
-        pass
+    icc.reset_device()
     del icc
     icc = None
     #
@@ -394,6 +400,7 @@ def main(passwd, data_regnual, data_upgrade):
     reg.download(mem_info[0], data_upgrade)
     reg.protect()
     reg.finish()
+    reg.reset_device()
     return 0
 
 DEFAULT_PW3 = "12345678"
