@@ -33,9 +33,13 @@ __stacks_total_size__   = __main_stack_size__ + __process_stack_size__;
 
 MEMORY
 {
-    flash : org = @ORIGIN@, len = @FLASH_SIZE@k
+    flash0 : org = @ORIGIN@, len = 4k
+    flash  : org = @ORIGIN@+0x1000, len = @FLASH_SIZE@k - 4k
     ram : org = 0x20000000, len = 20k
 }
+
+__flash_start__         = ORIGIN(flash);
+__flash_end__		= ORIGIN(flash) + LENGTH(flash);
 
 __ram_start__           = ORIGIN(ram);
 __ram_size__            = LENGTH(ram);
@@ -44,6 +48,15 @@ __ram_end__             = __ram_start__ + __ram_size__;
 SECTIONS
 {
     . = 0;
+
+    .sys : ALIGN(16) SUBALIGN(16)
+    {
+        KEEP(*(.vectors))
+	sys.o(.text)
+	sys.o(.text.*)
+        sys.o(.rodata)
+	sys.o(.rodata.*)
+    } > flash0
 
     .text : ALIGN(16) SUBALIGN(16)
     {
