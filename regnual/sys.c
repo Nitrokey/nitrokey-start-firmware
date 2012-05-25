@@ -111,41 +111,6 @@ struct FLASH {
 #define FLASH_R_BASE	(AHBPERIPH_BASE + 0x2000)
 #define FLASH		((struct FLASH *) FLASH_R_BASE)
 
-static __attribute__ ((used))
-void clock_init (void)
-{
-  /* HSI setup */
-  RCC->CR |= RCC_CR_HSION;
-  while (!(RCC->CR & RCC_CR_HSIRDY))
-    ;
-  RCC->CR &= RCC_CR_HSITRIM | RCC_CR_HSION;
-  RCC->CFGR = 0;
-  while ((RCC->CFGR & RCC_CFGR_SWS) != RCC_CFGR_SWS_HSI)
-    ;
-
-  /* HSE setup */
-  RCC->CR |= RCC_CR_HSEON;
-  while (!(RCC->CR & RCC_CR_HSERDY))
-    ;
-
-  /* PLL setup */
-  RCC->CFGR |= STM32_PLLMUL | STM32_PLLXTPRE | STM32_PLLSRC;
-  RCC->CR   |= RCC_CR_PLLON;
-  while (!(RCC->CR & RCC_CR_PLLRDY))
-    ;
-
-  /* Clock settings */
-  RCC->CFGR = STM32_MCO | STM32_PLLMUL | STM32_PLLXTPRE | STM32_PLLSRC |
-              STM32_ADCPRE | STM32_PPRE2 | STM32_PPRE1 | STM32_HPRE;
-
-  /* Flash setup */
-  FLASH->ACR = STM32_FLASHBITS;
-
-  /* Switching on the configured clock source. */
-  RCC->CFGR |= STM32_SW;
-  while ((RCC->CFGR & RCC_CFGR_SWS) != (STM32_SW << 2))
-    ;
-}
 
 #define RCC_APB2ENR_IOPAEN	0x00000004
 #define RCC_APB2RSTR_IOPARST	0x00000004
@@ -181,25 +146,6 @@ struct GPIO {
 #define GPIO_USB	((struct GPIO *) GPIO_USB_BASE)
 #endif
 #define GPIO_LED	((struct GPIO *) GPIO_LED_BASE)
-
-static __attribute__ ((used))
-void gpio_init (void)
-{
-  /* Enable GPIOD clock. */
-  RCC->APB2ENR |= RCC_APB2ENR_IOPDEN;
-  RCC->APB2RSTR = RCC_APB2RSTR_IOPDRST;
-  RCC->APB2RSTR = 0;
-
-  GPIO_LED->ODR = VAL_GPIO_ODR;
-  GPIO_LED->CRH = VAL_GPIO_CRH;
-  GPIO_LED->CRL = VAL_GPIO_CRL;
-
-#if defined(GPIO_USB_BASE) && GPIO_USB_BASE != GPIO_LED_BASE
-  GPIO_USB->ODR = VAL_GPIO_USB_ODR;
-  GPIO_USB->CRH = VAL_GPIO_USB_CRH;
-  GPIO_USB->CRL = VAL_GPIO_USB_CRL;
-#endif
-}
 
 static void
 usb_cable_config (int on)
@@ -258,7 +204,6 @@ void usb_lld_sys_shutdown (void)
 }
 
 
-
 #define FLASH_KEY1               0x45670123UL
 #define FLASH_KEY2               0xCDEF89ABUL
 
@@ -291,16 +236,6 @@ enum flash_status
 
 #define OPTION_BYTES_ADDR 0x1ffff800
 
-static void __attribute__ ((used))
-flash_unlock (void)
-{
-  if ((FLASH->CR & FLASH_CR_LOCK) != 0)
-    {
-      FLASH->KEYR = FLASH_KEY1;
-      FLASH->KEYR = FLASH_KEY2;
-    }
-}
-
 static void fatal (void)
 {
   for (;;);
@@ -310,8 +245,9 @@ static void none (void)
 {
 }
 
+/* Note: it is not reset */
 static __attribute__ ((naked))
-void reset (void)
+void entry (void)
 {
   asm volatile ("cpsid	i\n\t"	/* Mask all interrupts */
 		"ldr	r0, =__ram_end__\n\t"
@@ -319,7 +255,6 @@ void reset (void)
 		"ldr	r1, =__main_stack_size__\n\t"
 		"subs	r0, r0, r1\n\t"
 		"msr	PSP, r0\n\t" /* Process (main routine) stack */
-		"bl	clock_init\n\t"
 		"movs	r0, #0\n\t"
 		"ldr	r1, =_bss_start\n\t"
 		"ldr	r2, =_bss_start\n"
@@ -333,8 +268,6 @@ void reset (void)
 		"movs	r0, #2\n\t" /* Switch to PSP */
 		"msr	CONTROL, r0\n\t"
 		"isb\n\t"
-		"bl	flash_unlock\n\t"
-		"bl	gpio_init\n\t"
 		"movs	r0, #0\n\t"
 		"msr	BASEPRI, r0\n\t" /* Enable interrupts */
 		"cpsie	i\n\t"
@@ -356,7 +289,7 @@ extern void usb_interrupt_handler (void);
 
 handler vector_table[] __attribute__ ((section(".vectors"))) = {
   (handler)&__ram_end__,
-  reset,
+  entry,
   fatal,		/* nmi */
   fatal,		/* hard fault */
   /* 10 */

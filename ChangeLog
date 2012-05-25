@@ -1,3 +1,8 @@
+2012-05-25  Niibe Yutaka  <gniibe@fsij.org>
+
+	* regnual/sys.c (clock_init, gpio_init, flash_unlock): Removed.
+	(entry): Rename (was: reset).
+
 2012-05-24  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/main.c (good_bye): Care LSB of function pointer.
