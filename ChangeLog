@@ -1,5 +1,25 @@
 2012-05-25  Niibe Yutaka  <gniibe@fsij.org>
 
+	* boards/OLIMEX_STM32_H103/board.h (SET_USB_CONDITION)
+	(SET_LED_CONDITION, GPIO_LED, IOPORT_LED, FLASH_PAGE_SIZE): New.
+	* boards/OLIMEX_STM32_H103/board.c (USB_Cable_Config, set_led):
+	Remove.
+
+	* boards/STM32_PRIMER2/board.h (SET_USB_CONDITION) 
+	(SET_LED_CONDITION, GPIO_LED, IOPORT_LED, FLASH_PAGE_SIZE): New.
+	* boards/STM32_PRIMER2/board.c (USB_Cable_Config, set_led):
+	Remove.
+
+	* boards/FST_01_00/board.h (SET_USB_CONDITION)
+	(SET_LED_CONDITION, GPIO_LED, IOPORT_LED, FLASH_PAGE_SIZE): New.
+	* boards/FST_01_00/board.c (USB_Cable_Config, set_led): Remove.
+
+	* boards/FST_01/board.h (SET_USB_CONDITION)
+	(SET_LED_CONDITION, GPIO_LED, IOPORT_LED, FLASH_PAGE_SIZE): New.
+	* boards/FST_01/board.c (USB_Cable_Config, set_led): Remove.
+
+	* regnual/sys-stm8s-discovery.h, sys-stbee.h: Remove.
+
 	* boards/STM8S_DISCOVERY/board.h (SET_USB_CONDITION)
 	(SET_LED_CONDITION, GPIO_LED, IOPORT_LED, FLASH_PAGE_SIZE): New.
 	* boards/STM8S_DISCOVERY/board.c (USB_Cable_Config, set_led):

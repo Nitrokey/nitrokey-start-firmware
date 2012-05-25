@@ -30,6 +30,13 @@
 /*
  * Setup for the STM32 Primer2.
  */
+#define	SET_USB_CONDITION(en) (!en)	/* To connect USB, call palClearPad */
+#define	SET_LED_CONDITION(on) (!on)	/* To emit light, call palClearPad */
+#define GPIO_USB	GPIOD_DISC
+#define IOPORT_USB	GPIOD
+#define GPIO_LED	GPIOE_LEDR
+#define IOPORT_LED	GPIOE
+#define FLASH_PAGE_SIZE 2048
 
 /*
  * Board identifier.
