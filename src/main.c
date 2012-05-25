@@ -24,6 +24,7 @@
 #include "config.h"
 #include "ch.h"
 #include "hal.h"
+#include "sys.h"
 #include "gnuk.h"
 #include "usb_lld.h"
 #include "usb-cdc.h"
@@ -370,55 +371,6 @@ led_blink (int spec)
 }
 
 
-#define FMEAE_SIZE 128
-
-#define FLASH_MASS_ERASE_TIMEOUT   0xF0000000
-
-static void __attribute__((naked))
-flash_mass_erase_and_exec (void)
-{
-  void (**func )(void) = (void (**)(void))(&_regnual_start + 4);
-
-  if ((FLASH->SR & FLASH_SR_BSY) == 0)
-    {
-      FLASH->CR |= FLASH_CR_MER;
-      FLASH->CR |= FLASH_CR_STRT;
-
-      while ((FLASH->SR & FLASH_SR_BSY) != 0)
-	;
-
-      FLASH->CR &= ~FLASH_CR_MER;
-
-      if ((FLASH->SR & (FLASH_SR_BSY|FLASH_SR_PGERR|FLASH_SR_WRPRTERR)) == 0)
-	(**func) ();
-    }
-
-  for (;;);
-}
-
-static void __attribute__((noreturn))
-good_bye (void)
-{
-  register uint32_t dst __asm__ ("r0") = 0x20000000; /* SRAM top */
-  register uint32_t src __asm__ ("r1") = (uint32_t)flash_mass_erase_and_exec & ~1;
-  register uint32_t len __asm__ ("r2") = FMEAE_SIZE;
-  register uint32_t entry __asm__ ("r3") = dst | 1;
-  register uint32_t use __asm__ ("r4");
-
-  /* copy function flash_mass_erase_and_exec to SRAM and jump to it */
-  asm volatile("add	r2, r2, r1\n"
-	"0:	ldr	r4, [r1], #4\n\t"
-	       "cmp	r2, r1\n\t"
-	       "str	r4, [r0], #4\n\t"
-	       "bhi	0b\n\t"
-	       "isb\n\t"
-	       "bx	r3"
-	       : "=r" (dst), "=r" (src), "=r" (len), "=r" (use)
-	       : "0" (dst), "1" (src), "2" (len), "r" (entry)
-	       : "memory");
-  for (;;);
-}
-
 /*
  * Entry point.
  *
@@ -524,15 +476,12 @@ main (int argc, char *argv[])
     }
 
   set_led (1);
-  /* USB Dissconnect (when supported) */
   usb_lld_shutdown ();
-  USB_Cable_Config (0);
-  chThdSleep (MS2ST (1));	/* > 2.5us required */
   port_disable ();
   /* set vector */
   SCB->VTOR = (uint32_t)&_regnual_start;
   /* leave Gnuk */ 
-  good_bye ();
+  flash_mass_erase_and_exec ();
 
   /* Never reached */
   return 0;

@@ -32,107 +32,8 @@
 #include "config.h"
 #include "ch.h"
 #include "hal.h"
+#include "sys.h"
 #include "gnuk.h"
-
-#define FLASH_KEY1               0x45670123UL
-#define FLASH_KEY2               0xCDEF89ABUL
-
-enum flash_status
-{
-  FLASH_BUSY = 1,
-  FLASH_ERROR_PG,
-  FLASH_ERROR_WRP,
-  FLASH_COMPLETE,
-  FLASH_TIMEOUT
-};
-
-void
-flash_unlock (void)
-{
-  FLASH->KEYR = FLASH_KEY1;
-  FLASH->KEYR = FLASH_KEY2;
-}
-
-static int
-flash_get_status (void)
-{
-  int status;
-
-  if ((FLASH->SR & FLASH_SR_BSY) != 0)
-    status = FLASH_BUSY;
-  else if ((FLASH->SR & FLASH_SR_PGERR) != 0)
-    status = FLASH_ERROR_PG;
-  else if((FLASH->SR & FLASH_SR_WRPRTERR) != 0)
-    status = FLASH_ERROR_WRP;
-  else
-    status = FLASH_COMPLETE;
-
-  return status;
-}
-
-static int
-flash_wait_for_last_operation (uint32_t timeout)
-{
-  int status;
-
-  do
-    if (--timeout == 0)
-      return FLASH_TIMEOUT;
-    else
-      status = flash_get_status ();
-  while (status == FLASH_BUSY);
-
-  return status;
-}
-
-#define FLASH_PROGRAM_TIMEOUT 0x00010000
-#define FLASH_ERASE_TIMEOUT   0x01000000
-
-static int
-flash_program_halfword (uint32_t addr, uint16_t data)
-{
-  int status;
-
-  status = flash_wait_for_last_operation (FLASH_PROGRAM_TIMEOUT);
-
-  chSysLock ();
-  if (status == FLASH_COMPLETE)
-    {
-      FLASH->CR |= FLASH_CR_PG;
-
-      *(volatile uint16_t *)addr = data;
-
-      status = flash_wait_for_last_operation (FLASH_PROGRAM_TIMEOUT);
-      if (status != FLASH_TIMEOUT)
-	FLASH->CR &= ~FLASH_CR_PG;
-    }
-  chSysUnlock ();
-
-  return status;
-}
-
-static int
-flash_erase_page (uint32_t addr)
-{
-  int status;
-
-  status = flash_wait_for_last_operation (FLASH_ERASE_TIMEOUT);
-
-  chSysLock ();
-  if (status == FLASH_COMPLETE)
-    {
-      FLASH->CR |= FLASH_CR_PER;
-      FLASH->AR = addr; 
-      FLASH->CR |= FLASH_CR_STRT;
-
-      status = flash_wait_for_last_operation (FLASH_ERASE_TIMEOUT);
-      if (status != FLASH_TIMEOUT)
-	FLASH->CR &= ~FLASH_CR_PER;
-    }
-  chSysUnlock ()
-
-  return status;
-}
 
 /*
  * Flash memory map
@@ -294,14 +195,14 @@ flash_do_write_internal (const uint8_t *p, int nr, const uint8_t *data, int len)
 
   addr = (uint32_t)p;
   hw = nr | (len << 8);
-  if (flash_program_halfword (addr, hw) != FLASH_COMPLETE)
+  if (flash_program_halfword (addr, hw) != 0)
     flash_warning ("DO WRITE ERROR");
   addr += 2;
 
   for (i = 0; i < len/2; i++)
     {
       hw = data[i*2] | (data[i*2+1]<<8);
-      if (flash_program_halfword (addr, hw) != FLASH_COMPLETE)
+      if (flash_program_halfword (addr, hw) != 0)
 	flash_warning ("DO WRITE ERROR");
       addr += 2;
     }
@@ -309,7 +210,7 @@ flash_do_write_internal (const uint8_t *p, int nr, const uint8_t *data, int len)
   if ((len & 1))
     {
       hw = data[i*2] | 0xff00;
-      if (flash_program_halfword (addr, hw) != FLASH_COMPLETE)
+      if (flash_program_halfword (addr, hw) != 0)
 	flash_warning ("DO WRITE ERROR");
     }
 }
@@ -359,19 +260,19 @@ flash_do_release (const uint8_t *do_data)
   /* Fill zero for content and pad */
   for (i = 0; i < len/2; i ++)
     {
-      if (flash_program_halfword (addr, 0) != FLASH_COMPLETE)
+      if (flash_program_halfword (addr, 0) != 0)
 	flash_warning ("fill-zero failure");
       addr += 2;
     }
 
   if ((len & 1))
     {
-      if (flash_program_halfword (addr, 0) != FLASH_COMPLETE)
+      if (flash_program_halfword (addr, 0) != 0)
 	flash_warning ("fill-zero pad failure");
     }
 
   /* Fill 0x0000 for "tag_number and length" word */
-  if (flash_program_halfword (addr_tag, 0) != FLASH_COMPLETE)
+  if (flash_program_halfword (addr_tag, 0) != 0)
     flash_warning ("fill-zero tag_nr failure");
 }
 
@@ -399,7 +300,7 @@ flash_key_write (uint8_t *key_addr, const uint8_t *key_data,
   for (i = 0; i < KEY_CONTENT_LEN/2; i ++)
     {
       hw = key_data[i*2] | (key_data[i*2+1]<<8);
-      if (flash_program_halfword (addr, hw) != FLASH_COMPLETE)
+      if (flash_program_halfword (addr, hw) != 0)
 	return -1;
       addr += 2;
     }
@@ -407,7 +308,7 @@ flash_key_write (uint8_t *key_addr, const uint8_t *key_data,
   for (i = 0; i < KEY_CONTENT_LEN/2; i ++)
     {
       hw = modulus[i*2] | (modulus[i*2+1]<<8);
-      if (flash_program_halfword (addr, hw) != FLASH_COMPLETE)
+      if (flash_program_halfword (addr, hw) != 0)
 	return -1;
       addr += 2;
     }
@@ -579,18 +480,6 @@ flash_cnt123_clear (const uint8_t **addr_p)
 }
 
 
-static int
-flash_check_blank (const uint8_t *p_start, int size)
-{
-  const uint8_t *p;
-
-  for (p = p_start; p < p_start + size; p++)
-    if (*p != 0xff)
-      return 0;
-
-  return 1;
-}
-
 #if defined(CERTDO_SUPPORT)
 #define FLASH_CH_CERTIFICATE_SIZE 2048
 int
@@ -652,7 +541,7 @@ flash_write_binary (uint8_t file_id, const uint8_t *data,
       for (i = 0; i < len/2; i++)
 	{
 	  hw = data[i*2] | (data[i*2+1]<<8);
-	  if (flash_program_halfword (addr, hw) != FLASH_COMPLETE)
+	  if (flash_program_halfword (addr, hw) != 0)
 	    flash_warning ("DO WRITE ERROR");
 	  addr += 2;
 	}

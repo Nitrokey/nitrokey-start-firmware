@@ -156,6 +156,3 @@ extern void usb_lld_prepare_shutdown (void);
 extern void usb_lld_shutdown (void);
 
 extern void usb_interrupt_handler (void);
-
-extern void usb_lld_sys_init (void);
-extern void usb_lld_sys_shutdown (void);

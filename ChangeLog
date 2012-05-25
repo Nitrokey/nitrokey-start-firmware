@@ -1,5 +1,31 @@
 2012-05-25  Niibe Yutaka  <gniibe@fsij.org>
 
+	* boards/STM8S_DISCOVERY/board.h (SET_USB_CONDITION)
+	(SET_LED_CONDITION, GPIO_LED, IOPORT_LED, FLASH_PAGE_SIZE): New.
+	* boards/STM8S_DISCOVERY/board.c (USB_Cable_Config, set_led):
+	Remove.
+
+	* regnual/Makefile: Add -I ../src to CFLAGS.
+
+	* regnual/regnual.ld (vector): New.
+
+	* regnual/sys.c: Remove implementation, but jump to vector by sys.h.
+
+	* src/Makefile.in: Follow change of files.
+
+	* src/configure: Undo changes of 2012-05-22.
+
+	* boards/common/hw_config.c: Remove.  Mov function to sys.c.
+	* src/flash.c: Move functions to sys.c.
+	* src/sys.c: New.
+
+	* src/main.c (main): Call flash_mass_erase_and_exec.
+
+	* src/usb_lld.c: Include sys.h.
+
+	* src/usb_lld_sys.c: Remove.  Move interrupt handler to...
+	* src/usb_ctrl.c: ... this file.
+
 	* regnual/sys.c (clock_init, gpio_init, flash_unlock): Removed.
 	(entry): Rename (was: reset).
 

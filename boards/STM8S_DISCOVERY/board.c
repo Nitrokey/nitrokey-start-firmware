@@ -46,22 +46,6 @@ hwinit1 (void)
   AFIO->MAPR |= AFIO_MAPR_TIM3_REMAP_PARTIALREMAP;
 }
 
-void
-USB_Cable_Config (FunctionalState NewState)
-{
-  /* No functionality to stop USB.  */
-  (void)NewState;
-}
-
-void
-set_led (int value)
-{
-  if (value)
-    palSetPad (IOPORT1, GPIOA_LED);
-  else
-    palClearPad (IOPORT1, GPIOA_LED);
-}
-
 #if defined(PINPAD_CIR_SUPPORT)
 void
 cir_ext_disable (void)

@@ -4,7 +4,7 @@
 #include "ch.h"
 #include "hal.h"
 #endif
-
+#include "sys.h"
 #include "usb_lld.h"
 
 #define USB_MAX_PACKET_SIZE 64	/* For FS device */

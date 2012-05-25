@@ -76,15 +76,14 @@ CSRC = $(PORTSRC) \
        $(HALSRC) \
        $(PLATFORMSRC) \
        $(BOARDSRC) \
-       ../boards/common/hw_config.c \
        $(BOARD_DIR)/board.c \
        $(CHIBIOS)/os/various/evtimer.c \
        $(CHIBIOS)/os/various/syscalls.c \
        $(CRYPTSRC) \
-       main.c usb_lld.c usb_lld_sys.c \
+       main.c usb_lld.c \
 	usb_desc.c usb_ctrl.c \
 	usb-icc.c openpgp.c ac.c openpgp-do.c flash.c \
-	random.c neug.c
+	random.c neug.c sys.c
 
 ifneq ($(ENABLE_DEBUG),)
 CSRC += debug.c

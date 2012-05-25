@@ -11,6 +11,7 @@ MEMORY
     ram1 : org = 0x20001400, len = 20k - 0x1400
 }
 
+vector = 0x08000000;
 _flash_start = 0x08000000;
 _flash_end   = 0x08020000;
 

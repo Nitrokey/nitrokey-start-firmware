@@ -423,3 +423,14 @@ const struct usb_device_method Device_Method = {
   gnuk_usb_event,
   gnuk_interface,
 };
+
+CH_IRQ_HANDLER (Vector90)
+{
+  CH_IRQ_PROLOGUE();
+  chSysLockFromIsr();
+
+  usb_interrupt_handler ();
+
+  chSysUnlockFromIsr();
+  CH_IRQ_EPILOGUE();
+}

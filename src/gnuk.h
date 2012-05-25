@@ -129,7 +129,6 @@ enum kind_of_key {
   GPG_KEY_FOR_AUTHENTICATION,
 };
 
-extern void flash_unlock (void);
 extern const uint8_t *flash_init (void);
 extern void flash_do_release (const uint8_t *);
 extern const uint8_t *flash_do_write (uint8_t nr, const uint8_t *data, int len);
@@ -322,8 +321,6 @@ extern uint32_t get_salt (void);
 
 extern uint32_t hardclock (void);
 
-extern void set_led (int);
-
 #define NUM_ALL_PRV_KEYS 3	/* SIG, DEC and AUT */
 
 extern uint8_t pw1_keystring[KEYSTRING_SIZE_PW1];
@@ -351,7 +348,6 @@ extern void flash_bool_write_internal (const uint8_t *p, int nr);
 extern void flash_cnt123_write_internal (const uint8_t *p, int which, int v);
 extern void flash_do_write_internal (const uint8_t *p, int nr, const uint8_t *data, int len);
 
-extern const unsigned char *unique_device_id (void);
 extern const uint8_t gnukStringSerial[];
 
 #define LED_ONESHOT_SHORT ((eventmask_t)1)

@@ -23,7 +23,7 @@ MCFLAGS= -mcpu=$(MCU) -mfix-cortex-m3-ldrd
 DEFS = -DFREE_STANDING
 
 CFLAGS = -O2 -g
-CFLAGS += $(CWARN) -fno-common $(MCFLAGS) $(TOPT) $(DEFS)
+CFLAGS += $(CWARN) -I ../src -fno-common $(MCFLAGS) $(TOPT) $(DEFS)
 
 LDFLAGS = -T$(LDSCRIPT) -nostartfiles $(MCFLAGS) $(TOPT)
 
