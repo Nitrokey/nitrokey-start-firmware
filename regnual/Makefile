@@ -32,17 +32,14 @@ LDFLAGS = -T$(LDSCRIPT) -nostartfiles $(MCFLAGS) $(TOPT)
 
 all: regnual.hex
 
-regnual.o: regnual.c usb_lld.h
+regnual.o: regnual.c
 
 regnual.hex: regnual.elf
 	$(OBJCOPY) -Obinary regnual.elf regnual.bin
 	$(OBJCOPY) -Oihex regnual.elf regnual.hex
 
-usb_lld.c: ../src/usb_lld.c usb_lld.h
+usb_lld.c: ../src/usb_lld.c
 	cp -p ../src/usb_lld.c .
-
-usb_lld.h: ../src/usb_lld.h
-	cp -p ../src/usb_lld.h .
 
 regnual.elf: $(OBJS) $(LDSCRIPT)
 	$(CC) $(LDFLAGS) -o regnual.elf $(OBJS)
@@ -51,4 +48,4 @@ clean:
 	-rm -f $(OBJS) regnual.elf regnual.hex regnual.bin
 
 distclean: clean
-	-rm -f usb_lld.c usb_lld.h sys.h
+	-rm -f usb_lld.c
