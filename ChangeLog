@@ -1,3 +1,7 @@
+2012-05-26  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/sys.c (reset): Set SCR->VCR here.
+
 2012-05-25  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/gnuk.ld.in (.sys): New section.

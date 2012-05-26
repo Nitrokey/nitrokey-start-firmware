@@ -247,6 +247,11 @@ static void __attribute__ ((naked))
 reset (void)
 {
   asm volatile ("cpsid	i\n\t"		/* Mask all interrupts            */
+		"mov.w	r0, #0xed00\n\t" /* SCR */
+		"movt	r0, #0xe000\n\t"
+		"mov.w	r1, #0x1000\n\t" /* 08001000 */
+		"movt	r1, #0x0800\n\t"
+		"str	r1, [r0, #8]\n\t" /* SCR->VCR = 0x08001000 */
 		"ldr	r0, =_text\n\t"
 		"ldr	r1, [r0], #4\n\t"
 		"msr	MSP, r1\n\t"	/* Main (exception handler) stack */
