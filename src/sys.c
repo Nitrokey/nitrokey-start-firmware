@@ -252,11 +252,10 @@ reset (void)
 		"mov.w	r1, #0x1000\n\t" /* 08001000 */
 		"movt	r1, #0x0800\n\t"
 		"str	r1, [r0, #8]\n\t" /* SCR->VCR = 0x08001000 */
-		"ldr	r0, =_text\n\t"
-		"ldr	r1, [r0], #4\n\t"
-		"msr	MSP, r1\n\t"	/* Main (exception handler) stack */
-		"ldr	r1, [r0]\n\t"	/* Reset handler                  */
-		"bx	r1\n"
+		"ldr	r0, [r1], #4\n\t"
+		"msr	MSP, r0\n\t"	/* Main (exception handler) stack */
+		"ldr	r0, [r1]\n\t"	/* Reset handler                  */
+		"bx	r0\n"
 		: /* no output */ : /* no input */ : "memory");
 }
 
