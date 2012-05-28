@@ -1,3 +1,4 @@
+#include "config.h"
 #include "ch.h"
 #include "hal.h"
 #include "board.h"
@@ -173,8 +174,6 @@ flash_protect (void)
   return (option_bytes_value & 0xff) == 0xff ? 1 : 0;
 }
 
-#define FLASH_MASS_ERASE_TIMEOUT   0xF0000000
-
 extern uint8_t __flash_start__, __flash_end__;
 extern uint8_t _regnual_start;
 
@@ -249,9 +248,14 @@ reset (void)
   asm volatile ("cpsid	i\n\t"		/* Mask all interrupts            */
 		"mov.w	r0, #0xed00\n\t" /* SCR */
 		"movt	r0, #0xe000\n\t"
-		"mov.w	r1, #0x1000\n\t" /* 08001000 */
+#ifdef DFU_SUPPORT
+		"mov.w	r1, #0x4000\n\t" /* 0x08004000 */
 		"movt	r1, #0x0800\n\t"
-		"str	r1, [r0, #8]\n\t" /* SCR->VCR = 0x08001000 */
+#else
+		"mov.w	r1, #0x1000\n\t" /* 0x08001000 */
+		"movt	r1, #0x0800\n\t"
+#endif
+		"str	r1, [r0, #8]\n\t" /* Set SCR->VCR */
 		"ldr	r0, [r1], #4\n\t"
 		"msr	MSP, r0\n\t"	/* Main (exception handler) stack */
 		"ldr	r0, [r1]\n\t"	/* Reset handler                  */
