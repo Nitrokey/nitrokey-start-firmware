@@ -384,12 +384,13 @@ def main(passwd, data_regnual, data_upgrade):
     print "Run flash upgrade program..."
     icc.execute(mem_info[1] + len(data_regnual))
     #
+    time.sleep(2)
     icc.reset_device()
     del icc
     icc = None
     #
-    print "Wait 1 seconds..."
-    time.sleep(1)
+    print "Wait 3 seconds..."
+    time.sleep(3)
     # Then, send upgrade program...
     dev = get_gnuk_device()
     print "Device: ", dev.filename
@@ -421,4 +422,4 @@ if __name__ == '__main__':
     data_upgrade = f.read()
     f.close()
     print "%s: %d" % (filename_upgrade, len(data_upgrade))
-    main(passwd, data_regnual, data_upgrade)
+    main(passwd, data_regnual, data_upgrade[4096:])

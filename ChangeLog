@@ -1,3 +1,14 @@
+2012-05-28  Niibe Yutaka  <gniibe@fsij.org>
+
+	* tool/gnuk_upgrade.py (main): First 4096-byte of Gnuk is system
+	block.  Don't send it to reGNUal.
+
+	* regnual/sys.c (entry): Fix clearing BSS.  It is called with all
+	interrupts disabled.
+
+	* regnual/regnual.ld (_flash_start): It's 0x08001000 now, because
+	there is system block now (was: 0x08000000).
+
 2012-05-26  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/sys.c (reset): Set SCR->VCR here.
