@@ -477,10 +477,13 @@ main (int argc, char *argv[])
 
   set_led (1);
   usb_lld_shutdown ();
+  /* Disable SysTick */
+  SysTick->CTRL = 0;
+  /* Disable all interrupts */
   port_disable ();
-  /* set vector */
+  /* Set vector */
   SCB->VTOR = (uint32_t)&_regnual_start;
-  /* leave Gnuk */ 
+  /* Leave Gnuk */ 
   flash_mass_erase_and_exec ();
 
   /* Never reached */
