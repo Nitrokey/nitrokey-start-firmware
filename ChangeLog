@@ -1,5 +1,7 @@
 2012-05-28  Niibe Yutaka  <gniibe@fsij.org>
 
+	* src/gnuk.ld.in (.sys): Add alignment settings.
+
 	* boards/common/hwinit.c (hwinit0): Define here.
 	* boards/*/board.c (hwinit0): Removed.
 

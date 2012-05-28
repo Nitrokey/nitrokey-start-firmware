@@ -56,6 +56,8 @@ SECTIONS
 	sys.o(.text.*)
         sys.o(.rodata)
 	sys.o(.rodata.*)
+	. = ALIGN(1024);
+	*(.sys)
     } > flash0
 
     .text : ALIGN(16) SUBALIGN(16)
