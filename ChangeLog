@@ -4,6 +4,7 @@
 	* boards/common/hwinit.c (hwinit0): ... and define here.
 	(hwinit0) [DFU_SUPPORT]:  Don't set SCB->VTOR here.
 	* src/sys.c (reset) [DFU_SUPPORT]: Set SCB->VTOR here.
+	(flash_write): Range check.
 
 	* polarssl-0.14.0/library/aes.c (FT0, FT1, FT2): Specify the
 	section ".sys", so that we will have more room for flash ROM.

@@ -4,6 +4,10 @@
 #include "board.h"
 #include "usb_lld.h"
 
+extern uint8_t __flash_start__, __flash_end__;
+extern uint8_t _regnual_start;
+
+
 static const uint8_t *
 unique_device_id (void)
 {
@@ -126,6 +130,11 @@ static int
 flash_write (uint32_t dst_addr, const uint8_t *src, size_t len)
 {
   int status;
+  uint32_t flash_start = (uint32_t)&__flash_start__;
+  uint32_t flash_end = (uint32_t)&__flash_end__;
+
+  if (dst_addr < flash_start || dst_addr + len > flash_end)
+    return 0;
 
   while (len)
     {
@@ -174,8 +183,6 @@ flash_protect (void)
   return (option_bytes_value & 0xff) == 0xff ? 1 : 0;
 }
 
-extern uint8_t __flash_start__, __flash_end__;
-extern uint8_t _regnual_start;
 
 static void __attribute__((naked))
 flash_mass_erase_and_exec (void)
