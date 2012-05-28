@@ -77,24 +77,6 @@ hwinit1 (void)
   palSetPad (IOPORT1, GPIOA_LED2);
 }
 
-void
-USB_Cable_Config (FunctionalState NewState)
-{
-  if (NewState != DISABLE)
-    palSetPad (IOPORT1, GPIOA_USB_ENABLE);
-  else
-    palClearPad (IOPORT1, GPIOA_USB_ENABLE);
-}
-
-void
-set_led (int value)
-{
-  if (value)
-    palClearPad (IOPORT1, GPIOA_LED1);
-  else
-    palSetPad (IOPORT1, GPIOA_LED1);
-}
-
 #if defined(PINPAD_CIR_SUPPORT)
 void
 cir_ext_disable (void)

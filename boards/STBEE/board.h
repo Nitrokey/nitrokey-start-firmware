@@ -31,6 +31,13 @@
 /*
  * Setup for the STBee board.
  */
+#define	SET_USB_CONDITION(en) (!en)	/* To connect USB, call palClearPad */
+#define	SET_LED_CONDITION(on) (!on)	/* To emit light, call palClearPad */
+#define GPIO_USB	GPIOD_USB_ENABLE
+#define IOPORT_USB	GPIOD
+#define GPIO_LED	GPIOD_LED1
+#define IOPORT_LED	GPIOD
+#define FLASH_PAGE_SIZE 2048
 
 /*
  * Board identifier.
