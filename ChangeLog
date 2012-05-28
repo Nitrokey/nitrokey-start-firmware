@@ -1,5 +1,8 @@
 2012-05-28  Niibe Yutaka  <gniibe@fsij.org>
 
+	* polarssl-0.14.0/library/aes.c (FT0, FT1, FT2): Specify the
+	section ".sys", so that we will have more room for flash ROM.
+
 	* tool/gnuk_upgrade.py (main): First 4096-byte of Gnuk is system
 	block.  Don't send it to reGNUal.
 
@@ -22,7 +25,7 @@
 	* boards/OLIMEX_STM32_H103/board.c (USB_Cable_Config, set_led):
 	Remove.
 
-	* boards/STM32_PRIMER2/board.h (SET_USB_CONDITION) 
+	* boards/STM32_PRIMER2/board.h (SET_USB_CONDITION)
 	(SET_LED_CONDITION, GPIO_LED, IOPORT_LED, FLASH_PAGE_SIZE): New.
 	* boards/STM32_PRIMER2/board.c (USB_Cable_Config, set_led):
 	Remove.
