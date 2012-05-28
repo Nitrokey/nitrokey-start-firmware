@@ -5,12 +5,6 @@
 #include "../common/hwinit.c"
 
 void
-hwinit0(void)
-{
-  hwinit0_common ();
-}
-
-void
 hwinit1(void)
 {
   hwinit1_common ();

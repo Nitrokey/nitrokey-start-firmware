@@ -29,10 +29,8 @@
  * This initialization is performed just after reset before BSS and DATA
  * segments initialization.
  */
-/*
- * Common code for hwinit0
- */
-static void hwinit0_common (void)
+void
+hwinit0 (void)
 {
 #ifdef DFU_SUPPORT
   SCB->VTOR = 0x08003000;

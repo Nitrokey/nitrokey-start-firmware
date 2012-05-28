@@ -1,5 +1,8 @@
 2012-05-28  Niibe Yutaka  <gniibe@fsij.org>
 
+	* boards/common/hwinit.c (hwinit0): Define here.
+	* boards/*/board.c (hwinit0): Removed.
+
 	* polarssl-0.14.0/library/aes.c (FT0, FT1, FT2): Specify the
 	section ".sys", so that we will have more room for flash ROM.
 
