@@ -183,3 +183,33 @@ rsa_decrypt (const uint8_t *input, uint8_t *output, int msg_len,
       return 0;
     }
 }
+
+int
+rsa_verify (const uint8_t *pubkey, const uint8_t *hash, int hashlen,
+	    const uint8_t *signature)
+{
+  int r;
+
+  rsa_init (&rsa_ctx, RSA_PKCS_V15, 0);
+  rsa_ctx.len = KEY_CONTENT_LEN;
+  mpi_read_string (&rsa_ctx.E, 16, "10001");
+  mpi_read_binary (&rsa_ctx.N, pubkey, KEY_CONTENT_LEN);
+
+  DEBUG_INFO ("RSA verify...");
+
+  r = rsa_pkcs1_verify (&rsa_ctx, RSA_PUBLIC, SIG_RSA_RAW, hashlen,
+			hash, signature);
+
+  rsa_free (&rsa_ctx);
+  if (r < 0)
+    {
+      DEBUG_INFO ("fail:");
+      DEBUG_SHORT (r);
+      return r;
+    }
+  else
+    {
+      DEBUG_INFO ("verified.\r\n");
+      return 0;
+    }
+}
