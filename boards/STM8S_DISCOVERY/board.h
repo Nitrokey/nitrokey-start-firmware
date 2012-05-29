@@ -41,7 +41,7 @@
  * Board identifier.
  */
 #define BOARD_ST_DISCOVERY
-#define BOARD_NAME "ST-Link"
+#define BOARD_NAME "STM8S Discovery"
 #define CPU_WITH_NO_GPIOE	1
 
 /*
