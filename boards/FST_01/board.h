@@ -36,7 +36,6 @@
 #define IOPORT_USB	GPIOA
 #define GPIO_LED	GPIOB_LED
 #define IOPORT_LED	GPIOB
-#define FLASH_PAGE_SIZE 1024
 
 /*
  * Board identifier.

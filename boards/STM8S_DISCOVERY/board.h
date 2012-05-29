@@ -36,7 +36,6 @@
 #define	SET_LED_CONDITION(on) on	/* To emit light, call palSetPad */
 #define GPIO_LED	GPIOA_LED
 #define IOPORT_LED	GPIOA
-#define FLASH_PAGE_SIZE 1024
 
 /*
  * Board identifier.

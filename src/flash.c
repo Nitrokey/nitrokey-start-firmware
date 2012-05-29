@@ -56,11 +56,6 @@
  *         1.5-KiB Key store (512-byte (p, q and N) key-store * 3)
  */
 #define FLASH_DATA_POOL_HEADER_SIZE	2
-#if defined(STM32F10X_HD)
-#define FLASH_PAGE_SIZE			2048
-#else
-#define FLASH_PAGE_SIZE			1024
-#endif
 #define FLASH_DATA_POOL_SIZE		(FLASH_PAGE_SIZE*2)
 #define FLASH_KEYSTORE_SIZE		(512*3)
 

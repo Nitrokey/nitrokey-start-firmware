@@ -238,5 +238,6 @@ sed -e "s/@DEBUG_DEFINE@/$DEBUG_DEFINE/" \
     -e "s/@PINPAD_DEFINE@/$PINPAD_DEFINE/" \
     -e "s/@PINPAD_MORE_DEFINE@/$PINPAD_MORE_DEFINE/" \
     -e "s/@CERTDO_DEFINE@/$CERTDO_DEFINE/" \
+    -e "s/@FLASH_PAGE_SIZE@/$FLASH_PAGE_SIZE/" \
 	< config.h.in > config.h
 exit 0

@@ -1,5 +1,12 @@
 2012-05-29  Niibe Yutaka  <gniibe@fsij.org>
 
+	* src/main.c (main) [DFU_SUPPORT]: Kill DFU and install .sys.
+
+	* src/config.h.in (FLASH_PAGE_SIZE): New.
+	* src/configure: Support FLASH_PAGE_SIZE for config.h
+	* boards/*/board.h (FLASH_PAGE_SIZE): Remove.
+	* src/flash.c (FLASH_PAGE_SIZE): Remove.
+
 	* src/sys.c (reset): Don't depend if DFU_SUPPORT or not.
 	(flash_erase_all_and_exec): Rename and change the argument.
 	* src/gnuk.ld.in (__flash_start__): Real flash ROM address,

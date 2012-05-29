@@ -483,8 +483,31 @@ main (int argc, char *argv[])
   port_disable ();
   /* Set vector */
   SCB->VTOR = (uint32_t)&_regnual_start;
-  /* Leave Gnuk */ 
+#ifdef DFU_SUPPORT
+#define FLASH_SYS_START_ADDR 0x08000000
+#define FLASH_SYS_END_ADDR (0x08000000+0x1000)
+  {
+    extern uint8_t _sys;
+    uint32_t addr;
+    handler *new_vector = (handler *)FLASH_SYS_START_ADDR;
+    void (*func) (void (*)(void)) = (void (*)(void (*)(void)))new_vector[10];
+
+    /* Kill DFU */
+    for (addr = FLASH_SYS_START_ADDR; addr < FLASH_SYS_END_ADDR;
+	 addr += FLASH_PAGE_SIZE)
+      flash_erase_page (addr);
+
+    /* copy system service routines */
+    flash_write (FLASH_SYS_START_ADDR, &_sys, 0x1000);
+
+    /* Leave Gnuk to exec reGNUal */ 
+    (*func) (*((void (**)(void))(&_regnual_start+4)));
+    for (;;);
+  }
+#else
+  /* Leave Gnuk to exec reGNUal */ 
   flash_erase_all_and_exec (*((void (**)(void))(&_regnual_start+4)));
+#endif
 
   /* Never reached */
   return 0;

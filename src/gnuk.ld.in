@@ -52,6 +52,7 @@ SECTIONS
 
     .sys : ALIGN(16) SUBALIGN(16)
     {
+        _sys = .;
         KEEP(*(.vectors))
 	sys.o(.text)
 	sys.o(.text.*)
