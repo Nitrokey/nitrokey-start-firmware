@@ -1,5 +1,8 @@
 2012-05-29  Niibe Yutaka  <gniibe@fsij.org>
 
+	* polarssl-0.14.0/include/polarssl/rsa.h (rsa_pkcs1_verify)
+	* polarssl-0.14.0/library/rsa.c (rsa_pkcs1_verify): Fix API.
+
 	* src/usb_conf.h (NUM_STRING_DESC): Incremented to 6 (was: 4).
 	* src/configure: Generate strings for revision detail and config
 	options.

@@ -538,7 +538,7 @@ int rsa_pkcs1_verify( rsa_context *ctx,
                       int hash_id,
                       int hashlen,
                       const unsigned char *hash,
-                      unsigned char *sig )
+                      const unsigned char *sig )
 {
     int ret, len, siglen;
     unsigned char *p, c;

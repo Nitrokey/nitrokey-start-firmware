@@ -330,7 +330,7 @@ int rsa_pkcs1_verify( rsa_context *ctx,
                       int hash_id,
                       int hashlen,
                       const unsigned char *hash,
-                      unsigned char *sig );
+                      const unsigned char *sig );
 
 /**
  * \brief          Free the components of an RSA key
