@@ -65,11 +65,11 @@ flash_protect (void)
 }
 
 static inline void __attribute__((noreturn))
-flash_mass_erase_and_exec (void)
+flash_erase_all_and_exec (void (*entry)(void))
 {
-  void (*func) (void) = (void (*)(void))vector[10];
+  void (*func) (void (*)(void)) = (void (*)(void (*)(void)))vector[10];
 
-  (*func) ();
+  (*func) (entry);
   for (;;);
 }
 

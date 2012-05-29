@@ -484,7 +484,7 @@ main (int argc, char *argv[])
   /* Set vector */
   SCB->VTOR = (uint32_t)&_regnual_start;
   /* Leave Gnuk */ 
-  flash_mass_erase_and_exec ();
+  flash_erase_all_and_exec (*((void (**)(void))(&_regnual_start+4)));
 
   /* Never reached */
   return 0;

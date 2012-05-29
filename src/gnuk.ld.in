@@ -38,7 +38,8 @@ MEMORY
     ram : org = 0x20000000, len = 20k
 }
 
-__flash_start__         = ORIGIN(flash);
+/* __flash_start__: flash ROM start address regardless of DFU_SUPPORT */
+__flash_start__         = 0x08001000;
 __flash_end__		= ORIGIN(flash) + LENGTH(flash);
 
 __ram_start__           = ORIGIN(ram);

@@ -1,10 +1,32 @@
+/*
+ * sys.c - system services at the first flash ROM blocks
+ *
+ * Copyright (C) 2012 Free Software Initiative of Japan
+ * Author: NIIBE Yutaka <gniibe@fsij.org>
+ *
+ * This file is a part of Gnuk, a GnuPG USB Token implementation.
+ *
+ * Gnuk is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Gnuk is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+ * or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+ * License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+
 #include "ch.h"
 #include "hal.h"
 #include "board.h"
 #include "usb_lld.h"
 
 extern uint8_t __flash_start__, __flash_end__;
-extern uint8_t _regnual_start;
 
 
 static const uint8_t *
@@ -184,9 +206,8 @@ flash_protect (void)
 
 
 static void __attribute__((naked))
-flash_mass_erase_and_exec (void)
+flash_erase_all_and_exec (void (*entry)(void))
 {
-  void (**func )(void) = (void (**)(void))(&_regnual_start + 4);
   uint32_t addr = (uint32_t)&__flash_start__;
   uint32_t end = (uint32_t)&__flash_end__;
   int r;
@@ -201,7 +222,7 @@ flash_mass_erase_and_exec (void)
     }
 
   if (addr >= end)
-    (**func) ();
+    (*entry) ();
 
   for (;;);
 }
@@ -281,7 +302,7 @@ handler vector[] __attribute__ ((section(".vectors"))) = {
   (handler)flash_check_blank,
   (handler)flash_write,
   (handler)flash_protect,
-  (handler)flash_mass_erase_and_exec,
+  (handler)flash_erase_all_and_exec,
   usb_lld_sys_init,
   usb_lld_sys_shutdown,
   nvic_system_reset,
