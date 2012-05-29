@@ -253,19 +253,18 @@ static const uint8_t gnukStringLangID[] = {
   0x09, 0x04			/* LangID = 0x0409: US-English */
 };
 
-#include "usb-string-vendor-product.c.inc"
+#include "usb-strings.c.inc"
 
 const uint8_t gnukStringSerial[] = {
   18*2+2,			/* bLength */
   USB_STRING_DESCRIPTOR_TYPE,	/* bDescriptorType */
-  /* FSIJ-0.18 */
+  /* FSIJ-0.19 */
   'F', 0, 'S', 0, 'I', 0, 'J', 0, '-', 0, 
   '0', 0, '.', 0, '1', 0, '8', 0, /* Version number of Gnuk */
   '-', 0,
   0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
   0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
 };
-
 
 const struct Descriptor Device_Descriptor = {
   gnukDeviceDescriptor,
@@ -282,4 +281,6 @@ const struct Descriptor String_Descriptors[NUM_STRING_DESC] = {
   {gnukStringVendor, sizeof (gnukStringVendor)},
   {gnukStringProduct, sizeof (gnukStringProduct)},
   {gnukStringSerial, sizeof (gnukStringSerial)},
+  {gnuk_revision_detail, sizeof (gnuk_revision_detail)},
+  {gnuk_config_options, sizeof (gnuk_config_options)},
 };

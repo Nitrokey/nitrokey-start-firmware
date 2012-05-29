@@ -103,35 +103,6 @@ if test "$vidpid" = "none"; then
   exit 1
 fi
 
-if !(IFS="	"
-  while read VIDPID VERSION PRODUCT VENDOR; do
-    if test "$vidpid" = "$VIDPID"; then
-      (echo $VIDPID | sed -n -e "s%^\([0-9a-f][0-9a-f]\)\([0-9a-f][0-9a-f]\):\([0-9a-f][0-9a-f]\)\([0-9a-f][0-9a-f]\)$%  0x\2, 0x\1, /* idVendor  */\n  0x\4, 0x\3, /* idProduct */%p"
-       echo $VERSION | sed -n -e "s%^\([0-9a-f][0-9a-f]\)\([0-9a-f][0-9a-f]\)$%  0x\2, 0x\1, /* bcdDevice  */%p"
-      ) > usb-vid-pid-ver.c.inc
-      (echo 'static const uint8_t gnukStringVendor[] = {'
-       echo "  ${#VENDOR}*2+2,			/* bLength */"
-       echo "  USB_STRING_DESCRIPTOR_TYPE,	/* bDescriptorType */"
-       echo "  /* Manufacturer: \"$VENDOR\" */"
-       echo $VENDOR | sed -n -e "s/\(........\)/\1\n/gp" | sed -n -e "s/\(.\)/'\1', 0, /g" -e "s/^/  /" -e "s/ $//p"
-       echo '};'
-       echo
-       echo 'static const uint8_t gnukStringProduct[] = {'
-       echo "  ${#PRODUCT}*2+2,			/* bLength */"
-       echo "  USB_STRING_DESCRIPTOR_TYPE,	/* bDescriptorType */"
-       echo "  /* Product name: \"$PRODUCT\" */"
-       echo $PRODUCT | sed -n -e "s/\(........\)/\1\n/gp" | sed -n -e "s/\(.\)/'\1', 0, /g" -e "s/^/  /" -e "s/ $//p"
-       echo '};'
-       ) >usb-string-vendor-product.c.inc
-      exit 0
-    fi
-  done; exit 1) < ../GNUK_USB_DEVICE_ID
-then
-  echo "Please specify valid Vendor ID and Product ID." 
-  echo "Check ../GNUK_USB_DEVICE_ID."
-  exit 1
-fi
-
 BOARD_DIR=../boards/$target
 if test -d $BOARD_DIR; then
   echo "Configured for target: $target"
@@ -186,6 +157,7 @@ if test "$with_dfu" = "yes"; then
   FLASH_SIZE=`expr $FLASH_SIZE - 12`
   DFU_DEFINE="#define DFU_SUPPORT 1"
 else
+  with_dfu=no
   echo "Configured for bare system (no-DFU)"
   ORIGIN=0x08000000
   DFU_DEFINE="#undef DFU_SUPPORT"
@@ -198,6 +170,7 @@ if test "$pinpad" = "no"; then
   PINPAD_MORE_DEFINE=""
   echo "PIN pad option disabled"
 elif test "$pinpad" = "yes"; then
+  pinpad=dnd
   PINPAD_MAKE_OPTION="ENABLE_PINPAD=dnd"
   PINPAD_DEFINE="#define PINPAD_SUPPORT 1"
   PINPAD_MORE_DEFINE="#define PINPAD_DND_SUPPORT 1"
@@ -216,6 +189,52 @@ if test "$certdo" = "yes"; then
 else
   CERTDO_DEFINE="#undef CERTDO_SUPPORT"
   echo "CERT.3 Data Object is not supported"
+fi
+
+REVISION=`git describe --dirty="-modified"` 
+CONFIG="$target:dfu=$with_dfu:debug=$debug:pinpad=$pinpad:certdo=$certdo"
+
+if !(IFS="	"
+  while read VIDPID VERSION PRODUCT VENDOR; do
+    if test "$vidpid" = "$VIDPID"; then
+      (echo $VIDPID | sed -n -e "s%^\([0-9a-f][0-9a-f]\)\([0-9a-f][0-9a-f]\):\([0-9a-f][0-9a-f]\)\([0-9a-f][0-9a-f]\)$%  0x\2, 0x\1, /* idVendor  */\n  0x\4, 0x\3, /* idProduct */%p"
+       echo $VERSION | sed -n -e "s%^\([0-9a-f][0-9a-f]\)\([0-9a-f][0-9a-f]\)$%  0x\2, 0x\1, /* bcdDevice  */%p"
+      ) > usb-vid-pid-ver.c.inc
+      (echo 'static const uint8_t gnukStringVendor[] = {'
+       echo "  ${#VENDOR}*2+2,			/* bLength */"
+       echo "  USB_STRING_DESCRIPTOR_TYPE,	/* bDescriptorType */"
+       echo "  /* Manufacturer: \"$VENDOR\" */"
+       echo $VENDOR | sed -n -e "s/\(........\)/\1\n/gp" | sed -n -e "s/\(.\)/'\1', 0, /g" -e "s/^/  /" -e "s/ $//p"
+       echo '};'
+       echo
+       echo 'static const uint8_t gnukStringProduct[] = {'
+       echo "  ${#PRODUCT}*2+2,			/* bLength */"
+       echo "  USB_STRING_DESCRIPTOR_TYPE,	/* bDescriptorType */"
+       echo "  /* Product name: \"$PRODUCT\" */"
+       echo $PRODUCT | sed -n -e "s/\(........\)/\1\n/gp" | sed -n -e "s/\(.\)/'\1', 0, /g" -e "s/^/  /" -e "s/ $//p"
+       echo '};'
+       echo
+       echo 'static const uint8_t gnuk_revision_detail[] = {'
+       echo "  ${#REVISION}*2+2,			/* bLength */"
+       echo "  USB_STRING_DESCRIPTOR_TYPE,	/* bDescriptorType */"
+       echo "  /* revision detail: \"$REVISION\" */"
+       echo $REVISION | sed -n -e "s/\(........\)/\1\n/gp" | sed -n -e "s/\(.\)/'\1', 0, /g" -e "s/^/  /" -e "s/ $//p"
+       echo '};'
+       echo
+       echo 'static const uint8_t gnuk_config_options[] = {'
+       echo "  ${#CONFIG}*2+2,			/* bLength */"
+       echo "  USB_STRING_DESCRIPTOR_TYPE,	/* bDescriptorType */"
+       echo "  /* configure options: \"$CONFIG\" */"
+       echo $CONFIG | sed -n -e "s/\(........\)/\1\n/gp" | sed -n -e "s/\(.\)/'\1', 0, /g" -e "s/^/  /" -e "s/ $//p"
+       echo '};'
+       ) >usb-strings.c.inc
+      exit 0
+    fi
+  done; exit 1) < ../GNUK_USB_DEVICE_ID
+then
+  echo "Please specify valid Vendor ID and Product ID." 
+  echo "Check ../GNUK_USB_DEVICE_ID."
+  exit 1
 fi
 
 sed -e "s%@BOARD_DIR@%$BOARD_DIR%" \

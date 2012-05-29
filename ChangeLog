@@ -1,5 +1,10 @@
 2012-05-29  Niibe Yutaka  <gniibe@fsij.org>
 
+	* src/usb_conf.h (NUM_STRING_DESC): Incremented to 6 (was: 4).
+	* src/configure: Generate strings for revision detail and config
+	options.
+	* src/usb_desc.c (gnuk_revision_detail, gnuk_config_options): New.
+
 	* src/main.c (main) [DFU_SUPPORT]: Kill DFU and install .sys.
 
 	* src/config.h.in (FLASH_PAGE_SIZE): New.
