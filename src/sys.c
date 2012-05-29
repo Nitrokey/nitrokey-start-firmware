@@ -1,4 +1,3 @@
-#include "config.h"
 #include "ch.h"
 #include "hal.h"
 #include "board.h"
@@ -252,20 +251,18 @@ nvic_system_reset (void)
 static void __attribute__ ((naked))
 reset (void)
 {
-  asm volatile ("cpsid	i\n\t"		/* Mask all interrupts            */
-		"mov.w	r0, #0xed00\n\t" /* SCR */
+  asm volatile ("cpsid	i\n\t"		/* Mask all interrupts. */
+		"mov.w	r0, #0xed00\n\t" /* r0 = SCR */
 		"movt	r0, #0xe000\n\t"
-#ifdef DFU_SUPPORT
-		"mov.w	r1, #0x4000\n\t" /* 0x08004000 */
-		"movt	r1, #0x0800\n\t"
-#else
-		"mov.w	r1, #0x1000\n\t" /* 0x08001000 */
-		"movt	r1, #0x0800\n\t"
-#endif
-		"str	r1, [r0, #8]\n\t" /* Set SCR->VCR */
+		"mov	r1, pc\n\t"	 /* r1 = (PC + 0x1000) & ~0x0fff */
+		"mov	r2, #0x1000\n\t"
+		"add	r1, r1, r2\n\t"
+		"sub	r2, r2, #1\n\t"
+		"bic	r1, r1, r2\n\t"
+		"str	r1, [r0, #8]\n\t"	/* Set SCR->VCR */
 		"ldr	r0, [r1], #4\n\t"
-		"msr	MSP, r0\n\t"	/* Main (exception handler) stack */
-		"ldr	r0, [r1]\n\t"	/* Reset handler                  */
+		"msr	MSP, r0\n\t"	/* Main (exception handler) stack. */
+		"ldr	r0, [r1]\n\t"	/* Reset handler.                  */
 		"bx	r0\n"
 		: /* no output */ : /* no input */ : "memory");
 }

@@ -1,5 +1,11 @@
 2012-05-29  Niibe Yutaka  <gniibe@fsij.org>
 
+	* src/sys.c (reset): Don't depend if DFU_SUPPORT or not.
+
+	* polarssl-0.14.0/library/aes.c (FT0, FT1, FT2): Specify sections
+	in detail, so that addresses won't be affected by compiler.
+	* src/gnuk.ld.in (.sys): Define sections in detail.
+
 	* boards/STBEE_MINI/board.h (SET_USB_CONDITION, GPIO_USB)
 	(IOPORT_USB, SET_LED_CONDITION, GPIO_LED, IOPORT_LED)
 	(FLASH_PAGE_SIZE): New.
