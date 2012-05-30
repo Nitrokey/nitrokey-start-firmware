@@ -1,3 +1,13 @@
+2012-05-31  Niibe Yutaka  <gniibe@fsij.org>
+
+	Version string of system service is now USB string.
+	* src/sys.h (unique_device_id): Define here, not as system
+	service.
+	* src/sys.c (sys_version): Version string for system service.
+	* src/usb_desc.c (String_Descriptors): Add sys_version.
+	* src/usb_conf.h (NUM_STRING_DESC): 7 (was: 6).
+	* src/gnuk.ld.in (.sys.version): New section.
+
 2012-05-30  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/openpgp.c (CHALLENGE_LEN): New.

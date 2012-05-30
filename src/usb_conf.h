@@ -3,7 +3,7 @@
 #ifndef __USB_CONF_H
 #define __USB_CONF_H
 
-#define NUM_STRING_DESC 6
+#define NUM_STRING_DESC 7
 
 /* Control pipe */
 /* EP0  */

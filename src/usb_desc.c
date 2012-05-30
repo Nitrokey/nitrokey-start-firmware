@@ -4,6 +4,7 @@
 
 #include "config.h"
 #include "ch.h"
+#include "sys.h"
 #include "usb_lld.h"
 #include "usb_conf.h"
 #include "usb-cdc.h"
@@ -283,4 +284,5 @@ const struct Descriptor String_Descriptors[NUM_STRING_DESC] = {
   {gnukStringSerial, sizeof (gnukStringSerial)},
   {gnuk_revision_detail, sizeof (gnuk_revision_detail)},
   {gnuk_config_options, sizeof (gnuk_config_options)},
+  {sys_version, sizeof (sys_version)},
 };

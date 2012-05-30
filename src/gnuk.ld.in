@@ -54,6 +54,8 @@ SECTIONS
     {
         _sys = .;
         KEEP(*(.vectors))
+	. = ALIGN(16);
+	*(.sys.version)
 	sys.o(.text)
 	sys.o(.text.*)
         sys.o(.rodata)

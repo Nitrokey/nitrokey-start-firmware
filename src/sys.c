@@ -30,15 +30,6 @@
 extern uint8_t __flash_start__, __flash_end__;
 
 
-static const uint8_t *
-unique_device_id (void)
-{
-  /* STM32F103 has 96-bit unique device identifier */
-  const uint8_t *addr = (const uint8_t *)0x1ffff7e8;
-
-  return addr;
-}
-
 static void
 usb_cable_config (int enable)
 {
@@ -295,7 +286,6 @@ extern uint8_t __ram_end__;
 handler vector[] __attribute__ ((section(".vectors"))) = {
   (handler)&__ram_end__,
   reset,
-  (handler)unique_device_id,
   (handler)set_led,
   flash_unlock,
   (handler)flash_program_halfword,
@@ -307,4 +297,11 @@ handler vector[] __attribute__ ((section(".vectors"))) = {
   usb_lld_sys_init,
   usb_lld_sys_shutdown,
   nvic_system_reset,
+};
+
+const uint8_t sys_version[8] __attribute__((section(".sys.version"))) = {
+  3*2+2,	     /* bLength */
+  0x03,		     /* bDescriptorType = USB_STRING_DESCRIPTOR_TYPE*/
+  /* sys version: "1.0" */
+  '1', 0, '.', 0, '0', 0,
 };
