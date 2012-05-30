@@ -121,6 +121,7 @@ extern void gpg_do_get_data (uint16_t tag, int with_tag);
 extern void gpg_do_put_data (uint16_t tag, const uint8_t *data, int len);
 extern void gpg_do_public_key (uint8_t kk_byte);
 
+extern const uint8_t *gpg_get_firmware_update_key (uint8_t keyno);
 
 
 enum kind_of_key {

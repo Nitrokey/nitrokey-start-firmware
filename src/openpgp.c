@@ -50,6 +50,9 @@
 #define INS_PUT_DATA				0xda
 #define INS_PUT_DATA_ODD			0xdb	/* For key import */
 
+#define CHALLENGE_LEN	16
+static const uint8_t *challenge; /* Random bytes */
+
 static const uint8_t
 select_file_TOP_result[] __attribute__ ((aligned (1))) = {
   0x00, 0x00,	     /* unused */
@@ -826,9 +829,31 @@ cmd_write_binary (void)
 static void
 cmd_external_authenticate (void)
 {
+  const uint8_t *pubkey;
+  const uint8_t *signature = apdu.cmd_apdu_data;
+  int len = apdu.cmd_apdu_data_len;
+  uint8_t keyno = P2 (apdu);
+  int r;
+
   DEBUG_INFO (" - EXTERNAL AUTHENTICATE\r\n");
 
-  if (!ac_check_status (AC_ADMIN_AUTHORIZED))
+  if (keyno > 2)
+    {
+      GPG_CONDITION_NOT_SATISFIED ();
+      return;
+    }
+
+  pubkey = gpg_get_firmware_update_key (keyno);
+  if (pubkey == NULL || len != 256)
+    {
+      GPG_CONDITION_NOT_SATISFIED ();
+      return;
+    }
+
+  r = rsa_verify (pubkey, challenge, CHALLENGE_LEN, signature);
+  random_bytes_free (challenge);
+  challenge = NULL;
+  if (r < 0)
     {
       GPG_SECURITY_FAILURE ();
       return;
@@ -842,19 +867,14 @@ cmd_external_authenticate (void)
 static void
 cmd_get_challenge (void)
 {
-  const uint8_t *rand;
-  int i;
-
   DEBUG_INFO (" - GET CHALLENGE\r\n");
 
-  for (i = 0; i < 6; i++)
-    {
-      rand = random_bytes_get ();
-      memcpy (res_APDU + i * 16, rand, 16);
-      random_bytes_free (rand);
-    }
+  if (challenge)
+    random_bytes_free (challenge);
 
-  res_APDU_size = 96;
+  challenge = random_bytes_get ();
+  memcpy (res_APDU, challenge, CHALLENGE_LEN);
+  res_APDU_size = CHALLENGE_LEN;
   GPG_SUCCESS ();
   DEBUG_INFO ("GET CHALLENGE done.\r\n");
 }

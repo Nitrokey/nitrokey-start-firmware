@@ -228,6 +228,9 @@ Gnuk is distributed with external source code.
   The file include/polarssl/bn_mul.h is heavily modified for ARM
   Cortex-M3.
 
+  The file library/aes.c is modified so that some constants can
+  go to .sys section.
+
 
 USB vendor ID and product ID (USB device ID)
 ============================================

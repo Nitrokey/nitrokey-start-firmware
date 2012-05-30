@@ -1,3 +1,10 @@
+2012-05-30  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/openpgp.c (CHALLENGE_LEN): New.
+	(cmd_external_authenticate): Authentication by response with
+	public key.
+	(cmd_get_challenge): 16-byte is enough for challenge.
+
 2012-05-29  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/call-rsa.c (rsa_verify): New function.
@@ -227,7 +234,7 @@
 	(std_set_address, std_get_descriptor, std_get_configuration)
 	(std_set_configuration, std_get_interface, std_set_interface):
 	Check direction.
-	(handle_setup0): Add length for setup_with_data
+	(handle_setup0): Add length for setup_with_data.
 
 2012-05-16  Niibe Yutaka  <gniibe@fsij.org>
 
