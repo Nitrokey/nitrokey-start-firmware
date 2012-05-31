@@ -900,9 +900,9 @@ cmd_external_authenticate (void)
 {
   const uint8_t *pubkey;
   const uint8_t *signature = apdu.cmd_apdu_data;
+  const uint8_t *hash = apdu.cmd_apdu_data + 256;
   int len = apdu.cmd_apdu_data_len;
   uint8_t keyno = P2 (apdu);
-  int r;
 
   DEBUG_INFO (" - EXTERNAL AUTHENTICATE\r\n");
 
@@ -920,11 +920,13 @@ cmd_external_authenticate (void)
       GPG_CONDITION_NOT_SATISFIED ();
       return;
     }
-
-  r = rsa_verify (pubkey, challenge, signature);
+  
+  memcpy (hash, unique_device_id (), 4);
+  memcpy (hash+4, challenge, CHALLENGE_LEN);
   random_bytes_free (challenge);
   challenge = NULL;
-  if (r < 0)
+
+  if (rsa_verify (pubkey, hash, signature) < 0)
     {
       GPG_SECURITY_FAILURE ();
       return;
@@ -944,8 +946,9 @@ cmd_get_challenge (void)
     random_bytes_free (challenge);
 
   challenge = random_bytes_get ();
-  memcpy (res_APDU, challenge, CHALLENGE_LEN);
-  res_APDU_size = CHALLENGE_LEN;
+  memcpy (res_APDU, unique_device_id (), 4);
+  memcpy (res_APDU+4, challenge, CHALLENGE_LEN);
+  res_APDU_size = CHALLENGE_LEN + 4;
   GPG_SUCCESS ();
   DEBUG_INFO ("GET CHALLENGE done.\r\n");
 }

@@ -1,6 +1,6 @@
 2012-05-31  Niibe Yutaka  <gniibe@fsij.org>
 
-	* src/call-rsa.c (rsa_verify): It's SIG_RSA_MD5.
+	* src/call-rsa.c (rsa_verify): It's SIG_RSA_SHA1.
 	* src/openpgp.c (cmd_external_authenticate): Follow the change of
 	rsa_verify.
 

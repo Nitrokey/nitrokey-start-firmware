@@ -196,7 +196,7 @@ rsa_verify (const uint8_t *pubkey, const uint8_t *hash, const uint8_t *sig)
 
   DEBUG_INFO ("RSA verify...");
 
-  r = rsa_pkcs1_verify (&rsa_ctx, RSA_PUBLIC, SIG_RSA_MD5, 16, hash, sig);
+  r = rsa_pkcs1_verify (&rsa_ctx, RSA_PUBLIC, SIG_RSA_SHA1, 20, hash, sig);
 
   rsa_free (&rsa_ctx);
   if (r < 0)
