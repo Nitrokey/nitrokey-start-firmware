@@ -872,9 +872,25 @@ static void
 cmd_write_binary (void)
 {
   int len = apdu.cmd_apdu_data_len;
+  int i;
+  const uint8_t *p;
 
   DEBUG_INFO (" - WRITE BINARY\r\n");
   modify_binary (MBD_OPRATION_WRITE, P1 (apdu), P2 (apdu), len);
+
+  for (i = 0; i < 4; i++)
+    {
+      p = gpg_get_firmware_update_key (i);
+      if (p[0] != 0x00 || p[1] != 0x00) /* still valid */
+	break;
+    }
+
+  if (i == 4)			/* all update keys are removed */
+    {
+      p = gpg_get_firmware_update_key (0)
+	flash_erase_page ((uint32_t)p);
+    }
+
   DEBUG_INFO ("WRITE BINARY done.\r\n");
 }
 
