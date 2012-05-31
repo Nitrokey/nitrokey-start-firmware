@@ -141,7 +141,11 @@ extern void flash_increment_counter (uint8_t counter_tag_nr);
 extern void flash_reset_counter (uint8_t counter_tag_nr);
 
 #define FILEID_SERIAL_NO	0
-#define FILEID_CH_CERTIFICATE	1
+#define FILEID_UPDATE_KEY_0	1
+#define FILEID_UPDATE_KEY_1	2
+#define FILEID_UPDATE_KEY_2	3
+#define FILEID_UPDATE_KEY_3	4
+#define FILEID_CH_CERTIFICATE	5
 extern int flash_erase_binary (uint8_t file_id);
 extern int flash_write_binary (uint8_t file_id, const uint8_t *data, uint16_t len, uint16_t offset);
 

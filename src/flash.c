@@ -511,6 +511,11 @@ flash_write_binary (uint8_t file_id, const uint8_t *data,
       maxsize = 6;
       p = &openpgpcard_aid[8];
     }
+  else if (file_id >= FILEID_UPDATE_KEY_0 && file_id <= FILEID_UPDATE_KEY_3)
+    {
+      maxsize = KEY_CONTENT_LEN;
+      p = gpg_get_firmware_update_key (file_id - FILEID_UPDATE_KEY_0);
+    }
 #if defined(CERTDO_SUPPORT)
   else if (file_id == FILEID_CH_CERTIFICATE)
     {

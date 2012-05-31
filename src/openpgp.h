@@ -6,7 +6,7 @@
 #define GPG_FUNCTION_NOT_SUPPORTED()	set_res_sw (0x6a, 0x81)
 #define GPG_NO_FILE()			set_res_sw (0x6a, 0x82)
 #define GPG_NO_RECORD()			set_res_sw (0x6a, 0x88)
-#define GPG_BAD_P0_P1()			set_res_sw (0x6b, 0x00)
+#define GPG_BAD_P1_P2()			set_res_sw (0x6b, 0x00)
 #define GPG_NO_INS() 			set_res_sw (0x6d, 0x00)
 #define GPG_ERROR()			set_res_sw (0x6f, 0x00)
 #define GPG_SUCCESS()			set_res_sw (0x90, 0x00)

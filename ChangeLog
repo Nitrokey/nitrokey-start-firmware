@@ -1,5 +1,18 @@
 2012-05-31  Niibe Yutaka  <gniibe@fsij.org>
 
+	Support "firmware update" keys.
+	* src/flash.c (flash_write_binary): Support update keys.
+	* src/gnuk.h (FILEID_UPDATE_KEY_0, FILEID_UPDATE_KEY_1)
+	(FILEID_UPDATE_KEY_2,FILEID_UPDATE_KEY_3): New.
+	* src/gnuk.ld.in (_updatekey_store): New.
+	* src/openpgp.c (FILE_EF_UPDATE_KEY_0, FILE_EF_UPDATE_KEY_1)
+	(FILE_EF_UPDATE_KEY_2, FILE_EF_UPDATE_KEY_3): New.
+	(gpg_get_firmware_update_key): New.
+	(cmd_read_binary): Support update keys and certificate.
+	(modify_binary): New.
+	(cmd_update_binary, cmd_write_binary): Use modify_binary.
+	(cmd_external_authenticate): Support up to four keys.
+
 	Version string of system service is now USB string.
 	* src/sys.h (unique_device_id): Define here, not as system
 	service.

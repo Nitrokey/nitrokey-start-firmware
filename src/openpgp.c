@@ -81,8 +81,12 @@ set_res_sw (uint8_t sw1, uint8_t sw2)
 #define FILE_DF_OPENPGP	1
 #define FILE_MF		2
 #define FILE_EF_DIR	3
-#define FILE_EF_SERIAL	4
-#define FILE_EF_CH_CERTIFICATE  5
+#define FILE_EF_SERIAL_NO	4
+#define FILE_EF_UPDATE_KEY_0	5
+#define FILE_EF_UPDATE_KEY_1	6
+#define FILE_EF_UPDATE_KEY_2	7
+#define FILE_EF_UPDATE_KEY_3	8
+#define FILE_EF_CH_CERTIFICATE	9
 
 static uint8_t file_selection;
 
@@ -484,23 +488,95 @@ cmd_pgp_gakp (void)
     }
 }
 
+const uint8_t *
+gpg_get_firmware_update_key (uint8_t keyno)
+{
+  extern uint8_t _updatekey_store;
+  const uint8_t *p;
+
+  p = &_updatekey_store + keyno * KEY_CONTENT_LEN;
+  return p;
+}
+
+#ifdef CERTDO_SUPPORT
+#define FILEID_CH_CERTIFICATE_IS_VALID 1
+#else
+#define FILEID_CH_CERTIFICATE_IS_VALID 0
+#endif
+
 static void
 cmd_read_binary (void)
 {
+  int is_short_EF = (P1 (apdu) & 0x80) != 0;
+  uint8_t file_id;
+  const uint8_t *p;
+  uint16_t offset;
+
   DEBUG_INFO (" - Read binary\r\n");
 
-  if (file_selection == FILE_EF_SERIAL)
+  if (is_short_EF)
+    file_id = (P1 (apdu) & 0x1f);
+  else
+    file_id = file_selection - FILE_EF_SERIAL_NO + FILEID_SERIAL_NO;
+
+  if ((!FILEID_CH_CERTIFICATE_IS_VALID && file_id == FILEID_CH_CERTIFICATE)
+      || file_id > FILEID_CH_CERTIFICATE)
     {
-      if (P2 (apdu) >= 6)
-	GPG_BAD_P0_P1 ();
-      else
-	{
-	  gpg_do_get_data (0x004f, 1); /* AID */
-	  res_APDU[0] = 0x5a;
-	}
+      GPG_NO_FILE ();
+      return;
+    }
+
+  if (is_short_EF)
+    {
+      file_selection = file_id - FILEID_SERIAL_NO + FILE_EF_SERIAL_NO;
+      offset = P2 (apdu);
     }
   else
-    GPG_NO_RECORD();
+    offset = (P1 (apdu) << 8) | P2 (apdu);
+
+  if (file_id == FILEID_SERIAL_NO)
+    {
+      if (offset != 0)
+	GPG_BAD_P1_P2 ();
+      else
+	{
+	  gpg_do_get_data (0x004f, 1); /* Get AID... */
+	  res_APDU[0] = 0x5a; /* ... and overwrite the first byte of data. */
+	}
+      return;
+    }
+
+  if (file_id >= FILEID_UPDATE_KEY_0 && file_id <= FILEID_UPDATE_KEY_3)
+    {
+      if (offset != 0)
+	GPG_MEMORY_FAILURE ();
+      else
+	{
+	  p = gpg_get_firmware_update_key (file_id - FILEID_UPDATE_KEY_0);
+	  res_APDU_size = KEY_CONTENT_LEN;
+	  memcpy (res_APDU, p, KEY_CONTENT_LEN);
+	  GPG_SUCCESS ();
+	}
+    }
+#if defined(CERTDO_SUPPORT)
+  else /* file_id == FILEID_CH_CERTIFICATE */
+    {
+      uint16_t len = 256;
+
+      p = &ch_certificate_start;
+      if (offset >= FLASH_CH_CERTIFICATE_SIZE)
+	GPG_MEMORY_FAILURE ();
+      else
+	{
+	  if (offset + len >= FLASH_CH_CERTIFICATE_SIZE)
+	    len = FLASH_CH_CERTIFICATE_SIZE - offset;
+
+	  res_APDU_size = len;
+	  memcpy (res_APDU, p + offset, len);
+	  GPG_SUCCESS ();
+	}
+    }
+#endif
 }
 
 static void
@@ -543,7 +619,7 @@ cmd_select_file (void)
        * MF.EF-GDO -- Serial number of the card and name of the owner
        */
       GPG_SUCCESS ();
-      file_selection = FILE_EF_SERIAL;
+      file_selection = FILE_EF_SERIAL_NO;
     }
   else if (apdu.cmd_apdu_data_len == 2
 	   && apdu.cmd_apdu_data[0] == 0x3f && apdu.cmd_apdu_data[1] == 0x00)
@@ -704,16 +780,16 @@ cmd_internal_authenticate (void)
   DEBUG_INFO ("INTERNAL AUTHENTICATE done.\r\n");
 }
 
+#define MBD_OPRATION_WRITE  0
+#define MBD_OPRATION_UPDATE 1
 
-#if defined(CERTDO_SUPPORT)
 static void
-cmd_update_binary (void)
+modify_binary (uint8_t op, uint8_t p1, uint8_t p2, int len)
 {
-  int len = apdu.cmd_apdu_data_len;
+  uint8_t file_id;
   uint16_t offset;
+  int is_short_EF = (p1 & 0x80) != 0;
   int r;
-
-  DEBUG_INFO (" - UPDATE BINARY\r\n");
 
   if (!ac_check_status (AC_ADMIN_AUTHORIZED))
     {
@@ -722,41 +798,52 @@ cmd_update_binary (void)
       return;
     }
 
-  if ((P1 (apdu) & 0x80))
-    if ((P1 (apdu) & 0x7f) == FILEID_CH_CERTIFICATE)
-      {
-	file_selection = FILE_EF_CH_CERTIFICATE;
-	r = flash_erase_binary (FILEID_CH_CERTIFICATE);
-	if (r < 0)
-	  {
-	    DEBUG_INFO ("memory error.\r\n");
-	    GPG_MEMORY_FAILURE ();
-	    return;
-	  }
-
-	offset = 0;
-      }
-    else
-      {
-	GPG_NO_FILE ();
-	return;
-      }
+  if (is_short_EF)
+    file_id = (p1 & 0x1f);
   else
-    {
-      if (file_selection != FILE_EF_CH_CERTIFICATE)
-	{
-	  GPG_COMMAND_NOT_ALLOWED ();
-	  return;
-	}
+    file_id = file_selection - FILE_EF_SERIAL_NO + FILEID_SERIAL_NO;
 
-      offset = (P1 (apdu) << 8) | P2 (apdu);
+  if (!FILEID_CH_CERTIFICATE_IS_VALID && file_id == FILEID_CH_CERTIFICATE)
+    {
+      GPG_NO_FILE ();
+      return;
     }
+
+  if (op == MBD_OPRATION_UPDATE && file_id != FILEID_CH_CERTIFICATE)
+    {
+      GPG_CONDITION_NOT_SATISFIED ();
+      return;
+    }
+
+  if (file_id > FILEID_CH_CERTIFICATE)
+    {
+      GPG_NO_FILE ();
+      return;
+    }
+
+  if (is_short_EF)
+    {
+      file_selection = file_id - FILEID_SERIAL_NO + FILE_EF_SERIAL_NO;
+      offset = p2;
+
+      if (op == MBD_OPRATION_UPDATE)
+	{
+	  r = flash_erase_binary (file_id);
+	  if (r < 0)
+	    {
+	      DEBUG_INFO ("memory error.\r\n");
+	      GPG_MEMORY_FAILURE ();
+	      return;
+	    }
+	}
+    }
+  else
+    offset = (p1 << 8) | p2;
 
   DEBUG_SHORT (len);
   DEBUG_SHORT (offset);
 
-  r = flash_write_binary (FILEID_CH_CERTIFICATE,
-			  apdu.cmd_apdu_data, len, offset);
+  r = flash_write_binary (file_id, apdu.cmd_apdu_data, len, offset);
   if (r < 0)
     {
       DEBUG_INFO ("memory error.\r\n");
@@ -765,6 +852,17 @@ cmd_update_binary (void)
     }
 
   GPG_SUCCESS ();
+}
+
+
+#if defined(CERTDO_SUPPORT)
+static void
+cmd_update_binary (void)
+{
+  int len = apdu.cmd_apdu_data_len;
+
+  DEBUG_INFO (" - UPDATE BINARY\r\n");
+  modify_binary (MBD_OPRATION_UPDATE, P1 (apdu), P2 (apdu), len);
   DEBUG_INFO ("UPDATE BINARY done.\r\n");
 }
 #endif
@@ -774,54 +872,9 @@ static void
 cmd_write_binary (void)
 {
   int len = apdu.cmd_apdu_data_len;
-  uint16_t offset;
-  int r;
 
   DEBUG_INFO (" - WRITE BINARY\r\n");
-
-  if (!ac_check_status (AC_ADMIN_AUTHORIZED))
-    {
-      DEBUG_INFO ("security error.");
-      GPG_SECURITY_FAILURE ();
-      return;
-    }
-
-  if ((P1 (apdu) & 0x80))
-    if ((P1 (apdu) & 0x7f) <= FILEID_CH_CERTIFICATE)
-      {
-	file_selection = FILE_EF_SERIAL + (P1 (apdu) & 0x7f);
-	offset = 0;
-      }
-    else
-      {
-	GPG_NO_FILE ();
-	return;
-      }
-  else
-    {
-      if (file_selection != FILE_EF_SERIAL
-	  && file_selection != FILE_EF_CH_CERTIFICATE)
-	{
-	  GPG_COMMAND_NOT_ALLOWED ();
-	  return;
-	}
-
-      offset = (P1 (apdu) << 8) | P2 (apdu);
-    }
-
-  DEBUG_SHORT (len);
-  DEBUG_SHORT (offset);
-
-  r = flash_write_binary (file_selection - FILE_EF_SERIAL,
-			  apdu.cmd_apdu_data, len, offset);
-  if (r < 0)
-    {
-      DEBUG_INFO ("memory error.\r\n");
-      GPG_MEMORY_FAILURE ();
-      return;
-    }
-
-  GPG_SUCCESS ();
+  modify_binary (MBD_OPRATION_WRITE, P1 (apdu), P2 (apdu), len);
   DEBUG_INFO ("WRITE BINARY done.\r\n");
 }
 
@@ -837,14 +890,16 @@ cmd_external_authenticate (void)
 
   DEBUG_INFO (" - EXTERNAL AUTHENTICATE\r\n");
 
-  if (keyno > 2)
+  if (keyno > 4)
     {
       GPG_CONDITION_NOT_SATISFIED ();
       return;
     }
 
   pubkey = gpg_get_firmware_update_key (keyno);
-  if (pubkey == NULL || len != 256)
+  if (len != 256
+      || (pubkey[0] == 0xff && pubkey[1] == 0xff) /* not registered */
+      || (pubkey[0] == 0x00 && pubkey[1] == 0x00) /* removed */)
     {
       GPG_CONDITION_NOT_SATISFIED ();
       return;

@@ -159,6 +159,9 @@ SECTIONS
 	_keystore_pool = .;
 	. += 512*3;
 	. = ALIGN(@FLASH_PAGE_SIZE@);
+	_updatekey_store = .;
+	. += 1024;
+	. = ALIGN(@FLASH_PAGE_SIZE@);
     } > flash =0xffffffff
 }
 
