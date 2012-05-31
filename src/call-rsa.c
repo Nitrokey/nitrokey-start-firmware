@@ -185,8 +185,7 @@ rsa_decrypt (const uint8_t *input, uint8_t *output, int msg_len,
 }
 
 int
-rsa_verify (const uint8_t *pubkey, const uint8_t *hash, int hashlen,
-	    const uint8_t *signature)
+rsa_verify (const uint8_t *pubkey, const uint8_t *hash, const uint8_t *sig)
 {
   int r;
 
@@ -197,8 +196,7 @@ rsa_verify (const uint8_t *pubkey, const uint8_t *hash, int hashlen,
 
   DEBUG_INFO ("RSA verify...");
 
-  r = rsa_pkcs1_verify (&rsa_ctx, RSA_PUBLIC, SIG_RSA_RAW, hashlen,
-			hash, signature);
+  r = rsa_pkcs1_verify (&rsa_ctx, RSA_PUBLIC, SIG_RSA_MD5, 16, hash, sig);
 
   rsa_free (&rsa_ctx);
   if (r < 0)

@@ -887,8 +887,8 @@ cmd_write_binary (void)
 
   if (i == 4)			/* all update keys are removed */
     {
-      p = gpg_get_firmware_update_key (0)
-	flash_erase_page ((uint32_t)p);
+      p = gpg_get_firmware_update_key (0);
+      flash_erase_page ((uint32_t)p);
     }
 
   DEBUG_INFO ("WRITE BINARY done.\r\n");
@@ -921,7 +921,7 @@ cmd_external_authenticate (void)
       return;
     }
 
-  r = rsa_verify (pubkey, challenge, CHALLENGE_LEN, signature);
+  r = rsa_verify (pubkey, challenge, signature);
   random_bytes_free (challenge);
   challenge = NULL;
   if (r < 0)

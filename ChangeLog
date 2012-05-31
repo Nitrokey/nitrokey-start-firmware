@@ -1,5 +1,9 @@
 2012-05-31  Niibe Yutaka  <gniibe@fsij.org>
 
+	* src/call-rsa.c (rsa_verify): It's SIG_RSA_MD5.
+	* src/openpgp.c (cmd_external_authenticate): Follow the change of
+	rsa_verify.
+
 	Support "firmware update" keys.
 	* src/flash.c (flash_write_binary): Support update keys.
 	* src/gnuk.h (FILEID_UPDATE_KEY_0, FILEID_UPDATE_KEY_1)

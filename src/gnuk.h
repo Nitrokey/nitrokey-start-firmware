@@ -230,7 +230,7 @@ extern int rsa_sign (const uint8_t *, uint8_t *, int, struct key_data *);
 extern const uint8_t *modulus_calc (const uint8_t *, int);
 extern void modulus_free (const uint8_t *);
 extern int rsa_decrypt (const uint8_t *, uint8_t *, int, struct key_data *);
-extern int rsa_verify (const uint8_t *pubkey, const uint8_t *hash, int hashlen,
+extern int rsa_verify (const uint8_t *pubkey, const uint8_t *hash,
 		       const uint8_t *signature);
 
 extern const uint8_t *gpg_do_read_simple (uint8_t);
