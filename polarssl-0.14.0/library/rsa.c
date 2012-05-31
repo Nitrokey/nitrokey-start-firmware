@@ -542,7 +542,7 @@ int rsa_pkcs1_verify( rsa_context *ctx,
 {
     int ret, len, siglen;
     unsigned char *p, c;
-    unsigned char buf[1024];
+    unsigned char buf[256];
 
     siglen = ctx->len;
 
