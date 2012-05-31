@@ -359,7 +359,7 @@ def to_string(t):
         result += chr(c)
     return result
 
-def main(passwd, data_regnual, data_upgrade):
+def main(data_regnual, data_upgrade):
     data_regnual += pack('<i', binascii.crc32(data_regnual))
 
     dev, config, intf = get_ccid_device()
@@ -371,10 +371,9 @@ def main(passwd, data_regnual, data_upgrade):
         raise ValueError, "No ICC present"
     elif icc.icc_get_status() == 1:
         icc.icc_power_on()
-    icc.cmd_verify(3, passwd)
     icc.cmd_select_openpgp()
     challenge = icc.cmd_get_challenge()
-    signed = to_string(challenge)
+    signed = XXX__here_needs_really_sign_it_pkcs1__XXX_to_string(challenge)
     icc.cmd_external_authenticate(signed)
     icc.stop_gnuk()
     mem_info = icc.mem_info()
@@ -404,14 +403,8 @@ def main(passwd, data_regnual, data_upgrade):
     reg.reset_device()
     return 0
 
-DEFAULT_PW3 = "12345678"
 
 if __name__ == '__main__':
-    passwd = DEFAULT_PW3
-    if sys.argv[1] == '-p':
-        from getpass import getpass
-        passwd = getpass("Admin password: ")
-        sys.argv.pop(1)
     filename_regnual = sys.argv[1]
     filename_upgrade = sys.argv[2]
     f = open(filename_regnual)
@@ -422,4 +415,4 @@ if __name__ == '__main__':
     data_upgrade = f.read()
     f.close()
     print "%s: %d" % (filename_upgrade, len(data_upgrade))
-    main(passwd, data_regnual, data_upgrade[4096:])
+    main(data_regnual, data_upgrade[4096:])

@@ -1,5 +1,18 @@
 Gnuk NEWS - User visible changes
 
+* Major changes in Gnuk 0.19
+
+  Released 2012-06-XX, by NIIBE Yutaka
+
+** System service blocks at the beginning of flash ROM.
+
+** USB strings for revision detail, configure options, and system service.
+
+** Firmware upgrade feature
+
+** New tool: gnuk_upgrade.py
+
+
 * Major changes in Gnuk 0.18
 
   Released 2012-05-15, by NIIBE Yutaka
