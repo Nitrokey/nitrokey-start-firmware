@@ -168,7 +168,7 @@ if __name__ == '__main__':
         print "Writing serial number"
         data = binascii.unhexlify(serial_data_hex)
     else:
-        fileid = 1              # Card holder certificate
+        fileid = 5              # Card holder certificate
         filename = sys.argv[1]
         f = open(filename)
         data = f.read()
