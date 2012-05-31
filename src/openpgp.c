@@ -25,6 +25,7 @@
 #include "ch.h"
 #include "hal.h"
 #include "gnuk.h"
+#include "sys.h"
 #include "openpgp.h"
 #include "polarssl/config.h"
 #include "polarssl/sha1.h"
@@ -900,7 +901,7 @@ cmd_external_authenticate (void)
 {
   const uint8_t *pubkey;
   const uint8_t *signature = apdu.cmd_apdu_data;
-  const uint8_t *hash = apdu.cmd_apdu_data + 256;
+  uint8_t *hash = apdu.cmd_apdu_data + 256;
   int len = apdu.cmd_apdu_data_len;
   uint8_t keyno = P2 (apdu);
 
