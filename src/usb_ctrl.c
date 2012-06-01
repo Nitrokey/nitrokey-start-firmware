@@ -347,6 +347,7 @@ gnuk_get_descriptor (uint8_t desc_type, uint16_t index, uint16_t value)
 static int gnuk_usb_event (uint8_t event_type, uint16_t value)
 {
   int i;
+  uint8_t current_conf;
 
   switch (event_type)
     {
@@ -354,7 +355,8 @@ static int gnuk_usb_event (uint8_t event_type, uint16_t value)
       bDeviceState = ADDRESSED;
       return USB_SUCCESS;
     case USB_EVENT_CONFIG:
-      if (usb_lld_current_configuration () == 0)
+      current_conf = usb_lld_current_configuration ();
+      if (current_conf == 0)
 	{
 	  if (value != 1)
 	    return USB_UNSUPPORT;
@@ -365,7 +367,7 @@ static int gnuk_usb_event (uint8_t event_type, uint16_t value)
 	  bDeviceState = CONFIGURED;
 	  chEvtSignalI (main_thread, LED_STATUS_MODE);
 	}
-      else
+      else if (current_conf != value)
 	{
 	  if (value != 0)
 	    return USB_UNSUPPORT;
@@ -375,6 +377,7 @@ static int gnuk_usb_event (uint8_t event_type, uint16_t value)
 	    gnuk_setup_endpoints_for_interface (i, 1);
 	  bDeviceState = ADDRESSED;
 	}
+      /* Do nothing when current_conf == value */
       return USB_SUCCESS;
     default:
       break;

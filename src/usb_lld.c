@@ -358,13 +358,14 @@ static void st103_ep_clear_dtog_tx (uint8_t ep_num)
     }
 }
 
-void usb_lld_init (void)
+void usb_lld_init (uint8_t feature)
 {
   usb_lld_sys_init ();
 
   dev_p->state = IN_DATA;
 
   usb_lld_set_configuration (0);
+  usb_lld_set_feature (feature);
 
   /* Reset USB */
   st103_set_cntr (CNTR_FRES);
@@ -606,22 +607,10 @@ static int std_clear_feature (uint8_t req, uint16_t value,
       if (status == 0)		/* Disabled */
 	return USB_UNSUPPORT;
 
-      if (index & 0x80)
-	{	  /* IN endpoint */
-	  if (st103_ep_get_tx_status (endpoint) == EP_TX_STALL)
-	    {
-	      st103_ep_clear_dtog_tx (endpoint);
-	      st103_ep_set_tx_status (endpoint, EP_TX_VALID);
-	    }
-	}
-      else
-	{	  /* OUT endpoint */
-	  if (st103_ep_get_rx_status (endpoint) == EP_RX_STALL)
-	    {
-	      st103_ep_clear_dtog_rx (endpoint);
-	      st103_ep_set_rx_status (endpoint, EP_RX_VALID);
-	    }
-	}
+      if (index & 0x80)		/* IN endpoint */
+	st103_ep_clear_dtog_tx (endpoint);
+      else			/* OUT endpoint */
+	st103_ep_clear_dtog_rx (endpoint);
 
       // event??
       return USB_SUCCESS;
