@@ -131,10 +131,10 @@ def main(fileid, is_update, data, passwd):
             print "%02x" % d,
         print
         compare(data, data_in_device[8:])
-    elif fileid == 1:
+    elif fileid == 5:
         gnuk.cmd_select_openpgp()
         data_in_device = gnuk.cmd_get_data(0x7f, 0x21)
-        compare(data[:-2], data_in_device)
+        compare(data, data_in_device)
 
     gnuk.connection.disconnect()
     return 0
