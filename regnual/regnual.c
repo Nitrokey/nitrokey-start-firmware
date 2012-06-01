@@ -60,8 +60,8 @@ static const uint8_t regnual_device_desc[] = {
 static const uint8_t regnual_config_desc[] = {
   9,
   USB_CONFIGURATION_DESCRIPTOR_TYPE, /* bDescriptorType: Configuration */
-  9, 0,			/* wTotalLength: no of returned bytes */
-  0,			/* bNumInterfaces: None, but control pipe */
+  18, 0,			/* wTotalLength: no of returned bytes */
+  1,			/* bNumInterfaces: single vender interface */
   0x01,			/* bConfigurationValue: Configuration value */
   0x00,			/* iConfiguration: None */
 #if defined(USB_SELF_POWERED)
@@ -70,6 +70,17 @@ static const uint8_t regnual_config_desc[] = {
   0x80,				/* bmAttributes: bus powered */
 #endif
   50,				/* MaxPower 100 mA */
+
+  /* Interface Descriptor */
+  9,
+  USB_INTERFACE_DESCRIPTOR_TYPE, /* bDescriptorType: Interface */
+  0,				 /* bInterfaceNumber: Index of this interface */
+  0,			    /* Alternate setting for this interface */
+  0,			    /* bNumEndpoints: None */
+  0xFF,
+  0,
+  0,
+  0,				/* string index for interface */
 };
 
 static const uint8_t regnual_string_lang_id[] = {
@@ -78,7 +89,7 @@ static const uint8_t regnual_string_lang_id[] = {
   0x09, 0x04			/* LangID = 0x0409: US-English */
 };
 
-#include "../src/usb-string-vendor-product.c.inc"
+#include "../src/usb-strings.c.inc"
 
 static const uint8_t regnual_string_serial[] = {
   8*2+2,
@@ -294,7 +305,7 @@ main (int argc, char *argv[])
 
   set_led (0);
 
-  usb_lld_init ();
+  usb_lld_init (regnual_config_desc[7]);
 
   while (1)
     {

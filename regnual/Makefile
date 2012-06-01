@@ -32,7 +32,7 @@ LDFLAGS = -T$(LDSCRIPT) -nostartfiles $(MCFLAGS) $(TOPT)
 
 all: regnual.hex
 
-regnual.o: regnual.c
+regnual.o: regnual.c ../src/sys.h
 
 regnual.hex: regnual.elf
 	$(OBJCOPY) -Obinary regnual.elf regnual.bin

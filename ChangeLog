@@ -1,5 +1,10 @@
 2012-06-01  Niibe Yutaka  <gniibe@fsij.org>
 
+	Update of reGNUal.
+	* regnual/regnual.c (main): Follow the change of usb_lld_init.
+	(regnual_config_desc): Include interface descriptor.
+	(usb-strings.c.inc): Change the file name.
+	* regnual/Makefile (regnual.o): Depend on sys.h.
 	* src/configure (usb-strings.c.inc): ifdef-out
 	gnuk_revision_detail and gnuk_config_options (for reGNUal).
 	* src/usb_desc.c (USB_STRINGS_FOR_GNUK): Define.
