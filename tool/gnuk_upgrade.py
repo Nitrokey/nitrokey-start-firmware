@@ -40,8 +40,7 @@ CCID_PROTOCOL_0 = 0x00
 def icc_compose(msg_type, data_len, slot, seq, param, data):
     return pack('<BiBBBH', msg_type, data_len, slot, seq, 0, param) + data
 
-def iso7816_compose(ins, p1, p2, data):
-    cls = 0x00 
+def iso7816_compose(ins, p1, p2, data, cls=0x00):
     data_len = len(data)
     if data_len == 0:
         return pack('>BBBB', cls, ins, p1, p2)
@@ -49,8 +48,19 @@ def iso7816_compose(ins, p1, p2, data):
         return pack('>BBBBB', cls, ins, p1, p2, data_len) + data
 
 class regnual:
-    def __init__(self, device):
-        self.__devhandle = device.open()
+    def __init__(self, dev):
+        conf = dev.configurations[0]
+        intf_alt = conf.interfaces[0]
+        intf = intf_alt[0]
+        if intf.interfaceClass != 0xff:
+            raise ValueError, "Wrong interface class"
+        self.__devhandle = dev.open()
+        try:
+            self.__devhandle.setConfiguration(conf)
+        except:
+            pass
+        self.__devhandle.claimInterface(intf)
+        self.__devhandle.setAltInterface(intf)
 
     def mem_info(self):
         mem = self.__devhandle.controlMsg(requestType = 0xc0, request = 0,
@@ -301,7 +311,13 @@ class gnuk_token:
             raise ValueError, ("%02x%02x" % (sw[0], sw[1]))
 
     def cmd_external_authenticate(self, signed):
-        cmd_data = iso7816_compose(0x82, 0x00, 0x00, signed)
+        cmd_data = iso7816_compose(0x82, 0x00, 0x00, signed[0:128], cls=0x10)
+        sw = self.icc_send_cmd(cmd_data)
+        if len(sw) != 2:
+            raise ValueError, sw
+        if not (sw[0] == 0x90 and sw[1] == 0x00):
+            raise ValueError, ("%02x%02x" % (sw[0], sw[1]))
+        cmd_data = iso7816_compose(0x82, 0x00, 0x00, signed[128:])
         sw = self.icc_send_cmd(cmd_data)
         if len(sw) != 2:
             raise ValueError, sw
@@ -324,7 +340,7 @@ def compare(data_original, data_in_device):
             raise ValueError, "verify failed at %08x" % i
         i += 1
 
-def get_ccid_device():
+def ccid_devices():
     busses = usb.busses()
     for bus in busses:
         devices = bus.devices
@@ -335,13 +351,12 @@ def get_ccid_device():
                         if alt.interfaceClass == CCID_CLASS and \
                                 alt.interfaceSubClass == CCID_SUBCLASS and \
                                 alt.interfaceProtocol == CCID_PROTOCOL_0:
-                            return dev, config, alt
-    raise ValueError, "Device not found"
+                            yield dev, config, alt
 
 USB_VENDOR_FSIJ=0x234b
 USB_PRODUCT_GNUK=0x0000
 
-def get_gnuk_device():
+def gnuk_devices():
     busses = usb.busses()
     for bus in busses:
         devices = bus.devices
@@ -350,8 +365,7 @@ def get_gnuk_device():
                 continue
             if dev.idProduct != USB_PRODUCT_GNUK:
                 continue
-            return dev
-    raise ValueError, "Device not found"
+            yield dev
 
 def to_string(t):
     result = ""
@@ -359,21 +373,49 @@ def to_string(t):
         result += chr(c)
     return result
 
-def main(data_regnual, data_upgrade):
+from subprocess import check_output
+
+def gpg_sign(keygrip, hash):
+    result = check_output(["gpg-connect-agent",
+                           "SIGKEY %s" % keygrip,
+                           "SETHASH --hash=sha1 %s" % hash,
+                           "PKSIGN", "/bye"])
+    signed = ""
+    while True:
+        i = result.find('%')
+        if i < 0:
+            signed += result
+            break
+        hex_str = result[i+1:i+3]
+        signed += result[0:i]
+        signed += chr(int(hex_str,16))
+        result = result[i+3:]
+
+    pos = signed.index("D (7:sig-val(3:rsa(1:s256:") + 26
+    signed = signed[pos:-7]
+    if len(signed) != 256:
+        raise ValueError, binascii.hexlify(signed)
+    return signed
+
+def main(keygrip, data_regnual, data_upgrade):
     data_regnual += pack('<i', binascii.crc32(data_regnual))
 
-    dev, config, intf = get_ccid_device()
-    print "Device: ", dev.filename
-    print "Configuration: ", config.value
-    print "Interface: ", intf.interfaceNumber
-    icc = gnuk_token(dev, config, intf)
+    for (dev, config, intf) in ccid_devices():
+        try:
+            icc = gnuk_token(dev, config, intf)
+            print "Device: ", dev.filename
+            print "Configuration: ", config.value
+            print "Interface: ", intf.interfaceNumber
+            break
+        except:
+            icc = None
     if icc.icc_get_status() == 2:
         raise ValueError, "No ICC present"
     elif icc.icc_get_status() == 1:
         icc.icc_power_on()
     icc.cmd_select_openpgp()
     challenge = icc.cmd_get_challenge()
-    signed = XXX__here_needs_really_sign_it_pkcs1__XXX_to_string(challenge)
+    signed = gpg_sign(keygrip, binascii.hexlify(to_string(challenge)))
     icc.cmd_external_authenticate(signed)
     icc.stop_gnuk()
     mem_info = icc.mem_info()
@@ -391,9 +433,14 @@ def main(data_regnual, data_upgrade):
     print "Wait 3 seconds..."
     time.sleep(3)
     # Then, send upgrade program...
-    dev = get_gnuk_device()
-    print "Device: ", dev.filename
-    reg = regnual(dev)
+    reg = None
+    for dev in gnuk_devices():
+        try:
+            reg = regnual(dev)
+            print "Device: ", dev.filename
+            break
+        except:
+            pass
     mem_info = reg.mem_info()
     print "%08x:%08x" % mem_info
     print "Downloading the program"
@@ -405,8 +452,9 @@ def main(data_regnual, data_upgrade):
 
 
 if __name__ == '__main__':
-    filename_regnual = sys.argv[1]
-    filename_upgrade = sys.argv[2]
+    keygrip = sys.argv[1]
+    filename_regnual = sys.argv[2]
+    filename_upgrade = sys.argv[3]
     f = open(filename_regnual)
     data_regnual = f.read()
     f.close()
@@ -415,4 +463,4 @@ if __name__ == '__main__':
     data_upgrade = f.read()
     f.close()
     print "%s: %d" % (filename_upgrade, len(data_upgrade))
-    main(data_regnual, data_upgrade[4096:])
+    main(keygrip, data_regnual, data_upgrade[4096:])

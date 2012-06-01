@@ -1,5 +1,7 @@
 2012-06-01  Niibe Yutaka  <gniibe@fsij.org>
 
+	Support firmware update with public key authentication.
+	* tool/gnuk_upgrade.py (gpg_sign): New.
 	* tool/gnuk_put_binary_libusb.py (main): Support firmware update
 	key registration.
 
