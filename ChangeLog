@@ -1,5 +1,9 @@
 2012-06-01  Niibe Yutaka  <gniibe@fsij.org>
 
+	* src/configure (usb-strings.c.inc): ifdef-out
+	gnuk_revision_detail and gnuk_config_options (for reGNUal).
+	* src/usb_desc.c (USB_STRINGS_FOR_GNUK): Define.
+
 	USB bug fixes.
 	* src/usb_ctrl.c (gnuk_usb_event): Bug fix for handling
 	USB_EVENT_CONFIG.  Do nothing when current_conf == value.

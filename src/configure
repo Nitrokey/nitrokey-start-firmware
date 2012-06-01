@@ -214,6 +214,7 @@ if !(IFS="	"
        echo $PRODUCT | sed -n -e "s/\(........\)/\1\n/gp" | sed -n -e "s/\(.\)/'\1', 0, /g" -e "s/^/  /" -e "s/ $//p"
        echo '};'
        echo
+       echo '#ifdef USB_STRINGS_FOR_GNUK'
        echo 'static const uint8_t gnuk_revision_detail[] = {'
        echo "  ${#REVISION}*2+2,			/* bLength */"
        echo "  USB_STRING_DESCRIPTOR_TYPE,	/* bDescriptorType */"
@@ -227,6 +228,7 @@ if !(IFS="	"
        echo "  /* configure options: \"$CONFIG\" */"
        echo $CONFIG | sed -n -e "s/\(........\)/\1\n/gp" | sed -n -e "s/\(.\)/'\1', 0, /g" -e "s/^/  /" -e "s/ $//p"
        echo '};'
+       echo '#endif'
        ) >usb-strings.c.inc
       exit 0
     fi
