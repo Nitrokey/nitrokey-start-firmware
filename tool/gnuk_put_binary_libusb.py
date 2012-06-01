@@ -4,7 +4,7 @@
 gnuk_put_binary.py - a tool to put binary to Gnuk Token
 This tool is for importing certificate, updating random number, etc.
 
-Copyright (C) 2011 Free Software Initiative of Japan
+Copyright (C) 2011, 2012 Free Software Initiative of Japan
 Author: NIIBE Yutaka <gniibe@fsij.org>
 
 This file is a part of Gnuk, a GnuPG USB Token implementation.
@@ -41,13 +41,12 @@ CCID_PROTOCOL_0 = 0x00
 def icc_compose(msg_type, data_len, slot, seq, param, data):
     return pack('<BiBBBH', msg_type, data_len, slot, seq, 0, param) + data
 
-def iso7816_compose(ins, p1, p2, data):
-    cls = 0x00 
+def iso7816_compose(ins, p1, p2, data, cls=0x00):
     data_len = len(data)
     if data_len == 0:
         return pack('>BBBB', cls, ins, p1, p2)
     else:
-        return pack('>BBBBBh', cls, ins, p1, p2, 0, data_len) + data
+        return pack('>BBBBB', cls, ins, p1, p2, data_len) + data
 
 # This class only supports Gnuk (for now) 
 class gnuk_token:
@@ -150,27 +149,57 @@ class gnuk_token:
         else:
             raise ValueError, "icc_send_cmd"
 
+    def cmd_get_response(self, expected_len):
+        cmd_data = iso7816_compose(0xc0, 0x00, 0x00, '') + pack('>B', expected_len)
+        response = self.icc_send_cmd(cmd_data)
+        return response[:-2]
+
     def cmd_verify(self, who, passwd):
         cmd_data = iso7816_compose(0x20, 0x00, 0x80+who, passwd)
         sw = self.icc_send_cmd(cmd_data)
         if len(sw) != 2:
-            raise ValueError, "cmd_verify"
+            raise ValueError, sw
         if not (sw[0] == 0x90 and sw[1] == 0x00):
-            raise ValueError, "cmd_verify"
+            raise ValueError, sw
+
+    def cmd_read_binary(self, fileid):
+        cmd_data = iso7816_compose(0xb0, 0x80+fileid, 0x00, '')
+        sw = self.icc_send_cmd(cmd_data)
+        if len(sw) != 2:
+            raise ValueError, sw
+        if sw[0] != 0x61:
+            raise ValueError, ("%02x%02x" % (sw[0], sw[1]))
+        return self.cmd_get_response(sw[1])
 
     def cmd_write_binary(self, fileid, data):
         count = 0
         data_len = len(data)
         while count*256 < data_len:
             if count == 0:
-                cmd_data = iso7816_compose(0xd0, 0x80+fileid, 0x00, data[:256])
+                if len(data) < 128:
+                    cmd_data0 = iso7816_compose(0xd0, 0x80+fileid, 0x00, data[:128])
+                    cmd_data1 = None
+                else:
+                    cmd_data0 = iso7816_compose(0xd0, 0x80+fileid, 0x00, data[:128], 0x10)
+                    cmd_data1 = iso7816_compose(0xd0, 0x80+fileid, 0x00, data[128:256])
             else:
-                cmd_data = iso7816_compose(0xd0, count, 0x00, data[256*count:256*(count+1)])
-            sw = self.icc_send_cmd(cmd_data)
+                if len(data[256*count:256*count+128]) < 128:
+                    cmd_data0 = iso7816_compose(0xd0, count, 0x00, data[256*count:256*count+128])
+                    cmd_data1 = None
+                else:
+                    cmd_data0 = iso7816_compose(0xd0, count, 0x00, data[256*count:256*count+128], 0x10)
+                    cmd_data1 = iso7816_compose(0xd0, count, 0x00, data[256*count:256*(count+1)])
+            sw = self.icc_send_cmd(cmd_data0)
             if len(sw) != 2:
-                raise ValueError, "cmd_write_binary"
+                raise ValueError, "cmd_write_binary 0"
             if not (sw[0] == 0x90 and sw[1] == 0x00):
-                raise ValueError, "cmd_write_binary"
+                raise ValueError, "cmd_write_binary 0"
+            if cmd_data1:
+                sw = self.icc_send_cmd(cmd_data1)
+                if len(sw) != 2:
+                    raise ValueError, "cmd_write_binary 1"
+                if not (sw[0] == 0x90 and sw[1] == 0x00):
+                    raise ValueError, "cmd_write_binary 1"
             count += 1
 
     def cmd_update_binary(self, fileid, data):
@@ -178,31 +207,48 @@ class gnuk_token:
         data_len = len(data)
         while count*256 < data_len:
             if count == 0:
-                cmd_data = iso7816_compose(0xd6, 0x80+fileid, 0x00, data[:256])
+                if len(data) < 128:
+                    cmd_data0 = iso7816_compose(0xd6, 0x80+fileid, 0x00, data[:128])
+                    cmd_data1 = None
+                else:
+                    cmd_data0 = iso7816_compose(0xd6, 0x80+fileid, 0x00, data[:128], 0x10)
+                    cmd_data1 = iso7816_compose(0xd6, 0x80+fileid, 0x00, data[128:256])
             else:
-                cmd_data = iso7816_compose(0xd6, count, 0x00, data[256*count:256*(count+1)])
-            sw = self.icc_send_cmd(cmd_data)
+                if len(data[256*count:256*count+128]) < 128:
+                    cmd_data0 = iso7816_compose(0xd6, count, 0x00, data[256*count:256*count+128])
+                    cmd_data1 = None
+                else:
+                    cmd_data0 = iso7816_compose(0xd6, count, 0x00, data[256*count:256*count+128], 0x10)
+                    cmd_data1 = iso7816_compose(0xd6, count, 0x00, data[256*count:256*(count+1)])
+            sw = self.icc_send_cmd(cmd_data0)
             if len(sw) != 2:
-                raise ValueError, "cmd_update_binary"
+                raise ValueError, "cmd_write_binary 0"
             if not (sw[0] == 0x90 and sw[1] == 0x00):
-                raise ValueError, "cmd_update_binary"
+                raise ValueError, "cmd_write_binary 0"
+            if cmd_data1:
+                sw = self.icc_send_cmd(cmd_data1)
+                if len(sw) != 2:
+                    raise ValueError, "cmd_write_binary 1"
+                if not (sw[0] == 0x90 and sw[1] == 0x00):
+                    raise ValueError, "cmd_write_binary 1"
             count += 1
 
     def cmd_select_openpgp(self):
-        cmd_data = iso7816_compose(0xa4, 0x04, 0x00, "\xD2\x76\x00\x01\x24\x01")
+        cmd_data = iso7816_compose(0xa4, 0x04, 0x0c, "\xD2\x76\x00\x01\x24\x01")
         sw = self.icc_send_cmd(cmd_data)
         if len(sw) != 2:
-            raise ValueError, "cmd_select_openpgp"
+            raise ValueError, sw
         if not (sw[0] == 0x90 and sw[1] == 0x00):
-            raise ValueError, "cmd_select_openpgp"
+            raise ValueError, ("%02x%02x" % (sw[0], sw[1]))
 
     def cmd_get_data(self, tagh, tagl):
         cmd_data = iso7816_compose(0xca, tagh, tagl, "")
-        result = self.icc_send_cmd(cmd_data)
-        sw = result[-2:]
-        if not (sw[0] == 0x90 and sw[1] == 0x00):
-            raise ValueError, "cmd_get_data"
-        return result[:-2]
+        sw = self.icc_send_cmd(cmd_data)
+        if len(sw) != 2:
+            raise ValueError, sw
+        if sw[0] != 0x61:
+            raise ValueError, ("%02x%02x" % (sw[0], sw[1]))
+        return self.cmd_get_response(sw[1])
 
 def compare(data_original, data_in_device):
     i = 0 
@@ -211,7 +257,7 @@ def compare(data_original, data_in_device):
             raise ValueError, "verify failed at %08x" % i
         i += 1
 
-def get_device():
+def gnuk_devices():
     busses = usb.busses()
     for bus in busses:
         devices = bus.devices
@@ -222,33 +268,53 @@ def get_device():
                         if alt.interfaceClass == CCID_CLASS and \
                                 alt.interfaceSubClass == CCID_SUBCLASS and \
                                 alt.interfaceProtocol == CCID_PROTOCOL_0:
-                            return dev, config, alt
-    raise ValueError, "Device not found"
+                            yield dev, config, alt
 
-def main(fileid, is_update, data):
-    dev, config, intf = get_device()
-    print "Device: ", dev.filename
-    print "Configuration: ", config.value
-    print "Interface: ", intf.interfaceNumber
-    icc = gnuk_token(dev, config, intf)
+DEFAULT_PW3 = "12345678"
+BY_ADMIN = 3
+
+def main(fileid, is_update, data, passwd):
+    icc = None
+    for (dev, config, intf) in gnuk_devices():
+        try:
+            icc = gnuk_token(dev, config, intf)
+            print "Device: ", dev.filename
+            print "Configuration: ", config.value
+            print "Interface: ", intf.interfaceNumber
+            break
+        except:
+            pass
     if icc.icc_get_status() == 2:
         raise ValueError, "No ICC present"
     elif icc.icc_get_status() == 1:
         icc.icc_power_on()
-    icc.cmd_verify(3, "12345678")
+    icc.cmd_verify(BY_ADMIN, passwd)
     if is_update:
         icc.cmd_update_binary(fileid, data)
     else:
         icc.cmd_write_binary(fileid, data)
     icc.cmd_select_openpgp()
-    if fileid == 1:
-        data = data[:-2]
+    if fileid == 0:
+        data_in_device = icc.cmd_get_data(0x00, 0x4f)
+        for d in data_in_device:
+            print "%02x" % d,
+        print
+        compare(data, data_in_device[8:])
+    elif fileid >= 1 and fileid <= 4:
+        data_in_device = icc.cmd_read_binary(fileid)
+        compare(data, data_in_device)
+    else:
         data_in_device = icc.cmd_get_data(0x7f, 0x21)
         compare(data, data_in_device)
     icc.icc_power_off()
     return 0
 
 if __name__ == '__main__':
+    passwd = DEFAULT_PW3
+    if sys.argv[1] == '-p':
+        from getpass import getpass
+        passwd = getpass("Admin password: ")
+        sys.argv.pop(1)
     if sys.argv[1] == '-u':
         is_update = True
         sys.argv.pop(1)
@@ -270,6 +336,13 @@ if __name__ == '__main__':
             exit(1)
         print "Writing serial number"
         data = binascii.unhexlify(serial_data_hex)
+    elif sys.argv[1] == '-k':   # firmware update key
+        keyno = sys.argv[2]
+        fileid = 1 + int(keyno)
+        filename = sys.argv[3]
+        f = open(filename)
+        data = f.read()
+        f.close()
     else:
         fileid = 5              # Card holder certificate
         filename = sys.argv[1]
@@ -278,4 +351,4 @@ if __name__ == '__main__':
         f.close()
         print "%s: %d" % (filename, len(data))
         print "Updating card holder certificate"
-    main(fileid, is_update, data)
+    main(fileid, is_update, data, passwd)

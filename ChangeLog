@@ -1,5 +1,8 @@
 2012-06-01  Niibe Yutaka  <gniibe@fsij.org>
 
+	* tool/gnuk_put_binary_libusb.py (main): Support firmware update
+	key registration.
+
 	Update of reGNUal.
 	* regnual/regnual.c (main): Follow the change of usb_lld_init.
 	(regnual_config_desc): Include interface descriptor.
