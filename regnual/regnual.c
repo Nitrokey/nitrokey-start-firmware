@@ -147,28 +147,58 @@ static uint32_t result;
 static const uint8_t *const mem_info[] = { &_flash_start,  &_flash_end, };
 
 
+static uint32_t fetch (int i)
+{
+  uint32_t r;
+
+  r = (mem[i*4] << 24) | (mem[i*4+1] << 16) | (mem[i*4+2] << 8) | mem[i*4+3];
+  return r;
+}
+
+struct CRC {
+  __IO uint32_t DR;
+  __IO uint8_t  IDR;
+  uint8_t   RESERVED0;
+  uint16_t  RESERVED1;
+  __IO uint32_t CR;
+};
+
+#define  CRC_CR_RESET 0x01
+static uint32_t calc_crc32 (void)
+{
+  struct CRC *CRC = (struct CRC *)0x40023000;
+  int i;
+
+  CRC->CR = CRC_CR_RESET;
+
+  for (i = 0; i < 256/4; i++)
+    CRC->DR = fetch (i);
+
+  return CRC->DR;
+}
+
+
 static void regnual_ctrl_write_finish (uint8_t req, uint8_t req_no,
 				    uint16_t value, uint16_t index,
 				    uint16_t len)
 {
   uint8_t type_rcp = req & (REQUEST_TYPE|RECIPIENT);
 
-  if (type_rcp == (VENDOR_REQUEST | DEVICE_RECIPIENT)
-      && USB_SETUP_SET (req) && len == 0)
+  if (type_rcp == (VENDOR_REQUEST | DEVICE_RECIPIENT) && USB_SETUP_SET (req))
     {
       if (req_no == USB_REGNUAL_SEND && value == 0)
-	{
-	  result = 0;		// calculate crc32 here!!!
-	}
-      else if (req_no == USB_REGNUAL_FLASH && index == 0)
+	result = calc_crc32 ();
+      else if (req_no == USB_REGNUAL_FLASH && len == 0 && index == 0)
 	{
 	  uint32_t dst_addr = (0x08000000 + value * 0x100);
 
 	  result = flash_write (dst_addr, mem, 256);
 	}
-      else if (req_no == USB_REGNUAL_PROTECT && value == 0 && index == 0)
+      else if (req_no == USB_REGNUAL_PROTECT && len == 0
+	       && value == 0 && index == 0)
 	result = flash_protect ();
-      else if (req_no == USB_REGNUAL_FINISH && value == 0 && index == 0)
+      else if (req_no == USB_REGNUAL_FINISH && len == 0
+	       && value == 0 && index == 0)
 	nvic_system_reset ();
     }
 }

@@ -1,5 +1,12 @@
 2012-06-04  Niibe Yutaka  <gniibe@fsij.org>
 
+	Implement CRC32 check for firmware update.
+	* src/usb_ctrl.c (download_check_crc32): New.
+	* regnual/regnual.c (calc_crc32): New.
+	(regnual_ctrl_write_finish): Call calc_crc32.
+	* tool/gnuk_upgrade.py (crc32): New.
+	(regnual.download): Check crc32code.
+
 	* regnual/regnual.c (regnual_ctrl_write_finish): Bug fix.
 
 2012-06-01  Niibe Yutaka  <gniibe@fsij.org>

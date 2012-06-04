@@ -26,6 +26,7 @@
 
 #include "config.h"
 #include "ch.h"
+#include "hal.h"
 #include "usb_lld.h"
 #include "usb_conf.h"
 #include "gnuk.h"
@@ -187,17 +188,30 @@ static const uint8_t *const mem_info[] = { &_regnual_start,  &__heap_end__, };
 #define USB_FSIJ_GNUK_DOWNLOAD 1
 #define USB_FSIJ_GNUK_EXEC     2
 
-static int download_check_crc32 (const uint8_t *p)
+static uint32_t reverse32 (uint32_t v)
 {
-  uint32_t crc32 = 0;
+  uint32_t r;
 
-  crc32 += (*--p << 24);
-  crc32 += (*--p << 16);
-  crc32 += (*--p << 8);
-  crc32 += (*--p);
+  r = (v << 24) | ((v & 0xff00) << 8) | ((v & 0xff0000) >> 8) | (v >> 24);
+  return r;
+}
 
-  /* Not yet: Calculate crc32 from &_regnual_start to p, then compare */
-  return USB_SUCCESS;
+/* After calling this function, CRC module remain enabled.  */
+static int download_check_crc32 (const uint32_t *end_p)
+{
+  uint32_t crc32 = *end_p;
+  const uint32_t *p;
+
+  RCC->AHBENR |= RCC_AHBENR_CRCEN;
+  CRC->CR = CRC_CR_RESET;
+
+  for (p = (const uint32_t *)&_regnual_start; p < end_p; p++)
+    CRC->DR = reverse32 (*p);
+
+  if ((CRC->DR ^ crc32) == 0xffffffff)
+    return USB_SUCCESS;
+
+  return USB_UNSUPPORT;
 }
 
 static int
@@ -239,8 +253,10 @@ gnuk_setup (uint8_t req, uint8_t req_no,
 	      if (icc_state_p == NULL || *icc_state_p != ICC_STATE_EXITED)
 		return USB_UNSUPPORT;
 
-	      /* There is a trailer at addr: crc32 */
-	      return download_check_crc32 (addr);
+	      if (((uint32_t)addr & 0x03))
+		return USB_UNSUPPORT;
+
+	      return download_check_crc32 ((uint32_t *)addr);
 	    }
 	}
     }
