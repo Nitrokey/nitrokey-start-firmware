@@ -156,7 +156,7 @@ static void regnual_ctrl_write_finish (uint8_t req, uint8_t req_no,
   if (type_rcp == (VENDOR_REQUEST | DEVICE_RECIPIENT)
       && USB_SETUP_SET (req) && len == 0)
     {
-      if (req_no == USB_REGNUAL_SEND && index == 0)
+      if (req_no == USB_REGNUAL_SEND && value == 0)
 	{
 	  result = 0;		// calculate crc32 here!!!
 	}
