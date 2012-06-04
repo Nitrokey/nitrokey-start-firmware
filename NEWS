@@ -35,7 +35,7 @@ original implementation.  Hopefully, size and quality are improved.
   Released 2012-02-02, by NIIBE Yutaka
 
 ** USB CCID/ICCD protocol implementation change
-Gnuk now only supports short APDU level exchange, not support.
+Gnuk now only supports short APDU level exchange, not supporting
 extended APDU level exchange.  Thus, Gnuk could be compatible to older
 host side software implementation.
 
