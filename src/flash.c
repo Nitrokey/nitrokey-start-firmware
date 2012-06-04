@@ -476,7 +476,6 @@ flash_cnt123_clear (const uint8_t **addr_p)
 
 
 #if defined(CERTDO_SUPPORT)
-#define FLASH_CH_CERTIFICATE_SIZE 2048
 int
 flash_erase_binary (uint8_t file_id)
 {
@@ -534,7 +533,7 @@ flash_write_binary (uint8_t file_id, const uint8_t *data,
       uint32_t addr;
       int i;
 
-      if (flash_check_blank (p, len)  == 0)
+      if (flash_check_blank (p + offset, len)  == 0)
 	return -1;
 
       addr = (uint32_t)p + offset;

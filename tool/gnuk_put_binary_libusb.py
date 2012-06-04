@@ -150,9 +150,18 @@ class gnuk_token:
             raise ValueError, "icc_send_cmd"
 
     def cmd_get_response(self, expected_len):
-        cmd_data = iso7816_compose(0xc0, 0x00, 0x00, '') + pack('>B', expected_len)
-        response = self.icc_send_cmd(cmd_data)
-        return response[:-2]
+        result = []
+        while True:
+            cmd_data = iso7816_compose(0xc0, 0x00, 0x00, '') + pack('>B', expected_len)
+            response = self.icc_send_cmd(cmd_data)
+            result += response[:-2]
+            sw = response[-2:]
+            if sw[0] == 0x90 and sw[1] == 0x00:
+                return result
+            elif sw[0] != 0x61:
+                raise ValueError, ("%02x%02x" % (sw[0], sw[1]))
+            else:
+                expected_len = sw[1]
 
     def cmd_verify(self, who, passwd):
         cmd_data = iso7816_compose(0x20, 0x00, 0x80+who, passwd)
@@ -188,7 +197,7 @@ class gnuk_token:
                     cmd_data1 = None
                 else:
                     cmd_data0 = iso7816_compose(0xd0, count, 0x00, data[256*count:256*count+128], 0x10)
-                    cmd_data1 = iso7816_compose(0xd0, count, 0x00, data[256*count:256*(count+1)])
+                    cmd_data1 = iso7816_compose(0xd0, count, 0x00, data[256*count+128:256*(count+1)])
             sw = self.icc_send_cmd(cmd_data0)
             if len(sw) != 2:
                 raise ValueError, "cmd_write_binary 0"
@@ -219,18 +228,18 @@ class gnuk_token:
                     cmd_data1 = None
                 else:
                     cmd_data0 = iso7816_compose(0xd6, count, 0x00, data[256*count:256*count+128], 0x10)
-                    cmd_data1 = iso7816_compose(0xd6, count, 0x00, data[256*count:256*(count+1)])
+                    cmd_data1 = iso7816_compose(0xd6, count, 0x00, data[256*count+128:256*(count+1)])
             sw = self.icc_send_cmd(cmd_data0)
             if len(sw) != 2:
-                raise ValueError, "cmd_write_binary 0"
+                raise ValueError, "cmd_update_binary 0"
             if not (sw[0] == 0x90 and sw[1] == 0x00):
-                raise ValueError, "cmd_write_binary 0"
+                raise ValueError, "cmd_update_binary 0"
             if cmd_data1:
                 sw = self.icc_send_cmd(cmd_data1)
                 if len(sw) != 2:
-                    raise ValueError, "cmd_write_binary 1"
+                    raise ValueError, "cmd_update_binary 1"
                 if not (sw[0] == 0x90 and sw[1] == 0x00):
-                    raise ValueError, "cmd_write_binary 1"
+                    raise ValueError, "cmd_update_binary 1"
             count += 1
 
     def cmd_select_openpgp(self):

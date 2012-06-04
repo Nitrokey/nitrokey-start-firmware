@@ -1,5 +1,12 @@
 2012-06-04  Niibe Yutaka  <gniibe@fsij.org>
 
+	Card holder certificate data object bug fixes.
+	* tool/gnuk_put_binary_libusb.py (gnuk_token.cmd_get_response):
+	Handle larger data such as card holder certificate.
+	* src/flash.c (flash_write_binary): Bug fix.  Call
+	flash_check_blank with p + offset.
+	* src/gnuk.h (FLASH_CH_CERTIFICATE_SIZE): Define here (was: flash.c).
+
 	Implement CRC32 check for firmware update.
 	* src/usb_ctrl.c (download_check_crc32): New.
 	* regnual/regnual.c (calc_crc32): New.
