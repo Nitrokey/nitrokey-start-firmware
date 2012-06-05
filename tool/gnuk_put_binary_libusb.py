@@ -180,24 +180,28 @@ class gnuk_token:
             raise ValueError, ("%02x%02x" % (sw[0], sw[1]))
         return self.cmd_get_response(sw[1])
 
-    def cmd_write_binary(self, fileid, data):
+    def cmd_write_binary(self, fileid, data, is_update):
         count = 0
         data_len = len(data)
+        if is_update:
+            ins = 0xd6
+        else:
+            ins = 0xd0
         while count*256 < data_len:
             if count == 0:
                 if len(data) < 128:
-                    cmd_data0 = iso7816_compose(0xd0, 0x80+fileid, 0x00, data[:128])
+                    cmd_data0 = iso7816_compose(ins, 0x80+fileid, 0x00, data[:128])
                     cmd_data1 = None
                 else:
-                    cmd_data0 = iso7816_compose(0xd0, 0x80+fileid, 0x00, data[:128], 0x10)
-                    cmd_data1 = iso7816_compose(0xd0, 0x80+fileid, 0x00, data[128:256])
+                    cmd_data0 = iso7816_compose(ins, 0x80+fileid, 0x00, data[:128], 0x10)
+                    cmd_data1 = iso7816_compose(ins, 0x80+fileid, 0x00, data[128:256])
             else:
                 if len(data[256*count:256*count+128]) < 128:
-                    cmd_data0 = iso7816_compose(0xd0, count, 0x00, data[256*count:256*count+128])
+                    cmd_data0 = iso7816_compose(ins, count, 0x00, data[256*count:256*count+128])
                     cmd_data1 = None
                 else:
-                    cmd_data0 = iso7816_compose(0xd0, count, 0x00, data[256*count:256*count+128], 0x10)
-                    cmd_data1 = iso7816_compose(0xd0, count, 0x00, data[256*count+128:256*(count+1)])
+                    cmd_data0 = iso7816_compose(ins, count, 0x00, data[256*count:256*count+128], 0x10)
+                    cmd_data1 = iso7816_compose(ins, count, 0x00, data[256*count+128:256*(count+1)])
             sw = self.icc_send_cmd(cmd_data0)
             if len(sw) != 2:
                 raise ValueError, "cmd_write_binary 0"
@@ -209,37 +213,6 @@ class gnuk_token:
                     raise ValueError, "cmd_write_binary 1"
                 if not (sw[0] == 0x90 and sw[1] == 0x00):
                     raise ValueError, "cmd_write_binary 1"
-            count += 1
-
-    def cmd_update_binary(self, fileid, data):
-        count = 0
-        data_len = len(data)
-        while count*256 < data_len:
-            if count == 0:
-                if len(data) < 128:
-                    cmd_data0 = iso7816_compose(0xd6, 0x80+fileid, 0x00, data[:128])
-                    cmd_data1 = None
-                else:
-                    cmd_data0 = iso7816_compose(0xd6, 0x80+fileid, 0x00, data[:128], 0x10)
-                    cmd_data1 = iso7816_compose(0xd6, 0x80+fileid, 0x00, data[128:256])
-            else:
-                if len(data[256*count:256*count+128]) < 128:
-                    cmd_data0 = iso7816_compose(0xd6, count, 0x00, data[256*count:256*count+128])
-                    cmd_data1 = None
-                else:
-                    cmd_data0 = iso7816_compose(0xd6, count, 0x00, data[256*count:256*count+128], 0x10)
-                    cmd_data1 = iso7816_compose(0xd6, count, 0x00, data[256*count+128:256*(count+1)])
-            sw = self.icc_send_cmd(cmd_data0)
-            if len(sw) != 2:
-                raise ValueError, "cmd_update_binary 0"
-            if not (sw[0] == 0x90 and sw[1] == 0x00):
-                raise ValueError, "cmd_update_binary 0"
-            if cmd_data1:
-                sw = self.icc_send_cmd(cmd_data1)
-                if len(sw) != 2:
-                    raise ValueError, "cmd_update_binary 1"
-                if not (sw[0] == 0x90 and sw[1] == 0x00):
-                    raise ValueError, "cmd_update_binary 1"
             count += 1
 
     def cmd_select_openpgp(self):
@@ -298,10 +271,7 @@ def main(fileid, is_update, data, passwd):
     elif icc.icc_get_status() == 1:
         icc.icc_power_on()
     icc.cmd_verify(BY_ADMIN, passwd)
-    if is_update:
-        icc.cmd_update_binary(fileid, data)
-    else:
-        icc.cmd_write_binary(fileid, data)
+    icc.cmd_write_binary(fileid, data, is_update)
     icc.cmd_select_openpgp()
     if fileid == 0:
         data_in_device = icc.cmd_get_data(0x00, 0x4f)

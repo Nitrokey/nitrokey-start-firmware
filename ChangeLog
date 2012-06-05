@@ -1,5 +1,12 @@
 2012-06-05  Niibe Yutaka  <gniibe@fsij.org>
 
+	Firmware update key handling.
+	* tool/gnuk_put_binary.py (GnukToken.cmd_get_response): Handle
+	larger data such as card holder certificate.
+	(GnukToken.cmd_write_binary): Bug fix for cert do write.
+	(GnukToken.cmd_read_binary): New.
+	(main): Support firmware update key.
+
 	Take advantage of the Thumb-2 "rbit" instruction.
 	* regnual/regnual.c (fetch): Reverse bits.
 	* src/usb_ctrl.c (rbit): New.  Deleted reverse32.
