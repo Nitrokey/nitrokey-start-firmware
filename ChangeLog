@@ -1,3 +1,7 @@
+2012-06-06  Niibe Yutaka  <gniibe@fsij.org>
+
+	* regnual/regnual.c (fetch): Better implementation.
+
 2012-06-05  Niibe Yutaka  <gniibe@fsij.org>
 
 	Firmware update key handling.

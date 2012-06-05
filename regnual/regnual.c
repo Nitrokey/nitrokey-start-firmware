@@ -159,8 +159,7 @@ static uint32_t fetch (int i)
 {
   uint32_t v;
 
-  v = (mem[i*4+3] << 24) | (mem[i*4+2] << 16) | (mem[i*4+1] << 8) | mem[i*4];
-
+  v = *(uint32_t *)(&mem[i*4]);
   return rbit (v);
 }
 
