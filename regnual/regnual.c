@@ -147,12 +147,21 @@ static uint32_t result;
 static const uint8_t *const mem_info[] = { &_flash_start,  &_flash_end, };
 
 
-static uint32_t fetch (int i)
+static uint32_t rbit (uint32_t v)
 {
   uint32_t r;
 
-  r = (mem[i*4] << 24) | (mem[i*4+1] << 16) | (mem[i*4+2] << 8) | mem[i*4+3];
+  asm ("rbit	%0, %1" : "=r" (r) : "r" (v));
   return r;
+}
+
+static uint32_t fetch (int i)
+{
+  uint32_t v;
+
+  v = (mem[i*4+3] << 24) | (mem[i*4+2] << 16) | (mem[i*4+1] << 8) | mem[i*4];
+
+  return rbit (v);
 }
 
 struct CRC {
@@ -174,7 +183,7 @@ static uint32_t calc_crc32 (void)
   for (i = 0; i < 256/4; i++)
     CRC->DR = fetch (i);
 
-  return CRC->DR;
+  return rbit (CRC->DR);
 }
 
 

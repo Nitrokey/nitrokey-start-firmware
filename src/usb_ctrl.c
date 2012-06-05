@@ -188,11 +188,11 @@ static const uint8_t *const mem_info[] = { &_regnual_start,  &__heap_end__, };
 #define USB_FSIJ_GNUK_DOWNLOAD 1
 #define USB_FSIJ_GNUK_EXEC     2
 
-static uint32_t reverse32 (uint32_t v)
+static uint32_t rbit (uint32_t v)
 {
   uint32_t r;
 
-  r = (v << 24) | ((v & 0xff00) << 8) | ((v & 0xff0000) >> 8) | (v >> 24);
+  asm ("rbit	%0, %1" : "=r" (r) : "r" (v));
   return r;
 }
 
@@ -206,9 +206,9 @@ static int download_check_crc32 (const uint32_t *end_p)
   CRC->CR = CRC_CR_RESET;
 
   for (p = (const uint32_t *)&_regnual_start; p < end_p; p++)
-    CRC->DR = reverse32 (*p);
+    CRC->DR = rbit (*p);
 
-  if ((CRC->DR ^ crc32) == 0xffffffff)
+  if ((rbit (CRC->DR) ^ crc32) == 0xffffffff)
     return USB_SUCCESS;
 
   return USB_UNSUPPORT;

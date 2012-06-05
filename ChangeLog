@@ -1,3 +1,12 @@
+2012-06-05  Niibe Yutaka  <gniibe@fsij.org>
+
+	Take advantage of the Thumb-2 "rbit" instruction.
+	* regnual/regnual.c (fetch): Reverse bits.
+	* src/usb_ctrl.c (rbit): New.  Deleted reverse32.
+	(download_check_crc32): Use rbit.
+	* tool/gnuk_upgrade.py (crc32): Just use binascii.crc32.
+	(crctab): Remove.
+
 2012-06-04  Niibe Yutaka  <gniibe@fsij.org>
 
 	Card holder certificate data object bug fixes.
