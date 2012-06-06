@@ -1,0 +1,128 @@
+Firmware update feature
+=======================
+
+The firmware update feature of Gnuk is experimental.  Please be
+careful using that.
+
+Note that updating firmware, all data objects and keys will be
+removed.  There is _no way_ to preserve those data.
+
+
+
+Preparation
+===========
+
+In addition to settings of Gnuk, I create a file
+/etc/udev/rules.d/92-gnuk.rules::
+
+   # For updating firmware, permission settings are needed.
+   
+   SUBSYSTEMS=="usb", ATTRS{idVendor}=="234b", ATTRS{idProduct}=="0000", \
+       ENV{ID_USB_INTERFACES}=="*:ff0000:*", GROUP="pcscd"
+
+
+While I am a member of group "pcscd" in /etc/group.
+
+This is needed for reGNUal, the firmware update program.
+
+
+Registering a public key for firmware update
+============================================
+
+You need to register a public key to update the firmware.  It should
+be RSA 2048-bit.
+
+One way to extract public key data is by using "gpg-connect-agent"
+command connecting gpg-agent.
+
+We can examine key information of gpg-agent by "KEYINFO" command.
+Here is my example::
+
+   $ gpg-connect-agent "KEYINFO --list" /bye
+   S KEYINFO 4970A0D537CA2EF7CE6A106E47AD89B0EFB684C8 D - - - - -
+   S KEYINFO 65F67E742101C7FE6D5B33FCEFCF4F65EAF0688C T D276000124010200F517000000010000 OPENPGP.2 - - -
+   S KEYINFO 5D6C89682D07CCFC034AF508420BF2276D8018ED T D276000124010200F517000000010000 OPENPGP.3 - - -
+   S KEYINFO 7D180C0C2A991B25204110A92F5F92A5A509845B D - - - - -
+   S KEYINFO 101DE7B639FE29F4636BDEECF442A9273AFA6565 T D276000124010200F517000000010000 OPENPGP.1 - - -
+   OK
+
+I have two local keys (in my PC) and three keys in my token.
+
+With the script below, I extract public key of the keygrip
+5D6C89682D07CCFC034AF508420BF2276D8018ED into the file: 5D6C8968.bin::
+
+   $ ./get_public_key.py 5D6C89682D07CCFC034AF508420BF2276D8018ED
+
+Here is the script, get_public_key.py::
+
+   #! /usr/bin/python
+   
+   import sys, binascii
+   from subprocess import check_output
+   
+   def get_gpg_public_key(keygrip):
+       result = check_output(["gpg-connect-agent", "READKEY %s" % keygrip, "/bye"])
+       key = ""
+       while True:
+              i = result.find('%')
+           if i < 0:
+               key += result
+               break
+           hex_str = result[i+1:i+3]
+           key += result[0:i]
+           key += chr(int(hex_str,16))
+           result = result[i+3:]
+
+       pos = key.index("D (10:public-key(3:rsa(1:n257:") + 31 # skip NUL too
+       key = key[pos:-17]           # )(1:e3:XYZ)))\nOK\n
+       if len(key) != 256:
+           raise ValueError, binascii.hexlify(key)
+       return key
+
+   if __name__ == '__main__':
+       keygrip = sys.argv[1]
+       k = get_gpg_public_key(keygrip)
+       shorthand = keygrip[0:8] + ".bin"
+       f = open(shorthand,"w")
+       f.write(k)
+       f.close()
+
+
+Then, we can put the data of public key into token by::
+
+   $ tool/gnuk_put_binary_libusb.py -k 0 5D6C8968.bin
+
+
+Invoking firmware update
+========================
+
+We specify the keygrip to authenticate, reGNUal binary, and Gnuk binary.
+
+  $ ../tool/gnuk_upgrade.py 5D6C89682D07CCFC034AF508420BF2276D8018ED ../regnual/regnual.bin gnuk.bin 
+
+
+Two or more tokens
+==================
+
+Currently, GnuPG doesn't support multiple devices connected to the
+host.
+
+In order to update the firmware of a token TARGET, we use GnuPG to
+authenticate with public key.  If it is on another token AUTH, it is
+somewhat complicated.
+
+What I do is:
+(1) Don't run PC/SC daemon::
+
+  # /etc/init.d/pcscd stop
+
+(2) To make sure, kill scdaemon::
+
+  $ killall -9 scdaemon
+
+(3) Connect the token of AUTH, and use it::
+
+  $ gpg --card-status
+
+(4) Connect TARGET, and invoke gnuk_update.py
+-- 
