@@ -1,5 +1,9 @@
 2012-06-06  Niibe Yutaka  <gniibe@fsij.org>
 
+	* Version 0.19.
+
+	* src/usb_desc.c (gnukStringSerial): Updated.
+
 	* regnual/regnual.c (fetch): Better implementation.
 
 2012-06-05  Niibe Yutaka  <gniibe@fsij.org>

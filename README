@@ -1,7 +1,7 @@
 Gnuk - software for GnuPG USB Token
 
-							   Version 0.18
-							     2012-05-15
+							   Version 0.19
+							     2012-06-06
 							   Niibe Yutaka
 				      Free Software Initiative of Japan
 
@@ -106,16 +106,16 @@ Ab: That's because gnome-keyring-daemon interferes GnuPG.  Type:
     "GPG Password Agent" and "SSH Key Agent".
 
 Qc: Do you know a good SWD debugger to connect FST-01 or something?
-Ac: Perhaps, you can use a part of STM32F4 Discovery Kit as SWD
-    debugger.  It seems that there is a free software tool for that.
+Ac: STLink v2 is cheap one.  See http://code.google.com/p/arm-utilities/
+    for a control program.
 
 
 Release notes
 =============
 
-This is nineteenth release of Gnuk.  In this release, the usage of USB
-device ID by FSIJ is clarified.  While it works well for specific
-usages and it is considered stable, it is still somewhat experimental.
+This is twentieth release of Gnuk.  In this release, firmware upgrade
+feature is added.  While it is daily use, some features (including
+firmware upgrade) are still considered experimental.
 
 Tested features are:
 
@@ -157,7 +157,7 @@ With DfuSe support, CQ STARM, STBee, and STBee Mini are also our
 targets.  But those targets with DfuSe are basically not for normal
 use but for experiments, because it would be impossible for DfuSe to
 disable read from flash.  For real use, please consider killing DfuSe
-and enable read protection using JTAG debugger.
+and enabling read protection using JTAG debugger.
 
 I think that it could run on Olimex STM32-P103, or other boards with
 STM32F103.  Besides, we are porting it to STM32 Primer 2.
@@ -174,15 +174,17 @@ Another PIN-pad support is connecting rotary encoder, push switch and
 7-segment LED display.  Both of PIN verification and PIN modification
 are supported for this circuit extension.
 
-Recently, "DnDpinentry" support is added.  This is using usual file
+Also, there is "DnDpinentry" support.  This is using usual file
 manager for pinentry.  User does "drag and drop" folders and it will
 be pin entry.  This feature doesn't require any additional hardware.
 See doc/settings-for-DnDpinentry for your desktop configuration.
+However, this will be removed in future version, as it found it's
+not that useful.
 
-Note that you need pinpad support for GnuPG, it's currently in the
-master branch of GnuPG git repository at git.gnupg.org, and it's under
-evaluation.  When it will be considered stable, it will be put onto
-stable branch.
+Note that you need pinpad support for GnuPG to use PIN-pad enabled
+Gnuk.  The pinpad support for GnuPG is currently in the master branch
+of GnuPG git repository at git.gnupg.org, and it's under evaluation.
+When it will be considered stable, it will be put onto stable branch.
 
 
 Souce code
@@ -203,7 +205,7 @@ Please read relevant licenses for external source code, too.
 The author(s) of Gnuk expect users of Gnuk will be able to access the
 source code of Gnuk, so that users can study the code and can modify
 if needed.  This doesn't mean person who has a USB Token by Gnuk
-should be able to acess everything on the Token, regardless of its
+should be able to access everything on the Token, regardless of its
 protections.  Private keys, and other information should be protected
 properly.
 
@@ -618,6 +620,12 @@ You can see the output of PCSCD:
 
 You can observe the traffic of USB using "usbmon".  See the file:
 linux/Documentation/usb/usbmon.txt
+
+
+Firmware update
+===============
+
+See doc/firmware-update.
 
 
 Read-only Git Repository

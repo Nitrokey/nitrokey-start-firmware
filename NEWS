@@ -2,15 +2,28 @@ Gnuk NEWS - User visible changes
 
 * Major changes in Gnuk 0.19
 
-  Released 2012-06-XX, by NIIBE Yutaka
-
-** System service blocks at the beginning of flash ROM.
-
-** USB strings for revision detail, configure options, and system service.
+  Released 2012-06-06, by NIIBE Yutaka
 
 ** Firmware upgrade feature
+Firmware upgrade is now possible after the public key authentication
+using EXTERNAL AUTHENTICATE command of ISO 7816.  Firmware upgrade is
+done together with reGNUal, the firmware upgrade program.
+
+** System service blocks at the beginning of flash ROM.
+Once flash ROM is protected, first 4-KiB cannot be modified.  Gnuk
+use this area for "system service".  Note that this area will not
+be able to be modified by firmware upgrade (or by any method).
 
 ** New tool: gnuk_upgrade.py
+The tool gnuk_upgrade.py is to do public key authentication using
+gpg-agent and send reGNUal to Gnuk.  Then, we put new Gnuk binary
+into the device with reGNUal.
+
+** USB strings for revision detail, configure options, and system service.
+USB strings now have more information.  There are revision detail
+string, configure options string, system service version string, as
+well as vendor string and product string.  These strings could be
+examined to check Gnuk Token.
 
 
 * Major changes in Gnuk 0.18
