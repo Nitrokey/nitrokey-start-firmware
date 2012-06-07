@@ -1813,9 +1813,12 @@ int mpi_gen_prime( mpi *X, int nbits, int dh_flag,
 {
     int ret, k, n;
     unsigned char *p;
+    mpi Y;
 
     if( nbits < 3 )
         return( POLARSSL_ERR_MPI_BAD_INPUT_DATA );
+
+    mpi_init( &Y, NULL );
 
     n = BITS_TO_LIMBS( nbits );
 
@@ -1837,16 +1840,13 @@ int mpi_gen_prime( mpi *X, int nbits, int dh_flag,
         while( ( ret = mpi_is_prime( X, f_rng, p_rng ) ) != 0 )
         {
             if( ret != POLARSSL_ERR_MPI_NOT_ACCEPTABLE )
-		break;
+                goto cleanup;
 
             MPI_CHK( mpi_add_int( X, X, 2 ) );
         }
     }
     else
     {
-	mpi Y;
-	mpi_init( &Y, NULL );
-
         MPI_CHK( mpi_sub_int( &Y, X, 1 ) );
         MPI_CHK( mpi_shift_r( &Y, 1 ) );
 
@@ -1858,19 +1858,21 @@ int mpi_gen_prime( mpi *X, int nbits, int dh_flag,
                     break;
 
                 if( ret != POLARSSL_ERR_MPI_NOT_ACCEPTABLE )
-		    break;
+                    goto cleanup;
             }
 
             if( ret != POLARSSL_ERR_MPI_NOT_ACCEPTABLE )
-		break;
+                goto cleanup;
 
             MPI_CHK( mpi_add_int( &Y, X, 1 ) );
             MPI_CHK( mpi_add_int(  X, X, 2 ) );
             MPI_CHK( mpi_shift_r( &Y, 1 ) );
         }
-
-	mpi_free( &Y, NULL );
     }
+
+cleanup:
+
+    mpi_free( &Y, NULL );
 
     return( ret );
 }
