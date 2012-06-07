@@ -58,7 +58,7 @@ void rsa_init( rsa_context *ctx,
  * Generate an RSA keypair
  */
 int rsa_gen_key( rsa_context *ctx,
-        int (*f_rng)(void *),
+        unsigned char (*f_rng)(void *),
         void *p_rng,
         int nbits, int exponent )
 {
@@ -101,6 +101,7 @@ int rsa_gen_key( rsa_context *ctx,
     }
     while( mpi_cmp_int( &G, 1 ) != 0 );
 
+#if 0
     /*
      * D  = E^-1 mod ((P-1)*(Q-1))
      * DP = D mod (P - 1)
@@ -111,6 +112,7 @@ int rsa_gen_key( rsa_context *ctx,
     MPI_CHK( mpi_mod_mpi( &ctx->DP, &ctx->D, &P1 ) );
     MPI_CHK( mpi_mod_mpi( &ctx->DQ, &ctx->D, &Q1 ) );
     MPI_CHK( mpi_inv_mod( &ctx->QP, &ctx->Q, &ctx->P ) );
+#endif
 
     ctx->len = ( mpi_msb( &ctx->N ) + 7 ) >> 3;
 
@@ -295,7 +297,7 @@ cleanup:
  * Add the message padding, then do an RSA operation
  */
 int rsa_pkcs1_encrypt( rsa_context *ctx,
-                       int (*f_rng)(void *),
+                       unsigned char (*f_rng)(void *),
                        void *p_rng,
                        int mode, int  ilen,
                        const unsigned char *input,
@@ -323,7 +325,7 @@ int rsa_pkcs1_encrypt( rsa_context *ctx,
                 int rng_dl = 100;
 
                 do {
-                    *p = (unsigned char) f_rng( p_rng );
+                    *p = f_rng( p_rng );
                 } while( *p == 0 && --rng_dl );
 
                 // Check if RNG failed to generate data

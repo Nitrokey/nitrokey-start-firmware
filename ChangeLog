@@ -1,3 +1,15 @@
+2012-06-07  Niibe Yutaka  <gniibe@fsij.org>
+
+	PolarSSL modification.
+	* polarssl-0.14.0/library/rsa.c (rsa_gen_key): Don't set D, DP,
+	DQ, and QP.  It's only for key generation.
+	* polarssl-0.14.0/library/rsa.c (rsa_gen_key, rsa_pkcs1_encrypt):
+	Change f_rng function return type.
+	* polarssl-0.14.0/include/polarssl/rsa.h: Likewise.
+	* polarssl-0.14.0/library/bignum.c (mpi_is_prime, mpi_gen_prime):
+	Change f_rng function return type.
+	* polarssl-0.14.0/include/polarssl/bignum.h: Likewise.
+
 2012-06-06  Niibe Yutaka  <gniibe@fsij.org>
 
 	* Version 0.19.

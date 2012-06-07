@@ -1693,7 +1693,7 @@ static const int small_prime[] =
 /*
  * Miller-Rabin primality test  (HAC 4.24)
  */
-int mpi_is_prime( mpi *X, int (*f_rng)(void *), void *p_rng )
+int mpi_is_prime( mpi *X, unsigned char (*f_rng)(void *), void *p_rng )
 {
     int ret, i, j, n, s, xs;
     mpi W, R, T, A, RR;
@@ -1755,7 +1755,7 @@ int mpi_is_prime( mpi *X, int (*f_rng)(void *), void *p_rng )
 
         p = (unsigned char *) A.p;
         for( j = 0; j < A.n * ciL; j++ )
-            *p++ = (unsigned char) f_rng( p_rng );
+            *p++ = f_rng( p_rng );
 
         j = mpi_msb( &A ) - mpi_msb( &W );
         MPI_CHK( mpi_shift_r( &A, j + 1 ) );
@@ -1809,7 +1809,7 @@ cleanup:
  * Prime number generation
  */
 int mpi_gen_prime( mpi *X, int nbits, int dh_flag,
-                   int (*f_rng)(void *), void *p_rng )
+                   unsigned char (*f_rng)(void *), void *p_rng )
 {
     int ret, k, n;
     unsigned char *p;
@@ -1827,7 +1827,7 @@ int mpi_gen_prime( mpi *X, int nbits, int dh_flag,
 
     p = (unsigned char *) X->p;
     for( k = 0; k < X->n * ciL; k++ )
-        *p++ = (unsigned char) f_rng( p_rng );
+        *p++ = f_rng( p_rng );
 
     k = mpi_msb( X );
     if( k < nbits ) MPI_CHK( mpi_shift_l( X, nbits - k ) );

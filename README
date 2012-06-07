@@ -230,6 +230,13 @@ Gnuk is distributed with external source code.
   The file include/polarssl/bn_mul.h is heavily modified for ARM
   Cortex-M3.
 
+  The files include/polarssl/rsa.h, library/rsa.c,
+  include/polarssl/bignum.h, and library/bignum.c are modified so that
+  f_rng function returns unsigned char.
+
+  The file library/rsa.c is modified so that it only computes things
+  needed for Gnuk.
+
   The file library/aes.c is modified so that some constants can
   go to .sys section.
 

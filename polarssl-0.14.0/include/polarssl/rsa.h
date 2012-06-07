@@ -183,7 +183,7 @@ void rsa_init( rsa_context *ctx,
  * \return         0 if successful, or an POLARSSL_ERR_RSA_XXX error code
  */
 int rsa_gen_key( rsa_context *ctx,
-                 int (*f_rng)(void *),
+                 unsigned char (*f_rng)(void *),
                  void *p_rng,
                  int nbits, int exponent );
 
@@ -258,7 +258,7 @@ int rsa_private( rsa_context *ctx,
  *                 of ctx->N (eg. 128 bytes if RSA-1024 is used).
  */
 int rsa_pkcs1_encrypt( rsa_context *ctx,
-                       int (*f_rng)(void *),
+                       unsigned char (*f_rng)(void *),
                        void *p_rng,
                        int mode, int  ilen,
                        const unsigned char *input,
