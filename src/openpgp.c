@@ -744,6 +744,8 @@ cmd_pso (void)
   DEBUG_INFO ("PSO done.\r\n");
 }
 
+
+#define MAX_DIGEST_INFO_LEN 102 /* 40% */
 static void
 cmd_internal_authenticate (void)
 {
@@ -760,6 +762,13 @@ cmd_internal_authenticate (void)
 	{
 	  DEBUG_INFO ("security error.");
 	  GPG_SECURITY_FAILURE ();
+	  return;
+	}
+
+      if (len > MAX_DIGEST_INFO_LEN)
+	{
+	  DEBUG_INFO ("input is too long.");
+	  GPG_CONDITION_NOT_SATISFIED ();
 	  return;
 	}
 

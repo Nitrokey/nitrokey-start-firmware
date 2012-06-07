@@ -1,5 +1,8 @@
 2012-06-07  Niibe Yutaka  <gniibe@fsij.org>
 
+	* src/openpgp.c (cmd_internal_authenticate): Add check for input
+	length.
+
 	Implement key generation.
 	* src/openpgp.c (cmd_pgp_gakp): Call gpg_do_keygen.
 	* src/openpgp-do.c (proc_key_import): Call with modulus = NULL.
