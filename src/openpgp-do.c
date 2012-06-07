@@ -1,7 +1,7 @@
 /*
  * openpgp-do.c -- OpenPGP card Data Objects (DO) handling
  *
- * Copyright (C) 2010, 2011 Free Software Initiative of Japan
+ * Copyright (C) 2010, 2011, 2012 Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
  * This file is a part of Gnuk, a GnuPG USB Token implementation.
@@ -160,6 +160,17 @@ gpg_write_digital_signature_counter (const uint8_t *p, uint32_t dsc)
       flash_put_data_internal (p, hw0);
       flash_put_data_internal (p+2, hw1);
       return p+4;
+    }
+}
+
+static void
+gpg_reset_digital_signature_counter (void)
+{
+  if (digital_signature_counter != 0)
+    {
+      flash_put_data (NR_COUNTER_DS);
+      flash_put_data (NR_COUNTER_DS_LSB);
+      digital_signature_counter = 0;
     }
 }
 
@@ -673,12 +684,11 @@ static int8_t num_prv_keys;
 
 static int
 gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
-		     const uint8_t *keystring_admin)
+		     const uint8_t *keystring_admin, const uint8_t *modulus)
 {
   uint8_t nr = get_do_ptr_nr_for_kk (kk);
   const uint8_t *p;
   int r;
-  const uint8_t *modulus;
   struct prvkey_data *pd;
   uint8_t *key_addr;
   const uint8_t *dek;
@@ -686,10 +696,7 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
   const uint8_t *ks_pw1;
   const uint8_t *ks_rc;
   struct key_data_internal kdi;
-
-#if 0
-  assert (key_len == KEY_CONTENT_LEN);
-#endif
+  int modulus_allocated_here = 0;
 
   DEBUG_INFO ("Key import\r\n");
   DEBUG_SHORT (key_len);
@@ -698,15 +705,23 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
     /* No replace support, you need to remove it first.  */
     return -1;
 
+  if (key_len != KEY_CONTENT_LEN)
+    return -1;
+
   pd = (struct prvkey_data *)malloc (sizeof (struct prvkey_data));
   if (pd == NULL)
     return -1;
 
-  modulus = modulus_calc (key_data, key_len);
   if (modulus == NULL)
     {
-      free (pd);
-      return -1;
+      modulus = modulus_calc (key_data, key_len);
+      if (modulus == NULL)
+	{
+	  free (pd);
+	  return -1;
+	}
+
+      modulus_allocated_here = 1;
     }
 
   DEBUG_INFO ("Getting keystore address...\r\n");
@@ -714,7 +729,8 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
   if (key_addr == NULL)
     {
       free (pd);
-      modulus_free (modulus);
+      if (modulus_allocated_here)
+	modulus_free (modulus);
       return -1;
     }
 
@@ -736,7 +752,8 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
   encrypt (dek, (uint8_t *)&kdi, sizeof (struct key_data_internal));
 
   r = flash_key_write (key_addr, kdi.data, modulus);
-  modulus_free (modulus);
+  if (modulus_allocated_here)
+    modulus_free (modulus);
 
   if (r < 0)
     {
@@ -749,7 +766,10 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
   memcpy (pd->crm_encrypted, (uint8_t *)&kdi.check, ADDITIONAL_DATA_SIZE);
 
   if (kk == GPG_KEY_FOR_SIGNING)
-    ac_reset_pso_cds ();
+    {
+      ac_reset_pso_cds ();
+      gpg_reset_digital_signature_counter ();
+    }
   else
     ac_reset_other ();
 
@@ -908,7 +928,7 @@ proc_key_import (const uint8_t *data, int len)
 
   /* It should starts with 00 01 00 01 (E) */
   /* Skip E, 4-byte */
-  r = gpg_do_write_prvkey (kk, &data[26], len - 26, keystring_admin);
+  r = gpg_do_write_prvkey (kk, &data[26], len - 26, keystring_admin, NULL);
   if (r < 0)
     return 0;
   else
@@ -1459,4 +1479,76 @@ gpg_do_write_simple (uint8_t nr, const uint8_t *data, int size)
     }
   else
     *do_data_p = NULL;
+}
+
+void
+gpg_do_keygen (uint8_t kk_byte)
+{
+  enum kind_of_key kk;
+  const uint8_t *keystring_admin;
+  const uint8_t *p_q_modulus;
+  const uint8_t *p_q;
+  const uint8_t *modulus;
+  int r;
+
+  DEBUG_INFO ("Keygen\r\n");
+  DEBUG_BYTE (kk_byte);
+
+  if (kk_byte == 0xb6)
+    kk = GPG_KEY_FOR_SIGNING;
+  else if (kk_byte == 0xb8)
+    kk = GPG_KEY_FOR_DECRYPTION;
+  else				/* 0xa4 */
+    kk = GPG_KEY_FOR_AUTHENTICATION;
+
+  if (admin_authorized == BY_ADMIN)
+    keystring_admin = keystring_md_pw3;
+  else
+    keystring_admin = NULL;
+
+  p_q_modulus = rsa_genkey ();
+  if (p_q_modulus == NULL)
+    {
+      GPG_MEMORY_FAILURE ();
+      return;
+    }
+
+  p_q = p_q_modulus;
+  modulus = p_q_modulus + KEY_CONTENT_LEN;
+
+  r = gpg_do_write_prvkey (kk, p_q, KEY_CONTENT_LEN,
+			   keystring_admin, modulus);
+  free ((uint8_t *)p_q_modulus);
+  if (r < 0)
+    {
+      GPG_ERROR ();
+      return;
+    }
+
+  DEBUG_INFO ("Calling gpg_do_public_key...\r\n");
+
+  if (kk == GPG_KEY_FOR_SIGNING)
+    {
+      /* Authintication has been reset within gpg_do_write_prvkey. */
+      /* But GnuPG expects it's ready for signing. */
+      /* Thus, we call verify_pso_cds here. */
+      const uint8_t *ks_pw1 = gpg_do_read_simple (NR_DO_KEYSTRING_PW1);
+      const uint8_t *pw;
+      int pw_len;
+
+      if (ks_pw1)
+	{
+	  pw = ks_pw1+1;
+	  pw_len = ks_pw1[0];
+	}
+      else
+	{
+	  pw = (const uint8_t *)OPENPGP_CARD_INITIAL_PW1;
+	  pw_len = strlen (OPENPGP_CARD_INITIAL_PW3);
+	}
+
+      verify_pso_cds (pw, pw_len);
+    }
+
+  gpg_do_public_key (kk_byte);
 }

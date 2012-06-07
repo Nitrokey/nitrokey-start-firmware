@@ -480,12 +480,11 @@ cmd_pgp_gakp (void)
     /* Get public key */
     gpg_do_public_key (apdu.cmd_apdu_data[0]);
   else
-    {					/* Generate key pair */
+    {
       if (!ac_check_status (AC_ADMIN_AUTHORIZED))
 	GPG_SECURITY_FAILURE ();
-
-      /* XXX: Not yet supported */
-      GPG_ERROR ();
+      /* Generate key pair */
+      gpg_do_keygen (apdu.cmd_apdu_data[0]);
     }
 }
 

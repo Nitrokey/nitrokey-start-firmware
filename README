@@ -135,16 +135,13 @@ Tested features are:
 	* Card holder certificate
 	* Removal of keys (Overriding key import is not supported,
 	  but you can remove all keys to import again).
+	* Key generation on device side
 
 It is known not-working well:
 
 	* For some version of kernel and libccid, --enable-debug can't
 	  work well.  Please make sure to disable DEBUG option if it
 	  doesn't work well.
-
-Not supported feature(s):
-
-	* Key generation on device side
 
 
 Targets
@@ -566,9 +563,12 @@ command is:
 Note that the factory setting of user password is "123456" and admin
 password is "12345678" as the specification.
 
-No, Gnuk doesn't support key generation.  You need to create your
-keys on your computer, and import them to Gnuk Token.  After you create
-your keys (they must be 2048-bit RSA), you can import them.
+It is recommended to create your keys on your computer, and import
+them to Gnuk Token.  After you create your keys (they must be 2048-bit
+RSA), you can import them.
+
+Gnuk supports key generation, but this feature is young and should be
+considered experimental.
 
 For detail, please see doc/DEMO and doc/DEMO-2.
 
@@ -577,7 +577,7 @@ you can import the keys (again) to (possibly another) Gnuk Token.  In
 this case, you can use GnuPG's option to specify the home directory by
 --homedir.
 
-After creating keys by:
+After creating keys on your computer by:
 
   $ gpg --gen-key
   ...

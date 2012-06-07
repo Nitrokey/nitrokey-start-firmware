@@ -1,5 +1,15 @@
 2012-06-07  Niibe Yutaka  <gniibe@fsij.org>
 
+	Implement key generation.
+	* src/openpgp.c (cmd_pgp_gakp): Call gpg_do_keygen.
+	* src/openpgp-do.c (proc_key_import): Call with modulus = NULL.
+	(gpg_do_keygen): New function.
+	(gpg_reset_digital_signature_counter): New function.
+	(gpg_do_write_prvkey): New argument MODULUS.  Call
+	gpg_reset_digital_signature_counter.
+	* src/call-rsa.c (rsa_genkey): New function.
+	* src/random.c (random_byte): New function.
+
 	PolarSSL modification.
 	* polarssl-0.14.0/library/rsa.c (rsa_gen_key): Don't set D, DP,
 	DQ, and QP.  It's only for key generation.

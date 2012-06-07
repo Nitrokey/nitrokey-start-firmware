@@ -70,3 +70,30 @@ get_salt (void)
 {
   return neug_get (NEUG_KICK_FILLING);
 }
+
+
+/*
+ * Rundom byte iterator
+ */
+uint8_t
+random_byte (void *arg)
+{
+  uint8_t *index_p = (uint8_t *)arg;
+  uint8_t index = *index_p;
+  uint8_t *p = ((uint8_t *)random_word) + index;
+  uint8_t v;
+
+  neug_wait_full ();
+
+  v = *p;
+
+  if (++index >= RANDOM_BYTES_LENGTH)
+    {
+      index = 0;
+      neug_flush ();
+    }
+
+  *index_p = index;
+
+  return v;
+}

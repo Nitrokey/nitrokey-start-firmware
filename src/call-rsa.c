@@ -1,7 +1,7 @@
 /*
  * call-rsa.c -- Glue code between RSA computation and OpenPGP card protocol
  *
- * Copyright (C) 2010, 2011 Free Software Initiative of Japan
+ * Copyright (C) 2010, 2011, 2012 Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
  * This file is a part of Gnuk, a GnuPG USB Token implementation.
@@ -210,4 +210,36 @@ rsa_verify (const uint8_t *pubkey, const uint8_t *hash, const uint8_t *sig)
       DEBUG_INFO ("verified.\r\n");
       return 0;
     }
+}
+
+#define RSA_EXPONENT 0x10001
+
+const uint8_t *
+rsa_genkey (void)
+{
+  int r;
+  uint8_t index = 0;
+  uint8_t *p_q_modulus = (uint8_t *)malloc (KEY_CONTENT_LEN*2);
+  uint8_t *p = p_q_modulus;
+  uint8_t *q = p_q_modulus + KEY_CONTENT_LEN/2;
+  uint8_t *modulus = p_q_modulus + KEY_CONTENT_LEN;
+
+  if (p_q_modulus == NULL)
+    return NULL;
+
+  rsa_init (&rsa_ctx, RSA_PKCS_V15, 0);
+  r = rsa_gen_key (&rsa_ctx, random_byte, &index,
+		   KEY_CONTENT_LEN * 8, RSA_EXPONENT);
+  if (r < 0)
+    {
+      free (p_q_modulus);
+      rsa_free (&rsa_ctx);
+      return NULL;
+    }
+
+  mpi_write_binary (&rsa_ctx.P, p, KEY_CONTENT_LEN/2);
+  mpi_write_binary (&rsa_ctx.Q, q, KEY_CONTENT_LEN/2);
+  mpi_write_binary (&rsa_ctx.N, modulus, KEY_CONTENT_LEN);
+  rsa_free (&rsa_ctx);
+  return p_q_modulus;
 }

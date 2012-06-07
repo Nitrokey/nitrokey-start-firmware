@@ -120,6 +120,7 @@ extern void gpg_data_copy (const uint8_t *p);
 extern void gpg_do_get_data (uint16_t tag, int with_tag);
 extern void gpg_do_put_data (uint16_t tag, const uint8_t *data, int len);
 extern void gpg_do_public_key (uint8_t kk_byte);
+extern void gpg_do_keygen (uint8_t kk_byte);
 
 extern const uint8_t *gpg_get_firmware_update_key (uint8_t keyno);
 
@@ -234,6 +235,7 @@ extern void modulus_free (const uint8_t *);
 extern int rsa_decrypt (const uint8_t *, uint8_t *, int, struct key_data *);
 extern int rsa_verify (const uint8_t *pubkey, const uint8_t *hash,
 		       const uint8_t *signature);
+extern const uint8_t *rsa_genkey (void);
 
 extern const uint8_t *gpg_do_read_simple (uint8_t);
 extern void gpg_do_write_simple (uint8_t, const uint8_t *, int);
@@ -327,6 +329,8 @@ extern const uint8_t *random_bytes_get (void);
 extern void random_bytes_free (const uint8_t *);
 /* 4-byte salt */
 extern uint32_t get_salt (void);
+/* iterator returning a byta at a time */
+extern uint8_t random_byte (void *arg);
 
 extern uint32_t hardclock (void);
 
