@@ -1,5 +1,8 @@
 2012-06-08  Niibe Yutaka  <gniibe@fsij.org>
 
+	* polarssl-0.14.0/library/bignum.c (mpi_cmp_mpi): Bug fix.
+	Though it doesn't matter for Gnuk usage.
+
 	Emit LED light while computation (or asking user input).
 	* src/usb-icc.c (icc_handle_timeout): Call led_blink.
 	* src/openpgp.c (cmd_pso, cmd_internal_authenticate): Call
