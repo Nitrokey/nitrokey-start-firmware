@@ -118,7 +118,7 @@ get_pinpad_input (int msg_code)
 {
   int r;
 
-  chEvtSignal (main_thread, LED_INPUT_MODE);
+  chEvtSignal (main_thread, LED_WAIT_MODE);
   r = pinpad_getline (msg_code, MS2ST (8000));
   chEvtSignal (main_thread, LED_STATUS_MODE);
   return r;
@@ -701,8 +701,10 @@ cmd_pso (void)
 	  DEBUG_SHORT (len);
 	  DEBUG_BINARY (&kd[GPG_KEY_FOR_SIGNING], KEY_CONTENT_LEN);
 
+	  chEvtSignal (main_thread, LED_WAIT_MODE);
 	  r = rsa_sign (apdu.cmd_apdu_data, res_APDU, len,
 			&kd[GPG_KEY_FOR_SIGNING]);
+	  chEvtSignal (main_thread, LED_STATUS_MODE);
 	  if (r < 0)
 	    {
 	      ac_reset_pso_cds ();
@@ -727,8 +729,10 @@ cmd_pso (void)
 
       /* Skip padding 0x00 */
       len--;
+      chEvtSignal (main_thread, LED_WAIT_MODE);
       r = rsa_decrypt (apdu.cmd_apdu_data+1, res_APDU, len,
 		       &kd[GPG_KEY_FOR_DECRYPTION]);
+      chEvtSignal (main_thread, LED_STATUS_MODE);
       if (r < 0)
 	GPG_ERROR ();
     }
@@ -772,8 +776,10 @@ cmd_internal_authenticate (void)
 	  return;
 	}
 
+      chEvtSignal (main_thread, LED_WAIT_MODE);
       r = rsa_sign (apdu.cmd_apdu_data, res_APDU, len,
 		    &kd[GPG_KEY_FOR_AUTHENTICATION]);
+      chEvtSignal (main_thread, LED_STATUS_MODE);
       if (r < 0)
 	GPG_ERROR ();
     }

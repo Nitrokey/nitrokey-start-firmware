@@ -1260,6 +1260,7 @@ icc_handle_timeout (struct ccid *c)
     {
     case ICC_STATE_EXECUTE:
       icc_send_data_block (c, ICC_CMD_STATUS_TIMEEXT);
+      led_blink (2);
       break;
     default:
       break;

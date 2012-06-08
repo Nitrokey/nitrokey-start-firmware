@@ -210,14 +210,14 @@ static volatile uint8_t fatal_code;
 
 Thread *main_thread;
 
-#define GNUK_INIT           0
-#define GNUK_RUNNING        1
-#define GNUK_INPUT_WAIT     2
-#define GNUK_FATAL        255
+#define GNUK_INIT	  0
+#define GNUK_RUNNING	  1
+#define GNUK_WAIT	  2
+#define GNUK_FATAL	255
 /*
  * 0 for initializing
  * 1 for normal mode
- * 2 for input waiting
+ * 2 for input waiting / under calculation
  * 255 for fatal
  */
 static uint8_t main_mode;
@@ -226,10 +226,11 @@ static void display_interaction (void)
 {
   eventmask_t m;
 
+  set_led (1);
   while (1)
     {
       m = chEvtWaitOne (ALL_EVENTS);
-      set_led (1);
+      set_led (0);
       switch (m)
 	{
 	case LED_ONESHOT_SHORT:
@@ -240,23 +241,20 @@ static void display_interaction (void)
 	  break;
 	case LED_TWOSHOT:
 	  chThdSleep (MS2ST (50));
-	  set_led (0);
-	  chThdSleep (MS2ST (50));
 	  set_led (1);
+	  chThdSleep (MS2ST (50));
+	  set_led (0);
 	  chThdSleep (MS2ST (50));
 	  break;
 	case LED_STATUS_MODE:
-	  chThdSleep (MS2ST (400));
-	  set_led (0);
 	  return;
 	case LED_FATAL_MODE:
 	  main_mode = GNUK_FATAL;
-	  set_led (0);
 	  return;
 	default:
 	  break;
 	}
-      set_led (0);
+      set_led (1);
     }
 }
 
@@ -434,11 +432,8 @@ main (int argc, char *argv[])
 	case LED_FATAL_MODE:
 	  main_mode = GNUK_FATAL;
 	  break;
-	case LED_INPUT_MODE:
-	  main_mode = GNUK_INPUT_WAIT;
-	  set_led (1);
-	  chThdSleep (MS2ST (400));
-	  set_led (0);
+	case LED_WAIT_MODE:
+	  main_mode = GNUK_WAIT;
 	  break;
 	default:
 	  break;
@@ -455,7 +450,7 @@ main (int argc, char *argv[])
 	  set_led (0);
 	  chThdSleep (LED_TIMEOUT_STOP * 3);
 	  break;
-	case GNUK_INPUT_WAIT:
+	case GNUK_WAIT:
 	  display_interaction ();
 	  break;
 	case GNUK_RUNNING:

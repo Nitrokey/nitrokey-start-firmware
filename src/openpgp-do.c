@@ -1506,7 +1506,9 @@ gpg_do_keygen (uint8_t kk_byte)
   else
     keystring_admin = NULL;
 
+  chEvtSignal (main_thread, LED_WAIT_MODE);
   p_q_modulus = rsa_genkey ();
+  chEvtSignal (main_thread, LED_STATUS_MODE);
   if (p_q_modulus == NULL)
     {
       GPG_MEMORY_FAILURE ();

@@ -1,3 +1,14 @@
+2012-06-08  Niibe Yutaka  <gniibe@fsij.org>
+
+	Emit LED light while computation (or asking user input).
+	* src/usb-icc.c (icc_handle_timeout): Call led_blink.
+	* src/openpgp.c (cmd_pso, cmd_internal_authenticate): Call
+	LED_WAIT_MODE, LED_STATUS_MODE to show "it's under computation".
+	* src/openpgp-do.c (gpg_do_keygen): Ditto.
+	* src/gnuk.h (LED_WAIT_MODE): Rename (was: LED_INPUT_MODE).
+	* src/main.c (display_interaction): Change the behavior of LED,
+	now, it's mostly ON (was: mostly OFF).
+
 2012-06-07  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/openpgp.c (cmd_internal_authenticate): Add check for input

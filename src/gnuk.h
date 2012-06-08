@@ -367,7 +367,7 @@ extern const uint8_t gnukStringSerial[];
 #define LED_ONESHOT_LONG  ((eventmask_t)2)
 #define LED_TWOSHOT       ((eventmask_t)4)
 #define LED_STATUS_MODE   ((eventmask_t)8)
-#define LED_INPUT_MODE   ((eventmask_t)16)
+#define LED_WAIT_MODE    ((eventmask_t)16)
 #define LED_FATAL_MODE   ((eventmask_t)32)
 extern Thread *main_thread;
 extern void led_blink (int spec);
