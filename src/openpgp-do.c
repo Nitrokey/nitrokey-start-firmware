@@ -28,10 +28,10 @@
 #include "sys.h"
 #include "gnuk.h"
 #include "openpgp.h"
+#include "sha256.h"
 
 #include "polarssl/config.h"
 #include "polarssl/aes.h"
-#include "polarssl/sha1.h"
 
 #define PASSWORD_ERRORS_MAX 3	/* >= errors, it will be locked */
 static const uint8_t *pw_err_counter_p[3];
@@ -543,7 +543,7 @@ proc_resetting_code (const uint8_t *data, int len)
 
   newpw_len = len;
   newpw = data;
-  sha1 (newpw, newpw_len, new_ks);
+  sha256 (newpw, newpw_len, new_ks);
   new_ks0[0] = newpw_len;
   r = gpg_change_keystring (admin_authorized, old_ks, BY_RESETCODE, new_ks);
   if (r <= -2)
@@ -780,8 +780,8 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
       uint8_t ks123_pw1[KEYSTRING_SIZE_PW1];
 
       ks123_pw1[0] = strlen (OPENPGP_CARD_INITIAL_PW1);
-      sha1 ((uint8_t *)OPENPGP_CARD_INITIAL_PW1, 
-	    strlen (OPENPGP_CARD_INITIAL_PW1), ks123_pw1+1);
+      sha256 ((uint8_t *)OPENPGP_CARD_INITIAL_PW1, 
+	      strlen (OPENPGP_CARD_INITIAL_PW1), ks123_pw1+1);
       encrypt (ks123_pw1+1, pd->dek_encrypted_1, DATA_ENCRYPTION_KEY_SIZE);
     }
 

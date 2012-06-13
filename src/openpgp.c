@@ -27,8 +27,7 @@
 #include "gnuk.h"
 #include "sys.h"
 #include "openpgp.h"
-#include "polarssl/config.h"
-#include "polarssl/sha1.h"
+#include "sha256.h"
 
 #define CLS(a) a.cmd_apdu_head[0]
 #define INS(a) a.cmd_apdu_head[1]
@@ -225,6 +224,7 @@ cmd_change_password (void)
   const uint8_t *newpw;
   int pw_len, newpw_len;
   int who = p2 - 0x80;
+  int who_old;
   int r;
 
   DEBUG_INFO ("Change PW\r\n");
@@ -244,6 +244,7 @@ cmd_change_password (void)
       const uint8_t *ks_pw1 = gpg_do_read_simple (NR_DO_KEYSTRING_PW1);
 
       pw_len = verify_user_0 (AC_PSO_CDS_AUTHORIZED, pw, len, -1, ks_pw1);
+      who_old = who;
 
       if (pw_len < 0)
 	{
@@ -284,14 +285,15 @@ cmd_change_password (void)
 	  newpw = pw + pw_len;
 	  newpw_len = len - pw_len;
 	  gpg_set_pw3 (newpw, newpw_len);
+	  who_old = admin_authorized;
 	}
     }
 
-  sha1 (pw, pw_len, old_ks);
-  sha1 (newpw, newpw_len, new_ks);
+  sha256 (pw, pw_len, old_ks);
+  sha256 (newpw, newpw_len, new_ks);
   new_ks0[0] = newpw_len;
 
-  r = gpg_change_keystring (who, old_ks, who, new_ks);
+  r = gpg_change_keystring (who_old, old_ks, who, new_ks);
   if (r <= -2)
     {
       DEBUG_INFO ("memory error.\r\n");
@@ -366,8 +368,8 @@ cmd_reset_user_password (void)
       pw_len = ks_rc[0];
       newpw = pw + pw_len;
       newpw_len = len - pw_len;
-      sha1 (pw, pw_len, old_ks);
-      sha1 (newpw, newpw_len, new_ks);
+      sha256 (pw, pw_len, old_ks);
+      sha256 (newpw, newpw_len, new_ks);
       new_ks0[0] = newpw_len;
       r = gpg_change_keystring (BY_RESETCODE, old_ks, BY_USER, new_ks);
       if (r <= -2)
@@ -418,7 +420,7 @@ cmd_reset_user_password (void)
 
       newpw_len = len;
       newpw = pw;
-      sha1 (newpw, newpw_len, new_ks);
+      sha256 (newpw, newpw_len, new_ks);
       new_ks0[0] = newpw_len;
       r = gpg_change_keystring (admin_authorized, old_ks, BY_USER, new_ks);
       if (r <= -2)

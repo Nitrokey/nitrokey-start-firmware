@@ -8,6 +8,11 @@ Gnuk NEWS - User visible changes
 Finally, key generation is supported.  Note that it is very slow.  It
 will takes a few minutes to generate two keys.
 
+** KDF (Key Derivation Function) is now SHA-256
+Data encryption key for private keys are computed by KDF (Key
+Derivation Function, sometimes also is refered as string to key
+function, S2K).  It was SHA1 before, but it is replaced by SHA-256.
+
 
 * Major changes in Gnuk 0.19
 

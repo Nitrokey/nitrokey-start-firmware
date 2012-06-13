@@ -198,7 +198,7 @@ extern int flash_key_write (uint8_t *key_addr, const uint8_t *key_data, const ui
 #define KEYSTRING_PASSLEN_SIZE  1
 #define KEYSTRING_SALT_SIZE     8 /* optional */
 #define KEYSTRING_ITER_SIZE     1 /* optional */
-#define KEYSTRING_MD_SIZE       20
+#define KEYSTRING_MD_SIZE       32
 #define KEYSTRING_SIZE_PW1 (KEYSTRING_PASSLEN_SIZE+KEYSTRING_MD_SIZE)
 #define KEYSTRING_SIZE_RC  (KEYSTRING_PASSLEN_SIZE+KEYSTRING_MD_SIZE)
 #define KEYSTRING_SIZE_PW3 (KEYSTRING_PASSLEN_SIZE+KEYSTRING_SALT_SIZE \

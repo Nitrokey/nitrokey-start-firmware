@@ -1,6 +1,21 @@
+2012-06-14  Niibe Yutaka  <gniibe@fsij.org>
+
+	KDF is now SHA-256 (was: SHA1).
+	* src/sha256.c: New file.  Based on the implementation by Dr Brian
+	Gladman.
+	* src/openpgp.c (cmd_change_password, cmd_reset_user_password):
+	Use sha256.
+	* src/openpgp-do.c (proc_resetting_code, gpg_do_write_prvkey): Likewise.
+	* src/ac.c (verify_user_0, calc_md, verify_admin): Likewise.
+	* src/crypt.mk (CRYPTSRC): Add sha256.c, removing sha1.c.
+	* src/gnuk.h (KEYSTRING_MD_SIZE): It's 32 for SHA-256.
+
 2012-06-13  Niibe Yutaka  <gniibe@fsij.org>
 
+	Bug fixes.
 	* src/main.c (display_interaction): Assign to main_mode.
+	* src/openpgp.c (cmd_change_password): Bug fix for admin less mode
+	to admin full mode.  Variable who_old should be admin_authorized.
 
 	Key generation is configure option.
 	* src/configure (keygen): Add --enable-keygen option.

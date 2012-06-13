@@ -189,6 +189,11 @@ Souce code
 
 Gnuk source code is under src/ directory.
 
+Note that SHA-2 hash function implementation, src/sha256.c, is based
+on the original implementation by Dr. Brian Gladman.  See:
+
+  http://gladman.plushost.co.uk/oldsite/cryptography_technology/sha/index.php
+
 
 License
 =======
@@ -197,7 +202,7 @@ It is distributed under GNU General Public Licence version 3 or later
 (GPLv3+).  Please see src/COPYING.
 
 Please note that it is distributed with external source code too.
-Please read relevant licenses for external source code, too.
+Please read relevant licenses for external source code as well.
 
 The author(s) of Gnuk expect users of Gnuk will be able to access the
 source code of Gnuk, so that users can study the code and can modify
@@ -221,8 +226,7 @@ Gnuk is distributed with external source code.
 * polarssl-0.14.0/  -- PolarSSL 0.14.0
 
   Taken from http://polarssl.org/
-  We use PolarSSL for RSA computation, AES encryption/decryption
-  and SHA-1 computation.
+  We use PolarSSL for RSA computation, AES encryption/decryption.
 
   The file include/polarssl/bn_mul.h is heavily modified for ARM
   Cortex-M3.

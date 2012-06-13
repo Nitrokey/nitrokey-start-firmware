@@ -24,9 +24,7 @@
 #include "config.h"
 #include "ch.h"
 #include "gnuk.h"
-
-#include "polarssl/config.h"
-#include "polarssl/sha1.h"
+#include "sha256.h"
 
 uint8_t volatile auth_status;	/* Initialized to AC_NONE_AUTHORIZED */
 
@@ -89,7 +87,7 @@ verify_user_0 (uint8_t access, const uint8_t *pw, int buf_len, int pw_len_known,
     }
 
  success_one_step:
-  sha1 (pw, pw_len, keystring);
+  sha256 (pw, pw_len, keystring);
   if (access == AC_PSO_CDS_AUTHORIZED)
     {
       r1 = gpg_do_load_prvkey (GPG_KEY_FOR_SIGNING, BY_USER, keystring);
@@ -161,28 +159,27 @@ static void
 calc_md (int count, const uint8_t *salt, const uint8_t *pw, int pw_len,
 	 uint8_t md[KEYSTRING_MD_SIZE])
 {
-  sha1_context sha1_ctx;
+  sha256_context sha256_ctx;
 
-  sha1_starts (&sha1_ctx);
+  sha256_start (&sha256_ctx);
 
   while (count > pw_len + 8)
     {
-      sha1_update (&sha1_ctx, salt, 8);
-      sha1_update (&sha1_ctx, pw, pw_len);
+      sha256_update (&sha256_ctx, salt, 8);
+      sha256_update (&sha256_ctx, pw, pw_len);
       count -= pw_len + 8;
     }
 
   if (count <= 8)
-    sha1_update (&sha1_ctx, salt, count);
+    sha256_update (&sha256_ctx, salt, count);
   else
     {
-      sha1_update (&sha1_ctx, salt, 8);
+      sha256_update (&sha256_ctx, salt, 8);
       count -= 8;
-      sha1_update (&sha1_ctx, pw, count);
+      sha256_update (&sha256_ctx, pw, count);
     }
 
-  sha1_finish (&sha1_ctx, md);
-  memset (&sha1_ctx, 0, sizeof (sha1_ctx));
+  sha256_finish (&sha256_ctx, md);
 }
 
 uint8_t keystring_md_pw3[KEYSTRING_MD_SIZE];
@@ -283,7 +280,7 @@ verify_admin (const uint8_t *pw, int pw_len)
   if (r <= 0)
     return r;
 
-  sha1 (pw, pw_len, keystring_md_pw3);
+  sha256 (pw, pw_len, keystring_md_pw3);
   auth_status |= AC_ADMIN_AUTHORIZED;
   return 1;
 }
