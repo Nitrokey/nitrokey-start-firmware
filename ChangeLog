@@ -1,5 +1,7 @@
 2012-06-13  Niibe Yutaka  <gniibe@fsij.org>
 
+	* src/main.c (display_interaction): Assign to main_mode.
+
 	Key generation is configure option.
 	* src/configure (keygen): Add --enable-keygen option.
 	* src/Makefile.in (UDEFS): Add definition of KEYGEN_SUPPORT.

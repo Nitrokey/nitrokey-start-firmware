@@ -247,6 +247,7 @@ static void display_interaction (void)
 	  chThdSleep (MS2ST (50));
 	  break;
 	case LED_STATUS_MODE:
+	  main_mode = GNUK_RUNNING;
 	  return;
 	case LED_FATAL_MODE:
 	  main_mode = GNUK_FATAL;
