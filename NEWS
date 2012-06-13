@@ -1,5 +1,14 @@
 Gnuk NEWS - User visible changes
 
+* Major changes in Gnuk XXXX
+
+  Released 2012-XX-XX, by NIIBE Yutaka
+
+** Key generation feature added
+Finally, key generation is supported.  Note that it is very slow.  It
+will takes a few minutes to generate two keys.
+
+
 * Major changes in Gnuk 0.19
 
   Released 2012-06-06, by NIIBE Yutaka

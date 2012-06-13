@@ -214,6 +214,7 @@ rsa_verify (const uint8_t *pubkey, const uint8_t *hash, const uint8_t *sig)
 
 #define RSA_EXPONENT 0x10001
 
+#ifdef KEYGEN_SUPPORT
 const uint8_t *
 rsa_genkey (void)
 {
@@ -243,3 +244,4 @@ rsa_genkey (void)
   rsa_free (&rsa_ctx);
   return p_q_modulus;
 }
+#endif

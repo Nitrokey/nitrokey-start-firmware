@@ -72,8 +72,9 @@ get_salt (void)
 }
 
 
+#ifdef KEYGEN_SUPPORT
 /*
- * Rundom byte iterator
+ * Random byte iterator
  */
 uint8_t
 random_byte (void *arg)
@@ -97,3 +98,4 @@ random_byte (void *arg)
 
   return v;
 }
+#endif

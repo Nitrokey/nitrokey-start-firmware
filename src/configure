@@ -28,6 +28,7 @@ with_dfu=default
 debug=no
 pinpad=no
 certdo=no
+keygen=no
 
 # Process each option
 for option; do
@@ -59,6 +60,10 @@ for option; do
     certdo=yes ;;
   --disable-certdo)
     certdo=no ;;
+  --enable-keygen)
+    keygen=yes ;;
+  --disable-keygen)
+    keygen=no ;;
   --with-dfu)
     with_dfu=yes ;;
   --without-dfu)
@@ -93,6 +98,7 @@ Configuration:
   --enable-pinpad={dnd,cir,dial}
 			PIN entry support		[no]
   --enable-certdo	support CERT.3 data object	[no]
+  --enable-keygen	support key generation		[no]
   --with-dfu		build image for DFU 		[<target specific>]
 EOF
   exit 0
@@ -188,11 +194,20 @@ if test "$certdo" = "yes"; then
   echo "CERT.3 Data Object is supported"
 else
   CERTDO_DEFINE="#undef CERTDO_SUPPORT"
-  echo "CERT.3 Data Object is not supported"
+  echo "CERT.3 Data Object is NOT supported"
+fi
+
+# --enable-keygen option
+if test "$keygen" = "yes"; then
+  KEYGEN_SUPPORT="-DKEYGEN_SUPPORT"
+  echo "Key generation on device is supported"
+else
+  KEYGEN_SUPPORT=""
+  echo "Key generation on device is NOT supported"
 fi
 
 REVISION=`git describe --dirty="-modified"` 
-CONFIG="$target:dfu=$with_dfu:debug=$debug:pinpad=$pinpad:certdo=$certdo"
+CONFIG="$target:dfu=$with_dfu:debug=$debug:pinpad=$pinpad:certdo=$certdo:keygen=$keygen"
 
 if !(IFS="	"
   while read VIDPID VERSION PRODUCT VENDOR; do
@@ -242,6 +257,7 @@ fi
 sed -e "s%@BOARD_DIR@%$BOARD_DIR%" \
     -e "s%@DEBUG_MAKE_OPTION@%$DEBUG_MAKE_OPTION%" \
     -e "s%@PINPAD_MAKE_OPTION@%$PINPAD_MAKE_OPTION%" \
+    -e "s%@KEYGEN_SUPPORT@%$KEYGEN_SUPPORT%" \
 	< Makefile.in > Makefile
 if test "$certdo" = "yes"; then
   sed -e "/^@CERTDO_SUPPORT_START@$/ d" -e "/^@CERTDO_SUPPORT_END@$/ d" \

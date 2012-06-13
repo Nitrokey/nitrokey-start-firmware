@@ -86,10 +86,12 @@
  */
 #define POLARSSL_VERSION_C
 
+#ifdef KEYGEN_SUPPORT
 /*
  * Enable the prime-number generation code.
  */
 #define POLARSSL_GENPRIME
+#endif
 
 /*
  * Uncomment this macro to store the AES tables in ROM.

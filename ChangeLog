@@ -1,3 +1,16 @@
+2012-06-13  Niibe Yutaka  <gniibe@fsij.org>
+
+	Key generation is configure option.
+	* src/configure (keygen): Add --enable-keygen option.
+	* src/Makefile.in (UDEFS): Add definition of KEYGEN_SUPPORT.
+	* src/call-rsa.c [KEYGEN_SUPPORT] (rsa_genkey): Conditionalize.
+	* src/random.c [KEYGEN_SUPPORT] (random_byte): Ditto.
+	* src/openpgp.c [KEYGEN_SUPPORT] (cmd_pgp_gakp): Ditto.
+	* src/openpgp-do.c [KEYGEN_SUPPORT] (gpg_do_keygen): Ditto.
+	* polarssl-0.14.0/include/polarssl/config.h: Ditto.
+	* polarssl-0.14.0/library/bignum.c [POLARSSL_GENPRIME]
+	(mpi_inv_mod): Unconditionalize.
+
 2012-06-08  Niibe Yutaka  <gniibe@fsij.org>
 
 	* polarssl-0.14.0/library/bignum.c (mpi_cmp_mpi): Bug fix.
