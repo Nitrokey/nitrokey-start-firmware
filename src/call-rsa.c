@@ -47,7 +47,7 @@ rsa_sign (const uint8_t *raw_message, uint8_t *output, int msg_len,
   rsa_init (&rsa_ctx, RSA_PKCS_V15, 0);
 
   rsa_ctx.len = KEY_CONTENT_LEN;
-  mpi_read_string (&rsa_ctx.E, 16, "10001");
+  mpi_lset (&rsa_ctx.E, 0x10001);
   mpi_read_binary (&rsa_ctx.P, &kd->data[0], rsa_ctx.len / 2);
   mpi_read_binary (&rsa_ctx.Q, &kd->data[KEY_CONTENT_LEN/2], rsa_ctx.len / 2);
   mpi_mul_mpi (&rsa_ctx.N, &rsa_ctx.P, &rsa_ctx.Q);
@@ -138,7 +138,7 @@ rsa_decrypt (const uint8_t *input, uint8_t *output, int msg_len,
   rsa_ctx.len = msg_len;
   DEBUG_WORD (msg_len);
 
-  mpi_read_string (&rsa_ctx.E, 16, "10001");
+  mpi_lset (&rsa_ctx.E, 0x10001);
   mpi_read_binary (&rsa_ctx.P, &kd->data[0], KEY_CONTENT_LEN / 2);
   mpi_read_binary (&rsa_ctx.Q, &kd->data[KEY_CONTENT_LEN/2],
 		   KEY_CONTENT_LEN / 2);
@@ -191,7 +191,7 @@ rsa_verify (const uint8_t *pubkey, const uint8_t *hash, const uint8_t *sig)
 
   rsa_init (&rsa_ctx, RSA_PKCS_V15, 0);
   rsa_ctx.len = KEY_CONTENT_LEN;
-  mpi_read_string (&rsa_ctx.E, 16, "10001");
+  mpi_lset (&rsa_ctx.E, 0x10001);
   mpi_read_binary (&rsa_ctx.N, pubkey, KEY_CONTENT_LEN);
 
   DEBUG_INFO ("RSA verify...");

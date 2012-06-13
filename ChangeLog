@@ -1,5 +1,10 @@
 2012-06-14  Niibe Yutaka  <gniibe@fsij.org>
 
+	* src/call-rsa.c (rsa_sign, rsa_decrypt, rsa_verify): Use
+	mpi_lset (was: mpi_read_string).
+	* polarssl-0.14.0/library/bignum.c (mpi_get_digit)
+	(mpi_read_string): ifdef-out.
+
 	KDF is now SHA-256 (was: SHA1).
 	* src/sha256.c: New file.  Based on the implementation by Dr Brian
 	Gladman.

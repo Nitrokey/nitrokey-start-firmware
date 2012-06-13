@@ -225,6 +225,7 @@ int mpi_size( const mpi *X )
     return( ( mpi_msb( X ) + 7 ) >> 3 );
 }
 
+#if 0
 /*
  * Convert an ASCII character to digit value
  */
@@ -310,7 +311,6 @@ cleanup:
     return( ret );
 }
 
-#if 0
 /*
  * Helper to write the digits high-order first
  */
