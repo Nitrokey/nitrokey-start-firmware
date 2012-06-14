@@ -194,7 +194,7 @@ sha256_finish (sha256_context *ctx, unsigned char output[32])
 
   bswap32_buf (ctx->state, SHA256_DIGEST_SIZE >> 2);
   memcpy (output, ctx->state, SHA256_DIGEST_SIZE);
-  memset (&ctx, 0, sizeof (sha256_context));
+  memset (ctx, 0, sizeof (sha256_context));
 }
 
 const uint32_t initial_state[8] =
