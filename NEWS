@@ -13,6 +13,10 @@ Data encryption key for private keys are computed by KDF (Key
 Derivation Function, sometimes also is refered as string to key
 function, S2K).  It was SHA1 before, but it is replaced by SHA-256.
 
+** Protection improvement (even when data is disclosed)
+Even if PW1 and Reset-code is same, content of encripted DEK is
+different now.
+
 
 * Major changes in Gnuk 0.19
 

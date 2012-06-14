@@ -1,5 +1,11 @@
 2012-06-14  Niibe Yutaka  <gniibe@fsij.org>
 
+	* src/openpgp.c (resetcode_s2k): New.
+	(cmd_reset_user_password): Use resetcode_s2k.
+	* src/openpgp-do.c (proc_resetting_code): Likewise.
+
+	* src/sha256.c (sha256_finish): Clear out CTX at the end.
+
 	* src/call-rsa.c (rsa_sign, rsa_decrypt, rsa_verify): Use
 	mpi_lset (was: mpi_read_string).
 	* polarssl-0.14.0/library/bignum.c (mpi_get_digit)

@@ -543,7 +543,7 @@ proc_resetting_code (const uint8_t *data, int len)
 
   newpw_len = len;
   newpw = data;
-  sha256 (newpw, newpw_len, new_ks);
+  resetcode_s2k (newpw, newpw_len, new_ks);
   new_ks0[0] = newpw_len;
   r = gpg_change_keystring (admin_authorized, old_ks, BY_RESETCODE, new_ks);
   if (r <= -2)

@@ -193,6 +193,9 @@ struct prvkey_data {
 #define BY_RESETCODE	2
 #define BY_ADMIN	3
 
+extern void resetcode_s2k (const unsigned char *input, unsigned int ilen,
+			   unsigned char output[32]);
+
 extern int flash_key_write (uint8_t *key_addr, const uint8_t *key_data, const uint8_t *modulus);
 
 #define KEYSTRING_PASSLEN_SIZE  1

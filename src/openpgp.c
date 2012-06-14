@@ -328,6 +328,23 @@ cmd_change_password (void)
     }
 }
 
+
+#define RESETCODE_S2K_MAGIC "\xffRESET\r\n"
+
+void
+resetcode_s2k (const unsigned char *input, unsigned int ilen,
+	       unsigned char output[32])
+{
+  sha256_context ctx;
+
+  sha256_start (&ctx);
+  sha256_update (&ctx, input, ilen);
+  sha256_update (&ctx, (unsigned char *)RESETCODE_S2K_MAGIC,
+		 sizeof (RESETCODE_S2K_MAGIC));
+  sha256_finish (&ctx, output);
+}
+
+
 static void
 cmd_reset_user_password (void)
 {
@@ -368,7 +385,7 @@ cmd_reset_user_password (void)
       pw_len = ks_rc[0];
       newpw = pw + pw_len;
       newpw_len = len - pw_len;
-      sha256 (pw, pw_len, old_ks);
+      resetcode_s2k (pw, pw_len, old_ks);
       sha256 (newpw, newpw_len, new_ks);
       new_ks0[0] = newpw_len;
       r = gpg_change_keystring (BY_RESETCODE, old_ks, BY_USER, new_ks);
