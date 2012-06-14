@@ -156,9 +156,9 @@ extern int flash_write_binary (uint8_t file_id, const uint8_t *data, uint16_t le
 extern uint8_t ch_certificate_start;
 extern uint8_t random_bits_start;
 
-#define KEY_MAGIC_LEN 8
 #define KEY_CONTENT_LEN 256	/* p and q */
-#define GNUK_MAGIC "Gnuk KEY"
+#define INITIAL_VECTOR_SIZE 16
+#define DATA_ENCRYPTION_KEY_SIZE 16
 
 /* encrypted data content */
 struct key_data {
@@ -167,22 +167,21 @@ struct key_data {
 
 struct key_data_internal {
   uint8_t data[KEY_CONTENT_LEN]; /* p and q */
-  uint32_t check;
-  uint32_t random;
-  char magic[KEY_MAGIC_LEN];
+  uint8_t checksum[DATA_ENCRYPTION_KEY_SIZE];
 };
 
-#define ADDITIONAL_DATA_SIZE 16
-#define DATA_ENCRYPTION_KEY_SIZE 16
 struct prvkey_data {
   const uint8_t *key_addr;
   /*
-   * CRM: [C]heck, [R]andom, and [M]agic in struct key_data_internal
-   *
+   * IV: Initial Vector
    */
-  uint8_t crm_encrypted[ADDITIONAL_DATA_SIZE];
+  uint8_t iv[INITIAL_VECTOR_SIZE];
   /*
-   * DEK: Data Encryption Key
+   * Checksum
+   */
+  uint8_t checksum_encrypted[DATA_ENCRYPTION_KEY_SIZE];
+  /*
+   * DEK (Data Encryption Key) encrypted
    */
   uint8_t dek_encrypted_1[DATA_ENCRYPTION_KEY_SIZE]; /* For user */
   uint8_t dek_encrypted_2[DATA_ENCRYPTION_KEY_SIZE]; /* For resetcode */

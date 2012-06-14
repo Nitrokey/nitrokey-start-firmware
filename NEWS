@@ -6,16 +6,23 @@ Gnuk NEWS - User visible changes
 
 ** Key generation feature added
 Finally, key generation is supported.  Note that it is very slow.  It
-will takes a few minutes to generate two keys.
+will take a few minutes (or more) to generate two or three keys, when
+you are unlucky.
+
+** DnD pinentry support is deprecated
+Once, DnD pinentry was considered a great feature, but it found that
+it is difficult to remember moves of folders.
 
 ** KDF (Key Derivation Function) is now SHA-256
-Data encryption key for private keys are computed by KDF (Key
-Derivation Function, sometimes also is refered as string to key
-function, S2K).  It was SHA1 before, but it is replaced by SHA-256.
+Keystring is now computed by SHA-256 (it was SHA1 before).
 
-** Protection improvement (even when data is disclosed)
-Even if PW1 and Reset-code is same, content of encripted DEK is
-different now.
+** Protection improvements (even when internal data is disclosed)
+Three improvements.  (1) Even if PW1 and Reset-code is same, content
+of encripted DEK is different now.  (2) DEK is now encrypted and
+decrypted by keystring in ECB mode (it was just a kind of xor by
+single block CFB mode).  (3) Key data plus checksum are encrypted in
+CFB mode with initial vector (it will be able to switch OCB mode
+easily).
 
 
 * Major changes in Gnuk 0.19

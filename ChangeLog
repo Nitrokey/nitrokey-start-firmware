@@ -1,5 +1,23 @@
 2012-06-15  Niibe Yutaka  <gniibe@fsij.org>
 
+	More protection improvements.
+	* src/random.c (RANDOM_BYTES_LENGTH): It's 32 now (was: 16).
+	* src/gnuk.h (struct key_data_internal): Remove check, random,
+	magic.  Add checksum.
+	(struct prvkey_data): Remove crm_encrypted.  Add iv and
+	checksum_encrypted.
+	* src/openpgp-do.c (encrypt, decrypt): Add IV argument.
+	(encrypt_dek, decrypt_dek): New.  It's in ECB mode.
+	(compute_key_data_checksum): New.
+	(gpg_do_load_prvkey): Handle initial vector and checksum.
+	Use decrypt_dek to decrypt DEK.  Clear DEK after use.
+	(calc_check32):Remove.
+	(gpg_do_write_prvkey): Use encrypt_dek to encrypt DEK.
+	(gpg_do_chks_prvkey): Likewise.
+
+	* polarssl-0.14.0/include/polarssl/aes.h (aes_crypt_cbc)
+	* polarssl-0.14.0/library/aes.c (aes_crypt_cbc): ifdef-out.
+
 	* src/configure (--enable-pinpad): Deprecate DND.
 
 2012-06-14  Niibe Yutaka  <gniibe@fsij.org>

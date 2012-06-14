@@ -572,38 +572,56 @@ proc_resetting_code (const uint8_t *data, int len)
 }
 
 static void
-encrypt (const uint8_t *key_str, uint8_t *data, int len)
+encrypt (const uint8_t *key, const uint8_t *iv, uint8_t *data, int len)
 {
   aes_context aes;
-  uint8_t iv[16];
+  uint8_t iv0[INITIAL_VECTOR_SIZE];
   int iv_offset;
 
   DEBUG_INFO ("ENC\r\n");
   DEBUG_BINARY (data, len);
 
-  aes_setkey_enc (&aes, key_str, 128);
-  memset (iv, 0, 16);
+  aes_setkey_enc (&aes, key, 128);
+  memcpy (iv0, iv, INITIAL_VECTOR_SIZE);
   iv_offset = 0;
-  aes_crypt_cfb128 (&aes, AES_ENCRYPT, len, &iv_offset, iv, data, data);
+  aes_crypt_cfb128 (&aes, AES_ENCRYPT, len, &iv_offset, iv0, data, data);
 }
 
 /* Signing, Decryption, and Authentication */
 struct key_data kd[3];
 
 static void
-decrypt (const uint8_t *key_str, uint8_t *data, int len)
+decrypt (const uint8_t *key, const uint8_t *iv, uint8_t *data, int len)
 {
   aes_context aes;
-  uint8_t iv[16];
+  uint8_t iv0[INITIAL_VECTOR_SIZE];
   int iv_offset;
 
-  aes_setkey_enc (&aes, key_str, 128);
-  memset (iv, 0, 16);
+  aes_setkey_enc (&aes, key, 128); /* This is setkey_enc, because of CFB.  */
+  memcpy (iv0, iv, INITIAL_VECTOR_SIZE);
   iv_offset = 0;
-  aes_crypt_cfb128 (&aes, AES_DECRYPT, len, &iv_offset, iv, data, data);
+  aes_crypt_cfb128 (&aes, AES_DECRYPT, len, &iv_offset, iv0, data, data);
 
   DEBUG_INFO ("DEC\r\n");
   DEBUG_BINARY (data, len);
+}
+
+static void
+encrypt_dek (const uint8_t *key_string, uint8_t *dek)
+{
+  aes_context aes;
+
+  aes_setkey_enc (&aes, key_string, 128);
+  aes_crypt_ecb (&aes, AES_ENCRYPT, dek, dek);
+}
+
+static void
+decrypt_dek (const uint8_t *key_string, uint8_t *dek)
+{
+  aes_context aes;
+
+  aes_setkey_dec (&aes, key_string, 128);
+  aes_crypt_ecb (&aes, AES_DECRYPT, dek, dek);
 }
 
 static uint8_t
@@ -627,6 +645,25 @@ gpg_do_clear_prvkey (enum kind_of_key kk)
   memset ((void *)&kd[kk], 0, sizeof (struct key_data));
 }
 
+
+static int
+compute_key_data_checksum (struct key_data_internal *kdi, int check_or_calc)
+{
+  unsigned int i;
+  uint32_t d[4] = { 0, 0, 0, 0 };
+
+  for (i = 0; i < KEY_CONTENT_LEN / sizeof (uint32_t); i++)
+    d[i&3] ^= *(uint32_t *)(&kdi->data[i*4]);
+
+  if (check_or_calc == 0)	/* store */
+    {
+      memcpy (kdi->checksum, d, DATA_ENCRYPTION_KEY_SIZE);
+      return 0;
+    }
+  else				/* check */
+    return memcmp (kdi->checksum, d, DATA_ENCRYPTION_KEY_SIZE) == 0;
+}
+
 /*
  * Return  1 on success,
  *         0 if none,
@@ -637,8 +674,9 @@ gpg_do_load_prvkey (enum kind_of_key kk, int who, const uint8_t *keystring)
 {
   uint8_t nr = get_do_ptr_nr_for_kk (kk);
   const uint8_t *do_data = do_ptr[nr - NR_DO__FIRST__];
-  uint8_t *key_addr;
+  const uint8_t *key_addr;
   uint8_t dek[DATA_ENCRYPTION_KEY_SIZE];
+  const uint8_t *iv;
   struct key_data_internal kdi;
 
   DEBUG_INFO ("Loading private key: ");
@@ -647,38 +685,27 @@ gpg_do_load_prvkey (enum kind_of_key kk, int who, const uint8_t *keystring)
   if (do_data == NULL)
     return 0;
 
-  key_addr = *(uint8_t **)&(do_data)[1];
+  key_addr = *(const uint8_t **)&(do_data)[1]; /* Possible unaligned access */
   memcpy (kdi.data, key_addr, KEY_CONTENT_LEN);
-  memcpy (((uint8_t *)&kdi.check), do_data+5, ADDITIONAL_DATA_SIZE);
+  iv = do_data+5;
+  memcpy (kdi.checksum, iv + INITIAL_VECTOR_SIZE, DATA_ENCRYPTION_KEY_SIZE);
 
-  memcpy (dek, do_data+5+16*who, DATA_ENCRYPTION_KEY_SIZE);
-  decrypt (keystring, dek, DATA_ENCRYPTION_KEY_SIZE);
+  memcpy (dek, do_data+5+16*(who+1), DATA_ENCRYPTION_KEY_SIZE);
+  decrypt_dek (keystring, dek);
 
-  decrypt (dek, (uint8_t *)&kdi, sizeof (struct key_data_internal));
-  if (memcmp (kdi.magic, GNUK_MAGIC, KEY_MAGIC_LEN) != 0)
+  decrypt (dek, iv, (uint8_t *)&kdi, sizeof (struct key_data_internal));
+  memset (dek, 0, DATA_ENCRYPTION_KEY_SIZE);
+  if (!compute_key_data_checksum (&kdi, 1))
     {
       DEBUG_INFO ("gpg_do_load_prvkey failed.\r\n");
       return -1;
     }
-  /* more sanity check??? */
 
   memcpy (kd[kk].data, kdi.data, KEY_CONTENT_LEN);
   DEBUG_BINARY (&kd[kk], KEY_CONTENT_LEN);
   return 1;
 }
 
-static uint32_t
-calc_check32 (const uint8_t *p, int len)
-{
-  uint32_t check = 0;
-  uint32_t *data = (uint32_t *)p;
-  int i;
-
-  for (i = 0; i < len/4; i++)
-    check += data[i];
-
-  return check;
-}
 
 static int8_t num_prv_keys;
 
@@ -691,7 +718,7 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
   int r;
   struct prvkey_data *pd;
   uint8_t *key_addr;
-  const uint8_t *dek;
+  const uint8_t *dek, *iv;
   const uint8_t *do_data = do_ptr[nr - NR_DO__FIRST__];
   const uint8_t *ks_pw1;
   const uint8_t *ks_rc;
@@ -738,18 +765,17 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
   DEBUG_WORD ((uint32_t)key_addr);
 
   memcpy (kdi.data, key_data, KEY_CONTENT_LEN);
-  kdi.check = calc_check32 (key_data, KEY_CONTENT_LEN);
-  kdi.random = get_salt ();
-  memcpy (kdi.magic, GNUK_MAGIC, KEY_MAGIC_LEN);
+  compute_key_data_checksum (&kdi, 0);
 
-  dek = random_bytes_get (); /* 16-byte random bytes */
+  dek = random_bytes_get (); /* 32-byte random bytes */
+  iv = dek + DATA_ENCRYPTION_KEY_SIZE;
   memcpy (pd->dek_encrypted_1, dek, DATA_ENCRYPTION_KEY_SIZE);
   memcpy (pd->dek_encrypted_2, dek, DATA_ENCRYPTION_KEY_SIZE);
   memcpy (pd->dek_encrypted_3, dek, DATA_ENCRYPTION_KEY_SIZE);
   ks_pw1 = gpg_do_read_simple (NR_DO_KEYSTRING_PW1);
   ks_rc = gpg_do_read_simple (NR_DO_KEYSTRING_RC);
 
-  encrypt (dek, (uint8_t *)&kdi, sizeof (struct key_data_internal));
+  encrypt (dek, iv, (uint8_t *)&kdi, sizeof (struct key_data_internal));
 
   r = flash_key_write (key_addr, kdi.data, modulus);
   if (modulus_allocated_here)
@@ -763,7 +789,8 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
     }
 
   pd->key_addr = key_addr;
-  memcpy (pd->crm_encrypted, (uint8_t *)&kdi.check, ADDITIONAL_DATA_SIZE);
+  memcpy (pd->iv, iv, INITIAL_VECTOR_SIZE);
+  memcpy (pd->checksum_encrypted, kdi.checksum, DATA_ENCRYPTION_KEY_SIZE);
 
   if (kk == GPG_KEY_FOR_SIGNING)
     {
@@ -774,7 +801,7 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
     ac_reset_other ();
 
   if (ks_pw1)
-    encrypt (ks_pw1+1, pd->dek_encrypted_1, DATA_ENCRYPTION_KEY_SIZE);
+    encrypt_dek (ks_pw1+1, pd->dek_encrypted_1);
   else
     {
       uint8_t ks123_pw1[KEYSTRING_SIZE_PW1];
@@ -782,16 +809,16 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
       ks123_pw1[0] = strlen (OPENPGP_CARD_INITIAL_PW1);
       sha256 ((uint8_t *)OPENPGP_CARD_INITIAL_PW1, 
 	      strlen (OPENPGP_CARD_INITIAL_PW1), ks123_pw1+1);
-      encrypt (ks123_pw1+1, pd->dek_encrypted_1, DATA_ENCRYPTION_KEY_SIZE);
+      encrypt_dek (ks123_pw1+1, pd->dek_encrypted_1);
     }
 
   if (ks_rc)
-    encrypt (ks_rc+1, pd->dek_encrypted_2, DATA_ENCRYPTION_KEY_SIZE);
+    encrypt_dek (ks_rc+1, pd->dek_encrypted_2);
   else
     memset (pd->dek_encrypted_2, 0, DATA_ENCRYPTION_KEY_SIZE);
 
   if (keystring_admin)
-    encrypt (keystring_admin, pd->dek_encrypted_3, DATA_ENCRYPTION_KEY_SIZE);
+    encrypt_dek (keystring_admin, pd->dek_encrypted_3);
   else
     memset (pd->dek_encrypted_3, 0, DATA_ENCRYPTION_KEY_SIZE);
 
@@ -842,11 +869,11 @@ gpg_do_chks_prvkey (enum kind_of_key kk,
     return -1;
 
   memcpy (pd, &(do_data)[1], sizeof (struct prvkey_data));
-  dek_p = ((uint8_t *)pd) + 4 + ADDITIONAL_DATA_SIZE
-    + DATA_ENCRYPTION_KEY_SIZE * (who_old - 1);
+  dek_p = ((uint8_t *)pd) + 4 + INITIAL_VECTOR_SIZE
+    + DATA_ENCRYPTION_KEY_SIZE * who_old;
   memcpy (dek, dek_p, DATA_ENCRYPTION_KEY_SIZE);
-  decrypt (old_ks, dek, DATA_ENCRYPTION_KEY_SIZE);
-  encrypt (new_ks, dek, DATA_ENCRYPTION_KEY_SIZE);
+  decrypt_dek (old_ks, dek);
+  encrypt_dek (new_ks, dek);
   dek_p += DATA_ENCRYPTION_KEY_SIZE * (who_new - who_old);
   memcpy (dek_p, dek, DATA_ENCRYPTION_KEY_SIZE);
 
