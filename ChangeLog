@@ -1,5 +1,10 @@
+2012-06-15  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/configure (--enable-pinpad): Deprecate DND.
+
 2012-06-14  Niibe Yutaka  <gniibe@fsij.org>
 
+	Protection improvement.
 	* src/openpgp.c (resetcode_s2k): New.
 	(cmd_reset_user_password): Use resetcode_s2k.
 	* src/openpgp-do.c (proc_resetting_code): Likewise.

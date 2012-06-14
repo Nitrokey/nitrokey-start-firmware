@@ -50,8 +50,6 @@ for option; do
     debug=yes ;;
   --disable-debug)
     debug=no ;;
-  --enable-pinpad)
-    pinpad=yes ;;
   --enable-pinpad=*)
     pinpad=$optarg ;;
   --disable-pinpad)
@@ -95,7 +93,7 @@ Configuration:
 			   STBEE
 			   FST_01
   --enable-debug	debug with virtual COM port	[no]
-  --enable-pinpad={dnd,cir,dial}
+  --enable-pinpad={cir,dial}
 			PIN entry support		[no]
   --enable-certdo	support CERT.3 data object	[no]
   --enable-keygen	support key generation		[no]
@@ -175,12 +173,6 @@ if test "$pinpad" = "no"; then
   PINPAD_DEFINE="#undef PINPAD_SUPPORT"
   PINPAD_MORE_DEFINE=""
   echo "PIN pad option disabled"
-elif test "$pinpad" = "yes"; then
-  pinpad=dnd
-  PINPAD_MAKE_OPTION="ENABLE_PINPAD=dnd"
-  PINPAD_DEFINE="#define PINPAD_SUPPORT 1"
-  PINPAD_MORE_DEFINE="#define PINPAD_DND_SUPPORT 1"
-  echo "PIN pad option enabled (dnd)"
 else
   PINPAD_MAKE_OPTION="ENABLE_PINPAD=$pinpad"
   PINPAD_DEFINE="#define PINPAD_SUPPORT 1"
