@@ -58,7 +58,8 @@ random_bytes_get (void)
 void
 random_bytes_free (const uint8_t *p)
 {
-  memset (p, 0, RANDOM_BYTES_LENGTH);
+  (void)p;
+  memset (random_word, 0, RANDOM_BYTES_LENGTH);
   neug_flush ();
 }
 

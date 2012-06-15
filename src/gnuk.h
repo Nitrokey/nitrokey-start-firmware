@@ -135,6 +135,8 @@ extern const uint8_t *flash_init (void);
 extern void flash_do_release (const uint8_t *);
 extern const uint8_t *flash_do_write (uint8_t nr, const uint8_t *data, int len);
 extern uint8_t *flash_key_alloc (void);
+extern int flash_key_write (uint8_t *key_addr, const uint8_t *key_data,
+			    const uint8_t *modulus);
 extern void flash_keystore_release (void);
 extern void flash_set_data_pool_last (const uint8_t *p);
 extern void flash_clear_halfword (uint32_t addr);
@@ -195,7 +197,6 @@ struct prvkey_data {
 extern void resetcode_s2k (const unsigned char *input, unsigned int ilen,
 			   unsigned char output[32]);
 
-extern int flash_key_write (uint8_t *key_addr, const uint8_t *key_data, const uint8_t *modulus);
 
 #define KEYSTRING_PASSLEN_SIZE  1
 #define KEYSTRING_SALT_SIZE     8 /* optional */
