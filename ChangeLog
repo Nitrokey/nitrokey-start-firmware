@@ -1,5 +1,7 @@
 2012-06-15  Niibe Yutaka  <gniibe@fsij.org>
 
+	* src/random.c (random_bytes_free): Clear out random bytes.
+
 	More protection improvements.
 	* src/random.c (RANDOM_BYTES_LENGTH): It's 32 now (was: 16).
 	* src/gnuk.h (struct key_data_internal): Remove check, random,
