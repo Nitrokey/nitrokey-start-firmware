@@ -55,9 +55,11 @@
  * _keystore_pool
  *         1.5-KiB Key store (512-byte (p, q and N) key-store * 3)
  */
+#define KEY_SIZE	512	/* P, Q and N */
+
 #define FLASH_DATA_POOL_HEADER_SIZE	2
 #define FLASH_DATA_POOL_SIZE		(FLASH_PAGE_SIZE*2)
-#define FLASH_KEYSTORE_SIZE		(512*3)
+#define FLASH_KEYSTORE_SIZE		(KEY_SIZE*3)
 
 static const uint8_t *data_pool;
 extern uint8_t _keystore_pool;
@@ -96,7 +98,7 @@ flash_init (void)
   /* Seek empty keystore */
   p = &_keystore_pool;
   while (*p != 0xff || *(p+1) != 0xff)
-    p += 512;
+    p += KEY_SIZE;
 
   keystore = p;
 
@@ -279,7 +281,7 @@ flash_key_alloc (void)
   if ((k - &_keystore_pool) >= FLASH_KEYSTORE_SIZE)
     return NULL;
 
-  keystore += 512;
+  keystore += KEY_SIZE;
   return k;
 }
 
