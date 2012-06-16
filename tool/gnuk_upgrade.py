@@ -389,11 +389,13 @@ def to_string(t):
 
 from subprocess import check_output
 
-def gpg_sign(keygrip, hash):
+SHA256_OID_PREFIX="3031300d060960864801650304020105000420"
+
+def gpg_sign(hash):
     result = check_output(["gpg-connect-agent",
-                           "SIGKEY %s" % keygrip,
-                           "SETHASH --hash=sha1 %s" % hash,
-                           "PKSIGN", "/bye"])
+                           "SCD SETDATA " + SHA256_OID_PREFIX + hash,
+                           "SCD PKAUTH OPENPGP.3",
+                           "/bye"])
     signed = ""
     while True:
         i = result.find('%')
@@ -405,8 +407,8 @@ def gpg_sign(keygrip, hash):
         signed += chr(int(hex_str,16))
         result = result[i+3:]
 
-    pos = signed.index("D (7:sig-val(3:rsa(1:s256:") + 26
-    signed = signed[pos:-7]
+    pos = signed.index("D ") + 2
+    signed = signed[pos:-4]     # \nOK\n
     if len(signed) != 256:
         raise ValueError, binascii.hexlify(signed)
     return signed
@@ -418,7 +420,7 @@ def crc32(bytestr):
     crc = binascii.crc32(bytestr)
     return UNSIGNED(crc)
 
-def main(keygrip, data_regnual, data_upgrade):
+def main(data_regnual, data_upgrade):
     l = len(data_regnual)
     if (l & 0x03) != 0:
         data_regnual = data_regnual.ljust(l + 4 - (l & 0x03), chr(0))
@@ -440,7 +442,7 @@ def main(keygrip, data_regnual, data_upgrade):
         icc.icc_power_on()
     icc.cmd_select_openpgp()
     challenge = icc.cmd_get_challenge()
-    signed = gpg_sign(keygrip, binascii.hexlify(to_string(challenge)))
+    signed = gpg_sign(binascii.hexlify(to_string(challenge)))
     icc.cmd_external_authenticate(signed)
     icc.stop_gnuk()
     mem_info = icc.mem_info()
@@ -477,9 +479,8 @@ def main(keygrip, data_regnual, data_upgrade):
 
 
 if __name__ == '__main__':
-    keygrip = sys.argv[1]
-    filename_regnual = sys.argv[2]
-    filename_upgrade = sys.argv[3]
+    filename_regnual = sys.argv[1]
+    filename_upgrade = sys.argv[2]
     f = open(filename_regnual)
     data_regnual = f.read()
     f.close()
@@ -488,4 +489,4 @@ if __name__ == '__main__':
     data_upgrade = f.read()
     f.close()
     print "%s: %d" % (filename_upgrade, len(data_upgrade))
-    main(keygrip, data_regnual, data_upgrade[4096:])
+    main(data_regnual, data_upgrade[4096:])

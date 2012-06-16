@@ -8,7 +8,6 @@ Note that updating firmware, all data objects and keys will be
 removed.  There is _no way_ to preserve those data.
 
 
-
 Preparation
 ===========
 
@@ -96,9 +95,9 @@ Then, we can put the data of public key into token by::
 Invoking firmware update
 ========================
 
-We specify the keygrip to authenticate, reGNUal binary, and Gnuk binary.
+We specify reGNUal binary and Gnuk binary.
 
-  $ ../tool/gnuk_upgrade.py 5D6C89682D07CCFC034AF508420BF2276D8018ED ../regnual/regnual.bin gnuk.bin 
+  $ ../tool/gnuk_upgrade.py ../regnual/regnual.bin gnuk.bin 
 
 
 Two or more tokens
@@ -107,9 +106,9 @@ Two or more tokens
 Currently, GnuPG doesn't support multiple devices connected to the
 host.
 
-In order to update the firmware of a token TARGET, we use GnuPG to
-authenticate with public key.  If it is on another token AUTH, it is
-somewhat complicated.
+In order to update the firmware of a TARGET token, we use GnuPG to
+authenticate with public key.  It is assumed that you have another
+AUTH token for this.  This situation is somewhat complicated.
 
 What I do is:
 (1) Don't run PC/SC daemon::
@@ -120,9 +119,14 @@ What I do is:
 
   $ killall -9 scdaemon
 
-(3) Connect the token of AUTH, and use it::
+(3) Insert the AUTH token to USB, and use it::
 
   $ gpg --card-status
 
-(4) Connect TARGET, and invoke gnuk_update.py
+(4) Insert the TARGET token to USB (after scdaemon communicates AUTH
+    token), and invoke gnuk_upgrade.py.
+    In this situation, gnuk_upgrade.py tries to connect one of tokens,
+    but a connection to the AUTH token will fail because scdaemon is
+    connecting to that device, and will be expected to connect to the
+    TARGET token succesufully, instead.
 -- 

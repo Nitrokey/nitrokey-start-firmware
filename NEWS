@@ -5,13 +5,18 @@ Gnuk NEWS - User visible changes
   Released 2012-XX-XX, by NIIBE Yutaka
 
 ** Key generation feature added
-Finally, key generation is supported.  Note that it is very slow.  It
-will take a few minutes (or more) to generate two or three keys, when
-you are unlucky.
+Finally, key generation is supported.  Note that it may be very slow.
+It will take a few minutes (or more) to generate two or three keys,
+when you are unlucky.
 
 ** DnD pinentry support is deprecated
 Once, DnD pinentry was considered a great feature, but it found that
 it is difficult to remember moves of folders.
+
+** gnuk_upgrade.py assumes using another token for authentication
+Use of another token for authentication is assumed now.  This is
+incompatible change.  Note that when you upgrade a token of version
+0.19 to 0.20 (or later), you need gnuk_upgrade.py of version 0.19.
 
 ** KDF (Key Derivation Function) is now SHA-256
 Keystring is now computed by SHA-256 (it was SHA1 before).

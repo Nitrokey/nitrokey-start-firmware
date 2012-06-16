@@ -50,7 +50,7 @@
 #define INS_PUT_DATA				0xda
 #define INS_PUT_DATA_ODD			0xdb	/* For key import */
 
-#define CHALLENGE_LEN	16
+#define CHALLENGE_LEN	32
 static const uint8_t *challenge; /* Random bytes */
 
 static const uint8_t
@@ -938,9 +938,9 @@ cmd_external_authenticate (void)
 {
   const uint8_t *pubkey;
   const uint8_t *signature = apdu.cmd_apdu_data;
-  uint8_t *hash = apdu.cmd_apdu_data + 256;
   int len = apdu.cmd_apdu_data_len;
   uint8_t keyno = P2 (apdu);
+  int r;
 
   DEBUG_INFO (" - EXTERNAL AUTHENTICATE\r\n");
 
@@ -958,13 +958,12 @@ cmd_external_authenticate (void)
       GPG_CONDITION_NOT_SATISFIED ();
       return;
     }
-  
-  memcpy (hash, unique_device_id (), 4);
-  memcpy (hash+4, challenge, CHALLENGE_LEN);
+
+  r = rsa_verify (pubkey, challenge, signature);
   random_bytes_free (challenge);
   challenge = NULL;
 
-  if (rsa_verify (pubkey, hash, signature) < 0)
+  if (r < 0)
     {
       GPG_SECURITY_FAILURE ();
       return;
@@ -984,9 +983,8 @@ cmd_get_challenge (void)
     random_bytes_free (challenge);
 
   challenge = random_bytes_get ();
-  memcpy (res_APDU, unique_device_id (), 4);
-  memcpy (res_APDU+4, challenge, CHALLENGE_LEN);
-  res_APDU_size = CHALLENGE_LEN + 4;
+  memcpy (res_APDU, challenge, CHALLENGE_LEN);
+  res_APDU_size = CHALLENGE_LEN;
   GPG_SUCCESS ();
   DEBUG_INFO ("GET CHALLENGE done.\r\n");
 }

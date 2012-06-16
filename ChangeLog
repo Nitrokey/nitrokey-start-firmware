@@ -1,3 +1,12 @@
+2012-06-16  Niibe Yutaka  <gniibe@fsij.org>
+
+	Use SHA256 format for "external authenticate".
+	* tool/gnuk_upgrade.py (gpg_sign): SHA256 sign by "SCD PKAUTH".
+	(main): Not specify keygrip, but always use key for authentication.
+	* src/call-rsa.c (rsa_verify): It is SHA256 format (was: SHA1).
+	* src/openpgp.c (cmd_get_challenge): Don't add chip-id prefix.
+	(cmd_external_authenticate): Likewise.
+
 2012-06-15  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/random.c (random_bytes_free): Clear out random bytes.
