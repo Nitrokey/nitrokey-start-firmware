@@ -398,9 +398,10 @@ main (int argc, char *argv[])
 	  led_inverted = 1;
 	  break;
 	case LED_FINISH_COMMAND:
+	  m = chEvtWaitOneTimeout (ALL_EVENTS, LED_TIMEOUT_STOP);
 	  led_inverted = 0;
 	  set_led (0);
-	  if ((m = chEvtWaitOneTimeout (ALL_EVENTS, LED_TIMEOUT_INTERVAL)))
+	  if (m)
 	    goto got_it;
 	  break;
 	case LED_FATAL:
