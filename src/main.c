@@ -386,7 +386,7 @@ main (int argc, char *argv[])
 	  if ((m = emit_led (MS2ST (50), MAIN_TIMEOUT_INTERVAL))) goto got_it;
 	  break;
 	case LED_SHOW_STATUS:
-	  if ((count & 0x07) != 0) continue;
+	  if ((count & 0x07) != 0) continue; /* Display once for eight times */
 	  if ((m = display_status_code ())) goto got_it;
 	  break;
 	case LED_START_COMMAND:
