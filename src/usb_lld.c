@@ -852,11 +852,11 @@ static void handle_setup0 (void)
       if (USB_SETUP_GET (ctrl_p->bmRequestType))
 	{
 	  uint32_t len = ctrl_p->wLength;
-     
+
 	  /* Restrict the data length to be the one host asks for */
 	  if (data_p->len > len)
 	    data_p->len = len;
-    
+
 	  if ((data_p->len % USB_MAX_PACKET_SIZE) == 0)
 	    data_p->require_zlp = TRUE;
 	  else
@@ -871,7 +871,7 @@ static void handle_setup0 (void)
 	  st103_set_tx_count (ENDP0, 0);
 	  st103_ep_set_rxtx_status (ENDP0, EP_RX_STALL, EP_TX_VALID);
 	}
-      else 
+      else
 	{
 	  dev_p->state = OUT_DATA;
 	  st103_ep_set_rx_status (ENDP0, EP_RX_VALID);

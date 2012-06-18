@@ -116,7 +116,7 @@ flash_erase_page (uint32_t addr)
   if (status == 0)
     {
       FLASH->CR |= FLASH_CR_PER;
-      FLASH->AR = addr; 
+      FLASH->AR = addr;
       FLASH->CR |= FLASH_CR_STRT;
 
       status = flash_wait_for_last_operation (FLASH_ERASE_TIMEOUT);

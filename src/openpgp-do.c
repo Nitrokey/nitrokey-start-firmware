@@ -807,7 +807,7 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
       uint8_t ks123_pw1[KEYSTRING_SIZE_PW1];
 
       ks123_pw1[0] = strlen (OPENPGP_CARD_INITIAL_PW1);
-      sha256 ((uint8_t *)OPENPGP_CARD_INITIAL_PW1, 
+      sha256 ((uint8_t *)OPENPGP_CARD_INITIAL_PW1,
 	      strlen (OPENPGP_CARD_INITIAL_PW1), ks123_pw1+1);
       encrypt_dek (ks123_pw1+1, pd->dek_encrypted_1);
     }
@@ -1036,7 +1036,7 @@ gpg_do_table[] = {
 			     / sizeof (struct do_table_entry))
 
 /*
- * Reading data from Flash ROM, initialize DO_PTR, PW_ERR_COUNTERS, etc. 
+ * Reading data from Flash ROM, initialize DO_PTR, PW_ERR_COUNTERS, etc.
  */
 void
 gpg_data_scan (const uint8_t *p_start)
@@ -1534,9 +1534,7 @@ gpg_do_keygen (uint8_t kk_byte)
   else
     keystring_admin = NULL;
 
-  chEvtSignal (main_thread, LED_WAIT_MODE);
   p_q_modulus = rsa_genkey ();
-  chEvtSignal (main_thread, LED_STATUS_MODE);
   if (p_q_modulus == NULL)
     {
       GPG_MEMORY_FAILURE ();

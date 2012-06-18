@@ -1,3 +1,26 @@
+2012-06-18  Niibe Yutaka  <gniibe@fsij.org>
+
+	LED display output change.
+	* src/main.c (MAIN_TIMEOUT_INTERVAL): New.
+	(LED_TIMEOUT_INTERVAL, etc.): New values.
+	(main_mode, display_interaction): Remove.
+	(led_inverted, emit_led): New.
+	(display_status_code): Use emit_led.
+	(led_blink): Use LED_* for spec.
+	(main, fatal): New LED display output.
+	* src/gnuk.h (LED_ONESHOT, LED_TWOSHOTS, LED_SHOW_STATUS)
+	(LED_START_COMMAND, LED_FINISH_COMMAND, LED_FATAL): New semantics.
+	(main_thread): Remove.
+	* src/openpgp-do.c (gpg_do_keygen): Don't touch LED here.
+	* src/openpgp.c (get_pinpad_input): Call led_blink.
+	(cmd_pso, cmd_internal_authenticate): Don't touch LED here.
+	(GPGthread): Call led_blink.
+	* src/pin-cir.c (pinpad_getline): Change arg of led_blink.
+	* src/pin-dnd.c (pinpad_getline): Ditto.
+	* src/usb-icc.c (icc_handle_timeout): Ditto.
+	(icc_send_status): Call led_blink.
+	* src/usb_ctrl.c (gnuk_usb_event): Don't touch LED here.
+
 2012-06-16  Niibe Yutaka  <gniibe@fsij.org>
 
 	Use SHA256 format for "external authenticate".

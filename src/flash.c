@@ -46,7 +46,7 @@
  *         .data
  * _bss_start
  *         .bss
- * _end 
+ * _end
  *         <alignment to page>
  * ch_certificate_startp
  *         <2048 bytes>

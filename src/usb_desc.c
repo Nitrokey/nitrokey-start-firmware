@@ -261,7 +261,7 @@ const uint8_t gnukStringSerial[] = {
   18*2+2,			/* bLength */
   USB_STRING_DESCRIPTOR_TYPE,	/* bDescriptorType */
   /* FSIJ-0.19 */
-  'F', 0, 'S', 0, 'I', 0, 'J', 0, '-', 0, 
+  'F', 0, 'S', 0, 'I', 0, 'J', 0, '-', 0,
   '0', 0, '.', 0, '1', 0, '9', 0, /* Version number of Gnuk */
   '-', 0,
   0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,

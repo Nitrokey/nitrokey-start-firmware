@@ -41,7 +41,7 @@ uint8_t pin_input_len;
 
 static Thread *pin_thread;
 
-/* 
+/*
  * Let user input PIN string.
  * Return length of the string.
  * The string itself is in PIN_INPUT_BUFFER.
@@ -71,7 +71,7 @@ pinpad_getline (int msg_code, systime_t timeout)
       msg = chThdSelf ()->p_u.rdymsg;
       chSysUnlock ();
 
-      led_blink (0);
+      led_blink (LED_ONESHOT);
       if (msg != 0)
 	break;
     }

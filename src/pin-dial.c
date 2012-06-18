@@ -51,7 +51,7 @@ uint8_t pin_input_len;
 
 #define OFF   '\x00'
 #define ENTER '\x0a'
-static struct led_pattern { uint8_t c, v; } led_pattern[] = 
+static struct led_pattern { uint8_t c, v; } led_pattern[] =
 {
 		     /* char : dp a b c d e f g */
   { ENTER, 0xf8 },   /* |-   :  1 1 1 1 1 0 0 0  (enter) */

@@ -107,7 +107,7 @@ gpg_fini (void)
 }
 
 #if defined(PINPAD_SUPPORT)
-/* 
+/*
  * Let user input PIN string.
  * Return length of the string.
  * The string itself is in PIN_INPUT_BUFFER.
@@ -117,9 +117,9 @@ get_pinpad_input (int msg_code)
 {
   int r;
 
-  chEvtSignal (main_thread, LED_WAIT_MODE);
+  led_blink (LED_START_COMMAND);
   r = pinpad_getline (msg_code, MS2ST (8000));
-  chEvtSignal (main_thread, LED_STATUS_MODE);
+  led_blink (LED_FINISH_COMMAND);
   return r;
 }
 #endif
@@ -724,10 +724,8 @@ cmd_pso (void)
 	  DEBUG_SHORT (len);
 	  DEBUG_BINARY (&kd[GPG_KEY_FOR_SIGNING], KEY_CONTENT_LEN);
 
-	  chEvtSignal (main_thread, LED_WAIT_MODE);
 	  r = rsa_sign (apdu.cmd_apdu_data, res_APDU, len,
 			&kd[GPG_KEY_FOR_SIGNING]);
-	  chEvtSignal (main_thread, LED_STATUS_MODE);
 	  if (r < 0)
 	    {
 	      ac_reset_pso_cds ();
@@ -752,10 +750,8 @@ cmd_pso (void)
 
       /* Skip padding 0x00 */
       len--;
-      chEvtSignal (main_thread, LED_WAIT_MODE);
       r = rsa_decrypt (apdu.cmd_apdu_data+1, res_APDU, len,
 		       &kd[GPG_KEY_FOR_DECRYPTION]);
-      chEvtSignal (main_thread, LED_STATUS_MODE);
       if (r < 0)
 	GPG_ERROR ();
     }
@@ -799,10 +795,8 @@ cmd_internal_authenticate (void)
 	  return;
 	}
 
-      chEvtSignal (main_thread, LED_WAIT_MODE);
       r = rsa_sign (apdu.cmd_apdu_data, res_APDU, len,
 		    &kd[GPG_KEY_FOR_AUTHENTICATION]);
-      chEvtSignal (main_thread, LED_STATUS_MODE);
       if (r < 0)
 	GPG_ERROR ();
     }
@@ -1139,7 +1133,9 @@ GPGthread (void *arg)
       else if (m == EV_NOP)
 	continue;
 
+      led_blink (LED_START_COMMAND);
       process_command_apdu ();
+      led_blink (LED_FINISH_COMMAND);
     done:
       chEvtSignal (icc_thread, EV_EXEC_FINISHED);
     }

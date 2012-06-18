@@ -170,12 +170,10 @@ extern msg_t USBthread (void *arg);
 /*
  * main thread does 1-bit LED display output
  */
-#define MAIN_TIMEOUT_INTERVAL	MS2ST(5000)
-
-#define LED_TIMEOUT_INTERVAL	MS2ST(75)
-#define LED_TIMEOUT_ZERO	MS2ST(25)
-#define LED_TIMEOUT_ONE		MS2ST(100)
-#define LED_TIMEOUT_STOP	MS2ST(200)
+#define LED_TIMEOUT_INTERVAL	MS2ST(100)
+#define LED_TIMEOUT_ZERO	MS2ST(50)
+#define LED_TIMEOUT_ONE		MS2ST(200)
+#define LED_TIMEOUT_STOP	MS2ST(500)
 
 
 #define ID_OFFSET 22
@@ -196,7 +194,7 @@ device_initialize_once (void)
       for (i = 0; i < 4; i++)
 	{
 	  uint8_t b = u[i];
-	  uint8_t nibble;
+	  uint8_t nibble; 
 
 	  nibble = (b >> 4);
 	  nibble += (nibble >= 10 ? ('A' - 10) : '0');
@@ -210,64 +208,94 @@ device_initialize_once (void)
 
 static volatile uint8_t fatal_code;
 
-static Thread *main_thread;
+Thread *main_thread;
 
-static void display_fatal_code (void)
+#define GNUK_INIT	  0
+#define GNUK_RUNNING	  1
+#define GNUK_WAIT	  2
+#define GNUK_FATAL	255
+/*
+ * 0 for initializing
+ * 1 for normal mode
+ * 2 for input waiting / under calculation
+ * 255 for fatal
+ */
+static uint8_t main_mode;
+
+static void display_interaction (void)
 {
+  eventmask_t m;
+
+  set_led (1);
   while (1)
     {
-      set_led (1);
-      chThdSleep (LED_TIMEOUT_ZERO);
+      m = chEvtWaitOne (ALL_EVENTS);
       set_led (0);
-      chThdSleep (LED_TIMEOUT_INTERVAL);
+      switch (m)
+	{
+	case LED_ONESHOT_SHORT:
+	  chThdSleep (MS2ST (100));
+	  break;
+	case LED_ONESHOT_LONG:
+	  chThdSleep (MS2ST (400));
+	  break;
+	case LED_TWOSHOT:
+	  chThdSleep (MS2ST (50));
+	  set_led (1);
+	  chThdSleep (MS2ST (50));
+	  set_led (0);
+	  chThdSleep (MS2ST (50));
+	  break;
+	case LED_STATUS_MODE:
+	  main_mode = GNUK_RUNNING;
+	  return;
+	case LED_FATAL_MODE:
+	  main_mode = GNUK_FATAL;
+	  return;
+	default:
+	  break;
+	}
       set_led (1);
-      chThdSleep (LED_TIMEOUT_ZERO);
-      set_led (0);
-      chThdSleep (LED_TIMEOUT_INTERVAL);
-      set_led (1);
-      chThdSleep (LED_TIMEOUT_ZERO);
-      set_led (0);
-      chThdSleep (LED_TIMEOUT_STOP);
-      set_led (1);
-      if (fatal_code & 1)
-	chThdSleep (LED_TIMEOUT_ONE);
-      else
-	chThdSleep (LED_TIMEOUT_ZERO);
-      set_led (0);
-      chThdSleep (LED_TIMEOUT_INTERVAL);
-      set_led (1);
-      if (fatal_code & 2)
-	chThdSleep (LED_TIMEOUT_ONE);
-      else
-	chThdSleep (LED_TIMEOUT_ZERO);
-      set_led (0);
-      chThdSleep (LED_TIMEOUT_INTERVAL);
-      set_led (1);
-      chThdSleep (LED_TIMEOUT_STOP);
-      set_led (0);
-      chThdSleep (LED_TIMEOUT_INTERVAL*10);
     }
 }
 
-static uint8_t led_inverted;
-
-static eventmask_t emit_led (int on_time, int off_time)
+static void display_fatal_code (void)
 {
-  eventmask_t m;
-
-  set_led (!led_inverted);
-  m = chEvtWaitOneTimeout (ALL_EVENTS, on_time);
-  set_led (led_inverted);
-  if (m) return m;
-  if ((m = chEvtWaitOneTimeout (ALL_EVENTS, off_time)))
-    return m;
-  return 0;
+  set_led (1);
+  chThdSleep (LED_TIMEOUT_ZERO);
+  set_led (0);
+  chThdSleep (LED_TIMEOUT_INTERVAL);
+  set_led (1);
+  chThdSleep (LED_TIMEOUT_ZERO);
+  set_led (0);
+  chThdSleep (LED_TIMEOUT_INTERVAL);
+  set_led (1);
+  chThdSleep (LED_TIMEOUT_ZERO);
+  set_led (0);
+  chThdSleep (LED_TIMEOUT_STOP);
+  set_led (1);
+  if (fatal_code & 1)
+    chThdSleep (LED_TIMEOUT_ONE);
+  else
+    chThdSleep (LED_TIMEOUT_ZERO);
+  set_led (0);
+  chThdSleep (LED_TIMEOUT_INTERVAL);
+  set_led (1);
+  if (fatal_code & 2)
+    chThdSleep (LED_TIMEOUT_ONE);
+  else
+    chThdSleep (LED_TIMEOUT_ZERO);
+  set_led (0);
+  chThdSleep (LED_TIMEOUT_INTERVAL);
+  set_led (1);
+  chThdSleep (LED_TIMEOUT_STOP);
+  set_led (0);
+  chThdSleep (LED_TIMEOUT_INTERVAL);
 }
 
-static eventmask_t display_status_code (void)
+static void display_status_code (void)
 {
   enum icc_state icc_state;
-  eventmask_t m;
 
   if (icc_state_p == NULL)
     icc_state = ICC_STATE_START;
@@ -275,47 +303,70 @@ static eventmask_t display_status_code (void)
     icc_state = *icc_state_p;
 
   if (icc_state == ICC_STATE_START)
-    return emit_led (LED_TIMEOUT_ONE, LED_TIMEOUT_STOP);
+    {
+      set_led (1);
+      chThdSleep (LED_TIMEOUT_ONE);
+      set_led (0);
+      chThdSleep (LED_TIMEOUT_STOP * 3);
+    }
   else
     /* GPGthread  running */
     {
-      if ((m = emit_led ((auth_status & AC_ADMIN_AUTHORIZED)?
-			  LED_TIMEOUT_ONE : LED_TIMEOUT_ZERO,
-			  LED_TIMEOUT_INTERVAL)))
-	return m;
-      if ((m = emit_led ((auth_status & AC_OTHER_AUTHORIZED)?
-			  LED_TIMEOUT_ONE : LED_TIMEOUT_ZERO,
-			  LED_TIMEOUT_INTERVAL)))
-	return m;
-      if ((m = emit_led ((auth_status & AC_PSO_CDS_AUTHORIZED)?
-			  LED_TIMEOUT_ONE : LED_TIMEOUT_ZERO,
-			  LED_TIMEOUT_INTERVAL)))
-	return m;
+      set_led (1);
+      if ((auth_status & AC_ADMIN_AUTHORIZED) != 0)
+	chThdSleep (LED_TIMEOUT_ONE);
+      else
+	chThdSleep (LED_TIMEOUT_ZERO);
+      set_led (0);
+      chThdSleep (LED_TIMEOUT_INTERVAL);
+      set_led (1);
+      if ((auth_status & AC_OTHER_AUTHORIZED) != 0)
+	chThdSleep (LED_TIMEOUT_ONE);
+      else
+	chThdSleep (LED_TIMEOUT_ZERO);
+      set_led (0);
+      chThdSleep (LED_TIMEOUT_INTERVAL);
+      set_led (1);
+      if ((auth_status & AC_PSO_CDS_AUTHORIZED) != 0)
+	chThdSleep (LED_TIMEOUT_ONE);
+      else
+	chThdSleep (LED_TIMEOUT_ZERO);
 
       if (icc_state == ICC_STATE_WAIT)
 	{
-	  if ((m = chEvtWaitOneTimeout (ALL_EVENTS, LED_TIMEOUT_STOP * 2)))
-	    return m;
+	  set_led (0);
+	  chThdSleep (LED_TIMEOUT_STOP * 2);
+	}
+      else if (icc_state == ICC_STATE_RECEIVE)
+	{
+	  set_led (0);
+	  chThdSleep (LED_TIMEOUT_INTERVAL);
+	  set_led (1);
+	  chThdSleep (LED_TIMEOUT_ONE);
+	  set_led (0);
+	  chThdSleep (LED_TIMEOUT_STOP);
 	}
       else
 	{
-	  if ((m = chEvtWaitOneTimeout (ALL_EVENTS, LED_TIMEOUT_INTERVAL)))
-	    return m;
-
-	  if ((m = emit_led (icc_state == ICC_STATE_RECEIVE?
-			      LED_TIMEOUT_ONE : LED_TIMEOUT_ZERO,
-			      LED_TIMEOUT_STOP)))
-	    return m;
+	  set_led (0);
+	  chThdSleep (LED_TIMEOUT_INTERVAL);
+	  set_led (1);
+	  chThdSleep (LED_TIMEOUT_STOP);
+	  set_led (0);
+	  chThdSleep (LED_TIMEOUT_INTERVAL);
 	}
-
-      return 0;
     }
 }
 
 void
 led_blink (int spec)
 {
-  chEvtSignal (main_thread, spec);
+  if (spec == 0)
+    chEvtSignal (main_thread, LED_ONESHOT_SHORT);
+  else if (spec == 1)
+    chEvtSignal (main_thread, LED_ONESHOT_LONG);
+  else
+    chEvtSignal (main_thread, LED_TWOSHOT);
 }
 
 
@@ -328,9 +379,7 @@ led_blink (int spec)
 int
 main (int argc, char *argv[])
 {
-#ifdef DEBUG_MORE
   int count = 0;
-#endif
 
   (void)argc;
   (void)argv;
@@ -367,7 +416,6 @@ main (int argc, char *argv[])
   msc_init ();
 #endif
 
-
   while (1)
     {
       eventmask_t m;
@@ -375,42 +423,42 @@ main (int argc, char *argv[])
       if (icc_state_p != NULL && *icc_state_p == ICC_STATE_EXEC_REQUESTED)
 	break;
 
-#ifdef DEBUG_MORE
       count++;
-#endif
-
-      m = chEvtWaitOneTimeout (ALL_EVENTS, MAIN_TIMEOUT_INTERVAL);
-    got_it:
+      m = chEvtWaitOneTimeout (ALL_EVENTS, LED_TIMEOUT_INTERVAL);
       switch (m)
 	{
-	case LED_ONESHOT:
-	  if ((m = emit_led (MS2ST (100), MAIN_TIMEOUT_INTERVAL))) goto got_it;
+	case LED_STATUS_MODE:
+	  main_mode = GNUK_RUNNING;
 	  break;
-	case LED_TWOSHOTS:
-	  if ((m = emit_led (MS2ST (50), MS2ST (50)))) goto got_it;
-	  if ((m = emit_led (MS2ST (50), MAIN_TIMEOUT_INTERVAL))) goto got_it;
+	case LED_FATAL_MODE:
+	  main_mode = GNUK_FATAL;
 	  break;
-	case LED_SHOW_STATUS:
-	  if ((m = display_status_code ())) goto got_it;
-	  break;
-	case LED_START_COMMAND:
-	  set_led (1);
-	  led_inverted = 1;
-	  break;
-	case LED_FINISH_COMMAND:
-	  led_inverted = 0;
-	  set_led (0);
-	  if ((m = chEvtWaitOneTimeout (ALL_EVENTS, LED_TIMEOUT_INTERVAL)))
-	    goto got_it;
-	  break;
-	case LED_FATAL:
-	  display_fatal_code ();
+	case LED_WAIT_MODE:
+	  main_mode = GNUK_WAIT;
 	  break;
 	default:
-	  if ((m = emit_led (LED_TIMEOUT_ZERO, LED_TIMEOUT_STOP)))
-	    goto got_it;
 	  break;
 	}
+
+      switch (main_mode)
+	{
+	case GNUK_FATAL:
+	  display_fatal_code ();
+	  break;
+	case GNUK_INIT:
+	  set_led (1);
+	  chThdSleep (LED_TIMEOUT_ZERO);
+	  set_led (0);
+	  chThdSleep (LED_TIMEOUT_STOP * 3);
+	  break;
+	case GNUK_WAIT:
+	  display_interaction ();
+	  break;
+	case GNUK_RUNNING:
+	default:
+	  display_status_code ();
+	  break;
+	}	  
 
 #ifdef DEBUG_MORE
       if (bDeviceState == CONFIGURED && (count % 10) == 0)
@@ -448,12 +496,12 @@ main (int argc, char *argv[])
     /* copy system service routines */
     flash_write (FLASH_SYS_START_ADDR, &_sys, 0x1000);
 
-    /* Leave Gnuk to exec reGNUal */
+    /* Leave Gnuk to exec reGNUal */ 
     (*func) (*((void (**)(void))(&_regnual_start+4)));
     for (;;);
   }
 #else
-  /* Leave Gnuk to exec reGNUal */
+  /* Leave Gnuk to exec reGNUal */ 
   flash_erase_all_and_exec (*((void (**)(void))(&_regnual_start+4)));
 #endif
 
@@ -465,7 +513,7 @@ void
 fatal (uint8_t code)
 {
   fatal_code = code;
-  chEvtSignal (main_thread, LED_FATAL);
+  chEvtSignal (main_thread, LED_FATAL_MODE);
   _write ("fatal\r\n", 7);
   for (;;);
 }

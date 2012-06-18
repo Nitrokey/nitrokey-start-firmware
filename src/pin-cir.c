@@ -595,7 +595,7 @@ cir_getchar (systime_t timeout)
 
 static Thread *pin_thread;
 
-/* 
+/*
  * Let user input PIN string.
  * Return length of the string.
  * The string itself is in PIN_INPUT_BUFFER.
@@ -620,7 +620,7 @@ pinpad_getline (int msg_code, systime_t timeout)
 
       if (ch_is_backspace (ch))
 	{
-	  led_blink (2);
+	  led_blink (LED_TWOSHOTS);
 	  if (pin_input_len > 0)
 	    pin_input_len--;
 	}
@@ -628,7 +628,7 @@ pinpad_getline (int msg_code, systime_t timeout)
 	break;
       else if (pin_input_len < MAX_PIN_CHARS)
 	{
-	  led_blink (0);
+	  led_blink (LED_ONESHOT);
 	  pin_input_buffer[pin_input_len++] = ch;
 	}
     }

@@ -372,7 +372,7 @@ void msc_handle_command (void)
     msc_send_result (buf, 12);
     return;
   case SCSI_START_STOP_UNIT:
-    if (CBW.CBWCB[4] == 0x00 /* stop */ 
+    if (CBW.CBWCB[4] == 0x00 /* stop */
 	|| CBW.CBWCB[4] == 0x02 /* eject */ || CBW.CBWCB[4] == 0x03 /* close */)
       {
 	msc_scsi_stop (CBW.CBWCB[4]);
@@ -380,7 +380,7 @@ void msc_handle_command (void)
 	contingent_allegiance = 1;
 	keep_contingent_allegiance = 1;
       }
-    /* CBW.CBWCB[4] == 0x01 *//* start */ 
+    /* CBW.CBWCB[4] == 0x01 *//* start */
     goto success;
   case SCSI_TEST_UNIT_READY:
     if (contingent_allegiance)

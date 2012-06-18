@@ -315,7 +315,7 @@ extern uint8_t admin_authorized;
 /* 123-counters: Recorded in flash memory by 2-halfword (4-byte).  */
 /*
  * Representation of 123-counters:
- *   0: No record in flash memory 
+ *   0: No record in flash memory
  *   1: 0xfe?? 0xffff
  *   2: 0xfe?? 0xc3c3
  *   3: 0xfe?? 0x0000
@@ -366,13 +366,12 @@ extern void flash_do_write_internal (const uint8_t *p, int nr, const uint8_t *da
 
 extern const uint8_t gnukStringSerial[];
 
-#define LED_ONESHOT_SHORT ((eventmask_t)1)
-#define LED_ONESHOT_LONG  ((eventmask_t)2)
-#define LED_TWOSHOT       ((eventmask_t)4)
-#define LED_STATUS_MODE   ((eventmask_t)8)
-#define LED_WAIT_MODE    ((eventmask_t)16)
-#define LED_FATAL_MODE   ((eventmask_t)32)
-extern Thread *main_thread;
+#define LED_ONESHOT		((eventmask_t)1)
+#define LED_TWOSHOTS		((eventmask_t)2)
+#define LED_SHOW_STATUS		((eventmask_t)4)
+#define LED_START_COMMAND	((eventmask_t)8)
+#define LED_FINISH_COMMAND	((eventmask_t)16)
+#define LED_FATAL		((eventmask_t)32)
 extern void led_blink (int spec);
 
 #if defined(PINPAD_SUPPORT)

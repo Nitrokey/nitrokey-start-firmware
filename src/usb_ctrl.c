@@ -381,7 +381,6 @@ static int gnuk_usb_event (uint8_t event_type, uint16_t value)
 	  for (i = 0; i < NUM_INTERFACES; i++)
 	    gnuk_setup_endpoints_for_interface (i, 0);
 	  bDeviceState = CONFIGURED;
-	  chEvtSignalI (main_thread, LED_STATUS_MODE);
 	}
       else if (current_conf != value)
 	{
