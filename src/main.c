@@ -328,9 +328,7 @@ led_blink (int spec)
 int
 main (int argc, char *argv[])
 {
-#ifdef DEBUG_MORE
-  int count = 0;
-#endif
+  unsigned int count = 0;
 
   (void)argc;
   (void)argv;
@@ -375,12 +373,9 @@ main (int argc, char *argv[])
       if (icc_state_p != NULL && *icc_state_p == ICC_STATE_EXEC_REQUESTED)
 	break;
 
-#ifdef DEBUG_MORE
-      count++;
-#endif
-
       m = chEvtWaitOneTimeout (ALL_EVENTS, MAIN_TIMEOUT_INTERVAL);
     got_it:
+      count++;
       switch (m)
 	{
 	case LED_ONESHOT:
@@ -391,6 +386,7 @@ main (int argc, char *argv[])
 	  if ((m = emit_led (MS2ST (50), MAIN_TIMEOUT_INTERVAL))) goto got_it;
 	  break;
 	case LED_SHOW_STATUS:
+	  if ((count & 0x07) != 0) continue;
 	  if ((m = display_status_code ())) goto got_it;
 	  break;
 	case LED_START_COMMAND:
