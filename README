@@ -1,15 +1,15 @@
-Gnuk - software for GnuPG USB Token
+Gnuk - An Implementation of USB Cryptographic Token for GnuPG
 
-							   Version 0.19
-							     2012-06-06
+							   Version 0.20
+							     2012-06-19
 							   Niibe Yutaka
 				      Free Software Initiative of Japan
 
 What's Gnuk?
 ============
 
-Gnuk is software implementation of a USB token for GNU Privacy Guard.
-Gnuk supports OpenPGP card protocol version 2, and it runs on
+Gnuk is an implementation of USB cryptographic token for GNU Privacy
+Guard.  Gnuk supports OpenPGP card protocol version 2, and it runs on
 STM32F103 processor.
 
 I wish that Gnuk will be a developer's soother who uses GnuPG.  I have
@@ -19,8 +19,8 @@ to bring a card reader all the time.  With Gnuk, this issue will be
 solved by a USB token which is small enough.
 
 Please look at the graphics of "gnuk.svg" for the software name.  My
-son used to be with his NUK(R), always, everywhere.  I am with a USB
-Token by "Gnuk", always, everywhere.
+son used to be with his NUK(R), always, everywhere.  Now, I am with a
+USB Cryptographic Token by "Gnuk", always, everywhere.
 
 
 FAQ
@@ -113,9 +113,10 @@ Ac: STLink v2 is cheap one.  See http://code.google.com/p/arm-utilities/
 Release notes
 =============
 
-This is twentieth release of Gnuk.  In this release, firmware upgrade
-feature is added.  While it is daily use, some features (including
-firmware upgrade) are still considered experimental.
+This is "version 1.0 release candidate" of Gnuk.  In this release, key
+generation feature is added.  While it is daily use, some features
+(including key generation and firmware upgrade) are still considered
+experimental.
 
 Tested features are:
 
@@ -137,11 +138,21 @@ Tested features are:
 	  but you can remove all keys to import again).
 	* Key generation on device side
 
+Original feature of Gnuk, tested (lightly):
+
+	* Upgrading with "EXTERNAL AUTHENTICATE" by reGNUal
+
 It is known not-working well:
 
 	* For some version of kernel and libccid, --enable-debug can't
 	  work well.  Please make sure to disable DEBUG option if it
 	  doesn't work well.
+
+It is known that the combination libccid 1.4.1 (or newer) with libusb
+1.0.8 (or older) has a problem.  It is possible for USB communication
+to be failed, because of a bug in libusb implementation.  Use libusbx
+1.0.9 or newer, or don't use PC/SC, but use internal CCID driver of
+GnuPG.
 
 
 Targets
@@ -170,13 +181,6 @@ as 50 JPY.
 Another PIN-pad support is connecting rotary encoder, push switch and
 7-segment LED display.  Both of PIN verification and PIN modification
 are supported for this circuit extension.
-
-Also, there is "DnDpinentry" support.  This is using usual file
-manager for pinentry.  User does "drag and drop" folders and it will
-be pin entry.  This feature doesn't require any additional hardware.
-See doc/settings-for-DnDpinentry for your desktop configuration.
-However, this will be removed in future version, as it found it's
-not that useful.
 
 Note that you need pinpad support for GnuPG to use PIN-pad enabled
 Gnuk.  The pinpad support for GnuPG is currently in the master branch

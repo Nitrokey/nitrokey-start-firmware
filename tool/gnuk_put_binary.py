@@ -2,7 +2,7 @@
 
 """
 gnuk_put_binary.py - a tool to put binary to Gnuk Token
-This tool is for importing certificate, updating random number, etc.
+This tool is for importing certificate, writing serial number, etc.
 
 Copyright (C) 2011, 2012 Free Software Initiative of Japan
 Author: NIIBE Yutaka <gniibe@fsij.org>

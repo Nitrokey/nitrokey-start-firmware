@@ -1,19 +1,12 @@
 Gnuk NEWS - User visible changes
 
-* Major changes in Gnuk XXXX
+* Major changes in Gnuk 0.20
 
-  Released 2012-XX-XX, by NIIBE Yutaka
-
-** LED display output change
-LED display output by Gnuk is now more reactive.  It shows status code
-when it gets GET_STATUS message of CCID.  When you communicate Gnuk by
-internal CCID driver of GnuPG (instead of PC/SC), and enable
-'debug-disable-ticker' option in .gnupg/scdaemon.conf, it is more
-silent now.
+  Released 2012-06-19, by NIIBE Yutaka
 
 ** Key generation feature added
 Finally, key generation is supported.  Note that it may be very slow.
-It will take a few minutes (or more) to generate two or three keys,
+It may take a few minutes (or more) to generate two or three keys,
 when you are unlucky.
 
 ** DnD pinentry support is deprecated
@@ -35,6 +28,13 @@ decrypted by keystring in ECB mode (it was just a kind of xor by
 single block CFB mode).  (3) Key data plus checksum are encrypted in
 CFB mode with initial vector (it will be able to switch OCB mode
 easily).
+
+** LED display output change
+LED display output by Gnuk is now more reactive.  It shows status code
+when it gets GET_STATUS message of CCID.  When you communicate Gnuk by
+internal CCID driver of GnuPG (instead of PC/SC), and enable
+'debug-disable-ticker' option in .gnupg/scdaemon.conf, it is more
+silent now.
 
 
 * Major changes in Gnuk 0.19

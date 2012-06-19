@@ -1,3 +1,9 @@
+2012-06-19  Niibe Yutaka  <gniibe@fsij.org>
+
+	* Version 0.20.
+
+	* src/usb_desc.c (gnukStringSerial): Updated.
+
 2012-06-18  Niibe Yutaka  <gniibe@fsij.org>
 
 	LED display output change.
@@ -6,7 +12,7 @@
 	(main_mode, display_interaction): Remove.
 	(led_inverted, emit_led): New.
 	(display_status_code): Use emit_led.
-	(led_blink): Use LED_* for spec.
+	(led_blink): Use LED_* for SPEC.
 	(main, fatal): New LED display output.
 	* src/gnuk.h (LED_ONESHOT, LED_TWOSHOTS, LED_SHOW_STATUS)
 	(LED_START_COMMAND, LED_FINISH_COMMAND, LED_FATAL): New semantics.

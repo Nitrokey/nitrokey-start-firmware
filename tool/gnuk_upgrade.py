@@ -22,7 +22,6 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-from intel_hex import *
 from struct import *
 import sys, time, os, binascii, string
 
@@ -47,7 +46,7 @@ def iso7816_compose(ins, p1, p2, data, cls=0x00):
     else:
         return pack('>BBBBB', cls, ins, p1, p2, data_len) + data
 
-class regnual:
+class regnual(object):
     def __init__(self, dev):
         conf = dev.configurations[0]
         intf_alt = conf.interfaces[0]
@@ -154,7 +153,7 @@ class regnual:
             pass
 
 # This class only supports Gnuk (for now) 
-class gnuk_token:
+class gnuk_token(object):
     def __init__(self, device, configuration, interface):
         """
         __init__(device, configuration, interface) -> None

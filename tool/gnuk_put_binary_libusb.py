@@ -2,7 +2,7 @@
 
 """
 gnuk_put_binary.py - a tool to put binary to Gnuk Token
-This tool is for importing certificate, updating random number, etc.
+This tool is for importing certificate, writing serial number, etc.
 
 Copyright (C) 2011, 2012 Free Software Initiative of Japan
 Author: NIIBE Yutaka <gniibe@fsij.org>
@@ -23,7 +23,6 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-from intel_hex import *
 from struct import *
 import sys, time, os, binascii, string
 
@@ -49,7 +48,7 @@ def iso7816_compose(ins, p1, p2, data, cls=0x00):
         return pack('>BBBBB', cls, ins, p1, p2, data_len) + data
 
 # This class only supports Gnuk (for now) 
-class gnuk_token:
+class gnuk_token(object):
     def __init__(self, device, configuration, interface):
         """
         __init__(device, configuration, interface) -> None

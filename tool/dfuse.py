@@ -94,7 +94,7 @@ STATE_DFU_ERROR               = 0x0a
 def get_four_bytes (v):
     return [ v % 256, (v >> 8)%256, (v >> 16)%256, (v >> 24) ]
 
-class DFU_STM32:
+class DFU_STM32(object):
     def __init__(self, device, configuration, interface):
         """
         __init__(device, configuration, interface) -> None
