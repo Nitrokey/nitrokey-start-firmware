@@ -1,3 +1,10 @@
+2012-06-20  Niibe Yutaka  <gniibe@fsij.org>
+
+	ST-Link/V2 flash ROM writer.
+	* tool/stlinkv2.py: New.
+	* tool/asm-thumb/opt_bytes_write.S: New.
+	* tool/asm-thumb/flash_write.S: New.
+
 2012-06-19  Niibe Yutaka  <gniibe@fsij.org>
 
 	* Version 0.20.

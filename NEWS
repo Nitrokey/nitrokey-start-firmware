@@ -23,7 +23,7 @@ Keystring is now computed by SHA-256 (it was SHA1 before).
 
 ** Protection improvements (even when internal data is disclosed)
 Three improvements.  (1) Even if PW1 and Reset-code is same, content
-of encripted DEK is different now.  (2) DEK is now encrypted and
+of encrypted DEK is different now.  (2) DEK is now encrypted and
 decrypted by keystring in ECB mode (it was just a kind of xor by
 single block CFB mode).  (3) Key data plus checksum are encrypted in
 CFB mode with initial vector (it will be able to switch OCB mode
