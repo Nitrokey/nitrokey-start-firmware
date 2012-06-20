@@ -1,5 +1,13 @@
 Gnuk NEWS - User visible changes
 
+* Major changes in Gnuk 1.0
+
+  Released 2012-0X-XX, by NIIBE Yutaka
+
+** New tool: stlinkv2.py
+This tool is SWD flash ROM writer with ST-Link/V2.
+
+
 * Major changes in Gnuk 0.20
 
   Released 2012-06-19, by NIIBE Yutaka

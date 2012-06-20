@@ -183,25 +183,20 @@ class stlinkv2(object):
         v = self.execute_get("\xf2\x22\x00", 4)
         return v[0] + (v[1]<<8) + (v[2]<<16) + (v[3]<<24)
 
-    # For FST-01-00
-    def setup_led(self):
+    # For FST-01-00: LED on, USB off
+    def setup_gpio(self):
         apb2enr = self.read_memory_u32(0x40021018)
         apb2enr = apb2enr | 4   # Enable port A
         self.write_memory_u32(0x40021018, apb2enr)
         self.write_memory_u32(0x4002100c, 4)
         self.write_memory_u32(0x4002100c, 0)
-        self.write_memory_u32(GPIOA+0x0c, 0xffffffff) # ODR
-        self.write_memory_u32(GPIOA+0x04, 0x88888883) # CRH
+        self.write_memory_u32(GPIOA+0x0c, 0xfffffbff) # ODR
+        self.write_memory_u32(GPIOA+0x04, 0x88888383) # CRH
+        self.write_memory_u32(GPIOA+0x00, 0x88888888) # CRL
 
-    # For FST-01-00
-    def blink_led(self):
-        self.write_memory_u32(GPIOA+0x0c, 0xfffffeff) # ODR
-        time.sleep(0.5)
-        self.write_memory_u32(GPIOA+0x0c, 0xffffffff) # ODR
-        time.sleep(0.5)
-        self.write_memory_u32(GPIOA+0x0c, 0xfffffeff) # ODR
-        time.sleep(0.5)
-        self.write_memory_u32(GPIOA+0x0c, 0xffffffff) # ODR
+    # For FST-01-00: LED off, USB off
+    def finish_gpio(self):
+        self.write_memory_u32(GPIOA+0x0c, 0xfffffaff) # ODR
 
     def protection(self):
         return (self.read_memory_u32(FLASH_OBR) & 0x0002) != 0
@@ -389,6 +384,11 @@ if __name__ == '__main__':
         no_protect = True
         sys.argv.pop(1)
 
+    reset_after_successful_write = False
+    if sys.argv[1] == '-r':
+        reset_after_successful_write = True
+        sys.argv.pop(1)
+
     status_only = False
     unlock = False
     if sys.argv[1] == '-u':
@@ -419,7 +419,7 @@ if __name__ == '__main__':
     if protection:
         print "ON"
         if status_only:
-            print "The MCU is now stopped.  No way to run by STLink/V2.  Please reset the board"
+            print "The MCU is now stopped.  No way to run by STLink/V2.  Please reset the board to run."
             exit (0)
         elif not unlock:
             print "Please unlock flash ROM protection, at first.  By invoking with -u option"
@@ -452,8 +452,10 @@ if __name__ == '__main__':
         stl.flash_erase_all()
         time.sleep(0.100)
 
+    stl.setup_gpio()
     print "WRITE"
     stl.flash_write(0x08000000, data)
+    stl.finish_gpio()
 
     print "VERIFY"
     data_received = ()
@@ -473,3 +475,8 @@ if __name__ == '__main__':
         print "PROTECT"
         stl.option_bytes_erase()
         print "Flash ROM read protection enabled.  Reset the board to enable protection."
+
+    if reset_after_successful_write:
+        stl.reset_sys()
+        stl.run()
+        stl.exit_debug()
