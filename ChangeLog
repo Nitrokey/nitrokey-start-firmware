@@ -1,3 +1,7 @@
+2012-06-21  Niibe Yutaka  <gniibe@fsij.org>
+
+	* tool/asm-thumb/blank_check.S: New.
+
 2012-06-20  Niibe Yutaka  <gniibe@fsij.org>
 
 	ST-Link/V2 flash ROM writer.
