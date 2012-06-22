@@ -8,7 +8,7 @@
 0:	ldr	r0, [r1]
 	add	r0, r0, #1
 	bne	1f
-	add	r1, r1, #2
+	add	r1, r1, #4
 	cmp	r1, r2
 	bne	0b
 1:	bkpt	#0x00
