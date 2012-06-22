@@ -33,6 +33,7 @@ from colorama import init as colorama_init, Fore, Back, Style
 
 
 GPIOA=0x40010800
+GPIOB=0x40010C00
 OPTION_BYTES_ADDR=0x1ffff800
 RDP_KEY=0x00a5                  # Unlock readprotection
 FLASH_BASE_ADDR=0x40022000
@@ -210,20 +211,24 @@ class stlinkv2(object):
         v = self.execute_get("\xf2\x22\x00", 4)
         return v[0] + (v[1]<<8) + (v[2]<<16) + (v[3]<<24)
 
-    # For FST-01-00: LED on, USB off
+    # For FST-01-00 and FST-01: LED on, USB off
     def setup_gpio(self):
         apb2enr = self.read_memory_u32(0x40021018)
-        apb2enr = apb2enr | 4   # Enable port A
-        self.write_memory_u32(0x40021018, apb2enr)
-        self.write_memory_u32(0x4002100c, 4)
+        apb2enr = apb2enr | 4 | 8  # Enable port A and B
+        self.write_memory_u32(0x40021018, apb2enr) # RCC->APB2ENR
+        self.write_memory_u32(0x4002100c, 4|8)     # RCC->APB2RSTR
         self.write_memory_u32(0x4002100c, 0)
         self.write_memory_u32(GPIOA+0x0c, 0xfffffbff) # ODR
         self.write_memory_u32(GPIOA+0x04, 0x88888383) # CRH
         self.write_memory_u32(GPIOA+0x00, 0x88888888) # CRL
+        self.write_memory_u32(GPIOB+0x0c, 0xffffffff) # ODR
+        self.write_memory_u32(GPIOB+0x04, 0x88888883) # CRH
+        self.write_memory_u32(GPIOB+0x00, 0x88888888) # CRL
 
-    # For FST-01-00: LED off, USB off
+    # For FST-01-00 and FST-01: LED off, USB off
     def finish_gpio(self):
         self.write_memory_u32(GPIOA+0x0c, 0xfffffaff) # ODR
+        self.write_memory_u32(GPIOB+0x0c, 0xfffffffe) # ODR
 
     def protection(self):
         return (self.read_memory_u32(FLASH_OBR) & 0x0002) != 0
