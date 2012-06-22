@@ -24,12 +24,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from struct import *
 import sys, time
+import usb
+from colorama import init as colorama_init, Fore, Back, Style
 
 # INPUT: binary file
 
 # Assumes only single ST-Link/V2 device is attached to computer.
 
-import usb
 
 GPIOA=0x40010800
 OPTION_BYTES_ADDR=0x1ffff800
@@ -107,7 +108,24 @@ SRAM_ADDRESS=0x20000000
 BLOCK_SIZE=16384                # Should be less than (20KiB - 0x0038)
 BLOCK_WRITE_TIMEOUT=80          # Increase this when you increase BLOCK_SIZE
 
-# This class only supports Gnuk (for now) 
+
+class TimeOutError(Exception):
+     def __init__(self, msg):
+         self.msg = msg
+     def __str__(self):
+         return repr(self.msg)
+     def __repr__(self):
+         return "TimeoutError(" + self.msg + ")"
+
+class OperationFailure(Exception):
+     def __init__(self, msg):
+         self.msg = msg
+     def __str__(self):
+         return repr(self.msg)
+     def __repr__(self):
+         return "OperationFailure(" + self.msg + ")"
+
+
 class stlinkv2(object):
     def __init__(self, dev):
         self.__bulkout = 2
@@ -118,7 +136,7 @@ class stlinkv2(object):
         intf_alt = conf.interfaces[0]
         intf = intf_alt[0]
         if intf.interfaceClass != 0xff: # Vendor specific
-            raise ValueError("Wrong interface class")
+            raise ValueError("Wrong interface class.", intf.interfaceClass)
         self.__devhandle = dev.open()
         try:
             self.__devhandle.setConfiguration(conf)
@@ -220,8 +238,7 @@ class stlinkv2(object):
             time.sleep(0.050)
             i = i + 1
             if i >= 10:
-                print "ERROR: blank_check timeout"
-                break
+                raise TimeOutError("blank check")
 
         r0_value = self.read_reg(0)
         return r0_value == 0
@@ -246,13 +263,12 @@ class stlinkv2(object):
             time.sleep(0.050)
             i = i + 1
             if i >= 10:
-                print "ERROR: option bytes write timeout"
-                break
+                raise TimeOutError("option bytes write")
 
         status = self.read_memory_u32(FLASH_SR)
         self.write_memory_u32(FLASH_CR, FLASH_CR_LOCK)
         if (status & FLASH_SR_EOP) == 0:
-            print "ERROR: option bytes write error"
+            raise OperationFailure("option bytes write")
 
     def option_bytes_erase(self):
         self.write_memory_u32(FLASH_KEYR, FLASH_KEY1)
@@ -276,7 +292,7 @@ class stlinkv2(object):
 
         self.write_memory_u32(FLASH_CR, FLASH_CR_LOCK)
 	if (status & FLASH_SR_EOP) == 0:
-            raise ValueError("option bytes erase failed")
+            raise OperationError("option bytes erase")
 
     def flash_write_internal(self, addr, data, off, size):
         prog = gen_prog_flash_write(addr,size)
@@ -288,13 +304,12 @@ class stlinkv2(object):
             time.sleep(0.050)
             i = i + 1
             if i >= BLOCK_WRITE_TIMEOUT:
-                print "ERROR: flash write timeout"
-                break
+                raise TimeOutError("flash write")
         status = self.read_memory_u32(FLASH_SR)
         if (status & FLASH_SR_PGERR) != 0:
-            print "ERROR: write to a location that was not erased"
+            raise OperationFailure("flash write: write to not erased part")
         if (status & FLASH_SR_WRPRTERR) != 0:
-            print "ERROR: write to a location that was write protected"
+            raise OperationFailure("flash write: write to protected part")
 
     def flash_write(self, addr, data):
         self.write_memory_u32(FLASH_KEYR, FLASH_KEY1)
@@ -336,7 +351,7 @@ class stlinkv2(object):
         self.write_memory_u32(FLASH_CR, FLASH_CR_LOCK)
 
 	if (status & FLASH_SR_EOP) == 0:
-            raise ValueError("flash erase all failed")
+            raise OperationError("flash erase all")
 
     def flash_erase_page(self, addr):
         self.write_memory_u32(FLASH_KEYR, FLASH_KEY1)
@@ -360,7 +375,7 @@ class stlinkv2(object):
         self.write_memory_u32(FLASH_CR, FLASH_CR_LOCK)
 
 	if (status & FLASH_SR_EOP) == 0:
-            raise ValueError("flash page erase failed")
+            raise OperationError("flash page erase")
 
     def start(self):
         mode = self.stl_mode()
@@ -373,9 +388,10 @@ class stlinkv2(object):
         self.enter_swd()
         s = self.get_status()
         if s != 0x0080:
-            raise ValueError("Status of core is not running")
-        if self.stl_mode() != 2:
-            raise ValueError("Failed to switch debug mode")
+            raise ValueError("Status of core is not running.", s)
+        mode = self.stl_mode()
+        if mode != 2:
+            raise ValueError("Failed to switch debug mode.", mode)
 
 
 USB_VENDOR_ST=0x0483            # 0x0483 SGS Thomson Microelectronics
@@ -396,7 +412,7 @@ def compare(data_original, data_in_device):
     i = 0 
     for d in data_original:
         if ord(d) != data_in_device[i]:
-            raise ValueError("verify failed at %08x" % i)
+            raise ValueError("Verify failed at:", i)
         i += 1
 
 def open_stlinkv2():
@@ -413,56 +429,26 @@ def help():
     print "stlinkv2.py [-e]: Erase flash ROM"
     print "stlinkv2.py [-u]: Unlock flash ROM"
     print "stlinkv2.py [-s]: Show status"
-    print "stlinkv2.py [-n] [-r] FILE: Write content of FILE to flash ROM"
+    print "stlinkv2.py [-b] [-n] [-r] FILE: Write content of FILE to flash ROM"
+    print "    -b: Enable blanck check"
     print "    -n: Don't enable read protection"
     print "    -r: Don't reset after write"
 
-if __name__ == '__main__':
-    show_help = False
-    erase = False
-    no_protect = False
-    reset_after_successful_write = False
-    status_only = False
-    unlock = False
-    data = None
 
-    while len(sys.argv) > 1:
-        if sys.argv[1] == '-h':
-            sys.argv.pop(1)
-            break
-        elif sys.argv[1] == '-e':
-            sys.argv.pop(1)
-            erase = True
-            break
-        elif sys.argv[1] == '-u':
-            sys.argv.pop(1)
-            unlock = True
-            break
-        elif sys.argv[1] == '-s':
-            sys.argv.pop(1)
-            status_only = True
-            break
-        elif sys.argv[1] == '-n':
-            no_protect = True
-        elif sys.argv[1] == '-r':
-            reset_after_successful_write = True
-        else:
-            filename = sys.argv[1]
-            f = open(filename)
-            data = f.read()
-            f.close()
-        sys.argv.pop(1)
-
+def main(show_help, erase, no_protect, reset_after_successful_write,
+         skip_blank_check, status_only, unlock, data):
     if show_help or len(sys.argv) != 1:
         help()
-        exit(1)
+        return 1
 
     stl = open_stlinkv2()
     if not stl:
-        ValueError("No ST-Link/V2 device found")
+        raise ValueError("No ST-Link/V2 device found.", None)
+
     stl.start()
     core_id = stl.core_id()
     chip_id = stl.read_memory_u32(0xE0042000)
+
     # FST-01 chip id: 0x20036410
     print "CORE: %08x, CHIP_ID: %08x" % (core_id, chip_id)
     print "Flash ROM read protection:",
@@ -474,38 +460,42 @@ if __name__ == '__main__':
         print "Option bytes: %08x" % stl.option_bytes_read()
 
     stl.enter_debug()
-    if stl.get_status() != 0x0081:
-        raise ValueError("status is not halt.")
+    status = stl.get_status()
+    if status != 0x0081:
+        raise ValueError("Status of core is not halt.", status)
 
     if protection:
         if status_only:
-            print "The MCU is now stopped.  No way to run by STLink/V2.  Please reset the board."
-            exit (0)
+            print "The MCU is now stopped."
+            return 0
         elif not unlock:
             print "Please unlock flash ROM protection, at first.  By invoking with -u option."
-            exit(1)
+            return 1
     else:
-        blank = stl.blank_check()
-        print "Flash ROM blank check: %s" % blank
+        if not skip_blank_check:
+            blank = stl.blank_check()
+            print "Flash ROM blank check: %s" % blank
+        else:
+            blank = True
         if status_only:
             stl.reset_sys()
             stl.run()
             stl.exit_debug()
-            exit (0)
+            return 0
         elif unlock:
             print "No need to unlock.  Protection is not enabled."
-            exit(1)
+            return 1
 
     if unlock:
         stl.reset_sys()
         stl.option_bytes_write(OPTION_BYTES_ADDR,RDP_KEY)
         print "Flash ROM read protection disabled.  Reset the board, now."
-        exit(0)
+        return 0
 
     if erase:
         if blank:
             print "No need to erase"
-            exit (0)
+            return 0
 
     if not blank:
         print "ERASE ALL"
@@ -513,7 +503,7 @@ if __name__ == '__main__':
         stl.flash_erase_all()
 
     if erase:
-        exit (0)
+        return 0
 
     time.sleep(0.100)
 
@@ -545,3 +535,56 @@ if __name__ == '__main__':
         stl.reset_sys()
         stl.run()
         stl.exit_debug()
+
+    return 0
+
+if __name__ == '__main__':
+    show_help = False
+    erase = False
+    no_protect = False
+    reset_after_successful_write = True
+    skip_blank_check=True
+    status_only = False
+    unlock = False
+    data = None
+
+    while len(sys.argv) > 1:
+        if sys.argv[1] == '-h':
+            sys.argv.pop(1)
+            break
+        elif sys.argv[1] == '-e':
+            sys.argv.pop(1)
+            erase = True
+            break
+        elif sys.argv[1] == '-u':
+            sys.argv.pop(1)
+            unlock = True
+            break
+        elif sys.argv[1] == '-s':
+            sys.argv.pop(1)
+            status_only = True
+            skip_blank_check=False
+            break
+        elif sys.argv[1] == '-b':
+            skip_blank_check=False
+        elif sys.argv[1] == '-n':
+            no_protect = True
+        elif sys.argv[1] == '-r':
+            reset_after_successful_write = False
+        else:
+            filename = sys.argv[1]
+            f = open(filename)
+            data = f.read()
+            f.close()
+        sys.argv.pop(1)
+
+    colorama_init()
+
+    try:
+        r = main(show_help, erase, no_protect, reset_after_successful_write,
+                 skip_blank_check, status_only, unlock, data)
+        if r == 0:
+            print Fore.WHITE + Back.BLUE + Style.BRIGHT + "SUCCESS" + Style.RESET_ALL
+        exit(r)
+    except Exception as e:
+        print Back.RED + Style.BRIGHT + repr(e) + Style.RESET_ALL
