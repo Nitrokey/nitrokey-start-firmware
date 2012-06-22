@@ -93,6 +93,15 @@ def gen_prog_option_bytes_write(addr,val):
                 (val & 0x00ff), (0x00 | ((val&0x0700) >> 4))) + \
                 prog_option_bytes_write_body + pack("<I", addr)
 
+prog_blank_check_body = "\x04\x49" + "\x05\x4A" + "\x08\x68" + "\x01\x30" + \
+    "\x02\xD1" + "\x04\x31" + "\x91\x42" + "\xF9\xD1" + "\x00\xBE" + \
+    "\x00\xBF" + "\x00\x00\x00\x08"
+## HERE comes: end_addr in 4-byte
+# .END_ADDR
+
+def gen_prog_blank_check(size):
+    return prog_blank_check_body + pack("<I", 0x08000000 + size)
+
 
 SRAM_ADDRESS=0x20000000
 BLOCK_SIZE=16384                # Should be less than (20KiB - 0x0038)
@@ -109,7 +118,7 @@ class stlinkv2(object):
         intf_alt = conf.interfaces[0]
         intf = intf_alt[0]
         if intf.interfaceClass != 0xff: # Vendor specific
-            raise ValueError, "Wrong interface class"
+            raise ValueError("Wrong interface class")
         self.__devhandle = dev.open()
         try:
             self.__devhandle.setConfiguration(conf)
@@ -201,6 +210,22 @@ class stlinkv2(object):
     def protection(self):
         return (self.read_memory_u32(FLASH_OBR) & 0x0002) != 0
 
+    def blank_check(self):
+        prog = gen_prog_blank_check(0x20000) # 128KiB  XXX: table lookup???
+        self.write_memory(SRAM_ADDRESS, prog)
+        self.write_reg(15, SRAM_ADDRESS)
+        self.run()
+        i = 0
+        while self.get_status() == 0x80:
+            time.sleep(0.050)
+            i = i + 1
+            if i >= 10:
+                print "ERROR: blank_check timeout"
+                break
+
+        r0_value = self.read_reg(0)
+        return r0_value == 0
+
     def option_bytes_read(self):
         return self.read_memory_u32(OPTION_BYTES_ADDR)
 
@@ -251,7 +276,7 @@ class stlinkv2(object):
 
         self.write_memory_u32(FLASH_CR, FLASH_CR_LOCK)
 	if (status & FLASH_SR_EOP) == 0:
-            raise ValueError, "option bytes erase failed"
+            raise ValueError("option bytes erase failed")
 
     def flash_write_internal(self, addr, data, off, size):
         prog = gen_prog_flash_write(addr,size)
@@ -311,7 +336,7 @@ class stlinkv2(object):
         self.write_memory_u32(FLASH_CR, FLASH_CR_LOCK)
 
 	if (status & FLASH_SR_EOP) == 0:
-            raise ValueError, "flash erase all failed"
+            raise ValueError("flash erase all failed")
 
     def flash_erase_page(self, addr):
         self.write_memory_u32(FLASH_KEYR, FLASH_KEY1)
@@ -335,7 +360,7 @@ class stlinkv2(object):
         self.write_memory_u32(FLASH_CR, FLASH_CR_LOCK)
 
 	if (status & FLASH_SR_EOP) == 0:
-            raise ValueError, "flash page erase failed"
+            raise ValueError("flash page erase failed")
 
     def start(self):
         mode = self.stl_mode()
@@ -344,12 +369,13 @@ class stlinkv2(object):
         elif mode != 1:
             self.exit_from_dfu()
             mode = self.stl_mode()
-            print "Change mode to: %04x" % mode
+            print "Change ST-Link/V2 mode to: %04x" % mode
         self.enter_swd()
         s = self.get_status()
-        print "Status: %04x" % s
+        if s != 0x0080:
+            raise ValueError("Status of core is not running")
         if self.stl_mode() != 2:
-            raise ValueError, "Failed to switch debug mode"
+            raise ValueError("Failed to switch debug mode")
 
 
 USB_VENDOR_ST=0x0483            # 0x0483 SGS Thomson Microelectronics
@@ -370,45 +396,70 @@ def compare(data_original, data_in_device):
     i = 0 
     for d in data_original:
         if ord(d) != data_in_device[i]:
-            raise ValueError, "verify failed at %08x" % i
+            raise ValueError("verify failed at %08x" % i)
         i += 1
 
-if __name__ == '__main__':
-    erase = False
-    if sys.argv[1] == '-e':
-        erase = True
-        sys.argv.pop(1)
-
-    no_protect = False
-    if sys.argv[1] == '-n':
-        no_protect = True
-        sys.argv.pop(1)
-
-    reset_after_successful_write = False
-    if sys.argv[1] == '-r':
-        reset_after_successful_write = True
-        sys.argv.pop(1)
-
-    status_only = False
-    unlock = False
-    if sys.argv[1] == '-u':
-        unlock = True
-        sys.argv.pop(1)
-    elif sys.argv[1] == '-s':
-        status_only = True
-    else:
-        filename = sys.argv[1]
-        f = open(filename)
-        data = f.read()
-        f.close()
-
+def open_stlinkv2():
     for d in stlinkv2_devices():
         try:
             stl = stlinkv2(d)
-            print "Device: ", d.filename
-            break
+            return stl
         except:
             pass
+    return None
+
+def help():
+    print "stlinkv2.py [-h]: Show this help message"
+    print "stlinkv2.py [-e]: Erase flash ROM"
+    print "stlinkv2.py [-u]: Unlock flash ROM"
+    print "stlinkv2.py [-s]: Show status"
+    print "stlinkv2.py [-n] [-r] FILE: Write content of FILE to flash ROM"
+    print "    -n: Don't enable read protection"
+    print "    -r: Don't reset after write"
+
+if __name__ == '__main__':
+    show_help = False
+    erase = False
+    no_protect = False
+    reset_after_successful_write = False
+    status_only = False
+    unlock = False
+    data = None
+
+    while len(sys.argv) > 1:
+        if sys.argv[1] == '-h':
+            sys.argv.pop(1)
+            break
+        elif sys.argv[1] == '-e':
+            sys.argv.pop(1)
+            erase = True
+            break
+        elif sys.argv[1] == '-u':
+            sys.argv.pop(1)
+            unlock = True
+            break
+        elif sys.argv[1] == '-s':
+            sys.argv.pop(1)
+            status_only = True
+            break
+        elif sys.argv[1] == '-n':
+            no_protect = True
+        elif sys.argv[1] == '-r':
+            reset_after_successful_write = True
+        else:
+            filename = sys.argv[1]
+            f = open(filename)
+            data = f.read()
+            f.close()
+        sys.argv.pop(1)
+
+    if show_help or len(sys.argv) != 1:
+        help()
+        exit(1)
+
+    stl = open_stlinkv2()
+    if not stl:
+        ValueError("No ST-Link/V2 device found")
     stl.start()
     core_id = stl.core_id()
     chip_id = stl.read_memory_u32(0xE0042000)
@@ -418,14 +469,24 @@ if __name__ == '__main__':
     protection = stl.protection()
     if protection:
         print "ON"
-        if status_only:
-            print "The MCU is now stopped.  No way to run by STLink/V2.  Please reset the board to run."
-            exit (0)
-        elif not unlock:
-            print "Please unlock flash ROM protection, at first.  By invoking with -u option"
-            exit(1)
     else:
         print "off"
+        print "Option bytes: %08x" % stl.option_bytes_read()
+
+    stl.enter_debug()
+    if stl.get_status() != 0x0081:
+        raise ValueError("status is not halt.")
+
+    if protection:
+        if status_only:
+            print "The MCU is now stopped.  No way to run by STLink/V2.  Please reset the board."
+            exit (0)
+        elif not unlock:
+            print "Please unlock flash ROM protection, at first.  By invoking with -u option."
+            exit(1)
+    else:
+        blank = stl.blank_check()
+        print "Flash ROM blank check: %s" % blank
         if status_only:
             stl.reset_sys()
             stl.run()
@@ -435,22 +496,26 @@ if __name__ == '__main__':
             print "No need to unlock.  Protection is not enabled."
             exit(1)
 
-    print "status: %02x" % stl.get_status()
-    stl.enter_debug()
-
     if unlock:
         stl.reset_sys()
         stl.option_bytes_write(OPTION_BYTES_ADDR,RDP_KEY)
         print "Flash ROM read protection disabled.  Reset the board, now."
         exit(0)
 
-    print "option bytes: %08x" % stl.option_bytes_read()
-
     if erase:
+        if blank:
+            print "No need to erase"
+            exit (0)
+
+    if not blank:
         print "ERASE ALL"
         stl.reset_sys()
         stl.flash_erase_all()
-        time.sleep(0.100)
+
+    if erase:
+        exit (0)
+
+    time.sleep(0.100)
 
     stl.setup_gpio()
     print "WRITE"
