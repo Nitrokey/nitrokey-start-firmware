@@ -435,12 +435,12 @@ def help():
     print "stlinkv2.py [-u]: Unlock flash ROM"
     print "stlinkv2.py [-s]: Show status"
     print "stlinkv2.py [-b] [-n] [-r] FILE: Write content of FILE to flash ROM"
-    print "    -b: Enable blanck check"
-    print "    -n: Don't enable read protection"
+    print "    -b: Blank check before write (auto erase when not blank)"
+    print "    -n: Don't enable read protection after write"
     print "    -r: Don't reset after write"
 
 
-def main(show_help, erase, no_protect, reset_after_successful_write,
+def main(show_help, erase_only, no_protect, reset_after_successful_write,
          skip_blank_check, status_only, unlock, data):
     if show_help or len(sys.argv) != 1:
         help()
@@ -462,7 +462,12 @@ def main(show_help, erase, no_protect, reset_after_successful_write,
         print "ON"
     else:
         print "off"
-        print "Option bytes: %08x" % stl.option_bytes_read()
+        option_bytes = stl.option_bytes_read()
+        print "Option bytes: %08x" % option_bytes
+        if (option_bytes & 0xff) == RDP_KEY:
+            ob_protection_enable = False
+        else:
+            ob_protection_enable = True
 
     stl.enter_debug()
     status = stl.get_status()
@@ -474,8 +479,7 @@ def main(show_help, erase, no_protect, reset_after_successful_write,
             print "The MCU is now stopped."
             return 0
         elif not unlock:
-            print "Please unlock flash ROM protection, at first.  By invoking with -u option."
-            return 1
+            raise OperationFailure("Flash ROM is protected")
     else:
         if not skip_blank_check:
             blank = stl.blank_check()
@@ -487,9 +491,16 @@ def main(show_help, erase, no_protect, reset_after_successful_write,
             stl.run()
             stl.exit_debug()
             return 0
-        elif unlock:
+        elif unlock and not ob_protection_enable:
             print "No need to unlock.  Protection is not enabled."
             return 1
+
+    if erase_only:
+        if blank:
+            print "No need to erase"
+            return 0
+
+    stl.setup_gpio()
 
     if unlock:
         stl.reset_sys()
@@ -497,25 +508,19 @@ def main(show_help, erase, no_protect, reset_after_successful_write,
         print "Flash ROM read protection disabled.  Reset the board, now."
         return 0
 
-    if erase:
-        if blank:
-            print "No need to erase"
-            return 0
-
     if not blank:
         print "ERASE ALL"
         stl.reset_sys()
         stl.flash_erase_all()
 
-    if erase:
+    if erase_only:
+        stl.finish_gpio()
         return 0
 
     time.sleep(0.100)
 
-    stl.setup_gpio()
     print "WRITE"
     stl.flash_write(0x08000000, data)
-    stl.finish_gpio()
 
     print "VERIFY"
     data_received = ()
@@ -540,12 +545,14 @@ def main(show_help, erase, no_protect, reset_after_successful_write,
         stl.reset_sys()
         stl.run()
         stl.exit_debug()
+    else:
+        stl.finish_gpio()
 
     return 0
 
 if __name__ == '__main__':
     show_help = False
-    erase = False
+    erase_only = False
     no_protect = False
     reset_after_successful_write = True
     skip_blank_check=True
@@ -556,10 +563,12 @@ if __name__ == '__main__':
     while len(sys.argv) > 1:
         if sys.argv[1] == '-h':
             sys.argv.pop(1)
+            show_help = True
             break
         elif sys.argv[1] == '-e':
             sys.argv.pop(1)
-            erase = True
+            erase_only = True
+            skip_blank_check=False
             break
         elif sys.argv[1] == '-u':
             sys.argv.pop(1)
@@ -586,7 +595,8 @@ if __name__ == '__main__':
     colorama_init()
 
     try:
-        r = main(show_help, erase, no_protect, reset_after_successful_write,
+        r = main(show_help, erase_only, no_protect,
+                 reset_after_successful_write,
                  skip_blank_check, status_only, unlock, data)
         if r == 0:
             print Fore.WHITE + Back.BLUE + Style.BRIGHT + "SUCCESS" + Style.RESET_ALL
