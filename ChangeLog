@@ -1,3 +1,7 @@
+2012-06-25  Niibe Yutaka  <gniibe@fsij.org>
+
+	* tool/usb_strings.py: New.
+
 2012-06-22  Niibe Yutaka  <gniibe@fsij.org>
 
 	* tool/stlinkv2.py (stlinkv2.blank_check): Add blank check of

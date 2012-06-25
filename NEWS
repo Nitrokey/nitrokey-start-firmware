@@ -7,6 +7,10 @@ Gnuk NEWS - User visible changes
 ** New tool: stlinkv2.py
 This tool is SWD flash ROM writer with ST-Link/V2.
 
+** New tool: usb_strings.py
+This tool is to dump USB strings, which include revision detail and config
+options.
+
 
 * Major changes in Gnuk 0.20
 
