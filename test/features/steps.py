@@ -46,6 +46,23 @@ def import_key(openpgp_keyno_str):
     t = rsa_keys.build_privkey_template(openpgp_keyno, scc.keyno)
     scc.result = ftc.token.cmd_put_data_odd(0x3f, 0xff, t)
 
+@Given("a fingerprint of OPENPGP.(.*) key")
+def get_key_fpr(openpgp_keyno_str):
+    openpgp_keyno = int(openpgp_keyno_str)
+    scc.result = rsa_keys.fpr[openpgp_keyno - 1]
+
+@Given("a timestamp of OPENPGP.(.*) key")
+def get_key_timestamp(openpgp_keyno_str):
+    openpgp_keyno = int(openpgp_keyno_str)
+    scc.result = rsa_keys.timestamp[openpgp_keyno - 1]
+
+@Given("put the data to (.*)")
+def cmd_put_data_with_result(tag_str):
+    tag = int(tag_str, 16)
+    tagh = tag >> 8
+    tagl = tag & 0xff
+    scc.result = ftc.token.cmd_put_data(tagh, tagl, scc.result)
+
 @When("requesting (.+): ([0-9a-fA-F]+)")
 def get_data(name, tag_str):
     tag = int(tag_str, 16)
