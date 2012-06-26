@@ -1,0 +1,15 @@
+This is functionality test suite for Gnuk.
+
+You need python-nose, python-freshen, and python-crypto as well as
+python-usb.
+
+
+Type:
+
+  $ nosetests --with-freshen .
+
+or
+
+  $ nosetests -v --with-freshen .
+
+to run the test suite.

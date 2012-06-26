@@ -1,3 +1,7 @@
+2012-06-26  Niibe Yutaka  <gniibe@fsij.org>
+
+	* test: New.
+
 2012-06-25  Niibe Yutaka  <gniibe@fsij.org>
 
 	* tool/usb_strings.py: New.
