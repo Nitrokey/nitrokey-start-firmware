@@ -23,8 +23,9 @@ def cmd_change_reference_data(who_str,pass_str):
     who = int(who_str)
     scc.result = ftc.token.cmd_change_reference_data(who, pass_str)
 
-@Given("cmd_put_data with (.*) and \"(.*)\"")
-def cmd_put_data(tag_str,content_str):
+@Given("cmd_put_data with (.*) and (\".*\")")
+def cmd_put_data(tag_str,content_str_repr):
+    content_str = ast.literal_eval(content_str_repr)
     tag = int(tag_str, 16)
     tagh = tag >> 8
     tagl = tag & 0xff
