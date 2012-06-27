@@ -793,10 +793,7 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
   memcpy (pd->checksum_encrypted, kdi.checksum, DATA_ENCRYPTION_KEY_SIZE);
 
   if (kk == GPG_KEY_FOR_SIGNING)
-    {
-      ac_reset_pso_cds ();
-      gpg_reset_digital_signature_counter ();
-    }
+    ac_reset_pso_cds ();
   else
     ac_reset_other ();
 
@@ -924,11 +921,19 @@ proc_key_import (const uint8_t *data, int len)
     p += 1;
 
   if (*p == 0xb6)
-    kk = GPG_KEY_FOR_SIGNING;
-  else if (*p == 0xb8)
-    kk = GPG_KEY_FOR_DECRYPTION;
-  else				/* 0xa4 */
-    kk = GPG_KEY_FOR_AUTHENTICATION;
+    {
+      kk = GPG_KEY_FOR_SIGNING;
+      ac_reset_pso_cds ();
+      gpg_reset_digital_signature_counter ();
+    }
+  else
+    {
+      if (*p == 0xb8)
+	kk = GPG_KEY_FOR_DECRYPTION;
+      else				/* 0xa4 */
+	kk = GPG_KEY_FOR_AUTHENTICATION;
+      ac_reset_other ();
+    }
 
   if (len <= 22)
     {					    /* Deletion of the key */
@@ -948,6 +953,11 @@ proc_key_import (const uint8_t *data, int len)
 	  /* Delete PW1 and RC if any */
 	  gpg_do_write_simple (NR_DO_KEYSTRING_PW1, NULL, 0);
 	  gpg_do_write_simple (NR_DO_KEYSTRING_RC, NULL, 0);
+
+	  ac_reset_pso_cds ();
+	  ac_reset_other ();
+	  if (keystring_admin == NULL)
+	    ac_reset_admin ();
 	}
 
       return 1;
@@ -1086,18 +1096,18 @@ gpg_data_scan (const uint8_t *p_start)
 	    }
 	  else
 	    switch (nr)
-	    {
-	    case NR_BOOL_PW1_LIFETIME:
-	      pw1_lifetime_p = p - 1;
-	      p++;
-	      continue;
-	    case NR_COUNTER_123:
-	      p++;
-	      if (second_byte <= PW_ERR_PW3)
-		pw_err_counter_p[second_byte] = p;
-	      p += 2;
-	      break;
-	    }
+	      {
+	      case NR_BOOL_PW1_LIFETIME:
+		pw1_lifetime_p = p - 1;
+		p++;
+		continue;
+	      case NR_COUNTER_123:
+		p++;
+		if (second_byte <= PW_ERR_PW3)
+		  pw_err_counter_p[second_byte] = p;
+		p += 2;
+		break;
+	      }
 	}
     }
 

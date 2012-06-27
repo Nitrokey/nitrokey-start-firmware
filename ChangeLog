@@ -1,3 +1,13 @@
+2012-06-27  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/openpgp.c (cmd_change_password): Support resetting to
+	factory setting of PW3.
+
+	* src/openpgp-do.c (gpg_do_write_prvkey): Don't reset signagure
+	counter here.
+	(proc_key_import): But reset here.
+	Call ac_reset_* when key is imported.
+
 2012-06-26  Niibe Yutaka  <gniibe@fsij.org>
 
 	* test: New.

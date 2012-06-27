@@ -220,8 +220,7 @@ cmd_change_password (void)
   uint8_t p1 = P1 (apdu);	/* 0: change (old+new), 1: exchange (new) */
   uint8_t p2 = P2 (apdu);
   int len;
-  const uint8_t *pw;
-  const uint8_t *newpw;
+  uint8_t *pw, *newpw;
   int pw_len, newpw_len;
   int who = p2 - 0x80;
   int who_old;
@@ -284,7 +283,14 @@ cmd_change_password (void)
 	{
 	  newpw = pw + pw_len;
 	  newpw_len = len - pw_len;
-	  gpg_set_pw3 (newpw, newpw_len);
+	  if (newpw_len == 0 && admin_authorized == BY_ADMIN)
+	    {
+	      newpw_len = strlen (OPENPGP_CARD_INITIAL_PW3);
+	      memcpy (newpw, OPENPGP_CARD_INITIAL_PW3, newpw_len);
+	      gpg_do_write_simple (NR_DO_KEYSTRING_PW3, NULL, 0);
+	    }
+	  else
+	    gpg_set_pw3 (newpw, newpw_len);
 	  who_old = admin_authorized;
 	}
     }
