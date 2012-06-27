@@ -829,6 +829,13 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
 
   if (++num_prv_keys == NUM_ALL_PRV_KEYS) /* All keys are registered.  */
     {
+      /*
+       * It is needed to read again after flash_do_write.
+       * Because GC for flash ROM could happen.
+       */
+      ks_pw1 = gpg_do_read_simple (NR_DO_KEYSTRING_PW1);
+      ks_rc = gpg_do_read_simple (NR_DO_KEYSTRING_RC);
+
       /* Remove contents of keystrings from DO, but length */
       if (ks_pw1)
 	{
@@ -865,7 +872,9 @@ gpg_do_chks_prvkey (enum kind_of_key kk,
   if (pd == NULL)
     return -1;
 
-  memcpy (pd, &(do_data)[1], sizeof (struct prvkey_data));
+  memcpy (pd, &do_data[1], sizeof (struct prvkey_data));
+  flash_do_release (do_data);
+
   dek_p = ((uint8_t *)pd) + 4 + INITIAL_VECTOR_SIZE
     + DATA_ENCRYPTION_KEY_SIZE * who_old;
   memcpy (dek, dek_p, DATA_ENCRYPTION_KEY_SIZE);
@@ -877,7 +886,6 @@ gpg_do_chks_prvkey (enum kind_of_key kk,
   p = flash_do_write (nr, (const uint8_t *)pd, sizeof (struct prvkey_data));
   do_ptr[nr - NR_DO__FIRST__] = p;
 
-  flash_do_release (do_data);
   free (pd);
   if (p == NULL)
     return -1;

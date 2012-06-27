@@ -1,5 +1,9 @@
 2012-06-27  Niibe Yutaka  <gniibe@fsij.org>
 
+	* src/openpgp-do.c (gpg_do_chks_prvkey): Call flash_do_release before
+	flash_do_write.
+	(gpg_do_write_prvkey): Bug fix when GC occurs.
+
 	* src/openpgp.c (cmd_change_password): Support resetting to
 	factory setting of PW3.
 
