@@ -724,6 +724,8 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
   const uint8_t *ks_rc;
   struct key_data_internal kdi;
   int modulus_allocated_here = 0;
+  uint8_t ks_pw1_len = 0;
+  uint8_t ks_rc_len = 0;
 
   DEBUG_INFO ("Key import\r\n");
   DEBUG_SHORT (key_len);
@@ -798,7 +800,10 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
     ac_reset_other ();
 
   if (ks_pw1)
-    encrypt_dek (ks_pw1+1, pd->dek_encrypted_1);
+    {
+      ks_pw1_len = ks_pw1[0];
+      encrypt_dek (ks_pw1+1, pd->dek_encrypted_1);
+    }
   else
     {
       uint8_t ks123_pw1[KEYSTRING_SIZE_PW1];
@@ -810,7 +815,10 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
     }
 
   if (ks_rc)
-    encrypt_dek (ks_rc+1, pd->dek_encrypted_2);
+    {
+      ks_rc_len = ks_rc[0];
+      encrypt_dek (ks_rc+1, pd->dek_encrypted_2);
+    }
   else
     memset (pd->dek_encrypted_2, 0, DATA_ENCRYPTION_KEY_SIZE);
 
@@ -829,25 +837,12 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
 
   if (++num_prv_keys == NUM_ALL_PRV_KEYS) /* All keys are registered.  */
     {
-      /*
-       * It is needed to read again after flash_do_write.
-       * Because GC for flash ROM could happen.
-       */
-      ks_pw1 = gpg_do_read_simple (NR_DO_KEYSTRING_PW1);
-      ks_rc = gpg_do_read_simple (NR_DO_KEYSTRING_RC);
-
       /* Remove contents of keystrings from DO, but length */
-      if (ks_pw1)
-	{
-	  uint8_t ks_pw1_len = ks_pw1[0];
-	  gpg_do_write_simple (NR_DO_KEYSTRING_PW1, &ks_pw1_len, 1);
-	}
+      if (ks_pw1_len)
+	gpg_do_write_simple (NR_DO_KEYSTRING_PW1, &ks_pw1_len, 1);
 
-      if (ks_rc)
-	{
-	  uint8_t ks_rc_len = ks_rc[0];
-	  gpg_do_write_simple (NR_DO_KEYSTRING_RC, &ks_rc_len, 1);
-	}
+      if (ks_rc_len)
+	gpg_do_write_simple (NR_DO_KEYSTRING_RC, &ks_rc_len, 1);
     }
 
   return 0;
