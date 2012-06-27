@@ -284,6 +284,42 @@ class gnuk_token(object):
             raise ValueError("%02x%02x" % (sw[0], sw[1]))
         return True
 
+    def cmd_pso(self, p1, p2, data):
+        cmd_data = iso7816_compose(0x2a, p1, p2, data)
+        sw = self.icc_send_cmd(cmd_data)
+        if len(sw) != 2:
+            raise ValueError(sw)
+        if sw[0] == 0x90 and sw[1] == 0x00:
+            return ""
+        elif sw[0] != 0x61:
+            raise ValueError("%02x%02x" % (sw[0], sw[1]))
+        return self.cmd_get_response(sw[1])
+
+    def cmd_pso_longdata(self, p1, p2, data):
+        cmd_data0 = iso7816_compose(0x2a, p1, p2, data[:128], 0x10)
+        cmd_data1 = iso7816_compose(0x2a, p1, p2, data[128:])
+        sw = self.icc_send_cmd(cmd_data0)
+        if len(sw) != 2:
+            raise ValueError(sw)
+        if not (sw[0] == 0x90 and sw[1] == 0x00):
+            raise ValueError("%02x%02x" % (sw[0], sw[1]))
+        sw = self.icc_send_cmd(cmd_data1)
+        if len(sw) != 2:
+            raise ValueError(sw)
+        elif sw[0] != 0x61:
+            raise ValueError("%02x%02x" % (sw[0], sw[1]))
+        return self.cmd_get_response(sw[1])
+
+    def cmd_internal_authenticate(self, data):
+        cmd_data = iso7816_compose(0x88, 0, 0, data)
+        sw = self.icc_send_cmd(cmd_data)
+        if len(sw) != 2:
+            raise ValueError(sw)
+        if sw[0] == 0x90 and sw[1] == 0x00:
+            return ""
+        elif sw[0] != 0x61:
+            raise ValueError("%02x%02x" % (sw[0], sw[1]))
+        return self.cmd_get_response(sw[1])
 
 
 def compare(data_original, data_in_device):

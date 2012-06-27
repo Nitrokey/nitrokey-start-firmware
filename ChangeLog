@@ -1,5 +1,8 @@
 2012-06-27  Niibe Yutaka  <gniibe@fsij.org>
 
+	* test/features/101_decryption.feature: New.
+	* test/features/100_compute_signature.feature: New.
+
 	* src/openpgp-do.c (gpg_do_chks_prvkey): Call flash_do_release before
 	flash_do_write.
 	(gpg_do_write_prvkey): Bug fix when GC occurs.

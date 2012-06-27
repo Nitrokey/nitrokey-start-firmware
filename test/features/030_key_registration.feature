@@ -46,3 +46,11 @@ Feature: import keys to token
      Given a timestamp of OPENPGP.3 key
      And put the data to d0
      Then it should get success
+
+  Scenario: verify PW1 (1) again
+     Given cmd_verify with 1 and "another user pass phrase"
+     Then it should get success
+
+  Scenario: verify PW1 (2) again
+     Given cmd_verify with 2 and "another user pass phrase"
+     Then it should get success

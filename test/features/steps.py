@@ -1,6 +1,7 @@
 from freshen import *
 from freshen.checks import *
 from nose.tools import assert_regexp_matches
+from binascii import hexlify
 
 import ast
 
@@ -63,6 +64,38 @@ def cmd_put_data_with_result(tag_str):
     tagl = tag & 0xff
     scc.result = ftc.token.cmd_put_data(tagh, tagl, scc.result)
 
+@Given("a message (\".*\")")
+def set_msg(content_str_repr):
+    msg = ast.literal_eval(content_str_repr)
+    scc.digestinfo = rsa_keys.compute_digestinfo(msg)
+
+@Given("let a token compute digital signature")
+def compute_signature():
+    scc.sig = int(hexlify(ftc.token.cmd_pso(0x9e, 0x9a, scc.digestinfo)),16)
+
+@Given("let a token authenticate")
+def internal_authenticate():
+    scc.sig = int(hexlify(ftc.token.cmd_internal_authenticate(scc.digestinfo)),16)
+
+@Given("compute digital signature on host with RSA key pair (.*)")
+def compute_signature_on_host(keyno_str):
+    keyno = int(keyno_str)
+    scc.result = rsa_keys.compute_signature(keyno, scc.digestinfo)
+
+@Given("a plain text (\".*\")")
+def set_plaintext(content_str_repr):
+    scc.plaintext = ast.literal_eval(content_str_repr)
+
+@Given("encrypt it on host with RSA key pair (.*)")
+def encrypt_on_host(keyno_str):
+    keyno = int(keyno_str)
+    scc.ciphertext = rsa_keys.encrypt(keyno, scc.plaintext)
+
+@Given("let a token decrypt encrypted data")
+def decrypt():
+    scc.result = ftc.token.cmd_pso_longdata(0x80, 0x86, scc.ciphertext)
+
+
 @When("requesting (.+): ([0-9a-fA-F]+)")
 def get_data(name, tag_str):
     tag = int(tag_str, 16)
@@ -92,3 +125,11 @@ def check_null():
 @Then("data should match: (.*)")
 def check_regexp(re):
     assert_regexp_matches(scc.result, re)
+
+@Then("results should be same")
+def check_signature():
+    assert_equal(scc.sig, scc.result)
+
+@Then("decrypted data should be same as a plain text")
+def check_decrypt():
+    assert_equal(scc.plaintext, scc.result)
