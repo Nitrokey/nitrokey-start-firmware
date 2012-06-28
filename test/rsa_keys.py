@@ -99,7 +99,7 @@ def pkcs1_pad_for_sign(digestinfo):
         + '\x00' + digestinfo
     return int(hexlify(byte_repr), 16)
 
-def pkcs1_pad(msg):
+def pkcs1_pad_for_crypt(msg):
     padlen = 256 - 3 - len(msg)
     byte_repr = '\x00' + '\x02' \
         + string.replace(urandom(padlen),'\x00','\x01') + '\x00' + msg
@@ -135,5 +135,5 @@ def integer_to_bytes(i):
 def encrypt(keyno, plaintext):
     e = key[keyno][4]
     n = key[keyno][7]
-    m = pkcs1_pad(plaintext)
+    m = pkcs1_pad_for_crypt(plaintext)
     return '\x00' + integer_to_bytes(pow(m, e, n))
