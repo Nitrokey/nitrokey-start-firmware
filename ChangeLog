@@ -1,3 +1,9 @@
+2012-06-28  Niibe Yutaka  <gniibe@fsij.org>
+
+	* test/gnuk.py (gnuk_token): New method: increment_seq.
+	(icc_send_cmd): Handle timeout.
+	(cmd_genkey): New.
+
 2012-06-27  Niibe Yutaka  <gniibe@fsij.org>
 
 	* test/features/101_decryption.feature: New.

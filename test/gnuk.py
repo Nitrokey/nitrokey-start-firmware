@@ -77,6 +77,9 @@ class gnuk_token(object):
         self.__timeout = 10000
         self.__seq = 0
 
+    def increment_seq(self):
+        self.__seq = (self.__seq + 1) & 0xff
+
     def reset_device(self):
         try:
             self.__devhandle.reset()
@@ -105,7 +108,7 @@ class gnuk_token(object):
     def icc_get_status(self):
         msg = icc_compose(0x65, 0, 0, self.__seq, 0, "")
         self.__devhandle.bulkWrite(self.__bulkout, msg, self.__timeout)
-        self.__seq += 1
+        self.increment_seq()
         status, chain, data = self.icc_get_result()
         # XXX: check chain, data
         return status
@@ -113,7 +116,7 @@ class gnuk_token(object):
     def icc_power_on(self):
         msg = icc_compose(0x62, 0, 0, self.__seq, 0, "")
         self.__devhandle.bulkWrite(self.__bulkout, msg, self.__timeout)
-        self.__seq += 1
+        self.increment_seq()
         status, chain, data = self.icc_get_result()
         # XXX: check status, chain
         self.atr = list_to_string(data) # ATR
@@ -121,7 +124,7 @@ class gnuk_token(object):
     def icc_power_off(self):
         msg = icc_compose(0x63, 0, 0, self.__seq, 0, "")
         self.__devhandle.bulkWrite(self.__bulkout, msg, self.__timeout)
-        self.__seq += 1
+        self.increment_seq()
         status, chain, data = self.icc_get_result()
         # XXX: check chain, data
         return status
@@ -129,19 +132,21 @@ class gnuk_token(object):
     def icc_send_data_block(self, data):
         msg = icc_compose(0x6f, len(data), 0, self.__seq, 0, data)
         self.__devhandle.bulkWrite(self.__bulkout, msg, self.__timeout)
-        self.__seq += 1
+        self.increment_seq()
         return self.icc_get_result()
 
     def icc_send_cmd(self, data):
         status, chain, data_rcv = self.icc_send_data_block(data)
         if chain == 0:
+            while status == 0x80:
+                status, chain, data_rcv = self.icc_get_result()
             return data_rcv
         elif chain == 1:
             d = data_rcv
             while True:
                 msg = icc_compose(0x6f, 0, 0, self.__seq, 0x10, "")
                 self.__devhandle.bulkWrite(self.__bulkout, msg, self.__timeout)
-                self.__seq += 1
+                self.increment_seq()
                 status, chain, data_rcv = self.icc_get_result()
                 # XXX: check status
                 d += data_rcv
@@ -320,6 +325,24 @@ class gnuk_token(object):
         elif sw[0] != 0x61:
             raise ValueError("%02x%02x" % (sw[0], sw[1]))
         return self.cmd_get_response(sw[1])
+
+    def cmd_genkey(self, keyno):
+        if keyno == 1:
+            data = '\xb6\x00'
+        elif keyno == 2:
+            data = '\xb8\x00'
+        else:
+            data = '\xa4\x00'
+        cmd_data = iso7816_compose(0x47, 0x80, 0, data)
+        sw = self.icc_send_cmd(cmd_data)
+        if len(sw) != 2:
+            raise ValueError(sw)
+        if sw[0] == 0x90 and sw[1] == 0x00:
+            return ""
+        elif sw[0] != 0x61:
+            raise ValueError("%02x%02x" % (sw[0], sw[1]))
+        pk = self.cmd_get_response(sw[1])
+        return (pk[9:9+256], pk[9+256+2:9+256+2+3])
 
 
 def compare(data_original, data_in_device):
