@@ -109,6 +109,27 @@ def remove_key(openpgp_keyno_str):
     t = rsa_keys.build_privkey_template_for_remove(openpgp_keyno)
     scc.result = ftc.token.cmd_put_data_odd(0x3f, 0xff, t)
 
+@When("generating a key of OPENPGP.(.*)")
+def generate_key(openpgp_keyno_str):
+    openpgp_keyno = int(openpgp_keyno_str)
+    pubkey_info = ftc.token.cmd_genkey(openpgp_keyno)
+    scc.data = rsa_keys.calc_fpr(pubkey_info[0], pubkey_info[1])
+
+@When("put the first data to (.*)")
+def cmd_put_data_first_with_result(tag_str):
+    tag = int(tag_str, 16)
+    tagh = tag >> 8
+    tagl = tag & 0xff
+    scc.result = ftc.token.cmd_put_data(tagh, tagl, scc.data[0])
+
+@When("put the second data to (.*)")
+def cmd_put_data_second_with_result(tag_str):
+    tag = int(tag_str, 16)
+    tagh = tag >> 8
+    tagl = tag & 0xff
+    result = ftc.token.cmd_put_data(tagh, tagl, scc.data[1])
+    scc.result = (scc.result and result)
+
 @Then("you should get: (.*)")
 def check_result(v):
     value = ast.literal_eval("'" + v + "'")
