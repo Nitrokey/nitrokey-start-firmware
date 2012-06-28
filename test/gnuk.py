@@ -344,6 +344,22 @@ class gnuk_token(object):
         pk = self.cmd_get_response(sw[1])
         return (pk[9:9+256], pk[9+256+2:9+256+2+3])
 
+    def cmd_get_public_key(self, keyno):
+        if keyno == 1:
+            data = '\xb6\x00'
+        elif keyno == 2:
+            data = '\xb8\x00'
+        else:
+            data = '\xa4\x00'
+        cmd_data = iso7816_compose(0x47, 0x81, 0, data)
+        sw = self.icc_send_cmd(cmd_data)
+        if len(sw) != 2:
+            raise ValueError(sw)
+        elif sw[0] != 0x61:
+            raise ValueError("%02x%02x" % (sw[0], sw[1]))
+        pk = self.cmd_get_response(sw[1])
+        return (pk[9:9+256], pk[9+256+2:9+256+2+3])
+
 
 def compare(data_original, data_in_device):
     i = 0 

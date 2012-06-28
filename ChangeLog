@@ -1,8 +1,11 @@
 2012-06-28  Niibe Yutaka  <gniibe@fsij.org>
 
 	* test/gnuk.py (gnuk_token): New method: increment_seq.
-	(icc_send_cmd): Handle timeout.
-	(cmd_genkey): New.
+	(gnuk_token.icc_send_cmd): Handle timeout.
+	(gnuk_token.cmd_genkey): New.
+	(gnuk_token.cmd_get_public_key): New.
+
+	* test/rsa_keys.py (verify_signature): New.
 
 2012-06-27  Niibe Yutaka  <gniibe@fsij.org>
 

@@ -69,6 +69,15 @@ def set_msg(content_str_repr):
     msg = ast.literal_eval(content_str_repr)
     scc.digestinfo = rsa_keys.compute_digestinfo(msg)
 
+@Given("a public key from token for OPENPGP.(.*)")
+def get_public_key(openpgp_keyno_str):
+    openpgp_keyno = int(openpgp_keyno_str)
+    scc.pubkey_info = ftc.token.cmd_get_public_key(openpgp_keyno)
+
+@Given("verify signature")
+def verify_signature():
+    scc.result = rsa_keys.verify_signature(scc.pubkey_info, scc.digestinfo, scc.sig)
+
 @Given("let a token compute digital signature")
 def compute_signature():
     scc.sig = int(hexlify(ftc.token.cmd_pso(0x9e, 0x9a, scc.digestinfo)),16)

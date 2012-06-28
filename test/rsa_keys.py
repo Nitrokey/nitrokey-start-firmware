@@ -137,3 +137,10 @@ def encrypt(keyno, plaintext):
     n = key[keyno][7]
     m = pkcs1_pad_for_crypt(plaintext)
     return '\x00' + integer_to_bytes(pow(m, e, n))
+
+def verify_signature(pubkey_info, digestinfo, sig):
+    n = int(hexlify(pubkey_info[0]), 16)
+    e = int(hexlify(pubkey_info[1]), 16)
+    di_pkcs1 = pow(sig,e,n)
+    m = pkcs1_pad_for_sign(digestinfo)
+    return di_pkcs1 == m
