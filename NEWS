@@ -4,6 +4,8 @@ Gnuk NEWS - User visible changes
 
   Released 2012-0X-XX, by NIIBE Yutaka
 
+** Test suite
+
 ** New tool: stlinkv2.py
 This tool is SWD flash ROM writer with ST-Link/V2.
 
