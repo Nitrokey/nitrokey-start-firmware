@@ -1,11 +1,18 @@
 2012-06-28  Niibe Yutaka  <gniibe@fsij.org>
 
+	* test/features/204_decryption.feature: New.
+	* test/features/203_compute_signature.feature: New.
+	* test/features/202_keygen.feature: New.
+	* test/features/201_setup_passphrase.feature: New.
+	* test/features/200_key_removal.feature: New.
+
+	* test/rsa_keys.py (verify_signature): New.
+	(encrypt_with_pubkey): New.
+
 	* test/gnuk.py (gnuk_token): New method: increment_seq.
 	(gnuk_token.icc_send_cmd): Handle timeout.
 	(gnuk_token.cmd_genkey): New.
 	(gnuk_token.cmd_get_public_key): New.
-
-	* test/rsa_keys.py (verify_signature): New.
 
 2012-06-27  Niibe Yutaka  <gniibe@fsij.org>
 

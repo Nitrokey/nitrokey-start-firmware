@@ -95,10 +95,14 @@ def compute_signature_on_host(keyno_str):
 def set_plaintext(content_str_repr):
     scc.plaintext = ast.literal_eval(content_str_repr)
 
-@Given("encrypt it on host with RSA key pair (.*)")
+@Given("encrypt it on host with RSA key pair (.*)$")
 def encrypt_on_host(keyno_str):
     keyno = int(keyno_str)
     scc.ciphertext = rsa_keys.encrypt(keyno, scc.plaintext)
+
+@Given("encrypt it on host$")
+def encrypt_on_host_public_key():
+    scc.ciphertext = rsa_keys.encrypt_with_pubkey(scc.pubkey_info, scc.plaintext)
 
 @Given("let a token decrypt encrypted data")
 def decrypt():
