@@ -1,3 +1,7 @@
+2012-06-29  Niibe Yutaka  <gniibe@fsij.org>
+
+	* regnual/Makefile: Don't copy usb_lld.c.
+
 2012-06-28  Niibe Yutaka  <gniibe@fsij.org>
 
 	* test/features/204_decryption.feature: New.
