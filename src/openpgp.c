@@ -295,8 +295,8 @@ cmd_change_password (void)
 	}
     }
 
-  sha256 (pw, pw_len, old_ks);
-  sha256 (newpw, newpw_len, new_ks);
+  s2k (who_old, pw, pw_len, old_ks);
+  s2k (who, newpw, newpw_len, new_ks);
   new_ks0[0] = newpw_len;
 
   r = gpg_change_keystring (who_old, old_ks, who, new_ks);
@@ -335,18 +335,24 @@ cmd_change_password (void)
 }
 
 
+#define USER_S2K_MAGIC	"\xffUSER\r\n"
 #define RESETCODE_S2K_MAGIC "\xffRESET\r\n"
 
 void
-resetcode_s2k (const unsigned char *input, unsigned int ilen,
-	       unsigned char output[32])
+s2k (int who, const unsigned char *input, unsigned int ilen,
+     unsigned char output[32])
 {
   sha256_context ctx;
 
   sha256_start (&ctx);
   sha256_update (&ctx, input, ilen);
-  sha256_update (&ctx, (unsigned char *)RESETCODE_S2K_MAGIC,
-		 sizeof (RESETCODE_S2K_MAGIC));
+  if (who == BY_USER)
+    sha256_update (&ctx, (unsigned char *)USER_S2K_MAGIC,
+		   sizeof (USER_S2K_MAGIC));
+  else if (who == BY_RESETCODE)
+    sha256_update (&ctx, (unsigned char *)RESETCODE_S2K_MAGIC,
+		   sizeof (RESETCODE_S2K_MAGIC));
+  /* Not add any for BY_ADMIN */
   sha256_finish (&ctx, output);
 }
 
@@ -391,8 +397,8 @@ cmd_reset_user_password (void)
       pw_len = ks_rc[0];
       newpw = pw + pw_len;
       newpw_len = len - pw_len;
-      resetcode_s2k (pw, pw_len, old_ks);
-      sha256 (newpw, newpw_len, new_ks);
+      s2k (BY_RESETCODE, pw, pw_len, old_ks);
+      s2k (BY_USER, newpw, newpw_len, new_ks);
       new_ks0[0] = newpw_len;
       r = gpg_change_keystring (BY_RESETCODE, old_ks, BY_USER, new_ks);
       if (r <= -2)
@@ -443,7 +449,7 @@ cmd_reset_user_password (void)
 
       newpw_len = len;
       newpw = pw;
-      sha256 (newpw, newpw_len, new_ks);
+      s2k (BY_USER, newpw, newpw_len, new_ks);
       new_ks0[0] = newpw_len;
       r = gpg_change_keystring (admin_authorized, old_ks, BY_USER, new_ks);
       if (r <= -2)

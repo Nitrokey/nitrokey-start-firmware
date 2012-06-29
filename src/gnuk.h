@@ -194,8 +194,8 @@ struct prvkey_data {
 #define BY_RESETCODE	2
 #define BY_ADMIN	3
 
-extern void resetcode_s2k (const unsigned char *input, unsigned int ilen,
-			   unsigned char output[32]);
+extern void s2k (int who, const unsigned char *input, unsigned int ilen,
+		 unsigned char output[32]);
 
 
 #define KEYSTRING_PASSLEN_SIZE  1

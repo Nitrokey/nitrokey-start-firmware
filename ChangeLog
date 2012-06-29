@@ -1,3 +1,13 @@
+2012-06-30  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/openpgp.c (s2k): New.
+	(resetcode_s2k): Remove.
+	(cmd_reset_user_password, cmd_change_password): Use s2k (was:
+	sha256 directly or resetcode_s2k).
+	* src/openpgp-do.c (proc_resetting_code, gpg_do_write_prvkey):
+	Likewise.
+	* src/ac.c (verify_user_0, verify_admin): Likewise.
+
 2012-06-29  Niibe Yutaka  <gniibe@fsij.org>
 
 	* regnual/Makefile: Don't copy usb_lld.c.

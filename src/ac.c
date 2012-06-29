@@ -1,7 +1,7 @@
 /*
  * ac.c -- Check access condition
  *
- * Copyright (C) 2010 Free Software Initiative of Japan
+ * Copyright (C) 2010, 2012 Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
  * This file is a part of Gnuk, a GnuPG USB Token implementation.
@@ -87,7 +87,7 @@ verify_user_0 (uint8_t access, const uint8_t *pw, int buf_len, int pw_len_known,
     }
 
  success_one_step:
-  sha256 (pw, pw_len, keystring);
+  s2k (BY_USER, pw, pw_len, keystring);
   if (access == AC_PSO_CDS_AUTHORIZED)
     {
       r1 = gpg_do_load_prvkey (GPG_KEY_FOR_SIGNING, BY_USER, keystring);
@@ -280,7 +280,7 @@ verify_admin (const uint8_t *pw, int pw_len)
   if (r <= 0)
     return r;
 
-  sha256 (pw, pw_len, keystring_md_pw3);
+  s2k (BY_ADMIN, pw, pw_len, keystring_md_pw3);
   auth_status |= AC_ADMIN_AUTHORIZED;
   return 1;
 }

@@ -28,7 +28,6 @@
 #include "sys.h"
 #include "gnuk.h"
 #include "openpgp.h"
-#include "sha256.h"
 
 #include "polarssl/config.h"
 #include "polarssl/aes.h"
@@ -543,7 +542,7 @@ proc_resetting_code (const uint8_t *data, int len)
 
   newpw_len = len;
   newpw = data;
-  resetcode_s2k (newpw, newpw_len, new_ks);
+  s2k (BY_RESETCODE, newpw, newpw_len, new_ks);
   new_ks0[0] = newpw_len;
   r = gpg_change_keystring (admin_authorized, old_ks, BY_RESETCODE, new_ks);
   if (r <= -2)
@@ -809,8 +808,8 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
       uint8_t ks123_pw1[KEYSTRING_SIZE_PW1];
 
       ks123_pw1[0] = strlen (OPENPGP_CARD_INITIAL_PW1);
-      sha256 ((uint8_t *)OPENPGP_CARD_INITIAL_PW1,
-	      strlen (OPENPGP_CARD_INITIAL_PW1), ks123_pw1+1);
+      s2k (BY_USER, (uint8_t *)OPENPGP_CARD_INITIAL_PW1,
+	   strlen (OPENPGP_CARD_INITIAL_PW1), ks123_pw1+1);
       encrypt_dek (ks123_pw1+1, pd->dek_encrypted_1);
     }
 
@@ -1297,8 +1296,8 @@ copy_do (const struct do_table_entry *do_p, int with_tag)
       }
     case DO_PROC_READWRITE:
       {
-	int (*rw_func)(uint16_t, int, uint8_t *, int, int)
-	  = (int (*)(uint16_t, int, uint8_t *, int, int))do_p->obj;
+	int (*rw_func)(uint16_t, int, const uint8_t *, int, int)
+	  = (int (*)(uint16_t, int, const uint8_t *, int, int))do_p->obj;
 
 	return rw_func (do_p->tag, with_tag, NULL, 0, 0);
       }

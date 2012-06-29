@@ -13,6 +13,10 @@ This tool is SWD flash ROM writer with ST-Link/V2.
 This tool is to dump USB strings, which include revision detail and config
 options.
 
+** Protection improvement (even when internal data is disclosed)
+Even if PW1 and PW3 is same, content of encrypted DEK is different
+now.
+
 
 * Major changes in Gnuk 0.20
 
