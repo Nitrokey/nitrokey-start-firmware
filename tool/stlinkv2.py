@@ -591,7 +591,7 @@ if __name__ == '__main__':
             reset_after_successful_write = False
         else:
             filename = sys.argv[1]
-            f = open(filename)
+            f = open(filename,'rb')
             data = f.read()
             f.close()
         sys.argv.pop(1)
