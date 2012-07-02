@@ -87,7 +87,7 @@ A9: GnuPG's SCDaemon has problems for handling insertion/removal of
     card/reader (problems are fixed in trunk).  When your newly
     inserted token is not found by GnuPG, try killing scdaemon and let
     it to be invoked again.  I do:
-      $ killall -9 scdaemon
+      $ gpg-connect-agent "SCD KILLSCD" "SCD BYE" /bye
     and confirm scdaemon doesn't exist, then,
       $ gpg-connect-agent learn /bye
 
@@ -475,7 +475,7 @@ PyUSB (python-usb package in Debian).
 If scdaemon is running, please kill it, or you will get "Smartcard
 Exception" by "Sharing violation".
 
-  $ killall -9 scdaemon
+  $ gpg-connect-agent "SCD KILLSCD" "SCD BYE" /bye
 
 In case of PyUSB tool, you need to stop pcscd.
 

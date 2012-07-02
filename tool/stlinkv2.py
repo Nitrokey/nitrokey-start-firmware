@@ -604,6 +604,6 @@ if __name__ == '__main__':
                  skip_blank_check, status_only, unlock, data)
         if r == 0:
             print Fore.WHITE + Back.BLUE + Style.BRIGHT + "SUCCESS" + Style.RESET_ALL
-        exit(r)
+        sys.exit(r)
     except Exception as e:
         print Back.RED + Style.BRIGHT + repr(e) + Style.RESET_ALL
