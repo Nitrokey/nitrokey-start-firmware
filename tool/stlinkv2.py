@@ -144,7 +144,10 @@ class stlinkv2(object):
         except:
             pass
         self.__devhandle.claimInterface(intf)
-        self.__devhandle.setAltInterface(intf)
+        # self.__devhandle.setAltInterface(intf)  # This is not good for libusb-win32
+
+    def shutdown(self):
+        self.__devhandle.releaseInterface()
 
     def execute_get(self, cmd, res_len):
         self.__devhandle.bulkWrite(self.__bulkout, cmd, self.__timeout)
@@ -548,6 +551,7 @@ def main(show_help, erase_only, no_protect, reset_after_successful_write,
     else:
         stl.finish_gpio()
 
+    stl.shutdown()
     return 0
 
 if __name__ == '__main__':

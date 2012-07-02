@@ -1,3 +1,7 @@
+2012-07-02  Niibe Yutaka  <gniibe@fsij.org>
+
+	* tool/stlinkv2.py (stlinkv2.__init__): Don't call setAltInterface.
+
 2012-06-30  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/openpgp.c (s2k): New.
