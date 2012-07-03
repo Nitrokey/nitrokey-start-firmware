@@ -877,6 +877,7 @@ gpg_do_chks_prvkey (enum kind_of_key kk,
   dek_p += DATA_ENCRYPTION_KEY_SIZE * (who_new - who_old);
   memcpy (dek_p, dek, DATA_ENCRYPTION_KEY_SIZE);
 
+  do_ptr[nr - NR_DO__FIRST__] = NULL;
   p = flash_do_write (nr, (const uint8_t *)pd, sizeof (struct prvkey_data));
   do_ptr[nr - NR_DO__FIRST__] = p;
 
@@ -1398,6 +1399,7 @@ gpg_do_put_data (uint16_t tag, const uint8_t *data, int len)
 		  GPG_MEMORY_FAILURE ();
 		else
 		  {
+		    *do_data_p = NULL;
 		    *do_data_p = flash_do_write (nr, data, len);
 		    if (*do_data_p)
 		      GPG_SUCCESS ();
@@ -1512,6 +1514,7 @@ gpg_do_write_simple (uint8_t nr, const uint8_t *data, int size)
 
   if (data != NULL)
     {
+      *do_data_p = NULL;
       *do_data_p = flash_do_write (nr, data, size);
       if (*do_data_p == NULL)
 	flash_warning ("DO WRITE ERROR");

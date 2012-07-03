@@ -306,7 +306,7 @@ extern uint8_t admin_authorized;
 /*
  * Representation of Boolean object:
  *   0: No record in flash memory
- *   1: 0xc?00
+ *   1: 0xf000
  */
 #define NR_BOOL_PW1_LIFETIME	0xf0
 /*
