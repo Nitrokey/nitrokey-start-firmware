@@ -429,6 +429,7 @@ cmd_reset_user_password (void)
       else
 	{
 	  DEBUG_INFO ("done.\r\n");
+	  gpg_do_write_simple (NR_DO_KEYSTRING_PW1, new_ks0, 1);
 	  ac_reset_pso_cds ();
 	  ac_reset_other ();
 	  gpg_pw_reset_err_counter (PW_ERR_RC);
@@ -475,6 +476,7 @@ cmd_reset_user_password (void)
       else
 	{
 	  DEBUG_INFO ("done.\r\n");
+	  gpg_do_write_simple (NR_DO_KEYSTRING_PW1, new_ks0, 1);
 	  ac_reset_pso_cds ();
 	  ac_reset_other ();
 	  gpg_pw_reset_err_counter (PW_ERR_PW1);
