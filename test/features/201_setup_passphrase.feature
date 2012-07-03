@@ -20,13 +20,13 @@ Feature: setup pass phrase
      Then it should get success
 
   Scenario: reset pass phrase by reset code (in admin-full mode)
-     Given cmd_reset_retry_counter with 0 and "example reset code 000new user pass phrase"
+     Given cmd_reset_retry_counter with 0 and "example reset code 000another user pass phrase"
      Then it should get success
 
   Scenario: verify PW1 (1) again
-     Given cmd_verify with 1 and "new user pass phrase"
+     Given cmd_verify with 1 and "another user pass phrase"
      Then it should get success
 
   Scenario: verify PW1 (2) again
-     Given cmd_verify with 2 and "new user pass phrase"
+     Given cmd_verify with 2 and "another user pass phrase"
      Then it should get success

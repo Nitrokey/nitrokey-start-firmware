@@ -21,10 +21,10 @@ Feature: key generation
      And put the second data to d0
      Then it should get success
 
-  Scenario: verify PW1 (1) after genkey
-     Given cmd_verify with 1 and "new user pass phrase"
+  Scenario: verify PW1 (1) after keygen
+     Given cmd_verify with 1 and "another user pass phrase"
      Then it should get success
 
-  Scenario: verify PW1 (2) after genkey
-     Given cmd_verify with 2 and "new user pass phrase"
+  Scenario: verify PW1 (2) after keygen
+     Given cmd_verify with 2 and "another user pass phrase"
      Then it should get success
