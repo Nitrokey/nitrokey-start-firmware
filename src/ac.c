@@ -202,7 +202,7 @@ verify_admin_0 (const uint8_t *pw, int buf_len, int pw_len_known)
 	return 0;
 
       pw_len = pw3_keystring[0];
-      if ((pw_len_known >= 0 && pw_len_known != pw_len) || pw_len < buf_len)
+      if ((pw_len_known >= 0 && pw_len_known != pw_len) || pw_len > buf_len)
 	goto failure;
 
       salt = &pw3_keystring[1];
