@@ -1,3 +1,12 @@
+2012-07-03  Niibe Yutaka  <gniibe@fsij.org>
+
+	* test/features/040_passphrase_change.feature: New.
+	* test/features/203_passphrase_change.feature: New.
+	* test/features/210_compute_signature.feature: Rename (was:
+	203_compute_signature.feature)
+	* test/features/211_decryption.feature: Rename (was:
+	204_decryption.feature)
+
 2012-07-02  Niibe Yutaka  <gniibe@fsij.org>
 
 	* tool/stlinkv2.py (stlinkv2.__init__): Don't call setAltInterface.
