@@ -959,7 +959,7 @@ proc_key_import (const uint8_t *data, int len)
 
 	  ac_reset_pso_cds ();
 	  ac_reset_other ();
-	  if (keystring_admin == NULL)
+	  if (admin_authorized == BY_USER)
 	    ac_reset_admin ();
 	}
 

@@ -1,3 +1,11 @@
+2012-07-05  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/openpgp.c (cmd_change_password): Call ac_reset_admin when
+	admin-less mode.
+	(cmd_reset_user_password): Likewise.
+
+	* src/ac.c (ac_reset_admin, ac_fini): Clear ADMIN_AUTHORIZED.
+
 2012-07-04  Niibe Yutaka  <gniibe@fsij.org>
 
 	Bug fixes.
