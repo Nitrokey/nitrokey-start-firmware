@@ -280,7 +280,7 @@ verify_admin (const uint8_t *pw, int pw_len)
   if (r <= 0)
     return r;
 
-  s2k (BY_ADMIN, pw, pw_len, keystring_md_pw3);
+  s2k (admin_authorized, pw, pw_len, keystring_md_pw3);
   auth_status |= AC_ADMIN_AUTHORIZED;
   return 1;
 }

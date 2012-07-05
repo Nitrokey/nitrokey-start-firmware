@@ -6,6 +6,9 @@
 
 	* src/ac.c (ac_reset_admin, ac_fini): Clear ADMIN_AUTHORIZED.
 
+	Bug fix.
+	* src/ac.c (verify_admin): Call s2k with ADMIN_AUTHORIZED.
+
 2012-07-04  Niibe Yutaka  <gniibe@fsij.org>
 
 	Bug fixes.
