@@ -1,5 +1,10 @@
 2012-07-05  Niibe Yutaka  <gniibe@fsij.org>
 
+	* src/call-rsa.c (rsa_sign, rsa_decrypt): Don't need to setup N.
+
+	* polarssl-0.14.0/library/rsa.c (rsa_check_pubkey)
+	(rsa_check_privkey): Ifdef-out.
+
 	More tests.
 	* test/*: Add tests for admin-less mode.
 	* test/features/990_reset_passphrase.feature: This is now for

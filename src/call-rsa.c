@@ -50,7 +50,9 @@ rsa_sign (const uint8_t *raw_message, uint8_t *output, int msg_len,
   mpi_lset (&rsa_ctx.E, 0x10001);
   mpi_read_binary (&rsa_ctx.P, &kd->data[0], rsa_ctx.len / 2);
   mpi_read_binary (&rsa_ctx.Q, &kd->data[KEY_CONTENT_LEN/2], rsa_ctx.len / 2);
+#if 0 /* Using CRT, we don't use N */
   mpi_mul_mpi (&rsa_ctx.N, &rsa_ctx.P, &rsa_ctx.Q);
+#endif
   mpi_sub_int (&P1, &rsa_ctx.P, 1);
   mpi_sub_int (&Q1, &rsa_ctx.Q, 1);
   mpi_mul_mpi (&H, &P1, &Q1);
@@ -61,17 +63,6 @@ rsa_sign (const uint8_t *raw_message, uint8_t *output, int msg_len,
   mpi_free (&P1, &Q1, &H, NULL);
 
   DEBUG_INFO ("RSA sign...");
-#if 0
-  if ((r = rsa_check_privkey (&rsa_ctx)) == 0)
-    DEBUG_INFO ("ok...");
-  else
-    {
-      DEBUG_INFO ("failed.\r\n");
-      DEBUG_SHORT (r);
-      rsa_free (&rsa_ctx);
-      return r;
-    }
-#endif
 
   r = rsa_pkcs1_sign (&rsa_ctx, RSA_PRIVATE, SIG_RSA_RAW,
 		      msg_len, raw_message, temp);
@@ -142,7 +133,9 @@ rsa_decrypt (const uint8_t *input, uint8_t *output, int msg_len,
   mpi_read_binary (&rsa_ctx.P, &kd->data[0], KEY_CONTENT_LEN / 2);
   mpi_read_binary (&rsa_ctx.Q, &kd->data[KEY_CONTENT_LEN/2],
 		   KEY_CONTENT_LEN / 2);
+#if 0 /* Using CRT, we don't use N */
   mpi_mul_mpi (&rsa_ctx.N, &rsa_ctx.P, &rsa_ctx.Q);
+#endif
   mpi_sub_int (&P1, &rsa_ctx.P, 1);
   mpi_sub_int (&Q1, &rsa_ctx.Q, 1);
   mpi_mul_mpi (&H, &P1, &Q1);
@@ -153,18 +146,6 @@ rsa_decrypt (const uint8_t *input, uint8_t *output, int msg_len,
   mpi_free (&P1, &Q1, &H, NULL);
 
   DEBUG_INFO ("RSA decrypt ...");
-#if 0
-  /* This consume some memory */
-  if ((r = rsa_check_privkey (&rsa_ctx)) == 0)
-    DEBUG_INFO ("ok...");
-  else
-    {
-      DEBUG_INFO ("failed.\r\n");
-      DEBUG_SHORT (r);
-      rsa_free (&rsa_ctx);
-      return r;
-    }
-#endif
 
   r = rsa_pkcs1_decrypt (&rsa_ctx, RSA_PRIVATE, &output_len,
 			 input, output, MAX_RES_APDU_DATA_SIZE);

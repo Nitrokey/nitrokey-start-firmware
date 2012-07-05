@@ -131,6 +131,7 @@ cleanup:
 
 #endif
 
+#if 0
 /*
  * Check a public RSA key
  */
@@ -199,6 +200,7 @@ cleanup:
     mpi_free( &G, &I, &H, &Q1, &P1, &DE, &PQ, &G2, &L1, &L2, NULL );
     return( POLARSSL_ERR_RSA_KEY_CHECK_FAILED | ret );
 }
+#endif
 
 /*
  * Do an RSA public key operation
