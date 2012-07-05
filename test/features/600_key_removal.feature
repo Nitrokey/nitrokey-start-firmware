@@ -1,3 +1,4 @@
+@keygen
 Feature: key removal
   In order to use a token
   A token should have keys

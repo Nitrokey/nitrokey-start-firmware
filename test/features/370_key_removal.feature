@@ -14,10 +14,6 @@ Feature: key removal
      When removing a key OPENPGP.3
      Then it should get success
 
-  Scenario: verify PW3 (admin-less mode)
-     Given cmd_verify with 3 and "12345678"
-     Then it should get success
-
   Scenario: remove data object Finger print sig
      Given cmd_put_data with c7 and ""
      Then it should get success

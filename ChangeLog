@@ -1,5 +1,11 @@
 2012-07-05  Niibe Yutaka  <gniibe@fsij.org>
 
+	More tests.
+	* test/*: Add tests for admin-less mode.
+	* test/features/990_reset_passphrase.feature: This is now for
+	admin-less mode.
+	* test/features/970_key_removal.feature: Ditto.
+
 	* src/openpgp.c (cmd_change_password): Call ac_reset_admin when
 	admin-less mode.
 	(cmd_reset_user_password): Likewise.
