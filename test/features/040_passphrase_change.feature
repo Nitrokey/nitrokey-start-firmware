@@ -1,4 +1,4 @@
-Feature: setup pass phrase
+Feature: change pass phrase
   In order to conform OpenPGP card 2.0 specification
   A token should support pass phrase: PW1, PW3 and reset code
 
