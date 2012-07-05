@@ -1,3 +1,8 @@
+2012-07-06  Niibe Yutaka  <gniibe@fsij.org>
+
+	* boards/FST_01/board.h (VAL_GPIOACRL): Change for SPI flash.
+	* tool/stlinkv2.py (stlinkv2.setup_gpio): Likewise.
+
 2012-07-05  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/call-rsa.c (rsa_sign, rsa_decrypt): Don't need to setup N.

@@ -97,12 +97,16 @@
  * PA0  - input with pull-up (TIM2_CH1)
  * PA1  - input with pull-down (TIM2_CH2)
  * PA2  - input with pull-up (TIM2_CH3)
+ * PA4  - Push pull output   (SPI1_NSS)
+ * PA5  - Alternate Push pull output (SPI1_SCK)
+ * PA6  - Alternate Push pull output (SPI1_MISO)
+ * PA7  - Alternate Push pull output (SPI1_MOSI)
  * PA11 - input with pull-up (USBDM)
  * PA12 - input with pull-up (USBDP)
  * Everything input with pull-up except:
  * PA10 - Push pull output   (USB 1:ON 0:OFF)
  */
-#define VAL_GPIOACRL            0x88888888      /*  PA7...PA0 */
+#define VAL_GPIOACRL            0xBBB38888      /*  PA7...PA0 */
 #define VAL_GPIOACRH            0x88888388      /* PA15...PA8 */
 #define VAL_GPIOAODR            0xFFFFFFFD
 

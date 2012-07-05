@@ -217,19 +217,22 @@ class stlinkv2(object):
     # For FST-01-00 and FST-01: LED on, USB off
     def setup_gpio(self):
         apb2enr = self.read_memory_u32(0x40021018)
-        apb2enr = apb2enr | 4 | 8  # Enable port A and B
-        self.write_memory_u32(0x40021018, apb2enr) # RCC->APB2ENR
-        self.write_memory_u32(0x4002100c, 4|8)     # RCC->APB2RSTR
+        apb2enr = apb2enr | 4 | 8 | 0x1000 # Enable port A, port B, and SPI1
+        self.write_memory_u32(0x40021018, apb2enr)    # RCC->APB2ENR
+        self.write_memory_u32(0x4002100c, 4|8|0x1000) # RCC->APB2RSTR
         self.write_memory_u32(0x4002100c, 0)
         self.write_memory_u32(GPIOA+0x0c, 0xfffffbff) # ODR
         self.write_memory_u32(GPIOA+0x04, 0x88888383) # CRH
-        self.write_memory_u32(GPIOA+0x00, 0x88888888) # CRL
+        self.write_memory_u32(GPIOA+0x00, 0xBBB38888) # CRL
         self.write_memory_u32(GPIOB+0x0c, 0xffffffff) # ODR
         self.write_memory_u32(GPIOB+0x04, 0x88888883) # CRH
         self.write_memory_u32(GPIOB+0x00, 0x88888888) # CRL
 
     # For FST-01-00 and FST-01: LED off, USB off
     def finish_gpio(self):
+        apb2enr = self.read_memory_u32(0x40021018)
+        apb2enr = apb2enr &  ~(4 | 8 | 0x1000)
+        self.write_memory_u32(0x40021018, apb2enr)    # RCC->APB2ENR
         self.write_memory_u32(GPIOA+0x0c, 0xfffffaff) # ODR
         self.write_memory_u32(GPIOB+0x0c, 0xfffffffe) # ODR
 
