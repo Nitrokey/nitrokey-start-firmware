@@ -1,7 +1,7 @@
 Gnuk - An Implementation of USB Cryptographic Token for GnuPG
 
-							   Version 0.20
-							     2012-06-19
+							   Version 0.21
+							     2012-07-06
 							   Niibe Yutaka
 				      Free Software Initiative of Japan
 
@@ -106,15 +106,15 @@ Ab: That's because gnome-keyring-daemon interferes GnuPG.  Type:
     "GPG Password Agent" and "SSH Key Agent".
 
 Qc: Do you know a good SWD debugger to connect FST-01 or something?
-Ac: STLink v2 is cheap one.  See http://code.google.com/p/arm-utilities/
-    for a control program.
+Ac: STLink v2 is cheap one.  We have a tool/stlinkv2.py as flash ROM
+writer.
 
 
 Release notes
 =============
 
-This is "version 1.0 release candidate" of Gnuk.  In this release, key
-generation feature is added.  While it is daily use, some features
+This is another "version 1.0 release candidate" of Gnuk.  In this
+release, a test suite is added.  While it is daily use, some features
 (including key generation and firmware upgrade) are still considered
 experimental.
 
@@ -138,7 +138,7 @@ Tested features are:
 	  but you can remove all keys to import again).
 	* Key generation on device side
 
-Original feature of Gnuk, tested (lightly):
+Original feature of Gnuk, tested lightly:
 
 	* Upgrading with "EXTERNAL AUTHENTICATE" by reGNUal
 
@@ -554,9 +554,13 @@ This entry has been added into libccid 1.4.1 already ([r5425]).
 Testing Gnuk
 ------------
 
-Try following to see Gnuk runs:
+Type following command to see Gnuk runs:
 
   $ gpg --card-status
+
+
+Besides, there is a functinality test under test/ directory.  See
+test/README.
 
 
 Personalize the Token and import keys

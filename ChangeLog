@@ -1,5 +1,8 @@
 2012-07-06  Niibe Yutaka  <gniibe@fsij.org>
 
+	* Version 0.21.
+	* src/usb_desc.c (gnukStringSerial): Updated.
+
 	* boards/FST_01/board.h (VAL_GPIOACRL): Change for SPI flash.
 	* tool/stlinkv2.py (stlinkv2.setup_gpio): Likewise.
 	(stlinkv2.spi_flash_init, stlinkv2.spi_flash_select)
