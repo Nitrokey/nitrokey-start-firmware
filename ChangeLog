@@ -2,6 +2,9 @@
 
 	* boards/FST_01/board.h (VAL_GPIOACRL): Change for SPI flash.
 	* tool/stlinkv2.py (stlinkv2.setup_gpio): Likewise.
+	(stlinkv2.spi_flash_init, stlinkv2.spi_flash_select)
+	(stlinkv2.spi_flash_sendbyte, stlinkv2.spi_flash_read_id): New.
+	(main): Add SPI flash ROM id check.
 
 2012-07-05  Niibe Yutaka  <gniibe@fsij.org>
 

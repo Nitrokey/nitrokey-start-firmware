@@ -63,6 +63,8 @@ FLASH_CR_LOCK=   0x0080
 FLASH_CR_OPTWRE= 0x0200
 
 
+SPI1= 0x40013000
+
 def uint32(v):
     return v[0] + (v[1]<<8) + (v[2]<<16) + (v[3]<<24)
 
@@ -235,6 +237,53 @@ class stlinkv2(object):
         self.write_memory_u32(0x40021018, apb2enr)    # RCC->APB2ENR
         self.write_memory_u32(GPIOA+0x0c, 0xfffffaff) # ODR
         self.write_memory_u32(GPIOB+0x0c, 0xfffffffe) # ODR
+
+    def spi_flash_init(self):
+        self.write_memory_u32(SPI1+0x00, 0x0004); # CR1 <= MSTR
+        i2scfgr = self.read_memory_u32(SPI1+0x1c) # I2SCFGR
+        i2scfgr = i2scfgr & 0xf7ff                # 
+        self.write_memory_u32(SPI1+0x1c, i2scfgr); # I2SCFGR <= SPI mode
+        self.write_memory_u32(SPI1+0x10, 7);       # CRCPR <= 7
+        self.write_memory_u32(SPI1+0x04, 0x04);    # CR2 <= SSOE
+        self.write_memory_u32(SPI1+0x00, 0x0044);  # CR1 <= MSTR | SPE
+
+    def spi_flash_select(self, enable):
+        if enable:
+            self.write_memory_u32(GPIOA+0x0c, 0xffffffef) # ODR
+        else:
+            self.write_memory_u32(GPIOA+0x0c, 0xffffffff) # ODR
+
+    def spi_flash_sendbyte(self, v):
+        i = 0
+        while True:
+            status = self.read_memory_u32(SPI1+0x08) # SR
+            if status & 0x02 != 0:                   # TXE (Data Empty)
+                break
+            time.sleep(0.01)
+            i = i + 1
+            if i > 10:
+                raise TimeOutError('spi_flash_sendbyte')
+        self.write_memory_u32(SPI1+0x0c, v) # DR
+        i = 0
+        while True:
+            status = self.read_memory_u32(SPI1+0x08) # SR
+            if status & 0x01 != 0:                   # RXNE (Data Not Empty)
+                break
+            time.sleep(0.01)
+            i = i + 1
+            if i > 10:
+                raise TimeOutError('spi_flash_sendbyte')
+        v = self.read_memory_u32(SPI1+0x0c) # DR
+        return v
+
+    def spi_flash_read_id(self):
+        self.spi_flash_select(True)
+        self.spi_flash_sendbyte(0x9f)
+        t0 = self.spi_flash_sendbyte(0xa5)
+        t1 = self.spi_flash_sendbyte(0xa5)
+        t2 = self.spi_flash_sendbyte(0xa5)
+        self.spi_flash_select(False)
+        return (t0 << 16) | (t1 << 8) | t2
 
     def protection(self):
         return (self.read_memory_u32(FLASH_OBR) & 0x0002) != 0
@@ -440,13 +489,15 @@ def help():
     print "stlinkv2.py [-e]: Erase flash ROM"
     print "stlinkv2.py [-u]: Unlock flash ROM"
     print "stlinkv2.py [-s]: Show status"
-    print "stlinkv2.py [-b] [-n] [-r] FILE: Write content of FILE to flash ROM"
+    print "stlinkv2.py [-b] [-n] [-r] [-i] FILE: Write content of FILE to flash ROM"
     print "    -b: Blank check before write (auto erase when not blank)"
     print "    -n: Don't enable read protection after write"
     print "    -r: Don't reset after write"
+    print "    -i: Don't test SPI flash"
 
 
-def main(show_help, erase_only, no_protect, reset_after_successful_write,
+def main(show_help, erase_only, no_protect, spi_flash_check,
+         reset_after_successful_write,
          skip_blank_check, status_only, unlock, data):
     if show_help or len(sys.argv) != 1:
         help()
@@ -514,6 +565,13 @@ def main(show_help, erase_only, no_protect, reset_after_successful_write,
         print "Flash ROM read protection disabled.  Reset the board, now."
         return 0
 
+    if spi_flash_check:
+        stl.spi_flash_init()
+        id = stl.spi_flash_read_id()
+        print "SPI Flash ROM ID: %06x" % id
+        if id != 0xbf254a:
+            raise ValueError("bad spi flash ROM ID")
+
     if not blank:
         print "ERASE ALL"
         stl.reset_sys()
@@ -566,6 +624,7 @@ if __name__ == '__main__':
     status_only = False
     unlock = False
     data = None
+    spi_flash_check = True
 
     while len(sys.argv) > 1:
         if sys.argv[1] == '-h':
@@ -592,6 +651,8 @@ if __name__ == '__main__':
             no_protect = True
         elif sys.argv[1] == '-r':
             reset_after_successful_write = False
+        elif sys.argv[1] == '-i':
+            spi_flash_check = False
         else:
             filename = sys.argv[1]
             f = open(filename,'rb')
@@ -602,7 +663,7 @@ if __name__ == '__main__':
     colorama_init()
 
     try:
-        r = main(show_help, erase_only, no_protect,
+        r = main(show_help, erase_only, no_protect, spi_flash_check,
                  reset_after_successful_write,
                  skip_blank_check, status_only, unlock, data)
         if r == 0:
