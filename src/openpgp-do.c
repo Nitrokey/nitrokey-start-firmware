@@ -926,7 +926,6 @@ proc_key_import (const uint8_t *data, int len)
   if (*p == 0xb6)
     {
       kk = GPG_KEY_FOR_SIGNING;
-      ac_reset_pso_cds ();
       gpg_reset_digital_signature_counter ();
     }
   else
@@ -935,7 +934,6 @@ proc_key_import (const uint8_t *data, int len)
 	kk = GPG_KEY_FOR_DECRYPTION;
       else				/* 0xa4 */
 	kk = GPG_KEY_FOR_AUTHENTICATION;
-      ac_reset_other ();
     }
 
   if (len <= 22)
