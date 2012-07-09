@@ -21,6 +21,13 @@ Feature: key generation
      And put the second data to d0
      Then it should get success
 
+  Scenario: compute digital signature by OPENPGP.1 key (1)
+     Given a message "GnuPG assumes that PW1 keeps valid after keygen."
+     And a public key from token for OPENPGP.1
+     And let a token compute digital signature
+     And verify signature
+     Then it should get success
+
   Scenario: verify PW1 (1) after keygen
      Given cmd_verify with 1 and "another user pass phrase"
      Then it should get success
