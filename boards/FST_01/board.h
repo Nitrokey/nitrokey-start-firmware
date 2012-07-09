@@ -101,10 +101,9 @@
  * PA5  - Alternate Push pull output (SPI1_SCK)
  * PA6  - Alternate Push pull output (SPI1_MISO)
  * PA7  - Alternate Push pull output (SPI1_MOSI)
+ * PA10 - Push pull output   (USB 1:ON 0:OFF)
  * PA11 - input with pull-up (USBDM)
  * PA12 - input with pull-up (USBDP)
- * Everything input with pull-up except:
- * PA10 - Push pull output   (USB 1:ON 0:OFF)
  */
 #define VAL_GPIOACRL            0xBBB38888      /*  PA7...PA0 */
 #define VAL_GPIOACRH            0x88888388      /* PA15...PA8 */

@@ -227,8 +227,8 @@ class stlinkv2(object):
         self.write_memory_u32(GPIOA+0x04, 0x88888383) # CRH
         self.write_memory_u32(GPIOA+0x00, 0xBBB38888) # CRL
         self.write_memory_u32(GPIOB+0x0c, 0xffffffff) # ODR
-        self.write_memory_u32(GPIOB+0x04, 0x88888883) # CRH
-        self.write_memory_u32(GPIOB+0x00, 0x88888888) # CRL
+        self.write_memory_u32(GPIOB+0x04, 0x88888888) # CRH
+        self.write_memory_u32(GPIOB+0x00, 0x88888883) # CRL
 
     # For FST-01-00 and FST-01: LED off, USB off
     def finish_gpio(self):
