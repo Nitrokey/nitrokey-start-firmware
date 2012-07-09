@@ -1,3 +1,7 @@
+2012-07-10  Niibe Yutaka  <gniibe@fsij.org>
+
+	* tool/stlinkv2.py (stlinkv2.usb_disconnect): New.
+
 2012-07-09  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/openpgp.c (cmd_pso): For decryption, return error sooner for

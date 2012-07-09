@@ -216,23 +216,27 @@ class stlinkv2(object):
         v = self.execute_get("\xf2\x22\x00", 4)
         return v[0] + (v[1]<<8) + (v[2]<<16) + (v[3]<<24)
 
-    # For FST-01-00 and FST-01: LED on, USB off
+    # For FST-01-00 and FST-01: LED on, USB connect
     def setup_gpio(self):
         apb2enr = self.read_memory_u32(0x40021018)
         apb2enr = apb2enr | 4 | 8 | 0x1000 # Enable port A, port B, and SPI1
         self.write_memory_u32(0x40021018, apb2enr)    # RCC->APB2ENR
         self.write_memory_u32(0x4002100c, 4|8|0x1000) # RCC->APB2RSTR
         self.write_memory_u32(0x4002100c, 0)
-        self.write_memory_u32(GPIOA+0x0c, 0xfffffbff) # ODR
+        self.write_memory_u32(GPIOA+0x0c, 0xffffffff) # ODR
         self.write_memory_u32(GPIOA+0x04, 0x88888383) # CRH
         self.write_memory_u32(GPIOA+0x00, 0xBBB38888) # CRL
         self.write_memory_u32(GPIOB+0x0c, 0xffffffff) # ODR
         self.write_memory_u32(GPIOB+0x04, 0x88888888) # CRH
         self.write_memory_u32(GPIOB+0x00, 0x88888883) # CRL
 
-    # For FST-01-00 and FST-01: LED off, USB off
+    # For FST-01-00 and FST-01: LED on, USB disconnect
+    def usb_disconnect(self):
+        self.write_memory_u32(GPIOA+0x0c, 0xfffffbff) # ODR
+
+    # For FST-01-00 and FST-01: LED off, USB connect
     def finish_gpio(self):
-        self.write_memory_u32(GPIOA+0x0c, 0xfffffaff) # ODR
+        self.write_memory_u32(GPIOA+0x0c, 0xfffffeff) # ODR
         self.write_memory_u32(GPIOB+0x0c, 0xfffffffe) # ODR
         apb2enr = self.read_memory_u32(0x40021018)
         apb2enr = apb2enr &  ~(4 | 8 | 0x1000)
@@ -562,6 +566,8 @@ def main(show_help, erase_only, no_protect, spi_flash_check,
     if unlock:
         stl.reset_sys()
         stl.option_bytes_write(OPTION_BYTES_ADDR,RDP_KEY)
+        stl.usb_disconnect()
+        time.sleep(0.100)
         stl.finish_gpio()
         print "Flash ROM read protection disabled.  Reset the board, now."
         return 0
@@ -579,6 +585,8 @@ def main(show_help, erase_only, no_protect, spi_flash_check,
         stl.flash_erase_all()
 
     if erase_only:
+        stl.usb_disconnect()
+        time.sleep(0.100)
         stl.finish_gpio()
         return 0
 
@@ -607,6 +615,7 @@ def main(show_help, erase_only, no_protect, spi_flash_check,
         print "Flash ROM read protection enabled.  Reset the board to enable protection."
 
     if reset_after_successful_write:
+        stl.usb_disconnect()
         stl.reset_sys()
         stl.run()
         stl.exit_debug()
