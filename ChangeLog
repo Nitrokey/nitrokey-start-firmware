@@ -1,5 +1,10 @@
 2012-07-10  Niibe Yutaka  <gniibe@fsij.org>
 
+	* src/openpgp-do.c (gpg_do_write_prvkey): Don't call ac_reset_*
+	here.
+	(proc_key_import): But call ac_reset_* here.
+	(gpg_do_keygen): Load private key for signing.
+
 	* tool/stlinkv2.py (stlinkv2.usb_disconnect): New.
 
 2012-07-09  Niibe Yutaka  <gniibe@fsij.org>

@@ -793,11 +793,6 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
   memcpy (pd->iv, iv, INITIAL_VECTOR_SIZE);
   memcpy (pd->checksum_encrypted, kdi.checksum, DATA_ENCRYPTION_KEY_SIZE);
 
-  if (kk == GPG_KEY_FOR_SIGNING)
-    ac_reset_pso_cds ();
-  else
-    ac_reset_other ();
-
   if (ks_pw1)
     {
       ks_pw1_len = ks_pw1[0];
@@ -926,6 +921,7 @@ proc_key_import (const uint8_t *data, int len)
   if (*p == 0xb6)
     {
       kk = GPG_KEY_FOR_SIGNING;
+      ac_reset_pso_cds ();
       gpg_reset_digital_signature_counter ();
     }
   else
@@ -934,6 +930,7 @@ proc_key_import (const uint8_t *data, int len)
 	kk = GPG_KEY_FOR_DECRYPTION;
       else				/* 0xa4 */
 	kk = GPG_KEY_FOR_AUTHENTICATION;
+      ac_reset_other ();
     }
 
   if (len <= 22)
@@ -1570,26 +1567,27 @@ gpg_do_keygen (uint8_t kk_byte)
 
   if (kk == GPG_KEY_FOR_SIGNING)
     {
-      /* Authintication has been reset within gpg_do_write_prvkey. */
-      /* But GnuPG expects it's ready for signing. */
-      /* Thus, we call verify_pso_cds here. */
       const uint8_t *ks_pw1 = gpg_do_read_simple (NR_DO_KEYSTRING_PW1);
-      const uint8_t *pw;
-      int pw_len;
+      uint8_t keystring[KEYSTRING_MD_SIZE];
+      const uint8_t *ks;
+
+      /* GnuPG expects it's ready for signing. */
+      /* Don't call ac_reset_pso_cds here, but load the private key */
 
       if (ks_pw1)
-	{
-	  pw = ks_pw1+1;
-	  pw_len = ks_pw1[0];
-	}
+	ks = ks_pw1+1;
       else
 	{
-	  pw = (const uint8_t *)OPENPGP_CARD_INITIAL_PW1;
-	  pw_len = strlen (OPENPGP_CARD_INITIAL_PW3);
+	  const uint8_t * pw = (const uint8_t *)OPENPGP_CARD_INITIAL_PW1;
+
+	  s2k (BY_USER, pw, strlen (OPENPGP_CARD_INITIAL_PW3), keystring);
+	  ks = keystring;
 	}
 
-      verify_pso_cds (pw, pw_len);
+      gpg_do_load_prvkey (GPG_KEY_FOR_SIGNING, BY_USER, ks);
     }
+  else
+    ac_reset_other ();
 
   gpg_do_public_key (kk_byte);
 }
