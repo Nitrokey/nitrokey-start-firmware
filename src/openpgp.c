@@ -776,10 +776,15 @@ cmd_pso (void)
 
       /* Skip padding 0x00 */
       len--;
-      r = rsa_decrypt (apdu.cmd_apdu_data+1, res_APDU, len,
-		       &kd[GPG_KEY_FOR_DECRYPTION]);
-      if (r < 0)
-	GPG_ERROR ();
+      if (len != KEY_CONTENT_LEN)
+	GPG_CONDITION_NOT_SATISFIED ();
+      else
+	{
+	  r = rsa_decrypt (apdu.cmd_apdu_data+1, res_APDU, len,
+			   &kd[GPG_KEY_FOR_DECRYPTION]);
+	  if (r < 0)
+	    GPG_ERROR ();
+	}
     }
   else
     {
