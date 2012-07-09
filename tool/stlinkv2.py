@@ -562,6 +562,7 @@ def main(show_help, erase_only, no_protect, spi_flash_check,
     if unlock:
         stl.reset_sys()
         stl.option_bytes_write(OPTION_BYTES_ADDR,RDP_KEY)
+        stl.finish_gpio()
         print "Flash ROM read protection disabled.  Reset the board, now."
         return 0
 
