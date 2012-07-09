@@ -1,3 +1,8 @@
+2012-07-09  Niibe Yutaka  <gniibe@fsij.org>
+
+	* test/rsa_keys.py (integer_to_bytes_256): Rename from
+	integer_to_bytes and it should be exactly 256-byte long.
+
 2012-07-06  Niibe Yutaka  <gniibe@fsij.org>
 
 	* Version 0.21.

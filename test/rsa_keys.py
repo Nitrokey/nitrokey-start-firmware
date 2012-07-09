@@ -125,24 +125,24 @@ def compute_signature(keyno, digestinfo):
     sig = t2 + t * q
     return sig
 
-def integer_to_bytes(i):
+def integer_to_bytes_256(i):
     s = hex(i)[2:]
     s = s.rstrip('L')
     if len(s) & 1:
         s = '0' + s
-    return unhexlify(s)
+    return string.rjust(unhexlify(s), 256, '\x00')
 
 def encrypt(keyno, plaintext):
     e = key[keyno][4]
     n = key[keyno][7]
     m = pkcs1_pad_for_crypt(plaintext)
-    return '\x00' + integer_to_bytes(pow(m, e, n))
+    return '\x00' + integer_to_bytes_256(pow(m, e, n))
 
 def encrypt_with_pubkey(pubkey_info, plaintext):
     n = int(hexlify(pubkey_info[0]), 16)
     e = int(hexlify(pubkey_info[1]), 16)
     m = pkcs1_pad_for_crypt(plaintext)
-    return '\x00' + integer_to_bytes(pow(m, e, n))
+    return '\x00' + integer_to_bytes_256(pow(m, e, n))
 
 def verify_signature(pubkey_info, digestinfo, sig):
     n = int(hexlify(pubkey_info[0]), 16)
