@@ -232,11 +232,11 @@ class stlinkv2(object):
 
     # For FST-01-00 and FST-01: LED off, USB off
     def finish_gpio(self):
+        self.write_memory_u32(GPIOA+0x0c, 0xfffffaff) # ODR
+        self.write_memory_u32(GPIOB+0x0c, 0xfffffffe) # ODR
         apb2enr = self.read_memory_u32(0x40021018)
         apb2enr = apb2enr &  ~(4 | 8 | 0x1000)
         self.write_memory_u32(0x40021018, apb2enr)    # RCC->APB2ENR
-        self.write_memory_u32(GPIOA+0x0c, 0xfffffaff) # ODR
-        self.write_memory_u32(GPIOB+0x0c, 0xfffffffe) # ODR
 
     def spi_flash_init(self):
         self.write_memory_u32(SPI1+0x00, 0x0004); # CR1 <= MSTR
