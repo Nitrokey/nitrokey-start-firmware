@@ -1,4 +1,4 @@
-* Random Number Generator
+* [DONE] Random Number Generator
 
 RNG is needed for Data Encryption Key to encrypt private key (P and Q).
 It is important to collect enough entropy.  Perhaps, it would

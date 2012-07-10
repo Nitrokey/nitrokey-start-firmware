@@ -77,7 +77,8 @@ KEYPTR
                <---encrypted----><---  plain  ---->
 
 key_addr                       4-byte
-additional_data_encrypted      16-byte
+initial_vector (random)        16-byte
+checksum_encrypted             16-byte
 dek_encrypted_by_keystring_pw1 16-byte
 dek_encrypted_by_keystring_rc  16-byte
 dek_encrypted_by_keystring_pw3 16-byte
@@ -85,6 +86,4 @@ dek_encrypted_by_keystring_pw3 16-byte
 ... decrypted to
 
 [   P   ][   Q   ]
-check   4-byte
-random  4-byte
-magic[] 8-byte
+checksum 16-byte
