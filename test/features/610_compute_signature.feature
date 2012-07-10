@@ -33,4 +33,4 @@ Feature: compute digital signature
 
   Scenario: data object ds counter
      When requesting ds counter: 93
-     Then you should get: \x00\x00\x02
+     Then you should get: \x00\x00\x03
