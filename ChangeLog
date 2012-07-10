@@ -1,9 +1,12 @@
 2012-07-10  Niibe Yutaka  <gniibe@fsij.org>
 
+	* test/features/*: Add test cases for PW1/PW3 of factory settings.
+
 	* test/features/202_keygen.feature: Add PSO signature test after
 	keygen.
 	* test/features/602_keygen.feature: Ditto.
 
+	Bug fix.
 	* src/openpgp-do.c (gpg_do_write_prvkey): Don't call ac_reset_*
 	here.
 	(proc_key_import): But call ac_reset_* here.
