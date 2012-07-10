@@ -800,12 +800,11 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
     }
   else
     {
-      uint8_t ks123_pw1[KEYSTRING_SIZE_PW1];
+      uint8_t ks[KEYSTRING_MD_SIZE];
 
-      ks123_pw1[0] = strlen (OPENPGP_CARD_INITIAL_PW1);
-      s2k (BY_USER, (uint8_t *)OPENPGP_CARD_INITIAL_PW1,
-	   strlen (OPENPGP_CARD_INITIAL_PW1), ks123_pw1+1);
-      encrypt_dek (ks123_pw1+1, pd->dek_encrypted_1);
+      s2k (BY_USER, (const uint8_t *)OPENPGP_CARD_INITIAL_PW1,
+	   strlen (OPENPGP_CARD_INITIAL_PW1), ks);
+      encrypt_dek (ks, pd->dek_encrypted_1);
     }
 
   if (ks_rc)
@@ -1580,7 +1579,7 @@ gpg_do_keygen (uint8_t kk_byte)
 	{
 	  const uint8_t * pw = (const uint8_t *)OPENPGP_CARD_INITIAL_PW1;
 
-	  s2k (BY_USER, pw, strlen (OPENPGP_CARD_INITIAL_PW3), keystring);
+	  s2k (BY_USER, pw, strlen (OPENPGP_CARD_INITIAL_PW1), keystring);
 	  ks = keystring;
 	}
 
