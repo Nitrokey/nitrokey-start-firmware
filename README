@@ -1,7 +1,7 @@
 Gnuk - An Implementation of USB Cryptographic Token for GnuPG
 
-							   Version 0.21
-							     2012-07-06
+							    Version 1.0
+							     2012-08-XX
 							   Niibe Yutaka
 				      Free Software Initiative of Japan
 
@@ -30,11 +30,7 @@ Q0: How Gnuk USB Token is superior than other solutions (OpenPGP
     card 2.0, GPF Crypto Stick, etc.) ?
     http://www.g10code.de/p-card.html
     http://www.privacyfoundation.de/crypto_stick/
-A0: IMRHO, not quite, since there is no ready-to-use out-of-box Gnuk
-    product yet.  (It is welcome for me that some vendor will
-    manufacture Gnuk USB Token.  Even I can help design of hardware,
-    if needed.)
-    Good points for Gnuk are:
+A0: Good points of Gnuk are:
     * If you have skill of electronics and like DIY, you can build
       Gnuk Token cheaper (see Q8-A8).
     * You can study Gnuk to modify and to enhance.  For example, you
@@ -60,7 +56,7 @@ A3: Orthodox choice is Olimex STM32-H103.
 
 Q4: What's version of GnuPG are you using?
 A4: In Debian GNU/Linux system, I use gnupg 1.4.11-3 and gnupg-agent
-    2.0.14-2 (in sid).  With older versions, you can only sign with SHA1.
+    2.0.18-2.  With older versions, you can only sign with SHA1.
     See: http://www.fsij.org/gnuk/gnupg2-fixes-needed
 
 Q5: What's version of pcscd and libccid are you using?
@@ -83,13 +79,18 @@ A8: STM8S Discovery Kit costs 750 JPY (< $10 USD) only.  You can build
     http://www.fsij.org/gnuk/jtag_dongle_ftdi2232
 
 Q9: I got an error like "gpg: selecting openpgp failed: ec=6.108", what's up?
+
 A9: GnuPG's SCDaemon has problems for handling insertion/removal of
-    card/reader (problems are fixed in trunk).  When your newly
-    inserted token is not found by GnuPG, try killing scdaemon and let
-    it to be invoked again.  I do:
-      $ gpg-connect-agent "SCD KILLSCD" "SCD BYE" /bye
+    card/reader (problems are fixed in trunk, and backported to 2.0
+    branch, it will be 2.0.20).  When your newly inserted token is not
+    found by GnuPG, try killing scdaemon and let it to be invoked
+    again.  I do:
+
+	 $ gpg-connect-agent "SCD KILLSCD" "SCD BYE" /bye
+
     and confirm scdaemon doesn't exist, then,
-      $ gpg-connect-agent learn /bye
+
+	 $ gpg-connect-agent learn /bye
 
 Qa: With GNOME 2, I can't use Gnuk Token for SSH.  How can we use it for SSH?
 Aa: You need to deactivate seahorse-agent and gnome-keyring, but use
@@ -107,16 +108,16 @@ Ab: That's because gnome-keyring-daemon interferes GnuPG.  Type:
 
 Qc: Do you know a good SWD debugger to connect FST-01 or something?
 Ac: STLink v2 is cheap one.  We have a tool/stlinkv2.py as flash ROM
-writer.
+writer program.
 
 
 Release notes
 =============
 
-This is another "version 1.0 release candidate" of Gnuk.  In this
-release, a test suite is added.  While it is daily use, some features
-(including key generation and firmware upgrade) are still considered
-experimental.
+This is version 1.0 release of Gnuk, after a year and eleven months
+development.  While it is daily use for a year or so, some newly
+introduced features (including key generation and firmware upgrade)
+should be considered experimental.
 
 Tested features are:
 
@@ -133,13 +134,16 @@ Tested features are:
 	* Changing value of password status bytes (0x00C4): forcesig
 	* Verify with pin pad
 	* Modify with pin pad
-	* Card holder certificate
-	* Removal of keys (Overriding key import is not supported,
+	* Card holder certificate (read)
+	* Removal of keys
+	  (Overriding key import is not supported,
 	  but you can remove all keys to import again).
 	* Key generation on device side
 
-Original feature of Gnuk, tested lightly:
+Original features of Gnuk, tested lightly:
 
+	* OpenPGP card serial number setup
+	* Card holder certificate (write by UPDATE BINARY)
 	* Upgrading with "EXTERNAL AUTHENTICATE" by reGNUal
 
 It is known not-working well:
@@ -148,11 +152,11 @@ It is known not-working well:
 	  work well.  Please make sure to disable DEBUG option if it
 	  doesn't work well.
 
-It is known that the combination libccid 1.4.1 (or newer) with libusb
-1.0.8 (or older) has a problem.  It is possible for USB communication
-to be failed, because of a bug in libusb implementation.  Use libusbx
-1.0.9 or newer, or don't use PC/SC, but use internal CCID driver of
-GnuPG.
+It is known that the combination of libccid 1.4.1 (or newer) with
+libusb 1.0.8 (or older) has a minor problem.  It is rare but it is
+possible for USB communication to be failed, because of a bug in
+libusb implementation.  Use libusbx 1.0.9 or newer, or don't use
+PC/SC, but use internal CCID driver of GnuPG.
 
 
 Targets
@@ -288,15 +292,16 @@ respect users' freedom for computing.  Please ask FSIJ for the
 license.
 
 Otherwise, companies which want to distribute Gnuk devices, please use
-your own USB vendor ID and product ID.  Note that please replace
-"FSIJ" in the string gnukStringSerial (usb_desc.c) to yours, when you
-modify Gnuk.
+your own USB vendor ID and product ID.  Please replace "FSIJ" in the
+string gnukStringSerial (usb_desc.c) to yours, when you modify Gnuk.
 
 
 Host Requirements
 =================
 
-For GNU/Linux, libccid version >= 1.3.11 is recommended.
+For GNU/Linux, PC/SC service is an option, you can use GnuPG's
+internal CCID driver instead.  If you chose using PC/SC service,
+libccid version >= 1.3.11 is recommended for GNU/Linux.
 
 I think that it should not be requirment but the kernel version of my use is:
 Linux version 2.6.32-5-686 (Debian 2.6.32-18) (ben@decadent.org.uk) (gcc version 4.3.5 (Debian 4.3.5-2) ) #1 SMP Sat Jul 24 02:27:10 UTC 2010
