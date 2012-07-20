@@ -1,3 +1,10 @@
+2012-07-20  Niibe Yutaka  <gniibe@fsij.org>
+
+	* test/features/002_get_data_static.feature: Support CERTDO enabled
+	Gnuk for the test of extended capabilities.
+	* test/features/802_get_data_static.feature: Ditto.
+	* test/features/402_get_data_static.feature: Ditto.
+
 2012-07-10  Niibe Yutaka  <gniibe@fsij.org>
 
 	* test/features/*: Add test cases for PW1/PW3 of factory settings.
