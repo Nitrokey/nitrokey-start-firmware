@@ -594,7 +594,7 @@ RSA), you can import them.
 Gnuk supports key generation, but this feature is young and should be
 considered experimental.
 
-For detail, please see doc/DEMO and doc/DEMO-2.
+For detail, please see doc/note/DEMO and doc/note/DEMO-2.
 
 Note that it make sense to preserve your keys on your computer so that
 you can import the keys (again) to (possibly another) Gnuk Token.  In
@@ -656,7 +656,7 @@ linux/Documentation/usb/usbmon.txt
 Firmware update
 ===============
 
-See doc/firmware-update.
+See doc/note/firmware-update.
 
 
 Read-only Git Repository
