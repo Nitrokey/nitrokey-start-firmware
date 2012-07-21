@@ -14,3 +14,4 @@ src/*.inc
 regnual/regnual.bin
 regnual/regnual.hex
 regnual/regnual.elf
+doc/_build

@@ -1,3 +1,9 @@
+2012-07-21  Niibe Yutaka  <gniibe@fsij.org>
+
+	Documentation by Sphinx.
+	* doc/Makefile: New.
+	* doc/note: Old notes are moved here.
+
 2012-07-20  Niibe Yutaka  <gniibe@fsij.org>
 
 	* test/features/002_get_data_static.feature: Support CERTDO enabled
