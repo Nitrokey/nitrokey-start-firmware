@@ -1,5 +1,8 @@
 2012-07-21  Niibe Yutaka  <gniibe@fsij.org>
 
+	* Version 1.0.
+	* src/usb_desc.c (gnukStringSerial): Updated.
+
 	Documentation by Sphinx.
 	* doc/Makefile: New.
 	* doc/note: Old notes are moved here.

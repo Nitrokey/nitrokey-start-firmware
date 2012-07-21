@@ -1,7 +1,7 @@
 Gnuk - An Implementation of USB Cryptographic Token for GnuPG
 
 							    Version 1.0
-							     2012-08-XX
+							     2012-07-21
 							   Niibe Yutaka
 				      Free Software Initiative of Japan
 
@@ -338,7 +338,7 @@ Recently, there is "gcc-arm-embedded" project.  See:
     https://launchpad.net/gcc-arm-embedded/
 
 It is based on GCC 4.6.   For version 4.6-2012-q2-update, you'd
-need "-O3 -s" instead of "-O2" and it will be slightly better.
+need "-O3 -Os" instead of "-O2" and it will be slightly better.
 
 
 Change directory to `src':
