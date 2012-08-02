@@ -13,17 +13,41 @@ STM32F103 processor.
 Cryptographic token and feature of Gnuk
 ---------------------------------------
 
-Cryptographic token is a store of private keys and it computes cryptographic functions on the device.
+Cryptographic token is a store of private keys and it computes cryptographic
+functions on the device.
+
+The idea is to separate important secrets to independent device, 
+from where nobody can extract them.
 
 
 Development Environment
 -----------------------
 
-See :doc:`development` for development environment for Gnuk.  It builds on Free Software.
+See :doc:`development` for development environment for Gnuk.
+Gnuk is developed on the environment where there are only Free Software.
 
 
-Prerequisites
--------------
+Target boards for running Gnuk
+------------------------------
+
+Hardware requirement for Gnuk is the micro controller STM32F103.
+In version 1.0, Gnuk supports following boards.
+
+* FST-01 (Flying Stone Tiny ZERO-ONE)
+
+* Olimex STM32-H103
+
+* CQ STARM
+
+* STBee
+
+* STBee Mini
+
+* STM32 part of STM8S Discovery Kit
+
+
+Host prerequisites for using Gnuk Token
+---------------------------------------
 
 * GNU Privacy Guard (GnuPG)
 
@@ -36,8 +60,8 @@ Prerequisites
 * Web: scute, firefox
 
 
-Usage
------
+Usages
+------
 
 * Sign with GnuPG
 * Decrypt with GnuPG

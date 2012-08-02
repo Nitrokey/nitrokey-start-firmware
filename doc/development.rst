@@ -5,7 +5,29 @@ Development Environment
 Hardware
 --------
 
-JTAG debugger or SWD debugger is required.
+For development, it is highly recommended to have JTAG debugger or SWD
+debugger.
+
+For boards with DFU (Device Firmware Upgrade) feature, such as DfuSe,
+it is possible to develop with that.  But it should be considered
+*experimental* environment, and it should not be used for usual
+purpose.  That's because it is basically impossible for DfuSe
+implementations to disable reading-out from flash ROM.  It means
+that your secret will be readily extracted by DfuSe.
+
+For JTAG debugger, Olimex JTAG-Tiny is good and supported well.  For
+SWD debugger, ST-Link/V2 would be good, and it is supported by
+the tool of tool/stlinkv2.py.
+
+
+OpenOCD
+-------
+
+For JTAG debugger or SWD debugger, we can use OpenOCD.
+
+Note that ST-Link/V2 is *not* supported by OpenOCD 0.5.0.  It will be
+supported by version 0.6 or later, as current development version
+supports it.
 
 
 GNU Toolchain
