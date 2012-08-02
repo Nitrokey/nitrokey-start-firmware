@@ -108,6 +108,9 @@ def encrypt_on_host_public_key():
 def decrypt():
     scc.result = ftc.token.cmd_pso_longdata(0x80, 0x86, scc.ciphertext)
 
+@Given("USB version string of the token")
+def usb_version_string():
+    scc.result = ftc.token.get_string(3)
 
 @When("requesting (.+): ([0-9a-fA-F]+)")
 def get_data(name, tag_str):

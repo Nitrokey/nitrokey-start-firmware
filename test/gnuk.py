@@ -77,6 +77,9 @@ class gnuk_token(object):
         self.__timeout = 10000
         self.__seq = 0
 
+    def get_string(self, num):
+        return self.__devhandle.getString(num, 512)
+
     def increment_seq(self):
         self.__seq = (self.__seq + 1) & 0xff
 
