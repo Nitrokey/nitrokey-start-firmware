@@ -1,3 +1,14 @@
+2012-08-03  Niibe Yutaka  <gniibe@fsij.org>
+
+	* Version 1.0.1.
+	* src/usb_desc.c (gnukStringSerial): Updated.
+	* src/main.c (ID_OFFSET): Fix.
+
+2012-08-02  Niibe Yutaka  <gniibe@fsij.org>
+
+	* test/gnuk.py (gnuk_token.get_string): New.
+	* test/features/991_version_string.feature: New.
+
 2012-07-21  Niibe Yutaka  <gniibe@fsij.org>
 
 	* Version 1.0.

@@ -1,7 +1,7 @@
 Gnuk - An Implementation of USB Cryptographic Token for GnuPG
 
-							    Version 1.0
-							     2012-07-21
+							  Version 1.0.1
+							     2012-08-03
 							   Niibe Yutaka
 				      Free Software Initiative of Japan
 
@@ -14,9 +14,9 @@ STM32F103 processor.
 
 I wish that Gnuk will be a developer's soother who uses GnuPG.  I have
 been nervous of storing secret key(s) on usual secondary storage.
-There is a solution with OpenPGP card, but it is not the choice for me
-to bring a card reader all the time.  With Gnuk, this issue will be
-solved by a USB token which is small enough.
+There is a solution with OpenPGP card, but it is not the choice for
+me, as card reader is not common device.  With Gnuk, this issue will
+be solved by a USB token.
 
 Please look at the graphics of "gnuk.svg" for the software name.  My
 son used to be with his NUK(R), always, everywhere.  Now, I am with a
@@ -35,7 +35,7 @@ A0: Good points of Gnuk are:
       Gnuk Token cheaper (see Q8-A8).
     * You can study Gnuk to modify and to enhance.  For example, you
       can implement your own authentication method with some sensor
-      such as acceleration sensor.
+      such as an acceleration sensor.
     * It is "of Free Software"; Gnuk is distributed under GPLv3+,
 	    "by Free Software"; Gnuk development requires only Free Software
 				(GNU Toolchain, Python, etc.), 
@@ -51,8 +51,8 @@ Q3: What's your recommendation for target board?
 A3: Orthodox choice is Olimex STM32-H103.
     If you have skill of electronics and like DIY, STM32 part of STM8S
     Discovery Kit might be the best choice.
-    Currently FST-01 (Flying Stone Tiny 01) is under development,
-    it will be the best choice, hopefully.
+    FST-01 (Flying Stone Tiny 01) will be soon available for sale,
+    and it will be the best choice, hopefully.
 
 Q4: What's version of GnuPG are you using?
 A4: In Debian GNU/Linux system, I use gnupg 1.4.11-3 and gnupg-agent
@@ -63,12 +63,13 @@ Q5: What's version of pcscd and libccid are you using?
 A5: In Debian GNU/Linux system, I use pcscd 1.5.5-4 and libccid 1.3.11-2,
     which is in squeeze.  Note that you need to edit /etc/libccid_Info.plist
     when using libccid (< 1.4.1).
+    Note that pcscd and libccid are optional, you can use Gnuk without them.
 
 Q6: What kinds of hardware is required for development?
-A6: You need a target board plus a JTAG debugger.  If you just want to
-    test Gnuk for target boards with DfuSe, JTAG debugger is not
-    the requirement.  Note that for real use, you need JTAG debugger
-    to enable flash ROM protection.
+A6: You need a target board plus a JTAG/SWD debugger.  If you just
+    want to test Gnuk for target boards with DfuSe, JTAG debugger is
+    not the requirement.  Note that for real use, you need JTAG/SWD
+    debugger to enable flash ROM protection.
 
 Q7: How much does it cost?
 A7: Olimex STM32-H103 plus ARM-USB-TINY-H cost 70 Euro or so.
@@ -107,17 +108,18 @@ Ab: That's because gnome-keyring-daemon interferes GnuPG.  Type:
     "GPG Password Agent" and "SSH Key Agent".
 
 Qc: Do you know a good SWD debugger to connect FST-01 or something?
-Ac: STLink v2 is cheap one.  We have a tool/stlinkv2.py as flash ROM
-writer program.
+Ac: ST-Link/V2 is cheap one.  We have a tool/stlinkv2.py as flash ROM
+    writer program.
 
 
 Release notes
 =============
 
-This is version 1.0 release of Gnuk, after a year and eleven months
-development.  While it is daily use for a year or so, some newly
-introduced features (including key generation and firmware upgrade)
-should be considered experimental.
+This is a minor release in version 1.0 series of Gnuk.
+
+While it is daily use for more than a year, some newly introduced
+features (including key generation and firmware upgrade) should be
+considered experimental.
 
 Tested features are:
 

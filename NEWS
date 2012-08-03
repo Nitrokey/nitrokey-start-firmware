@@ -1,5 +1,14 @@
 Gnuk NEWS - User visible changes
 
+* Major changes in Gnuk 1.0.1
+
+  Released 2012-08-03, by NIIBE Yutaka
+
+** USB SerialNumber String
+In 1.0, it has a bug for USB SerialNumber String.  It has been fixed
+in 1.0.1.
+
+
 * Major changes in Gnuk 1.0
 
   Released 2012-07-21, by NIIBE Yutaka
