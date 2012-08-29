@@ -167,7 +167,7 @@ if __name__ == '__main__':
                 option = sys.argv[1]
                 sys.argv.pop(1)
                 if option == '-h':
-                    if bunum != None or devnum != None:
+                    if busnum != None or devnum != None:
                         exit_with_usage(sys.argv[0])
                     hub = int(sys.argv[1])
                     sys.argv.pop(1)
