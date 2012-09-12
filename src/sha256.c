@@ -46,11 +46,10 @@
 */
 
 #include <string.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include "sha256.h"
 
-#define SHA256_DIGEST_SIZE  32
-#define SHA256_BLOCK_SIZE   64
 #define SHA256_MASK (SHA256_BLOCK_SIZE - 1)
 
 static void bswap32_buf (uint32_t *p, int n)

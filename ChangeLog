@@ -1,3 +1,10 @@
+2012-09-12  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/sha256.c: Include <stdint.h>.
+
+	* src/sha256.h (SHA256_DIGEST_SIZE, SHA256_BLOCK_SIZE): Move
+	from sha256.c.
+
 2012-08-29  Niibe Yutaka  <gniibe@fsij.org>
 
 	* tool/hub_ctrl.py (__main__): Fix to busnum (was: bunum).
