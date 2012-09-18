@@ -1,3 +1,10 @@
+2012-09-18  Niibe Yutaka  <gniibe@fsij.org>
+
+	* tool/stlinkv2.py (stlinkv2.option_bytes_erase)
+	(stlinkv2.flash_erase_all, stlinkv2.flash_erase_page): : Fix
+	OperationFailure (was OperationError).
+	(main): Call option_bytes_erase if it's not 0xff.
+
 2012-09-12  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/sha256.c: Include <stdint.h>.

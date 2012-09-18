@@ -38,14 +38,12 @@ We can examine key information of gpg-agent by "KEYINFO" command.
 Here is my example::
 
    $ gpg-connect-agent "KEYINFO --list" /bye
-   S KEYINFO 4970A0D537CA2EF7CE6A106E47AD89B0EFB684C8 D - - - - -
    S KEYINFO 65F67E742101C7FE6D5B33FCEFCF4F65EAF0688C T D276000124010200F517000000010000 OPENPGP.2 - - -
-   S KEYINFO 5D6C89682D07CCFC034AF508420BF2276D8018ED T D276000124010200F517000000010000 OPENPGP.3 - - -
-   S KEYINFO 7D180C0C2A991B25204110A92F5F92A5A509845B D - - - - -
    S KEYINFO 101DE7B639FE29F4636BDEECF442A9273AFA6565 T D276000124010200F517000000010000 OPENPGP.1 - - -
+   S KEYINFO 5D6C89682D07CCFC034AF508420BF2276D8018ED T D276000124010200F517000000010000 OPENPGP.3 - - -
    OK
 
-I have two local keys (in my PC) and three keys in my token.
+I have three keys in my token.
 
 With the script below, I extract public key of the keygrip
 5D6C89682D07CCFC034AF508420BF2276D8018ED into the file: 5D6C8968.bin::
@@ -63,7 +61,7 @@ Here is the script, get_public_key.py::
        result = check_output(["gpg-connect-agent", "READKEY %s" % keygrip, "/bye"])
        key = ""
        while True:
-              i = result.find('%')
+           i = result.find('%')
            if i < 0:
                key += result
                break

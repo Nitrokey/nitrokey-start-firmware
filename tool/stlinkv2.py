@@ -356,7 +356,7 @@ class stlinkv2(object):
 
         self.write_memory_u32(FLASH_CR, FLASH_CR_LOCK)
 	if (status & FLASH_SR_EOP) == 0:
-            raise OperationError("option bytes erase")
+            raise OperationFailure("option bytes erase")
 
     def flash_write_internal(self, addr, data, off, size):
         prog = gen_prog_flash_write(addr,size)
@@ -415,7 +415,7 @@ class stlinkv2(object):
         self.write_memory_u32(FLASH_CR, FLASH_CR_LOCK)
 
 	if (status & FLASH_SR_EOP) == 0:
-            raise OperationError("flash erase all")
+            raise OperationFailure("flash erase all")
 
     def flash_erase_page(self, addr):
         self.write_memory_u32(FLASH_KEYR, FLASH_KEY1)
@@ -439,7 +439,7 @@ class stlinkv2(object):
         self.write_memory_u32(FLASH_CR, FLASH_CR_LOCK)
 
 	if (status & FLASH_SR_EOP) == 0:
-            raise OperationError("flash page erase")
+            raise OperationFailure("flash page erase")
 
     def start(self):
         mode = self.stl_mode()
@@ -564,6 +564,9 @@ def main(show_help, erase_only, no_protect, spi_flash_check,
     stl.setup_gpio()
 
     if unlock:
+        if option_bytes != 0xff:
+            stl.reset_sys()
+            stl.option_bytes_erase()
         stl.reset_sys()
         stl.option_bytes_write(OPTION_BYTES_ADDR,RDP_KEY)
         stl.usb_disconnect()
