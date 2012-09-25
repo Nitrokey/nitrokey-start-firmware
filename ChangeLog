@@ -1,3 +1,8 @@
+2012-09-25  Niibe Yutaka  <gniibe@fsij.org>
+
+	* tool/stlinkv2.py (main): Print out option bytes value.
+	Call reset_sys before blank_check.
+
 2012-09-18  Niibe Yutaka  <gniibe@fsij.org>
 
 	* tool/stlinkv2.py (stlinkv2.option_bytes_erase)

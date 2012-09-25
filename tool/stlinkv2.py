@@ -523,12 +523,13 @@ def main(show_help, erase_only, no_protect, spi_flash_check,
         print "ON"
     else:
         print "off"
-        option_bytes = stl.option_bytes_read()
-        print "Option bytes: %08x" % option_bytes
-        if (option_bytes & 0xff) == RDP_KEY:
-            ob_protection_enable = False
-        else:
-            ob_protection_enable = True
+
+    option_bytes = stl.option_bytes_read()
+    print "Option bytes: %08x" % option_bytes
+    if (option_bytes & 0xff) == RDP_KEY:
+        ob_protection_enable = False
+    else:
+        ob_protection_enable = True
 
     stl.enter_debug()
     status = stl.get_status()
@@ -543,6 +544,7 @@ def main(show_help, erase_only, no_protect, spi_flash_check,
             raise OperationFailure("Flash ROM is protected")
     else:
         if not skip_blank_check:
+            stl.reset_sys()
             blank = stl.blank_check()
             print "Flash ROM blank check: %s" % blank
         else:
