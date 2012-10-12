@@ -1,3 +1,8 @@
+2012-10-13  Niibe Yutaka  <gniibe@fsij.org>
+
+	* boards/STBEE_MINI/board.c [!DFU_SUPPORT] (hwinit1): Don't run
+	when "user switch" is pushed.  This is for JTAG/SWD debugger.
+
 2012-09-25  Niibe Yutaka  <gniibe@fsij.org>
 
 	* tool/stlinkv2.py (main): Print out option bytes value.

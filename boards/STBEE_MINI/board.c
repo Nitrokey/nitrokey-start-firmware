@@ -9,6 +9,15 @@ hwinit1 (void)
 {
   hwinit1_common ();
 
+#if !defined(DFU_SUPPORT)
+  if (palReadPad (IOPORT3, GPIOC_BUTTON) == 0)
+    /*
+     * Since LEDs are connected to JTMS/SWDIO and JTDI pin,
+     * we can't use LED to let know users in this state.
+     */
+    for (;;);		       /* Wait for JTAG debugger connection */
+#endif
+
 #if defined(PINPAD_SUPPORT) && !defined(DFU_SUPPORT)
   palWritePort(IOPORT2, 0x7fff); /* Only clear GPIOB_7SEG_DP */
   while (palReadPad (IOPORT2, GPIOB_BUTTON) != 0)
