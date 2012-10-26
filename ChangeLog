@@ -1,3 +1,9 @@
+2012-10-26  Niibe Yutaka  <gniibe@fsij.org>
+
+	* GNUK_USB_DEVICE_ID (Product_STRING): It's considered better not
+	to include vendor name.  Change the name to "Gnuk Token" (was:
+	FSIJ USB Token).
+
 2012-10-13  Niibe Yutaka  <gniibe@fsij.org>
 
 	* boards/STBEE_MINI/board.c [!DFU_SUPPORT] (hwinit1): Don't run
