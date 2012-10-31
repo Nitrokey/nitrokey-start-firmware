@@ -1,3 +1,7 @@
+2012-10-31  Niibe Yutaka  <gniibe@fsij.org>
+
+	* tool/get_raw_public_key.py: New.
+
 2012-10-26  Niibe Yutaka  <gniibe@fsij.org>
 
 	* GNUK_USB_DEVICE_ID (Product_STRING): It's considered better not
