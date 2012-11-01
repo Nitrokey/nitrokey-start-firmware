@@ -25,7 +25,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 from struct import *
 import sys, time, os, binascii, string
 
-# INPUT: binary file
+# INPUT: binary files (regnual_image, upgrade_firmware_image)
 
 # Assume only single CCID device is attached to computer, and it's Gnuk Token
 
@@ -390,11 +390,18 @@ from subprocess import check_output
 
 SHA256_OID_PREFIX="3031300d060960864801650304020105000420"
 
-def gpg_sign(hash):
-    result = check_output(["gpg-connect-agent",
-                           "SCD SETDATA " + SHA256_OID_PREFIX + hash,
-                           "SCD PKAUTH OPENPGP.3",
-                           "/bye"])
+# When user specify KEYGRIP, use it.  Or else, connect to SCD directly.
+def gpg_sign(keygrip, hash):
+    if keygrip:
+        result = check_output(["gpg-connect-agent",
+                               "SIGKEY %s" % keygrip,
+                               "SETHASH --hash=sha256 %s" % hash,
+                               "PKSIGN --hash=sha256", "/bye"])
+    else:
+        result = check_output(["gpg-connect-agent",
+                               "SCD SETDATA " + SHA256_OID_PREFIX + hash,
+                               "SCD PKAUTH OPENPGP.3",
+                               "/bye"])
     signed = ""
     while True:
         i = result.find('%')
@@ -406,8 +413,12 @@ def gpg_sign(hash):
         signed += chr(int(hex_str,16))
         result = result[i+3:]
 
-    pos = signed.index("D ") + 2
-    signed = signed[pos:-4]     # \nOK\n
+    if keygrip:
+        pos = signed.index("D (7:sig-val(3:rsa(1:s256:") + 26
+        signed = signed[pos:-7]
+    else:
+        pos = signed.index("D ") + 2
+        signed = signed[pos:-4]     # \nOK\n
     if len(signed) != 256:
         raise ValueError, binascii.hexlify(signed)
     return signed
@@ -419,7 +430,7 @@ def crc32(bytestr):
     crc = binascii.crc32(bytestr)
     return UNSIGNED(crc)
 
-def main(data_regnual, data_upgrade):
+def main(keygrip, data_regnual, data_upgrade):
     l = len(data_regnual)
     if (l & 0x03) != 0:
         data_regnual = data_regnual.ljust(l + 4 - (l & 0x03), chr(0))
@@ -441,7 +452,7 @@ def main(data_regnual, data_upgrade):
         icc.icc_power_on()
     icc.cmd_select_openpgp()
     challenge = icc.cmd_get_challenge()
-    signed = gpg_sign(binascii.hexlify(to_string(challenge)))
+    signed = gpg_sign(keygrip, binascii.hexlify(to_string(challenge)))
     icc.cmd_external_authenticate(signed)
     icc.stop_gnuk()
     mem_info = icc.mem_info()
@@ -478,6 +489,11 @@ def main(data_regnual, data_upgrade):
 
 
 if __name__ == '__main__':
+    keygrip = None
+    if sys.argv[1] == '-k':
+        sys.argv.pop(1)
+        keygrip = sys.argv[1]
+        sys.argv.pop(1)
     filename_regnual = sys.argv[1]
     filename_upgrade = sys.argv[2]
     f = open(filename_regnual)
@@ -488,4 +504,4 @@ if __name__ == '__main__':
     data_upgrade = f.read()
     f.close()
     print "%s: %d" % (filename_upgrade, len(data_upgrade))
-    main(data_regnual, data_upgrade[4096:])
+    main(keygrip, data_regnual, data_upgrade[4096:])

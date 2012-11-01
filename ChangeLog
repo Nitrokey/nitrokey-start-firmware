@@ -1,3 +1,9 @@
+2012-11-01  Niibe Yutaka  <gniibe@fsij.org>
+
+	* tool/gnuk_upgrade.py (main): New option '-k' to specify keygrip
+	for non-smartcard key.
+	(gpg_sign): Support non-smartcard key.
+
 2012-10-31  Niibe Yutaka  <gniibe@fsij.org>
 
 	* tool/get_raw_public_key.py: New.
