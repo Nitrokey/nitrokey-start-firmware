@@ -1,3 +1,11 @@
+2012-11-07  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/usb-icc.c (icc_send_data_block_internal): New.
+	(icc_send_data_block_time_extension): New.
+	(icc_handle_timeout): Use icc_send_data_block_time_extension.
+	(icc_send_data_block): Only one argument.
+	(USBthread): Follow the change.
+
 2012-11-01  Niibe Yutaka  <gniibe@fsij.org>
 
 	* tool/gnuk_upgrade.py (main): New option '-k' to specify keygrip

@@ -827,36 +827,7 @@ icc_power_off (struct ccid *c)
 }
 
 static void
-icc_send_data_block_0x9000 (struct ccid *c)
-{
-  uint8_t p[ICC_MSG_HEADER_SIZE+2];
-  size_t len = 2;
-
-  p[0] = ICC_DATA_BLOCK_RET;
-  p[1] = len & 0xFF;
-  p[2] = (len >> 8)& 0xFF;
-  p[3] = (len >> 16)& 0xFF;
-  p[4] = (len >> 24)& 0xFF;
-  p[5] = 0x00;	/* Slot */
-  p[ICC_MSG_SEQ_OFFSET] = c->a->seq;
-  p[ICC_MSG_STATUS_OFFSET] = 0;
-  p[ICC_MSG_ERROR_OFFSET] = 0;
-  p[ICC_MSG_CHAIN_OFFSET] = 0;
-  p[ICC_MSG_CHAIN_OFFSET+1] = 0x90;
-  p[ICC_MSG_CHAIN_OFFSET+2] = 0x00;
-
-  usb_lld_txcpy (p, c->epi->ep_num, 0, ICC_MSG_HEADER_SIZE + len);
-  c->epi->buf = NULL;
-  c->epi->tx_done = 1;
-
-  usb_lld_tx_enable (c->epi->ep_num, ICC_MSG_HEADER_SIZE + len);
-#ifdef DEBUG_MORE
-  DEBUG_INFO ("DATA\r\n");
-#endif
-}
-
-static void
-icc_send_data_block (struct ccid *c, uint8_t status)
+icc_send_data_block_internal (struct ccid *c, uint8_t status, uint8_t error)
 {
   int tx_size = USB_LL_BUF_SIZE;
   uint8_t p[ICC_MSG_HEADER_SIZE];
@@ -875,7 +846,7 @@ icc_send_data_block (struct ccid *c, uint8_t status)
   p[5] = 0x00;	/* Slot */
   p[ICC_MSG_SEQ_OFFSET] = c->a->seq;
   p[ICC_MSG_STATUS_OFFSET] = status;
-  p[ICC_MSG_ERROR_OFFSET] = 0;
+  p[ICC_MSG_ERROR_OFFSET] = error;
   p[ICC_MSG_CHAIN_OFFSET] = 0;
 
   usb_lld_txcpy (p, c->epi->ep_num, 0, ICC_MSG_HEADER_SIZE);
@@ -933,6 +904,50 @@ icc_send_data_block (struct ccid *c, uint8_t status)
 #endif
 }
 
+static void
+icc_send_data_block (struct ccid *c)
+{
+  icc_send_data_block_internal (c, 0, 0);
+}
+
+static void
+icc_send_data_block_time_extension (struct ccid *c)
+{
+  icc_send_data_block_internal (c, ICC_CMD_STATUS_TIMEEXT, 1);
+}
+
+static void
+icc_send_data_block_0x9000 (struct ccid *c)
+{
+  uint8_t p[ICC_MSG_HEADER_SIZE+2];
+  size_t len = 2;
+
+  p[0] = ICC_DATA_BLOCK_RET;
+  p[1] = len & 0xFF;
+  p[2] = (len >> 8)& 0xFF;
+  p[3] = (len >> 16)& 0xFF;
+  p[4] = (len >> 24)& 0xFF;
+  p[5] = 0x00;	/* Slot */
+  p[ICC_MSG_SEQ_OFFSET] = c->a->seq;
+  p[ICC_MSG_STATUS_OFFSET] = 0;
+  p[ICC_MSG_ERROR_OFFSET] = 0;
+  p[ICC_MSG_CHAIN_OFFSET] = 0;
+  p[ICC_MSG_CHAIN_OFFSET+1] = 0x90;
+  p[ICC_MSG_CHAIN_OFFSET+2] = 0x00;
+
+  usb_lld_txcpy (p, c->epi->ep_num, 0, ICC_MSG_HEADER_SIZE + len);
+  c->epi->buf = NULL;
+  c->epi->tx_done = 1;
+
+  usb_lld_tx_enable (c->epi->ep_num, ICC_MSG_HEADER_SIZE + len);
+#ifdef DEBUG_MORE
+  DEBUG_INFO ("DATA\r\n");
+#endif
+}
+
+/*
+ * Reply to the host for "GET RESPONSE".
+ */
 static void
 icc_send_data_block_gr (struct ccid *c, size_t chunk_len)
 {
@@ -1260,7 +1275,7 @@ icc_handle_timeout (struct ccid *c)
   switch (c->icc_state)
     {
     case ICC_STATE_EXECUTE:
-      icc_send_data_block (c, ICC_CMD_STATUS_TIMEEXT);
+      icc_send_data_block_time_extension (c);
       led_blink (LED_ONESHOT);
       break;
     default:
@@ -1311,7 +1326,7 @@ USBthread (void *arg)
 		c->sw1sw2[0] = 0x90;
 		c->sw1sw2[1] = 0x00;
 		c->state = APDU_STATE_RESULT;
-		icc_send_data_block (c, 0);
+		icc_send_data_block (c);
 		c->icc_state = ICC_STATE_EXITED;
 		break;
 	      }
@@ -1323,7 +1338,7 @@ USBthread (void *arg)
 	    if (c->a->res_apdu_data_len <= c->a->expected_res_size)
 	      {
 		c->state = APDU_STATE_RESULT;
-		icc_send_data_block (c, 0);
+		icc_send_data_block (c);
 		c->icc_state = ICC_STATE_WAIT;
 	      }
 	    else
