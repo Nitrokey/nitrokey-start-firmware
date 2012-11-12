@@ -64,8 +64,8 @@ Firstly, I change PIN of card user from factory setting (of "123456").  Note tha
   PIN changed.
 
 The "admin less mode" is Gnuk only feature, not defined in the
-OpenPGPcard specification.  By using "admin less mode", there will be
-only a sigle password to memorize, and it will be easier if a token
+OpenPGPcard specification.  By using "admin less mode", it will be
+only a sigle password for user to memorize, and it will be easier if a token
 is used by an individual.
 
 (If you want normal way ("admin full mode" in Gnuk's term), that is, user-password *and* admin-password independently, please change admin-password at first.  Then, the token works as same as OpenPGPcard specification with regards to PW1 and PW3.)
