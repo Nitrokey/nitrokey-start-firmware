@@ -49,13 +49,13 @@ def main(passwd):
     gnuk.cmd_verify(BY_ADMIN, passwd)
     gnuk.cmd_select_openpgp()
     gnuk.cmd_put_data_remove(0x00, 0xc7) # FP_SIG
-    gnuk.cmd_put_data_remove(0x00, 0xcd) # KGTIME_SIG
+    gnuk.cmd_put_data_remove(0x00, 0xce) # KGTIME_SIG
     gnuk.cmd_put_data_key_import_remove(1)
     gnuk.cmd_put_data_remove(0x00, 0xc8) # FP_DEC
-    gnuk.cmd_put_data_remove(0x00, 0xce) # KGTIME_DEC
+    gnuk.cmd_put_data_remove(0x00, 0xcf) # KGTIME_DEC
     gnuk.cmd_put_data_key_import_remove(2)
     gnuk.cmd_put_data_remove(0x00, 0xc9) # FP_AUT
-    gnuk.cmd_put_data_remove(0x00, 0xcf) # KGTIME_AUT
+    gnuk.cmd_put_data_remove(0x00, 0xd0) # KGTIME_AUT
     gnuk.cmd_put_data_key_import_remove(3)
     gnuk.icc_power_off()
     return 0
@@ -63,7 +63,7 @@ def main(passwd):
 
 if __name__ == '__main__':
     passwd = DEFAULT_PW3
-    if sys.argv[1] == '-p':
+    if len(sys.argv) > 1 and sys.argv[1] == '-p':
         from getpass import getpass
         passwd = getpass("Admin password: ")
         sys.argv.pop(1)

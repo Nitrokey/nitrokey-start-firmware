@@ -56,7 +56,7 @@ Recently, there is "gcc-arm-embedded" project.  See:
 https://launchpad.net/gcc-arm-embedded/
 
 It is based on GCC 4.6.   For version 4.6-2012-q2-update, you'd
-need "-O3 -s" instead of "-O2" and it will be slightly better.
+need "-O3 -Os" instead of "-O2" and it will be slightly better.
 
 
 

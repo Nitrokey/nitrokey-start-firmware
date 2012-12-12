@@ -134,7 +134,7 @@ I type ``key 1`` to deselect key number '1'. ::
   ssb  2048R/5BB065DC  created: 2010-10-22  expires: never     
   (1)  NIIBE Yutaka <gniibe@fsij.org>
 
-Thirdly, I select sub key of suthentication which has key number '2'. ::
+Thirdly, I select sub key of authentication which has key number '2'. ::
 
   gpg> key 2
   

@@ -1,3 +1,12 @@
+2012-12-12  Niibe Yutaka  <gniibe@fsij.org>
+
+	* tool/gnuk_token.py: Add module imports.
+
+	* tool/gnuk_remove_keys.py (main): Fix data object number
+	for KGTIME_SIG, KGTIME_DEC and KGTIME_AUT.
+
+	* tool/gnuk_remove_keys_libusb.py (main): Likewise.
+
 2012-12-05  Niibe Yutaka  <gniibe@fsij.org>
 
 	* tool/gnuk_remove_keys_libusb.py: New.

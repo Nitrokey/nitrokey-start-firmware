@@ -20,6 +20,9 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
+from struct import *
+import usb
+
 # USB class, subclass, protocol
 CCID_CLASS = 0x0B
 CCID_SUBCLASS = 0x00
