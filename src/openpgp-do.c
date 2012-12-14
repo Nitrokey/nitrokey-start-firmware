@@ -1381,8 +1381,11 @@ gpg_do_put_data (uint16_t tag, const uint8_t *data, int len)
 	      flash_do_release (*do_data_p);
 
 	    if (len == 0)
-	      /* make DO empty */
-	      *do_data_p = NULL;
+	      {
+		/* make DO empty */
+		*do_data_p = NULL;
+		GPG_SUCCESS ();
+	      }
 	    else if (len > 255)
 	      GPG_MEMORY_FAILURE ();
 	    else
