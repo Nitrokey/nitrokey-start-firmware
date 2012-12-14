@@ -29,6 +29,8 @@
 #include "openpgp.h"
 #include "sha256.h"
 
+#define ADMIN_PASSWD_MINLEN 8
+
 #define CLS(a) a.cmd_apdu_head[0]
 #define INS(a) a.cmd_apdu_head[1]
 #define P1(a) a.cmd_apdu_head[2]
@@ -259,8 +261,18 @@ cmd_change_password (void)
 	}
       else
 	{
+	  const uint8_t *ks_pw3 = gpg_do_read_simple (NR_DO_KEYSTRING_PW3);
+
 	  newpw = pw + pw_len;
 	  newpw_len = len - pw_len;
+
+	  /* Check length of password for admin-less mode.  */
+	  if (ks_pw3 == NULL && newpw_len < ADMIN_PASSWD_MINLEN)
+	    {
+	      DEBUG_INFO ("new password length is too short.");
+	      GPG_CONDITION_NOT_SATISFIED ();
+	      return;
+	    }
 	}
     }
   else				/* PW3 (0x83) */
