@@ -5,7 +5,7 @@ from binascii import hexlify
 
 import ast
 
-import gnuk
+import gnuk_token as gnuk
 import rsa_keys
 
 @Before

@@ -1,3 +1,26 @@
+2012-12-19  Niibe Yutaka  <gniibe@fsij.org>
+
+	* test/features/steps.py: Use tool/gnuk_token.py.
+
+	* tool/gnuk_put_binary_libusb.py: Use gnuk_token.py.
+	(main): Follow the API change.
+
+	* tool/gnuk_token.py (list_to_string): New.
+	(gnuk_token.get_string, gnuk_token.increment_seq)
+	(gnuk_token.reset_device, gnuk_token.release_gnuk): New.
+	(gnuk_token.icc_power_on): Set self.atr and it's now string.
+	(gnuk_token.icc_send_cmd): Handle time extension.
+	(gnuk_token.cmd_get_response): Return string (was: list).
+	(gnuk_token.cmd_get_data): Return "" when success.
+	(gnuk_token.cmd_change_reference_data, gnuk_token.cmd_put_data)
+	(gnuk_token.cmd_put_data_odd)
+	(gnuk_token.cmd_reset_retry_counter, gnuk_token.cmd_pso)
+	(gnuk_token.cmd_pso_longdata)
+	(gnuk_token.cmd_internal_authenticate, gnuk_token.cmd_genkey)
+	(gnuk_token.cmd_get_public_key): New.
+	(compare): New.
+	(get_gnuk_device): New.
+
 2012-12-14  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/openpgp.c (cmd_change_password): Check password length
