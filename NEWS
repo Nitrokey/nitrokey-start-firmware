@@ -1,5 +1,37 @@
 Gnuk NEWS - User visible changes
 
+* Major changes in Gnuk 1.0.2
+
+  Released 2012-12-??, by NIIBE Yutaka
+
+** Product string is now "Gnuk Token" (was: "FSIJ USB Token")
+Since the USB ID Repository suggests not including vendor name
+in product string, we changed the product string.
+
+** New tool (experimental): test/factory_upgrade.py
+This is the tool to install new firmware to Gnuk Token, provided
+that it's just shipped from factory (and nothing changed).  It
+authenticate as admin by factory setting, register a public key
+for firmware upgrade, and then, does firmware upgrade.
+
+** tool/gnuk_upgrade.py supports '-k' option
+It now supports RSA key on the host PC (not the one on the Token).
+
+** New tool: tool/get_raw_public_key.py
+This is a script to dump raw data of RSA public key, which is useful
+to register to Gnuk Token as a firmware upgrade key.
+
+** New tool: tool/gnuk_remove_keys_libusb.py
+This tool is libusb version of gnuk_remove_keys.py.  Besides, a bug in
+gnuk_remove_keys.py was fixed.
+
+** CCID protocol fix
+When time extension is requested by Gnuk Token to host PC, argument
+field was 0, which was wrong (but it works for most PC/SC
+implementations and GnuPG internal driver).  Now it's 1, which means
+1*BWT.
+
+
 * Major changes in Gnuk 1.0.1
 
   Released 2012-08-03, by NIIBE Yutaka
