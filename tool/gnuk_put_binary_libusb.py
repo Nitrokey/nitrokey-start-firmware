@@ -57,7 +57,7 @@ def main(fileid, is_update, data, passwd):
         for d in data_in_device:
             print "%02x" % ord(d),
         print
-        compare(data, data_in_device[8:])
+        compare(data + '\x00\x00', data_in_device[8:])
     elif fileid >= 1 and fileid <= 4:
         data_in_device = gnuk.cmd_read_binary(fileid)
         compare(data, data_in_device)
