@@ -236,7 +236,7 @@ cmd_change_password (void)
 
   if (p1 != 0)
     {
-      GPG_FUNCTION_NOT_SUPPORTED();
+      GPG_FUNCTION_NOT_SUPPORTED ();
       return;
     }
 
