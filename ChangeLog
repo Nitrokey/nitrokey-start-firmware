@@ -1,5 +1,13 @@
 2012-12-19  Niibe Yutaka  <gniibe@fsij.org>
 
+	* tool/gnuk_token.py (gnuk_token.stop_gnuk, gnuk_token.mem_info)
+	(gnuk_token.download, gnuk_token.execute)
+	(gnuk_token.cmd_get_challenge)
+	(gnuk_token.cmd_external_authenticate): New.
+	(gnuk_devices_by_vidpid): New.
+
+2012-12-18  Niibe Yutaka  <gniibe@fsij.org>
+
 	* test/gnuk.py: Remove.
 
 	* test/features/steps.py: Use tool/gnuk_token.py.

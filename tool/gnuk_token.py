@@ -89,6 +89,50 @@ class gnuk_token(object):
     def release_gnuk(self):
         self.__devhandle.releaseInterface()
 
+    def stop_gnuk(self):
+        self.__devhandle.releaseInterface()
+        self.__devhandle.setConfiguration(0)
+        return
+
+    def mem_info(self):
+        mem = self.__devhandle.controlMsg(requestType = 0xc0, request = 0,
+                                          value = 0, index = 0, buffer = 8,
+                                          timeout = 10)
+        start = ((mem[3]*256 + mem[2])*256 + mem[1])*256 + mem[0]
+        end = ((mem[7]*256 + mem[6])*256 + mem[5])*256 + mem[4]
+        return (start, end)
+
+    def download(self, start, data):
+        addr = start
+        addr_end = (start + len(data)) & 0xffffff00
+        i = (addr - 0x20000000) / 0x100
+        j = 0
+        print "start %08x" % addr
+        print "end   %08x" % addr_end
+        while addr < addr_end:
+            print "# %08x: %d : %d" % (addr, i, 256)
+            self.__devhandle.controlMsg(requestType = 0x40, request = 1,
+                                        value = i, index = 0,
+                                        buffer = data[j*256:j*256+256],
+                                        timeout = 10)
+            i = i+1
+            j = j+1
+            addr = addr + 256
+        residue = len(data) % 256
+        if residue != 0:
+            print "# %08x: %d : %d" % (addr, i, residue)
+            self.__devhandle.controlMsg(requestType = 0x40, request = 1,
+                                        value = i, index = 0,
+                                        buffer = data[j*256:],
+                                        timeout = 10)
+
+    def execute(self, last_addr):
+        i = (last_addr - 0x20000000) / 0x100
+        o = (last_addr - 0x20000000) % 0x100
+        self.__devhandle.controlMsg(requestType = 0x40, request = 2,
+                                    value = i, index = o, buffer = None,
+                                    timeout = 10)
+
     def icc_get_result(self):
         msg = self.__devhandle.bulkRead(self.__bulkin, 1024, self.__timeout)
         if len(msg) < 10:
@@ -379,6 +423,30 @@ class gnuk_token(object):
         if sw[0] != 0x90 and sw[1] != 0x00:
             raise ValueError, ("%02x%02x" % (sw[0], sw[1]))
 
+    def cmd_get_challenge(self):
+        cmd_data = iso7816_compose(0x84, 0x00, 0x00, '')
+        sw = self.icc_send_cmd(cmd_data)
+        if len(sw) != 2:
+            raise ValueError(sw)
+        if sw[0] != 0x61:
+            raise ValueError("%02x%02x" % (sw[0], sw[1]))
+        return self.cmd_get_response(sw[1])
+
+    def cmd_external_authenticate(self, signed):
+        cmd_data = iso7816_compose(0x82, 0x00, 0x00, signed[0:128], cls=0x10)
+        sw = self.icc_send_cmd(cmd_data)
+        if len(sw) != 2:
+            raise ValueError(sw)
+        if not (sw[0] == 0x90 and sw[1] == 0x00):
+            raise ValueError("%02x%02x" % (sw[0], sw[1]))
+        cmd_data = iso7816_compose(0x82, 0x00, 0x00, signed[128:])
+        sw = self.icc_send_cmd(cmd_data)
+        if len(sw) != 2:
+            raise ValueError(sw)
+        if not (sw[0] == 0x90 and sw[1] == 0x00):
+            raise ValueError("%02x%02x" % (sw[0], sw[1]))
+
+
 def compare(data_original, data_in_device):
     if data_original == data_in_device:
         return True
@@ -396,6 +464,20 @@ def gnuk_devices():
                                 alt.interfaceSubClass == CCID_SUBCLASS and \
                                 alt.interfaceProtocol == CCID_PROTOCOL_0:
                             yield dev, config, alt
+
+USB_VENDOR_FSIJ=0x234b
+USB_PRODUCT_GNUK=0x0000
+
+def gnuk_devices_by_vidpid():
+    busses = usb.busses()
+    for bus in busses:
+        devices = bus.devices
+        for dev in devices:
+            if dev.idVendor != USB_VENDOR_FSIJ:
+                continue
+            if dev.idProduct != USB_PRODUCT_GNUK:
+                continue
+            yield dev
 
 def get_gnuk_device():
     icc = None
