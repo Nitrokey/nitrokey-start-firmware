@@ -21,8 +21,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 from struct import *
-import string
-import usb
+import string, binascii
+import usb, time
 
 # USB class, subclass, protocol
 CCID_CLASS = 0x0B
@@ -606,3 +606,12 @@ def get_gnuk_device():
     else:
         raise ValueError("Unknown ICC status", status)
     return icc
+
+SHA256_OID_PREFIX="3031300d060960864801650304020105000420"
+
+def UNSIGNED(n):
+    return n & 0xffffffff
+
+def crc32(bytestr):
+    crc = binascii.crc32(bytestr)
+    return UNSIGNED(crc)
