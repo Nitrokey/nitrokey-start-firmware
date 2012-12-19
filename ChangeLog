@@ -5,6 +5,7 @@
 	(gnuk_token.cmd_get_challenge)
 	(gnuk_token.cmd_external_authenticate): New.
 	(gnuk_devices_by_vidpid): New.
+	(regnual): New.
 
 2012-12-18  Niibe Yutaka  <gniibe@fsij.org>
 

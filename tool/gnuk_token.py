@@ -447,6 +447,112 @@ class gnuk_token(object):
             raise ValueError("%02x%02x" % (sw[0], sw[1]))
 
 
+class regnual(object):
+    def __init__(self, dev):
+        conf = dev.configurations[0]
+        intf_alt = conf.interfaces[0]
+        intf = intf_alt[0]
+        if intf.interfaceClass != 0xff:
+            raise ValueError("Wrong interface class")
+        self.__devhandle = dev.open()
+        try:
+            self.__devhandle.setConfiguration(conf)
+        except:
+            pass
+        self.__devhandle.claimInterface(intf)
+        self.__devhandle.setAltInterface(intf)
+
+    def mem_info(self):
+        mem = self.__devhandle.controlMsg(requestType = 0xc0, request = 0,
+                                          value = 0, index = 0, buffer = 8,
+                                          timeout = 10000)
+        start = ((mem[3]*256 + mem[2])*256 + mem[1])*256 + mem[0]
+        end = ((mem[7]*256 + mem[6])*256 + mem[5])*256 + mem[4]
+        return (start, end)
+
+    def download(self, start, data):
+        addr = start
+        addr_end = (start + len(data)) & 0xffffff00
+        i = (addr - 0x08000000) / 0x100
+        j = 0
+        print "start %08x" % addr
+        print "end   %08x" % addr_end
+        while addr < addr_end:
+            print "# %08x: %d: %d : %d" % (addr, i, j, 256)
+            self.__devhandle.controlMsg(requestType = 0x40, request = 1,
+                                        value = 0, index = 0,
+                                        buffer = data[j*256:j*256+256],
+                                        timeout = 10000)
+            crc32code = crc32(data[j*256:j*256+256])
+            res = self.__devhandle.controlMsg(requestType = 0xc0, request = 2,
+                                              value = 0, index = 0, buffer = 4,
+                                              timeout = 10000)
+            r_value = ((res[3]*256 + res[2])*256 + res[1])*256 + res[0]
+            if (crc32code ^ r_value) != 0xffffffff:
+                print "failure"
+            self.__devhandle.controlMsg(requestType = 0x40, request = 3,
+                                        value = i, index = 0,
+                                        buffer = None,
+                                        timeout = 10000)
+            time.sleep(0.010)
+            res = self.__devhandle.controlMsg(requestType = 0xc0, request = 2,
+                                              value = 0, index = 0, buffer = 4,
+                                              timeout = 10000)
+            r_value = ((res[3]*256 + res[2])*256 + res[1])*256 + res[0]
+            if r_value == 0:
+                print "failure"
+            i = i+1
+            j = j+1
+            addr = addr + 256
+        residue = len(data) % 256
+        if residue != 0:
+            print "# %08x: %d : %d" % (addr, i, residue)
+            self.__devhandle.controlMsg(requestType = 0x40, request = 1,
+                                        value = 0, index = 0,
+                                        buffer = data[j*256:],
+                                        timeout = 10000)
+            crc32code = crc32(data[j*256:].ljust(256,chr(255)))
+            res = self.__devhandle.controlMsg(requestType = 0xc0, request = 2,
+                                              value = 0, index = 0, buffer = 4,
+                                              timeout = 10000)
+            r_value = ((res[3]*256 + res[2])*256 + res[1])*256 + res[0]
+            if (crc32code ^ r_value) != 0xffffffff:
+                print "failure"
+            self.__devhandle.controlMsg(requestType = 0x40, request = 3,
+                                        value = i, index = 0,
+                                        buffer = None,
+                                        timeout = 10000)
+            time.sleep(0.010)
+            res = self.__devhandle.controlMsg(requestType = 0xc0, request = 2,
+                                              value = 0, index = 0, buffer = 4,
+                                              timeout = 10000)
+            r_value = ((res[3]*256 + res[2])*256 + res[1])*256 + res[0]
+            if r_value == 0:
+                print "failure"
+
+    def protect(self):
+        self.__devhandle.controlMsg(requestType = 0x40, request = 4,
+                                    value = 0, index = 0, buffer = None,
+                                    timeout = 10000)
+        time.sleep(0.100)
+        res = self.__devhandle.controlMsg(requestType = 0xc0, request = 2,
+                                          value = 0, index = 0, buffer = 4,
+                                          timeout = 10000)
+        r_value = ((res[3]*256 + res[2])*256 + res[1])*256 + res[0]
+        if r_value == 0:
+            print "protection failure"
+
+    def finish(self):
+        self.__devhandle.controlMsg(requestType = 0x40, request = 5,
+                                    value = 0, index = 0, buffer = None,
+                                    timeout = 10000)
+
+    def reset_device(self):
+        try:
+            self.__devhandle.reset()
+        except:
+            pass
+
 def compare(data_original, data_in_device):
     if data_original == data_in_device:
         return True
