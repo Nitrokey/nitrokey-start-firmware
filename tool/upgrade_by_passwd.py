@@ -1,8 +1,8 @@
 #! /usr/bin/python
 
 """
-factory_upgrade.py - a tool to install another firmware for Gnuk Token
-                     which is just shipped from factory
+upgrade_by_passwd.py - a tool to install another firmware for Gnuk Token
+                       which is just shipped from factory
 
 Copyright (C) 2012 Free Software Initiative of Japan
 Author: NIIBE Yutaka <gniibe@fsij.org>
@@ -25,6 +25,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from gnuk_token import *
 import sys, binascii, time, os
+import rsa
 
 DEFAULT_PW3 = "12345678"
 BY_ADMIN = 3
@@ -39,7 +40,8 @@ def main(passwd, data_regnual, data_upgrade):
     print "CRC32: %04x\n" % crc32code
     data_regnual += pack('<I', crc32code)
 
-    rsa_raw_pubkey = rsa.integer_to_bytes_256(rsa.key[KEYNO_FOR_AUTH][7])
+    rsa_key = rsa.read_key_from_file('rsa_example.key')
+    rsa_raw_pubkey = rsa.get_raw_pubkey(rsa_key)
 
     gnuk = get_gnuk_device()
     gnuk.cmd_verify(BY_ADMIN, passwd)
@@ -48,7 +50,7 @@ def main(passwd, data_regnual, data_upgrade):
     gnuk.cmd_select_openpgp()
     challenge = gnuk.cmd_get_challenge()
     digestinfo = binascii.unhexlify(SHA256_OID_PREFIX) + challenge
-    signed = rsa.compute_signature(KEYNO_FOR_AUTH, digestinfo)
+    signed = rsa.compute_signature(rsa_key, digestinfo)
     signed_bytes = rsa.integer_to_bytes_256(signed)
     gnuk.cmd_external_authenticate(signed_bytes)
     gnuk.stop_gnuk()
@@ -89,8 +91,6 @@ if __name__ == '__main__':
     if os.getcwd() != os.path.dirname(os.path.abspath(__file__)):
         print "Please change working directory to: %s" % os.path.dirname(os.path.abspath(__file__))
         exit(1)
-
-    import rsa_keys as rsa
 
     passwd = DEFAULT_PW3
     if len(sys.argv) > 1 and sys.argv[1] == '-p':

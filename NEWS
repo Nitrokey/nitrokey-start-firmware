@@ -8,7 +8,7 @@ Gnuk NEWS - User visible changes
 Since the USB ID Repository suggests not including vendor name
 in product string, we changed the product string.
 
-** New tool (experimental): test/factory_upgrade.py
+** New tool (experimental): test/upgrade_by_passwd.py
 This is the tool to install new firmware to Gnuk Token, provided
 that it's just shipped from factory (and nothing changed).  It
 authenticate as admin by factory setting, register a public key
