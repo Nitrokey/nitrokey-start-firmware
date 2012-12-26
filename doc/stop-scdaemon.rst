@@ -6,8 +6,8 @@ There is a daemon named ``scdaemon`` behind gpg-agent, which handles
 communication to smartcard/token.
 
 Ideally, we don't need to care about ``scdaemon``, and it should
-everything automatically.  But, there are some cases (because of
-bugs), where we need to talk to the daemon directly, in practice.
+handle everything automatically.  But, there are some cases (because
+of bugs), where we need to talk to the daemon directly, in practice.
 
 
 How to communicate SCDAEMON

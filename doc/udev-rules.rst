@@ -7,11 +7,13 @@ needed for permissions.  Note that this is not needed for the case of
 PC/SC Lite, as it has its own device configuration.
 
 
-Patching 60-gnupg.rules
-=======================
+udev rules for Gnuk Token
+=========================
 
-In case of Debian, there is a file /lib/udev/rules.d/60-gnupg.rules.
-This would be the place we need to change::
+In case of Debian, there is a file /lib/udev/rules.d/60-gnupg.rules,
+when you install "gnupg" package.  This is the place we need to change.
+We add lines for Gnuk Token to give a desktop user the permission to
+use the device.  We specify USB ID of Gnuk Token (by FSIJ)::
 
     --- /lib/udev/rules.d/60-gnupg.rules.orig	2012-06-24 21:51:26.000000000 +0900
     +++ /lib/udev/rules.d/60-gnupg.rules	2012-07-13 17:18:55.149587687 +0900
@@ -24,25 +26,26 @@ This would be the place we need to change::
     +
      LABEL="gnupg_rules_end"
 
+When we install "gnupg2" package only (with no "gnupg" package),
+there will be no udev rules (there is a bug report #543217 for this issue).
+In this case, we need something like this in /etc/udev/rules.d/60-gnuk.rules::
+
+    SUBSYSTEMS=="usb", ATTRS{idVendor}=="234b", ATTRS{idProduct}=="0000",   \
+    ENV{ID_SMARTCARD_READER}="1", ENV{ID_SMARTCARD_READER_DRIVER}="gnupg"
+
+Usually, udev daemon automatically handles for the changes of configuration
+files.  If not, please let the daemon reload rules::
+
+  # udevadm control --reload-rules
 
 
-Have a another configuration for reGNUal
-========================================
-
-For reGNUal (upgrade feature of Gnuk),
-I also have a file /etc/udev/rules.d/92-gnuk.rules::
-
-   # For updating firmware, permission settings are needed.
-   
-   SUBSYSTEMS=="usb", ATTRS{idVendor}=="234b", ATTRS{idProduct}=="0000", \
-       ENV{ID_USB_INTERFACES}=="*:ff0000:*", GROUP="pcscd"
 
 
-Configuration for ST-Link/V2
-============================
+udev rules for ST-Link/V2
+=========================
 
-This is for development, but I also have a file
-/etc/udev/rules.d/10-stlink.rules::
+We need to have a udev rule for ST-Link/V2.  It's like::
 
     ACTION=="add", SUBSYSTEM=="usb", ATTR{idVendor}=="0483", ATTR{idProduct}=="3748", GROUP="tape", MODE="664", SYMLINK+="stlink"
 
+I have this in the file /etc/udev/rules.d/10-stlink.rules.
