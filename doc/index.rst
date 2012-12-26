@@ -18,9 +18,9 @@ Contents:
    development.rst
    stop-scdaemon.rst
    udev-rules.rst
-   generating-2048-RSA-key.rst
    gnuk-token-initial-configuration.rst
    gnuk-personalization.rst
+   generating-2048-RSA-key.rst
    gnuk-keytocard.rst
    gnuk-keytocard-noremoval.rst
    using-gnuk-token-with-another-computer.rst

@@ -270,9 +270,35 @@ We make a file for the public key by ``--export`` option of GnuPG. ::
 
   $ gpg --armor --output <YOUR-KEY>.asc --export <YOUR-KEY-ID>
 
-We can publish the file by web server.  Or we can publish it
+We can publish the file by web server.  Or we can publish the key
 to a keyserver, by invoking GnuPG with ``--send-keys`` option.  ::
 
   $ gpg --keyserver pool.sks-keyservers.net --send-keys <YOUR-KEY-ID>
 
-Here, pool.sks-keyservers.net is a keyserver, widely used.
+Here, pool.sks-keyservers.net is a keyserver, which is widely used.
+
+
+Backup the private key
+======================
+
+There are some ways to back up private key, such that backup .gnupg
+directory entirely, use of paperkey.  Here we describe backup by ASCII
+file.  ASCII file is good, because it has less risk on transfer.
+Binary file has a risk to be modified on transfer.
+
+Note that the key on host PC is protected by passphrase (which
+is <PASSWORD-KEY-ON-PC> in the example above).  Using the key
+from the backup needs this passphrase.  It is common that
+people will forget passphrase for backup.  Never forget it.
+You have been warned.
+
+To make ASCII backup for private key,
+invokde GnuPG with ``--armor`` option and ``--export-secret-keys``
+specifying the key identifier. ::
+
+  $ gpg --armor --output <YOUR-SECRET>.asc --export-secret-keys <YOUR-KEY-ID>
+
+From the backup,
+we can recover privet key by invoking GnuPG with ``--import`` option. ::
+
+  $ gpg --import <YOUR-SECRET>.asc
