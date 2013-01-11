@@ -51,7 +51,7 @@ def confirm_pin_setting(single_step):
         return 0x03    # bConfirmPIN: old PIN and new PIN twice
 
 class Card(object):
-    def __init__(self, add_a_byte, pinmin, pinmax):
+    def __init__(self, add_a_byte, pinmin, pinmax, fixed):
         cardtype = AnyCardType()
         cardrequest = CardRequest(timeout=10, cardType=cardtype)
         cardservice = cardrequest.waitforcard()
@@ -61,6 +61,7 @@ class Card(object):
         self.another_byte = add_a_byte
         self.pinmin = pinmin
         self.pinmax = pinmax
+        self.fixed = fixed
 
     def get_features(self):
         p = self.connection.control(CM_IOCTL_GET_FEATURE_REQUEST, [])
@@ -101,7 +102,7 @@ class Card(object):
         pin_verify = [ 0x00,    # bTimeOut
                        0x00,    # bTimeOut2
                        0x82,    # bmFormatString: Byte, pos=0, left, ASCII.
-                       0x00,    # bmPINBlockString
+                       self.fixed,    # bmPINBlockString
                        0x00,    # bmPINLengthFormat
                        self.pinmax, # wPINMaxExtraDigit Low  (PINmax)
                        self.pinmin, # wPINMaxExtraDigit High (PINmin) 
@@ -114,7 +115,10 @@ class Card(object):
                        0x00,    # bTeoPrologue[1]
                        0x00     # bTeoPrologue[2]
                        ]
-        apdu += self.possibly_add_dummy_byte()
+        if self.fixed > 0:
+            apdu += str.ljust('', self.fixed, '\xff')
+        else:
+            apdu += self.possibly_add_dummy_byte()
         pin_verify += [ len(apdu), 0, 0, 0 ] + apdu
         data = self.connection.control(self.verify_ioctl,pin_verify)
         sw1 = data[0]
@@ -128,10 +132,10 @@ class Card(object):
         pin_modify = [ 0x00, # bTimerOut
                        0x00, # bTimerOut2
                        0x82, # bmFormatString: Byte, pos=0, left, ASCII.
-                       0x00, # bmPINBlockString
+                       self.fixed, # bmPINBlockString
                        0x00, # bmPINLengthFormat
                        0x00, # bInsertionOffsetOld
-                       0x00, # bInsertionOffsetNew
+                       self.fixed, # bInsertionOffsetNew
                        self.pinmax, # wPINMaxExtraDigit Low  (PINmax)
                        self.pinmin, # wPINMaxExtraDigit High (PINmin) 
                        confirm_pin_setting(single_step),
@@ -146,7 +150,10 @@ class Card(object):
                        0x00,    # bTeoPrologue[1]
                        0x00     # bTeoPrologue[2]
                        ]
-        apdu += self.possibly_add_dummy_byte()
+        if self.fixed > 0:
+            apdu += str.ljust('', 2*self.fixed, '\xff')
+        else:
+            apdu += self.possibly_add_dummy_byte()
         pin_modify += [ len(apdu), 0, 0, 0 ] + apdu
         data = self.connection.control(self.modify_ioctl,pin_modify)
         sw1 = data[0]
@@ -191,8 +198,8 @@ class Card(object):
         self.send_modify_pinpad(apdu, is_exchange,
                                 "cmd_change_reference_data_pinpad")
 
-def main(who, method, add_a_byte, pinmin, pinmax, change_by_two_steps):
-    card = Card(add_a_byte, pinmin, pinmax)
+def main(who, method, add_a_byte, pinmin, pinmax, change_by_two_steps, fixed):
+    card = Card(add_a_byte, pinmin, pinmax, fixed)
     card.connection.connect()
 
     print "Reader/Token:", card.connection.getReader()
@@ -280,6 +287,7 @@ def print_usage():
     print "\t--put:\t\tsetup resetcode (admin PIN, new PIN twice)"
     print "\t--put2::\t\tsetup resetcode (admin PIN:pinpad, new PIN:kbd)"
     print "    options:"
+    print "\t--fixed N:\tUse fixed length input"
     print "\t--admin:\tby administrator\t\t\t[False]"
     print "\t--add:\t\tadd a dummy byte at the end of APDU\t[False]"
     print "\t--pinmin:\tspecify minimum length of PIN\t\t[6]"
@@ -302,6 +310,7 @@ if __name__ == '__main__':
     pinmin = PIN_MIN_DEFAULT
     pinmax = PIN_MAX_DEFAULT
     change_by_two_steps = False
+    fixed=0
     while len(sys.argv) >= 2:
         option = sys.argv[1]
         sys.argv.pop(1)
@@ -319,6 +328,9 @@ if __name__ == '__main__':
             change_by_two_steps = True
         elif option == '--add':
             add_a_byte = True
+        elif option == '--fixed':
+            fixed = int(sys.argv[1])
+            sys.argv.pop(1)
         elif option == '--pinmin':
             pinmin = int(sys.argv[1])
             sys.argv.pop(1)
@@ -337,7 +349,7 @@ if __name__ == '__main__':
             exit(0)
         else:
             raise ValueError, option
-    main(who, method, add_a_byte, pinmin, pinmax, change_by_two_steps)
+    main(who, method, add_a_byte, pinmin, pinmax, change_by_two_steps, fixed)
 
 # Failure
 # 67 00: Wrong length; no further indication
