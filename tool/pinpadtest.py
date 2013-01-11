@@ -113,12 +113,13 @@ class Card(object):
                        0x00,    # bMsgIndex
                        0x00,    # bTeoPrologue[0]
                        0x00,    # bTeoPrologue[1]
-                       0x00     # bTeoPrologue[2]
                        ]
         if self.fixed > 0:
-            apdu += str.ljust('', self.fixed, '\xff')
+            apdu += [ self.fixed ]
+            apdu += [ 255 ] * self.fixed
         else:
             apdu += self.possibly_add_dummy_byte()
+        pin_verify += [ len(apdu) ]    # bTeoPrologue[2]
         pin_verify += [ len(apdu), 0, 0, 0 ] + apdu
         data = self.connection.control(self.verify_ioctl,pin_verify)
         sw1 = data[0]
@@ -148,12 +149,13 @@ class Card(object):
                        0x02,    # bMsgIndex3
                        0x00,    # bTeoPrologue[0]
                        0x00,    # bTeoPrologue[1]
-                       0x00     # bTeoPrologue[2]
                        ]
         if self.fixed > 0:
-            apdu += str.ljust('', 2*self.fixed, '\xff')
+            apdu += [ 2*self.fixed ]
+            apdu += [ 255 ] * (2*self.fixed)
         else:
             apdu += self.possibly_add_dummy_byte()
+        pin_modify += [ len(apdu) ]    # bTeoPrologue[2]
         pin_modify += [ len(apdu), 0, 0, 0 ] + apdu
         data = self.connection.control(self.modify_ioctl,pin_modify)
         sw1 = data[0]
