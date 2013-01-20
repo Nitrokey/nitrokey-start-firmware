@@ -46,7 +46,18 @@ class gpg_agent(object):
                 chunk = self.sock.recv(BUFLEN)
 
     def get_response(self):
-        return self.response
+        r = self.response
+        result = ""
+        while True:
+            i = r.find('%')
+            if i < 0:
+                result += r
+                break
+            hex_str = r[i+1:i+3]
+            result += r[0:i]
+            result += chr(int(hex_str,16))
+            r = r[i+3:]
+        return result
 
     def send_command(self, cmd):
         self.sock.send(cmd)
@@ -72,12 +83,19 @@ class gpg_agent(object):
         return bye              # "OK closing connection"
 
 # Test
-g = gpg_agent()
-print g.read_line()
-print g.send_command("KEYINFO --list --data\n")
-print g.get_response()
-print g.send_command("READKEY 5D6C89682D07CCFC034AF508420BF2276D8018ED\n")
-r = g.get_response()
-import binascii
-print binascii.hexlify(r)
-print g.close()
+if __name__ == '__main__':
+    g = gpg_agent()
+    print g.read_line()
+    print g.send_command("KEYINFO --list --data\n")
+    kl_str = g.get_response()
+    kl_str = kl_str[0:-1]
+    kl = kl_str.split('\n')
+    import re
+    kl_o3 = [kg for kg in kl if re.search("OPENPGP\\.3", kg)]
+    print kl_o3
+    kg = kl_o3[0].split(' ')[0]
+    print g.send_command("READKEY %s\n" % kg)
+    r = g.get_response()
+    import binascii
+    print binascii.hexlify(r)
+    print g.close()
