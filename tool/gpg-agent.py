@@ -27,6 +27,7 @@ class gpg_agent(object):
             s.connect(path)
         self.sock = s
         self.buf_remained = ""
+        self.response = None
 
     def read_line(self):
         line = ""
@@ -44,23 +45,21 @@ class gpg_agent(object):
                 line = line + chunk
                 chunk = self.sock.recv(BUFLEN)
 
+    def get_response(self):
+        return self.response
+
     def send_command(self, cmd):
         self.sock.send(cmd)
-
-    def get_response(self):
-        response = ""
+        self.response = ""
         while True:
             while True:
                 l = self.read_line()
                 if l[0] != '#':
                     break
             if l[0] == 'D':
-                response += l[2:]
+                self.response += l[2:]
             elif l[0] == 'O' and l[1] == 'K':
-                if response != "":
-                    return response
-                else:
-                    return True
+                return True
             elif l[0] == 'E' and l[1] == 'R' and l[2] == 'R':
                 return False
             else:                    # XXX: S, INQUIRE, END
@@ -75,9 +74,9 @@ class gpg_agent(object):
 # Test
 g = gpg_agent()
 print g.read_line()
-g.send_command("KEYINFO --list --data\n")
+print g.send_command("KEYINFO --list --data\n")
 print g.get_response()
-g.send_command("READKEY 5D6C89682D07CCFC034AF508420BF2276D8018ED\n")
+print g.send_command("READKEY 5D6C89682D07CCFC034AF508420BF2276D8018ED\n")
 r = g.get_response()
 import binascii
 print binascii.hexlify(r)
