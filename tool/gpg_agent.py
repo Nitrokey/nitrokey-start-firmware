@@ -36,7 +36,7 @@ class gpg_agent(object):
         else:
             chunk = self.sock.recv(BUFLEN)
         while True:
-            pos = chunk.index('\n')
+            pos = chunk.find('\n')
             if pos >= 0:
                 self.buf_remained = chunk[pos+1:]
                 line = line + chunk[0:pos]
