@@ -1,47 +1,57 @@
 import os, sys, re, hashlib, binascii
 from struct import *
-from gpg_agent imort gpg_agent
+from gpg_agent import gpg_agent
+from sexp import sexp
 
-# Assume it's only OPENPGP.3 key
+# Assume it's only OPENPGP.3 key and it's 2048-bit
 
-def debug(str):
-    print "DEBUG: ", str
+def debug(string):
+    print "DEBUG: %s" % string
     sys.stdout.flush()
 
-def get_keylist(keyinfo_result):
+def get_keygrip_list(keyinfo_result):
     kl_str = keyinfo_result[0:-1] # Chop last newline
     kl = kl_str.split('\n')
     # filter by "OPENPGP.3", and only keygrip
     return [kg.split(' ')[0] for kg in kl if re.search("OPENPGP\\.3", kg)]
 
+# Connect GPG-Agent, and get list of KEYGRIPs.
 g = gpg_agent()
 g.read_line()                   # Greeting message
 
 g.send_command('KEYINFO --list --data\n')
 keyinfo_result = g.get_response()
-kl = get_keylist(keyinfo_result)
-print kl
+keygrip_list = get_keygrip_list(keyinfo_result)
 
-keygrip = kl[0]
+debug(keygrip_list)
 
-g.send_command('READKEY %s\n' % keygrip)
-key = g.get_response
-pos = key.index("(10:public-key(3:rsa(1:n257:") + 28
-pos_last = key.index(")(1:e3:")
-n = key[pos:pos_last]
-e = key[pos_last+7:pos_last+10]
-if len(n) != 257:
-    raise ValueError(keygrip)
-print binascii.hexlify(n)
-print binascii.hexlify(e)
+keylist = []
+# For each KEYGRIP, get its PUBLIC-KEY.
+for kg in keygrip_list:
+    g.send_command('READKEY %s\n' % kg)
+    key = sexp(g.get_response())
+    # [ "public-key" [ "rsa" [ "n" MODULUS ] [ "e" EXPONENT] ] ]
+    n = key[1][1][1]
+    e = key[1][2][1]
+    debug(binascii.hexlify(n))
+    debug(binascii.hexlify(e))
+    keylist.append([n, e, kg])
+
+# FIXME: should handle all keys, not only a single key
+# FIXME: should support different key size
+n = keylist[0][0]
+e = keylist[0][1]
+keygrip = keylist[0][2]
 
 ssh_rsa_public_blob = "\x00\x00\x00\x07ssh-rsa" + \
     "\x00\x00\x00\x03" + e + "\x00\x00\x01\x01" + n
 
-ssh_key_comment = "key_on_gpg"  # XXX: get login from card?
+ssh_key_comment = "key_on_gpg"  # XXX: get login from card for comment?
 
 import win32con, win32api, win32gui, ctypes, ctypes.wintypes
 
+
+# For WM_COPYDATA structure
 class COPYDATA(ctypes.Structure):
     _fields_ = [ ('dwData', ctypes.wintypes.LPARAM),
                  ('cbData', ctypes.wintypes.DWORD),
@@ -147,17 +157,18 @@ class windows_ipc_listener(object):
             g.send_command('SIGKEY %s\n' % keygrip)
             g.send_command('SETHASH --hash=sha1 %s\n' % hash)
             g.send_command('PKSIGN\n')
-            signature = g.get_response()
-            pos = signature.index("(7:sig-val(3:rsa(1:s256:") + 24
-            signature = "\x00\x00\x00\x07" + "ssh-rsa" + "\x00\x00\x01\x00" + signature[pos:pos+256]
-            siglen = len(signature)
+            sig = sexp(g.get_response())
+            # [ "sig-val" [ "rsa" [ "s" "xxx" ] ] ]
+            sig = sig[1][1][1]
+            sig = "\x00\x00\x00\x07" + "ssh-rsa" + "\x00\x00\x01\x00" + sig # FIXME: should support different key size
+            siglen = len(sig)
             debug("sig_len=%d" % siglen)
-            debug("sig=%s" % binascii.hexlify(signature))
+            debug("sig=%s" % binascii.hexlify(sig))
             pRes = ctypes.cast(pBuf, P_SSH_MSG_SIGN_RESPONSE)
             pRes.contents.msg_len = 1+4+siglen
             pRes.contents.msg_type = 14 # SSH2_AGENT_SIGN_RESPONSE
             pRes.contents.sig_len = siglen
-            ctypes.memmove(pBuf+4+1+4, signature, siglen)
+            ctypes.memmove(pBuf+4+1+4, sig, siglen)
             debug("answer is:")
             debug("   ssh_msg_len: %d" % pSshMsg.contents.msg_len)
             debug("   ssh_msg_type: %d" % pSshMsg.contents.msg_type)

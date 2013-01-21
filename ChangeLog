@@ -1,5 +1,6 @@
 2013-01-21  Niibe Yutaka  <gniibe@fsij.org>
 
+	* tool/pageant_proxy_to_gpg.py: New.
 	* tool/sexp.py: New.
 
 2013-01-20  Niibe Yutaka  <gniibe@fsij.org>
