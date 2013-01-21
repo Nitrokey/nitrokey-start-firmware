@@ -7,6 +7,8 @@ class gpg_agent(object):
     def __init__(self):
         if IS_WINDOWS:
             home = os.getenv("HOME")
+            if not home:
+                home = os.getenv("APPDATA")
             comm_port = os.path.join(home, "gnupg", "S.gpg-agent")
             #
             f = open(comm_port, "rb", 0)
