@@ -1,3 +1,10 @@
+2013-01-22  Niibe Yutaka  <gniibe@fsij.org>
+
+	* tool/pinpadtest.py (Card.cmd_vega_alpha_disable_empty_verify):
+	New.
+	(main): call cmd_vega_alpha_disable_empty_verify if it's
+	COVADIS_VEGA_ALPHA.
+
 2013-01-21  Niibe Yutaka  <gniibe@fsij.org>
 
 	* tool/pageant_proxy_to_gpg.py: New.

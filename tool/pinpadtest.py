@@ -33,6 +33,7 @@ from smartcard.util import toHexString
 from getpass import getpass
 
 CM_IOCTL_GET_FEATURE_REQUEST = (0x42000000 + 3400)
+CM_IOCTL_VENDOR_IFD_EXCHANGE = (0x42000000 + 1)
 FEATURE_VERIFY_PIN_DIRECT    = 0x06
 FEATURE_MODIFY_PIN_DIRECT    = 0x07
 
@@ -96,6 +97,15 @@ class Card(object):
             return [ 0 ]
         else:
             return []
+
+    def cmd_vega_alpha_disable_empty_verify(self):
+        apdu = [ 0xB5, # -|
+                 0x01, #  | Pre-command parameters
+                 0x00, # -|
+                 0x03, # retry counter value (fixed value)
+                 0x00  # enable 3s timeout
+                 ]
+        data = self.connection.control(CM_IOCTL_VENDOR_IFD_EXCHANGE, apdu)
 
     def cmd_verify_pinpad(self, who):
         apdu = [0x00, 0x20, 0x00, 0x80+who ]
@@ -200,12 +210,26 @@ class Card(object):
         self.send_modify_pinpad(apdu, is_exchange,
                                 "cmd_change_reference_data_pinpad")
 
+COVADIS_VEGA_ALPHA="COVADIS VEGA-ALPHA (000000F5) 00 00"
+# We need to set ifdDriverOptions in /etc/libccid_Info.plist:
+#
+#	<key>ifdDriverOptions</key>
+#	<string>0x0001</string>
+#
+#	1: DRIVER_OPTION_CCID_EXCHANGE_AUTHORIZED
+#		the CCID Exchange command is allowed. You can use it through
+#		SCardControl(hCard, IOCTL_SMARTCARD_VENDOR_IFD_EXCHANGE, ...)
+
 def main(who, method, add_a_byte, pinmin, pinmax, change_by_two_steps, fixed):
     card = Card(add_a_byte, pinmin, pinmax, fixed)
     card.connection.connect()
 
-    print "Reader/Token:", card.connection.getReader()
+    ident = card.connection.getReader()
+    print "Reader/Token:", ident
     print "ATR:", toHexString( card.connection.getATR() )
+
+    if ident == COVADIS_VEGA_ALPHA:
+        card.cmd_vega_alpha_disable_empty_verify()
 
     card.get_features()
 
