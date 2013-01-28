@@ -42,6 +42,17 @@ gpg_pw_get_err_counter (uint8_t which)
 }
 
 int
+gpg_pw_get_retry_counter (int who)
+{
+  if (who == 0x81 || who == 0x82)
+    return PASSWORD_ERRORS_MAX - gpg_pw_get_err_counter (PW_ERR_PW1);
+  else if (who == 0x83)
+    return PASSWORD_ERRORS_MAX - gpg_pw_get_err_counter (PW_ERR_PW3);
+  else
+    return PASSWORD_ERRORS_MAX - gpg_pw_get_err_counter (PW_ERR_RC);
+}
+
+int
 gpg_pw_locked (uint8_t which)
 {
   if (gpg_pw_get_err_counter (which) >= PASSWORD_ERRORS_MAX)

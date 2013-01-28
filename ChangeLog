@@ -1,3 +1,8 @@
+2013-01-28  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/openpgp-do.c (gpg_pw_get_retry_counter): New.
+	* src/openpgp.c (cmd_verify): Implement VERIFY with empty data.
+
 2013-01-22  Niibe Yutaka  <gniibe@fsij.org>
 
 	* tool/pinpadtest.py (Card.cmd_vega_alpha_disable_empty_verify):

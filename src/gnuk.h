@@ -94,6 +94,7 @@ extern volatile uint8_t auth_status;
 #define PW_ERR_PW1 0
 #define PW_ERR_RC  1
 #define PW_ERR_PW3 2
+extern int gpg_pw_get_retry_counter (int who);
 extern int gpg_pw_locked (uint8_t which);
 extern void gpg_pw_reset_err_counter (uint8_t which);
 extern void gpg_pw_increment_err_counter (uint8_t which);

@@ -140,6 +140,27 @@ cmd_verify (void)
   len = apdu.cmd_apdu_data_len;
   pw = apdu.cmd_apdu_data;
 
+  if (len == 0)
+    {				/* This is to examine status.  */
+      if (p2 == 0x81)
+	r = ac_check_status (AC_PSO_CDS_AUTHORIZED);
+      else if (p2 == 0x82)
+	r = ac_check_status (AC_OTHER_AUTHORIZED);
+      else
+	r = ac_check_status (AC_ADMIN_AUTHORIZED);
+
+      if (r)
+	GPG_SUCCESS ();	/* If authentication done already, return success.  */
+      else
+	{		 /* If not, return retry counter, encoded.  */
+	  r = gpg_pw_get_retry_counter (p2);
+	  set_res_sw (0x63, 0xc0 | (r&0f));
+	}
+
+      return;
+    }
+
+  /* This is real authentication.  */
   if (p2 == 0x81)
     r = verify_pso_cds (pw, len);
   else if (p2 == 0x82)
