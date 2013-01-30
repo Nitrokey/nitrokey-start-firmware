@@ -1002,7 +1002,7 @@ cmd_external_authenticate (void)
 
   DEBUG_INFO (" - EXTERNAL AUTHENTICATE\r\n");
 
-  if (keyno > 4)
+  if (keyno >= 4)
     {
       GPG_CONDITION_NOT_SATISFIED ();
       return;

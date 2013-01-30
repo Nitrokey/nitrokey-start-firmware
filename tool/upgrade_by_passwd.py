@@ -45,14 +45,15 @@ def main(passwd, data_regnual, data_upgrade):
 
     gnuk = get_gnuk_device()
     gnuk.cmd_verify(BY_ADMIN, passwd)
-    gnuk.cmd_write_binary(1, rsa_raw_pubkey, False)
+    keyno = 0
+    gnuk.cmd_write_binary(1+keyno, rsa_raw_pubkey, False)
 
     gnuk.cmd_select_openpgp()
     challenge = gnuk.cmd_get_challenge()
     digestinfo = binascii.unhexlify(SHA256_OID_PREFIX) + challenge
     signed = rsa.compute_signature(rsa_key, digestinfo)
     signed_bytes = rsa.integer_to_bytes_256(signed)
-    gnuk.cmd_external_authenticate(signed_bytes)
+    gnuk.cmd_external_authenticate(keyno, signed_bytes)
     gnuk.stop_gnuk()
     mem_info = gnuk.mem_info()
     print "%08x:%08x" % mem_info

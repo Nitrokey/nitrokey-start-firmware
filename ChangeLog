@@ -1,3 +1,12 @@
+2013-01-30  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/openpgp.c (cmd_external_authenticate): Fix off-by-one error.
+
+	* tool/gnuk_token.py (gnuk_token.cmd_external_authenticate): Add
+	KEYNO to the arguments.
+
+	* tool/upgrade_by_passwd.py (main): Explicitly say it's KEYNO.
+
 2013-01-28  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/openpgp-do.c (gpg_pw_get_retry_counter): New.
