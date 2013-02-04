@@ -154,7 +154,7 @@ cmd_verify (void)
       else
 	{		 /* If not, return retry counter, encoded.  */
 	  r = gpg_pw_get_retry_counter (p2);
-	  set_res_sw (0x63, 0xc0 | (r&0f));
+	  set_res_sw (0x63, 0xc0 | (r&0x0f));
 	}
 
       return;
