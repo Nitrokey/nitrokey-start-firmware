@@ -2,6 +2,12 @@
 Initial Configuration of Gnuk Token
 ===================================
 
+This is optional.  You don't need to setup the serial number of Gnuk Token,
+as it comes with its default serial number based on MCU's chip ID.
+
+You can setup the serial number of Gnuk Token only once.
+
+
 Conditions
 ==========
 
@@ -11,7 +17,7 @@ I assume you are using GNU/Linux.
 Preparation
 ===========
 
-We need to kill ``scdaemon`` before configuring Gnuk Token. ::
+Make sure there is no ``scdaemon`` for configuring Gnuk Token.  You can  kill ``scdaemon`` by: ::
 
   $ gpg-connect-agent "SCD KILLSCD" "SCD BYE" /bye
 
@@ -19,16 +25,19 @@ We need to kill ``scdaemon`` before configuring Gnuk Token. ::
 Serial Number (optional)
 ========================
 
-In the file ``GNUK_SERIAL_NUMBER``, each line has email and 6-byte serial number.
+In the file ``GNUK_SERIAL_NUMBER``, each line has email and 6-byte serial number.  The first two bytes are organization number (F5:17 is for FSIJ).  Last four bytes are number for tokens.
 
-The tool ``../tool/gnuk_put_binary.py`` examines  environment variable of ``EMAIL``, and writes serial number to Gnuk Token. ::
+The tool ``../tool/gnuk_put_binary_libusb.py`` examines  environment variable of ``EMAIL``, and writes corresponding serial number to Gnuk Token. ::
 
-  $ ../tool/gnuk_put_binary.py -s ../GNUK_SERIAL_NUMBER 
+  $ ../tool/gnuk_put_binary_libusb.py -s ../GNUK_SERIAL_NUMBER 
   Writing serial number
-  Token: FSIJ Gnuk (0.12-38FF6A06) 00 00
-  ATR: 3B DA 11 FF 81 B1 FE 55 1F 03 00 31 84 73 80 01 40 00 90 00 24
+  Device:  006
+  Configuration:  1
+  Interface:  0
+  d2 76 00 01 24 01 02 00 f5 17 00 00 00 01 00 00
 
 
-The tool ``../tool/gnuk_put_binary.py`` is for PC/SC Lite.  Use
-``../tool/gnuk_put_binary_libusb.py`` instead, if you don't use
-PC/SC Lite but use libusb directly.
+The example above is the case of libusb version.
+
+Use the tool ``../tool/gnuk_put_binary.py`` instead , for PC/SC Lite.
+You need PyScard for this.

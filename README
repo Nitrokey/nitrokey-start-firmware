@@ -660,10 +660,10 @@ Firmware update
 See doc/note/firmware-update.
 
 
-Read-only Git Repository
-========================
+Git Repositories
+================
 
-You can browse at http://www.gniibe.org/gitweb?p=gnuk.git;a=summary
+You can browse at: http://www.gniibe.org/gitweb?p=gnuk.git;a=summary
 
 You can get it by:
 
@@ -673,6 +673,8 @@ or
 
   $ git clone http://www.gniibe.org/git/gnuk.git/
 
+
+Copy is available at: http://gitorious.org/gnuk
 
 
 Information on the Web

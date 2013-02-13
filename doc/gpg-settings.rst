@@ -22,9 +22,11 @@ I create ``.gnupg/gpg.conf`` file with the following content. ::
 Let gpg-agent manage SSH key
 ============================
 
-I deactivate seahose-agent.  Also, I deactivate gnome-keyring managing SSH key. ::
+I deactivate seahose-agent.  Also, for GNOME 2, I deactivate gnome-keyring managing SSH key. ::
 
   $ gconftool-2 --type bool --set /apps/gnome-keyring/daemon-components/ssh false
+
+I edit the file /etc/X11/Xsession.options and comment out use-ssh-agent line.
 
 Then, I create ``.gnupg/gpg-agent.conf`` file with the following content. ::
 
