@@ -32,12 +32,19 @@ CCID_PROTOCOL_0 = 0x00
 def icc_compose(msg_type, data_len, slot, seq, param, data):
     return pack('<BiBBBH', msg_type, data_len, slot, seq, 0, param) + data
 
-def iso7816_compose(ins, p1, p2, data, cls=0x00):
+def iso7816_compose(ins, p1, p2, data, cls=0x00, le=None):
     data_len = len(data)
     if data_len == 0:
-        return pack('>BBBB', cls, ins, p1, p2)
+        if not le:
+            return pack('>BBBB', cls, ins, p1, p2)
+        else:
+            return pack('>BBBBB', cls, ins, p1, p2, le)
     else:
-        return pack('>BBBBB', cls, ins, p1, p2, data_len) + data
+        if not le:
+            return pack('>BBBBB', cls, ins, p1, p2, data_len) + data
+        else:
+            return pack('>BBBBB', cls, ins, p1, p2, data_len) \
+                + data + pack('>B', le)
 
 def list_to_string(l):
     return string.join([chr(c) for c in l], '')
@@ -424,7 +431,7 @@ class gnuk_token(object):
             raise ValueError, ("%02x%02x" % (sw[0], sw[1]))
 
     def cmd_get_challenge(self):
-        cmd_data = iso7816_compose(0x84, 0x00, 0x00, '')
+        cmd_data = iso7816_compose(0x84, 0x00, 0x00, '', le=32)
         sw = self.icc_send_cmd(cmd_data)
         if len(sw) != 2:
             raise ValueError(sw)

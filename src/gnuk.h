@@ -116,6 +116,8 @@ extern void ac_fini (void);
 extern void set_res_sw (uint8_t sw1, uint8_t sw2);
 extern uint16_t data_objects_number_of_bytes;
 
+#define CHALLENGE_LEN	32
+
 extern void gpg_data_scan (const uint8_t *p);
 extern void gpg_data_copy (const uint8_t *p);
 extern void gpg_do_get_data (uint16_t tag, int with_tag);

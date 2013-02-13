@@ -99,16 +99,16 @@ static const uint8_t historical_bytes[] __attribute__ ((aligned (1))) = {
 /* Extended Capabilities */
 static const uint8_t extended_capabilities[] __attribute__ ((aligned (1))) = {
   10,
-  0x30,				/*
+  0x70,				/*
 				 * No SM,
-				 * No get challenge,
+				 * GET CHALLENGE supported,
 				 * Key import supported,
 				 * PW status byte can be put,
 				 * No private_use_DO,
 				 * No algo change allowed
 				 */
   0,		  /* Secure Messaging Algorithm: N/A (TDES=0, AES=1) */
-  0x00, 0x00,	  /* Max get challenge (0: Get challenge not supported) */
+  0x00, CHALLENGE_LEN, 		/* Max size of GET CHALLENGE */
 #ifdef CERTDO_SUPPORT
   0x08, 0x00,	  /* max. length of cardholder certificate (2KiB) */
 #else

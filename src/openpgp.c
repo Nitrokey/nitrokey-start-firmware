@@ -52,7 +52,6 @@
 #define INS_PUT_DATA				0xda
 #define INS_PUT_DATA_ODD			0xdb	/* For key import */
 
-#define CHALLENGE_LEN	32
 static const uint8_t *challenge; /* Random bytes */
 
 static const uint8_t
@@ -1035,14 +1034,25 @@ cmd_external_authenticate (void)
 static void
 cmd_get_challenge (void)
 {
+  int len = apdu.expected_res_size;
+
   DEBUG_INFO (" - GET CHALLENGE\r\n");
+
+  if (len > CHALLENGE_LEN)
+    {
+      GPG_CONDITION_NOT_SATISFIED ();
+      return;
+    }
+  else if (len == 0)
+    /* backward compatibility */
+    len = CHALLENGE_LEN;
 
   if (challenge)
     random_bytes_free (challenge);
 
   challenge = random_bytes_get ();
-  memcpy (res_APDU, challenge, CHALLENGE_LEN);
-  res_APDU_size = CHALLENGE_LEN;
+  memcpy (res_APDU, challenge, len);
+  res_APDU_size = len;
   GPG_SUCCESS ();
   DEBUG_INFO ("GET CHALLENGE done.\r\n");
 }
