@@ -2,16 +2,18 @@
 Using Gnuk Token with another computer
 ======================================
 
-This document describes how you can use Gnuk Token on another PC (which is not the one you generate your keys).
+This document describes how you can use Gnuk Token
+on another PC (which is not the one you generate your keys).
 
-Note that the Token only brings your secret keys, while ``.gnupg`` directory contains keyrings and trustdb, too.
+Note that the Token only brings your secret keys,
+while ``.gnupg`` directory contains keyrings and trustdb, too.
 
-.. BREAK
 
 Fetch the public key and connect it to the Token
 ================================================
 
-Using the Token, we need to put the public key and the secret key reference (to the token) in ``.gnupg``.
+Using the Token, we need to put the public key and the secret
+key reference (to the token) in ``.gnupg``.
 
 To do that, invoke GnuPG with ``--card-edit`` option. ::
 
@@ -58,7 +60,9 @@ Good.  The public key is now in ``.gnupg``.  We can examine by ``gpg --list-keys
 
 However, the secret key reference (to the token) is not in ``.gnupg`` yet.
 
-It will be generated when I do ``--card-status`` by GnuPG with correspoinding public key in ``.gnupg``, or just type return at the ``gpg/card>`` prompt. ::
+It will be generated when I do ``--card-status`` by GnuPG with
+correspoinding public key in ``.gnupg``, or just type return
+at the ``gpg/card>`` prompt. ::
 
   gpg/card> 
   
@@ -99,7 +103,8 @@ OK, now I can use the Token on this computer.
 Update trustdb for the key on Gnuk Token
 ========================================
 
-Yes, I can use the Token by the public key and the secret key reference to the card.  More, I need to update the trustdb.
+Yes, I can use the Token by the public key and the secret
+key reference to the card.  More, I need to update the trustdb.
 
 To do that I do: ::
 

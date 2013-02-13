@@ -133,7 +133,10 @@ Then, GnuPG generate keys.  It takes some time.  ::
 
 Done.
 
-Then, we create authentication subkey.  Authentication subkey is not that common, but very useful (for SSH authentication).  As it is not that common, we need ``--expert`` option for GnuPG. ::
+Then, we create authentication subkey.
+Authentication subkey is not that common,
+but very useful (for SSH authentication).
+As it is not that common, we need ``--expert`` option for GnuPG. ::
 
   $ gpg --expert --edit-key 4CA7BABE
   gpg (GnuPG) 1.4.11; Copyright (C) 2010 Free Software Foundation, Inc.
@@ -176,7 +179,10 @@ GnuPG asks kind of key.  We select ``RSA (set your own capabilities)``. ::
      (8) RSA (set your own capabilities)
   Your selection? 8
 
-And select ``Authenticate`` for the capabilities for this key.   Initially, it's ``Sign`` and  ``Encrypt``.  I need to deselect ``Sign`` and ``Encryp``, and select ``Authenticate``.  To do that, I enter ``s``, ``e``, and ``a``.  ::
+And select ``Authenticate`` for the capabilities for this key.
+Initially, it's ``Sign`` and  ``Encrypt``.
+I need to deselect ``Sign`` and ``Encrypt``, and select ``Authenticate``.
+To do that, I enter ``s``, ``e``, and ``a``.  ::
 
   Possible actions for a RSA key: Sign Encrypt Authenticate 
   Current allowed actions: Sign Encrypt 
@@ -260,7 +266,8 @@ We save the key (to the storage of the host PC. ::
   gpg> save
   $ 
 
-Now, we have three keys (one primary key for signature and certification, subkey for encryption, and another subkey for authentication).
+Now, we have three keys (one primary key for signature and certification,
+subkey for encryption, and another subkey for authentication).
 
 
 Publishing public key

@@ -2,17 +2,17 @@
 Key import from PC to Gnuk Token (no removal)
 =============================================
 
-This document describes how I put my **keys on PC** to the Token without removing keys from PC.
+This document describes how I put my **keys on PC** to the Token
+without removing keys from PC.
 
 The difference is just not-to-save changes after key imports.
-
-.. BREAK
 
 After personalization, I put my keys into the Token.
 
 Here is the log.
 
-I invoke GnuPG with my key (4ca7babe) and with ``--homedir`` option to specify the directory which contains my secret keys.  ::
+I invoke GnuPG with my key (4ca7babe) and with ``--homedir`` option
+to specify the directory which contains my secret keys.  ::
 
   $ gpg --homedir=/home/gniibe/tmp/gnuk-testing-dir --edit-key 4ca7babe 
   gpg (GnuPG) 1.4.11; Copyright (C) 2010 Free Software Foundation, Inc.
@@ -54,7 +54,10 @@ and type ``1`` to say it's signature key. ::
      (3) Authentication key
   Your selection? 1
 
-Then, GnuPG asks two passwords.  One is the passphrase of **keys on PC** and another is the password of **Gnuk Token**.  Note that the password of the token and the password of the keys on PC are different things, although they can be same.
+Then, GnuPG asks two passwords.  One is the passphrase of **keys on PC**
+and another is the password of **Gnuk Token**.  Note that the password of
+the token and the password of the keys on PC are different things,
+although they can be same.
 
 I enter these passwords. ::
 
@@ -74,7 +77,8 @@ I enter these passwords. ::
   ssb  2048R/5BB065DC  created: 2010-10-22  expires: never     
   (1)  NIIBE Yutaka <gniibe@fsij.org>
 
-The primary key is now on the Token and GnuPG says its card-no (F517 00000001) , where F517 is the vendor ID of FSIJ.
+The primary key is now on the Token and GnuPG says its card-no (F517 00000001),
+where F517 is the vendor ID of FSIJ.
 
 Secondly, I import my subkey of encryption.  I select key number '1'. ::
 
@@ -87,7 +91,8 @@ Secondly, I import my subkey of encryption.  I select key number '1'. ::
   (1)  NIIBE Yutaka <gniibe@fsij.org>
 
 You can see that the subkey is marked by '*'.
-I type ``keytocard`` command to import this subkey to Gnuk Token.  I select ``2`` as it's encryption key. ::
+I type ``keytocard`` command to import this subkey to Gnuk Token.
+I select ``2`` as it's encryption key. ::
 
   gpg> keytocard
   Signature key ....: [none]
@@ -138,7 +143,8 @@ Thirdly, I select sub key of authentication which has key number '2'. ::
   (1)  NIIBE Yutaka <gniibe@fsij.org>
 
 You can see that the subkey number '2' is marked by '*'.
-I type ``keytocard`` command to import this subkey to Gnuk Token.  I select ``3`` as it's authentication key. ::
+I type ``keytocard`` command to import this subkey to Gnuk Token.
+I select ``3`` as it's authentication key. ::
 
   gpg> keytocard
   Signature key ....: [none]

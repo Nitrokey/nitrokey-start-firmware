@@ -2,13 +2,17 @@
 Key import from PC to Gnuk Token
 ================================
 
-This document describes how I put my **keys on PC** to the Token, and remove keys from PC.
+This document describes how I put my **keys on PC** to the Token,
+and remove keys from PC.
 
-Note that there is **no ways** to export keys from the Token, so please be careful.
+Note that there is **no ways** to export keys from the Token,
+so please be careful.
 
-.. BREAK
 
-If you want to import same keys to multiple Tokens, please copy ``.gnupg`` directory before.  In my case, I do something like following:  ::
+If you want to import same keys to multiple Tokens,
+please copy ``.gnupg`` directory beforehand.
+
+In my case, I do something like following:  ::
 
   $ cp -a .gnupg tmp/gnuk-testing-dir
 
@@ -62,7 +66,10 @@ and type ``1`` to say it's signature key. ::
      (3) Authentication key
   Your selection? 1
 
-Then, GnuPG asks two passwords.  One is the passphrase of **keys on PC** and another is the password of **Gnuk Token**.  Note that the password of the token and the password of the keys on PC are different things, although they can be same.
+Then, GnuPG asks two passwords.  One is the passphrase of **keys on PC**
+and another is the password of **Gnuk Token**.  Note that the password of
+the token and the password of the keys on PC are different things,
+although they can be same.
 
 I enter these passwords. ::
 
@@ -95,7 +102,8 @@ Secondly, I import my subkey of encryption.  I select key number '1'. ::
   (1)  NIIBE Yutaka <gniibe@fsij.org>
 
 You can see that the subkey is marked by '*'.
-I type ``keytocard`` command to import this subkey to Gnuk Token.  I select ``2`` as it's encryption key. ::
+I type ``keytocard`` command to import this subkey to Gnuk Token.
+I select ``2`` as it's encryption key. ::
 
   gpg> keytocard
   Signature key ....: [none]
@@ -146,7 +154,8 @@ Thirdly, I select sub key of authentication which has key number '2'. ::
   (1)  NIIBE Yutaka <gniibe@fsij.org>
 
 You can see that the subkey number '2' is marked by '*'.
-I type ``keytocard`` command to import this subkey to Gnuk Token.  I select ``3`` as it's authentication key. ::
+I type ``keytocard`` command to import this subkey to Gnuk Token.
+I select ``3`` as it's authentication key. ::
 
   gpg> keytocard
   Signature key ....: [none]
@@ -180,4 +189,5 @@ Lastly, I save changes of **keys on PC** and quit GnuPG. ::
   gpg> save
   $ 
 
-All secret keys are imported to Gnuk Token now.  On PC, only references (card-no) to the Token remain.
+All secret keys are imported to Gnuk Token now.
+On PC, only references (card-no) to the Token remain.
