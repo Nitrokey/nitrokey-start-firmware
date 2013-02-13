@@ -1,7 +1,7 @@
 /*
  * call-rsa.c -- Glue code between RSA computation and OpenPGP card protocol
  *
- * Copyright (C) 2010 Free Software Initiative of Japan
+ * Copyright (C) 2010, 2011, 2012 Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
  * This file is a part of Gnuk, a GnuPG USB Token implementation.
@@ -25,10 +25,13 @@
 #include "config.h"
 #include "ch.h"
 #include "gnuk.h"
+#include "openpgp.h"
 #include "polarssl/config.h"
 #include "polarssl/rsa.h"
 
-#define RSA_SIGNATURE_LENGTH 256 /* 256 byte == 2048-bit */
+#define RSA_SIGNATURE_LENGTH KEY_CONTENT_LEN
+ /* 256 byte == 2048-bit */
+ /* 128 byte == 1024-bit */
 
 static rsa_context rsa_ctx;
 
@@ -43,11 +46,13 @@ rsa_sign (const uint8_t *raw_message, uint8_t *output, int msg_len,
   mpi_init (&P1, &Q1, &H, NULL);
   rsa_init (&rsa_ctx, RSA_PKCS_V15, 0);
 
-  rsa_ctx.len = 2048 / 8;
-  mpi_read_string (&rsa_ctx.E, 16, "10001");
+  rsa_ctx.len = KEY_CONTENT_LEN;
+  mpi_lset (&rsa_ctx.E, 0x10001);
   mpi_read_binary (&rsa_ctx.P, &kd->data[0], rsa_ctx.len / 2);
-  mpi_read_binary (&rsa_ctx.Q, &kd->data[128], rsa_ctx.len / 2);
+  mpi_read_binary (&rsa_ctx.Q, &kd->data[KEY_CONTENT_LEN/2], rsa_ctx.len / 2);
+#if 0 /* Using CRT, we don't use N */
   mpi_mul_mpi (&rsa_ctx.N, &rsa_ctx.P, &rsa_ctx.Q);
+#endif
   mpi_sub_int (&P1, &rsa_ctx.P, 1);
   mpi_sub_int (&Q1, &rsa_ctx.Q, 1);
   mpi_mul_mpi (&H, &P1, &Q1);
@@ -58,17 +63,6 @@ rsa_sign (const uint8_t *raw_message, uint8_t *output, int msg_len,
   mpi_free (&P1, &Q1, &H, NULL);
 
   DEBUG_INFO ("RSA sign...");
-#if 0
-  if ((r = rsa_check_privkey (&rsa_ctx)) == 0)
-    DEBUG_INFO ("ok...");
-  else
-    {
-      DEBUG_INFO ("failed.\r\n");
-      DEBUG_SHORT (r);
-      rsa_free (&rsa_ctx);
-      return r;
-    }
-#endif
 
   r = rsa_pkcs1_sign (&rsa_ctx, RSA_PRIVATE, SIG_RSA_RAW,
 		      msg_len, raw_message, temp);
@@ -82,31 +76,32 @@ rsa_sign (const uint8_t *raw_message, uint8_t *output, int msg_len,
     }
   else
     {
-      res_APDU[RSA_SIGNATURE_LENGTH] =  0x90;
-      res_APDU[RSA_SIGNATURE_LENGTH+1] =  0x00;
-      res_APDU_size = RSA_SIGNATURE_LENGTH + 2;
+      res_APDU_size = RSA_SIGNATURE_LENGTH;
       DEBUG_INFO ("done.\r\n");
+      GPG_SUCCESS ();
       return 0;
     }
 }
 
+/*
+ * LEN: length in byte
+ */
 const uint8_t *
 modulus_calc (const uint8_t *p, int len)
 {
   mpi P, Q, N;
   uint8_t *modulus;
 
-  (void)len;			/* 2048-bit assumed */
-  modulus = malloc (2048 / 8);
+  modulus = malloc (len);
   if (modulus == NULL)
     return NULL;
 
   mpi_init (&P, &Q, &N, NULL);
-  mpi_read_binary (&P, p, 2048 / 8 / 2);
-  mpi_read_binary (&Q, p + 128, 2048 / 8 / 2);
+  mpi_read_binary (&P, p, len / 2);
+  mpi_read_binary (&Q, p + len / 2, len / 2);
   mpi_mul_mpi (&N, &P, &Q);
 
-  mpi_write_binary (&N, modulus, 2048 / 8);
+  mpi_write_binary (&N, modulus, len);
   mpi_free (&P, &Q, &N, NULL);
   return modulus;
 }
@@ -134,10 +129,13 @@ rsa_decrypt (const uint8_t *input, uint8_t *output, int msg_len,
   rsa_ctx.len = msg_len;
   DEBUG_WORD (msg_len);
 
-  mpi_read_string (&rsa_ctx.E, 16, "10001");
-  mpi_read_binary (&rsa_ctx.P, &kd->data[0], 2048 / 8 / 2);
-  mpi_read_binary (&rsa_ctx.Q, &kd->data[128], 2048 / 8 / 2);
+  mpi_lset (&rsa_ctx.E, 0x10001);
+  mpi_read_binary (&rsa_ctx.P, &kd->data[0], KEY_CONTENT_LEN / 2);
+  mpi_read_binary (&rsa_ctx.Q, &kd->data[KEY_CONTENT_LEN/2],
+		   KEY_CONTENT_LEN / 2);
+#if 0 /* Using CRT, we don't use N */
   mpi_mul_mpi (&rsa_ctx.N, &rsa_ctx.P, &rsa_ctx.Q);
+#endif
   mpi_sub_int (&P1, &rsa_ctx.P, 1);
   mpi_sub_int (&Q1, &rsa_ctx.Q, 1);
   mpi_mul_mpi (&H, &P1, &Q1);
@@ -148,21 +146,9 @@ rsa_decrypt (const uint8_t *input, uint8_t *output, int msg_len,
   mpi_free (&P1, &Q1, &H, NULL);
 
   DEBUG_INFO ("RSA decrypt ...");
-#if 0
-  /* This consume some memory */
-  if ((r = rsa_check_privkey (&rsa_ctx)) == 0)
-    DEBUG_INFO ("ok...");
-  else
-    {
-      DEBUG_INFO ("failed.\r\n");
-      DEBUG_SHORT (r);
-      rsa_free (&rsa_ctx);
-      return r;
-    }
-#endif
 
   r = rsa_pkcs1_decrypt (&rsa_ctx, RSA_PRIVATE, &output_len,
-			 input, output, MAX_RES_APDU_SIZE - 2);
+			 input, output, MAX_RES_APDU_DATA_SIZE);
   rsa_free (&rsa_ctx);
   if (r < 0)
     {
@@ -172,10 +158,71 @@ rsa_decrypt (const uint8_t *input, uint8_t *output, int msg_len,
     }
   else
     {
-      res_APDU[output_len] = 0x90;
-      res_APDU[output_len+1] = 0x00;
-      res_APDU_size = output_len + 2;
+      res_APDU_size = output_len;
       DEBUG_INFO ("done.\r\n");
+      GPG_SUCCESS ();
       return 0;
     }
 }
+
+int
+rsa_verify (const uint8_t *pubkey, const uint8_t *hash, const uint8_t *sig)
+{
+  int r;
+
+  rsa_init (&rsa_ctx, RSA_PKCS_V15, 0);
+  rsa_ctx.len = KEY_CONTENT_LEN;
+  mpi_lset (&rsa_ctx.E, 0x10001);
+  mpi_read_binary (&rsa_ctx.N, pubkey, KEY_CONTENT_LEN);
+
+  DEBUG_INFO ("RSA verify...");
+
+  r = rsa_pkcs1_verify (&rsa_ctx, RSA_PUBLIC, SIG_RSA_SHA256, 32, hash, sig);
+
+  rsa_free (&rsa_ctx);
+  if (r < 0)
+    {
+      DEBUG_INFO ("fail:");
+      DEBUG_SHORT (r);
+      return r;
+    }
+  else
+    {
+      DEBUG_INFO ("verified.\r\n");
+      return 0;
+    }
+}
+
+#define RSA_EXPONENT 0x10001
+
+#ifdef KEYGEN_SUPPORT
+const uint8_t *
+rsa_genkey (void)
+{
+  int r;
+  uint8_t index = 0;
+  uint8_t *p_q_modulus = (uint8_t *)malloc (KEY_CONTENT_LEN*2);
+  uint8_t *p = p_q_modulus;
+  uint8_t *q = p_q_modulus + KEY_CONTENT_LEN/2;
+  uint8_t *modulus = p_q_modulus + KEY_CONTENT_LEN;
+
+  if (p_q_modulus == NULL)
+    return NULL;
+
+  rsa_init (&rsa_ctx, RSA_PKCS_V15, 0);
+  r = rsa_gen_key (&rsa_ctx, random_byte, &index,
+		   KEY_CONTENT_LEN * 8, RSA_EXPONENT);
+  if (r < 0)
+    {
+      free (p_q_modulus);
+      rsa_free (&rsa_ctx);
+      return NULL;
+    }
+
+  mpi_write_binary (&rsa_ctx.P, p, KEY_CONTENT_LEN/2);
+  mpi_write_binary (&rsa_ctx.Q, q, KEY_CONTENT_LEN/2);
+  mpi_write_binary (&rsa_ctx.N, modulus, KEY_CONTENT_LEN);
+  rsa_free (&rsa_ctx);
+  return p_q_modulus;
+}
+#endif

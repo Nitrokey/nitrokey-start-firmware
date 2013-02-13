@@ -6,6 +6,14 @@ Kaz Kojima:
 
 NIIBE Yutaka:
     Founder of the project.
+    Added FST_01 support:
+	boards/FST_01/board.c
+	boards/FST_01/board.h
+	boards/FST_01/mcuconf.h
+    Added FST_01_00 support:
+	boards/FST_01_00/board.c
+	boards/FST_01_00/board.h
+	boards/FST_01_00/mcuconf.h
     Added STBee support:
 	boards/STBEE/board.c
 	boards/STBEE/board.h
@@ -28,26 +36,40 @@ NIIBE Yutaka:
 	tool/intel_hex.py
     Wrote a tool for Gnuk:
 	tool/gnuk_put_binary.py
-    Wrote:
+	tool/gnuk_put_binary_libusb.py
+	tool/gnuk_remove_keys.py
+	tool/gnuk_upgrade.py
+    Wrote a tool for USB Hub:
+	tool/hub_ctrl.py
+    Wrote a tool for testing card reader with pinpad:
+	tool/pinpadtest.py
+    Wrote reGNUal implementation:
+	regnual/regnual.c
+	regnual/sys.c
+    Wrote Gnuk implementation:
 	gnuk.svg
 	src/configure
 	src/ac.c
-	src/main.c
-	src/usb_lld.h
-	src/gnuk.h
-	src/usb_lld.c
-	src/usb-icc.c
-	src/openpgp-do.c
-	src/flash.c
-	src/debug.c
-	src/usb_desc.c
-	src/usb-cdc-vport.c
-	src/hardclock.c
-	src/openpgp.h
-	src/openpgp.c
 	src/call-rsa.c
-	src/random.c
+	src/debug.c
+	src/flash.c
+	src/gnuk.h
+	src/main.c
+	src/neug.c
+	src/openpgp-do.c
+	src/openpgp.c
+	src/openpgp.h
 	src/pin-cir.c
 	src/pin-dial.c
+	src/pin-dnd.c
+	src/random.c
+	src/sys.c
+	src/usb-icc.c
+	src/usb-msc.c
+	src/usb-msc.h
+	src/usb_ctrl.c
+	src/usb_desc.c
+	src/usb_lld.c
+	src/usb_lld.h
 	*
 	and others.

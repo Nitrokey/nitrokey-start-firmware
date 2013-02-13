@@ -1,5 +1,240 @@
 Gnuk NEWS - User visible changes
 
+* Major changes in Gnuk 1.0.2
+
+  Released 2012-12-??, by NIIBE Yutaka
+
+** Product string is now "Gnuk Token" (was: "FSIJ USB Token")
+Since the USB ID Repository suggests not including vendor name
+in product string, we changed the product string.
+
+** New tool (experimental): test/upgrade_by_passwd.py
+This is the tool to install new firmware to Gnuk Token, provided
+that it's just shipped from factory (and nothing changed).  It
+authenticate as admin by factory setting, register a public key
+for firmware upgrade, and then, does firmware upgrade.
+
+** tool/gnuk_upgrade.py supports '-k' option
+It now supports RSA key on the host PC (not the one on the Token).
+
+** New tool: tool/get_raw_public_key.py
+This is a script to dump raw data of RSA public key, which is useful
+to register to Gnuk Token as a firmware upgrade key.
+
+** New tool: tool/gnuk_remove_keys_libusb.py
+This tool is libusb version of gnuk_remove_keys.py.  Besides, a bug in
+gnuk_remove_keys.py was fixed.
+
+** CCID protocol fix
+When time extension is requested by Gnuk Token to host PC, argument
+field was 0, which was wrong (but it works for most PC/SC
+implementations and GnuPG internal driver).  Now it's 1, which means
+1*BWT.
+
+
+* Major changes in Gnuk 1.0.1
+
+  Released 2012-08-03, by NIIBE Yutaka
+
+** USB SerialNumber String
+In 1.0, it has a bug for USB SerialNumber String.  It has been fixed
+in 1.0.1.
+
+
+* Major changes in Gnuk 1.0
+
+  Released 2012-07-21, by NIIBE Yutaka
+
+This is bug fixes only release.
+
+
+* Major changes in Gnuk 0.21
+
+  Released 2012-07-06, by NIIBE Yutaka
+
+** Test suite
+A functinality test suite is added under test/ directory.
+
+** New tool: stlinkv2.py
+This tool is SWD flash ROM writer with ST-Link/V2.
+
+** New tool: usb_strings.py
+This tool is to dump USB strings, which include revision detail and config
+options.
+
+** Protection improvement (even when internal data is disclosed)
+Even if PW1 and PW3 is same, content of encrypted DEK is different
+now.
+
+
+* Major changes in Gnuk 0.20
+
+  Released 2012-06-19, by NIIBE Yutaka
+
+** Key generation feature added
+Finally, key generation is supported.  Note that it may be very slow.
+It may take a few minutes (or more) to generate two or three keys,
+when you are unlucky.
+
+** DnD pinentry support is deprecated
+Once, DnD pinentry was considered a great feature, but it found that
+it is difficult to remember moves of folders.
+
+** gnuk_upgrade.py assumes using another token for authentication
+Use of another token for authentication is assumed now.  This is
+incompatible change.  Note that when you upgrade a token of version
+0.19 to 0.20 (or later), you need gnuk_upgrade.py of version 0.19.
+
+** KDF (Key Derivation Function) is now SHA-256
+Keystring is now computed by SHA-256 (it was SHA1 before).
+
+** Protection improvements (even when internal data is disclosed)
+Three improvements.  (1) Even if PW1 and Reset-code is same, content
+of encrypted DEK is different now.  (2) DEK is now encrypted and
+decrypted by keystring in ECB mode (it was just a kind of xor by
+single block CFB mode).  (3) Key data plus checksum are encrypted in
+CFB mode with initial vector (it will be able to switch OCB mode
+easily).
+
+** LED display output change
+LED display output by Gnuk is now more reactive.  It shows status code
+when it gets GET_STATUS message of CCID.  When you communicate Gnuk by
+internal CCID driver of GnuPG (instead of PC/SC), and enable
+'debug-disable-ticker' option in .gnupg/scdaemon.conf, it is more
+silent now.
+
+
+* Major changes in Gnuk 0.19
+
+  Released 2012-06-06, by NIIBE Yutaka
+
+** Firmware upgrade feature
+Firmware upgrade is now possible after the public key authentication
+using EXTERNAL AUTHENTICATE command of ISO 7816.  Firmware upgrade is
+done together with reGNUal, the firmware upgrade program.
+
+** System service blocks at the beginning of flash ROM.
+Once flash ROM is protected, first 4-KiB cannot be modified.  Gnuk
+use this area for "system service".  Note that this area will not
+be able to be modified by firmware upgrade (or by any method).
+
+** New tool: gnuk_upgrade.py
+The tool gnuk_upgrade.py is to do public key authentication using
+gpg-agent and send reGNUal to Gnuk.  Then, we put new Gnuk binary
+into the device with reGNUal.
+
+** USB strings for revision detail, configure options, and system service.
+USB strings now have more information.  There are revision detail
+string, configure options string, system service version string, as
+well as vendor string and product string.  These strings could be
+examined to check Gnuk Token.
+
+
+* Major changes in Gnuk 0.18
+
+  Released 2012-05-15, by NIIBE Yutaka
+
+** New mandatory option '--vidpid' for configure
+You must specify USB vendor ID and product ID for Gnuk.
+The file GNUK_USB_DEVICE_ID lists valid USB device IDs.
+
+** New tool: gnuk_remove_keys.py
+The tool gnuk_remove_keys.py is to remove all keys in Gnuk Token
+and reset PW1 and RC (if any).
+
+** New USB stack
+Gnuk used to use USB stack of USB-FS-Device_Lib by ST.  Now, it has
+original implementation.  Hopefully, size and quality are improved.
+
+
+* Major changes in Gnuk 0.17
+
+  Released 2012-02-02, by NIIBE Yutaka
+
+** USB CCID/ICCD protocol implementation change
+Gnuk now only supports short APDU level exchange, not supporting
+extended APDU level exchange.  Thus, Gnuk could be compatible to older
+host side software implementation.
+
+** ISO 7816 SELECT command behavior is somewhat strict now
+Old implementations do not check DF name for SELECT command.
+This causes some trouble when Gnuk Token is identified as if it were
+different card/token.  Now, DF name of OpenPGP card is checked.
+
+** USB CCID/ICCD low-level bug is fixed
+When the size of command APDU data is just 49, the lower level packet
+size is 64.  This is maximum size of BULK-OUT transfer packet, and
+caused trouble in the past implementations.  Example is setting url
+(0x5f50) as: http://www.gniibe.org/adpu-string-size-is-just-49
+This is because the past implementations expect ZLP (zero length
+packet).  Now, it has been fixed.  You can use any size of string.
+
+** CERT.3 Data Object (0x7f21) is now optional
+As there's no valid use case for this data object and it does not
+work as current version of GnuPG, this is now optional feature.
+You can enable this data object by specifying --enable-certdo at
+configure time.
+
+** With DnD pinentry, user can cancel pin input
+Now, user can cancel pin input by unmounting device before finishing
+DnD.
+
+** New tool: pinpadtest.py
+The tool pinpadtest.py is PC/SC test tool for pinentry of pinpad with
+OpenPGP card v2.
+
+
+* Major changes in Gnuk 0.16
+
+  Released 2011-12-14, by NIIBE Yutaka
+
+** DnD pinentry support is added and it's default to pinentry support
+DnD pinentry support doesn't require any hardware extension, but
+emulates mass storage class device of USB.  User inputs pass phrase
+by "drag and drop"-ing folders using file manager or something.
+
+** Bug fix for VERIFY for CHV2
+With no keys, VERIFY command for CHV2 used to fail even if pass phrase
+is correct.  It was intentional, because CHV2 verification would be
+useless with no keys.  But there is a corner case for PRIVATE-DOs,
+which may requires CHV2 verification.  Even though Gnuk doesn't
+support any PRIVATE-DOs, it is good to be fixed.
+
+** Changed bcdUSB = 1.1
+Gnuk device conforms to USB 2.0 full speed device, but when it was
+2.0, some OS informs users, "you can connect the device to 2.0
+compliant hub so that it can have better bandwidth", which is not
+the case for full speed device.
+
+
+* Major changes in Gnuk 0.15
+
+  Released 2011-11-24, by NIIBE Yutaka
+
+** New targets: FST_01 and FST_01_00
+Flying Stone Technology's open hardware, Flying Stone Tiny 01 is
+supported.
+
+** Flash writing tool for "DfuSe" is improved
+Now, it supports holes and unaligned blocks in hex file.
+
+** Experimental PIN-pad support (by TV controller) change
+Now, Gnuk has codetables for conversion from CIR code to ASCII code.
+Note that only four controllers (of Dell, Sharp, Sony, and Toshiba)
+are supported and tested.
+
+** It is possible for users to keep using OPENPGP_CARD_INITIAL_PW1
+With a bug fix of verify_user_0, it's now possible.  Although it's not
+recommended.
+
+** Important bug fix and a workaround
+In version 0.14, __main_stack_size__ (for interrupt handler) was too
+small for some cases.  This is fixed in 0.15.
+
+In src/Makefile.in, added -mfix-cortex-m3-ldrd for correctly linking C
+library for thumb2.  This is needed for newer summon-arm-toolchain.
+
+
 * Major changes in Gnuk 0.14
 
   Released 2011-10-07, by NIIBE Yutaka

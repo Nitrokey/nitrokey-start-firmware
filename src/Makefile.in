@@ -3,9 +3,6 @@
 BOARD_DIR=@BOARD_DIR@
 @PINPAD_MAKE_OPTION@
 @DEBUG_MAKE_OPTION@
-ifneq ($(ENABLE_DEBUG),)
-ENABLE_VCOMPORT=1
-endif
 
 ##############################################################################
 # Build global options
@@ -14,7 +11,7 @@ endif
 
 # Compiler options here.
 ifeq ($(USE_OPT),)
-  USE_OPT = -O2 -ggdb -fomit-frame-pointer -falign-functions=16
+  USE_OPT = -O3 -Os -ggdb -fomit-frame-pointer -falign-functions=16
 endif
 
 # C++ specific options here (added to USE_OPT).
@@ -70,8 +67,6 @@ include $(CHIBIOS)/os/hal/platforms/STM32/platform.mk
 include $(CHIBIOS)/os/hal/hal.mk
 include $(CHIBIOS)/os/ports/GCC/ARMCMx/STM32F10x/port.mk
 include $(CHIBIOS)/os/kernel/kernel.mk
-include stmusb.mk
-include vcomport.mk
 include crypt.mk
 
 # C sources that can be compiled in ARM or THUMB mode depending on the global
@@ -81,17 +76,15 @@ CSRC = $(PORTSRC) \
        $(HALSRC) \
        $(PLATFORMSRC) \
        $(BOARDSRC) \
-       ../boards/common/hw_config.c \
        $(BOARD_DIR)/board.c \
        $(CHIBIOS)/os/various/evtimer.c \
        $(CHIBIOS)/os/various/syscalls.c \
-       $(STMUSBSRC) \
-       $(VCOMSRC) \
        $(CRYPTSRC) \
        main.c usb_lld.c \
-	usb_desc.c usb_prop.c \
-	usb-icc.c openpgp.c ac.c openpgp-do.c flash.c hardclock.c \
-	random.c neug.c bn.c modp256.c jpc.c mod.c ec_p256.c
+	usb_desc.c usb_ctrl.c \
+	usb-icc.c openpgp.c ac.c openpgp-do.c flash.c \
+	bn.c modp256.c jpc.c mod.c ec_p256.c \
+	random.c neug.c sys.c
 
 ifneq ($(ENABLE_DEBUG),)
 CSRC += debug.c
@@ -101,11 +94,15 @@ ifneq ($(ENABLE_PINPAD),)
 CSRC += pin-$(ENABLE_PINPAD).c
 endif
 
+ifeq ($(ENABLE_PINPAD),dnd)
+CSRC += usb-msc.c
+endif
+
 # List ASM source files here
 ASMSRC = $(PORTASM) \
          $(CHIBIOS)/os/ports/GCC/ARMCMx/STM32F10x/vectors.s
 
-INCDIR = $(CRYPTINCDIR) $(STMUSBINCDIR) $(VCOMDIR) \
+INCDIR = $(CRYPTINCDIR) \
 	 $(PORTINC) $(KERNINC) $(TESTINC) \
          $(HALINC) $(PLATFORMINC) ../boards/common $(BOARD_DIR) \
          $(CHIBIOS)/os/various
@@ -179,7 +176,7 @@ DLIBS =
 #
 
 # List all user C define here, like -D_DEBUG=1
-UDEFS =
+UDEFS = @KEYGEN_SUPPORT@
 
 # Define ASM defines here
 UADEFS =
@@ -197,14 +194,8 @@ ULIBS =
 # End of user defines
 ##############################################################################
 
-ifeq ($(USE_FWLIB),yes)
-  include $(CHIBIOS)/ext/stm32lib/stm32lib.mk
-  CSRC += $(STM32SRC)
-  INCDIR += $(STM32INC)
-  USE_OPT += -DUSE_STDPERIPH_DRIVER
-endif
-
 include $(CHIBIOS)/os/ports/GCC/ARM/rules.mk
+MCFLAGS= -mcpu=$(MCU) -mfix-cortex-m3-ldrd
 
 distclean: clean
-	-rm -f Makefile gnuk.ld config.h
+	-rm -f Makefile gnuk.ld config.h *.inc

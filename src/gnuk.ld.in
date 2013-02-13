@@ -27,15 +27,20 @@
 /*
  * ST32F103 memory setup.
  */
-__main_stack_size__     = 0x0200;
+__main_stack_size__     = 0x0400;
 __process_stack_size__  = 0x0200;
 __stacks_total_size__   = __main_stack_size__ + __process_stack_size__;
 
 MEMORY
 {
-    flash : org = @ORIGIN@, len = @FLASH_SIZE@k
+    flash0 : org = @ORIGIN@, len = 4k
+    flash  : org = @ORIGIN@+0x1000, len = @FLASH_SIZE@k - 4k
     ram : org = 0x20000000, len = 20k
 }
+
+/* __flash_start__: flash ROM start address regardless of DFU_SUPPORT */
+__flash_start__         = 0x08001000;
+__flash_end__		= ORIGIN(flash) + LENGTH(flash);
 
 __ram_start__           = ORIGIN(ram);
 __ram_size__            = LENGTH(ram);
@@ -44,6 +49,22 @@ __ram_end__             = __ram_start__ + __ram_size__;
 SECTIONS
 {
     . = 0;
+
+    .sys : ALIGN(16) SUBALIGN(16)
+    {
+        _sys = .;
+        KEEP(*(.vectors))
+	. = ALIGN(16);
+	*(.sys.version)
+	sys.o(.text)
+	sys.o(.text.*)
+        sys.o(.rodata)
+	sys.o(.rodata.*)
+	. = ALIGN(1024);
+	*(.sys.0)
+	*(.sys.1)
+	*(.sys.2)
+    } > flash0
 
     .text : ALIGN(16) SUBALIGN(16)
     {
@@ -114,7 +135,10 @@ SECTIONS
 
     PROVIDE(end = .);
     _end            = .;
+    . = ALIGN(512);
+    _regnual_start = .;
 
+@CERTDO_SUPPORT_START@
     .gnuk_ch_certificate :
     {
         . = ALIGN (@FLASH_PAGE_SIZE@);
@@ -123,15 +147,20 @@ SECTIONS
 	. += 1920;
         . = ALIGN (@FLASH_PAGE_SIZE@);
     } > flash =0xffffffff
+@CERTDO_SUPPORT_END@
 
     .gnuk_flash :
     {
+        . = ALIGN (@FLASH_PAGE_SIZE@);
 	_data_pool = .;
 	KEEP(*(.gnuk_data))
 	. = ALIGN(@FLASH_PAGE_SIZE@);
 	. += @FLASH_PAGE_SIZE@;
 	_keystore_pool = .;
 	. += 512*3;
+	. = ALIGN(@FLASH_PAGE_SIZE@);
+	_updatekey_store = .;
+	. += 1024;
 	. = ALIGN(@FLASH_PAGE_SIZE@);
     } > flash =0xffffffff
 }

@@ -31,6 +31,12 @@
 /*
  * Setup for the STBee board.
  */
+#define	SET_USB_CONDITION(en) (!en)	/* To connect USB, call palClearPad */
+#define	SET_LED_CONDITION(on) (!on)	/* To emit light, call palClearPad */
+#define GPIO_USB	GPIOD_USB_ENABLE
+#define IOPORT_USB	GPIOD
+#define GPIO_LED	GPIOD_LED1
+#define IOPORT_LED	GPIOD
 
 /*
  * Board identifier.
@@ -38,8 +44,12 @@
 #define BOARD_STBEE
 #define BOARD_NAME "STBee"
 
-#if defined(PINPAD_SUPPORT)
+#if defined(PINPAD_CIR_SUPPORT) || defined(PINPAD_DIAL_SUPPORT)
 #define HAVE_7SEGLED	1
+/*
+ * Timer assignment for CIR
+ */
+#define TIMx	TIM3
 #endif
 
 /*
@@ -85,7 +95,7 @@
  * Please refer to the STM32 Reference Manual for details.
  */
 
-#if defined(PINPAD_SUPPORT)
+#if defined(PINPAD_CIR_SUPPORT) || defined(PINPAD_DIAL_SUPPORT)
 /*
  * Port A setup.
  * PA6  - (TIM3_CH1) input with pull-up

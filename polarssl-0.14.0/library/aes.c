@@ -172,15 +172,15 @@ static const unsigned char FSb[256] =
     V(CB,B0,B0,7B), V(FC,54,54,A8), V(D6,BB,BB,6D), V(3A,16,16,2C)
 
 #define V(a,b,c,d) 0x##a##b##c##d
-static const unsigned long FT0[256] = { FT };
+static const unsigned long FT0[256] __attribute__((section(".sys.0"))) = { FT };
 #undef V
 
 #define V(a,b,c,d) 0x##b##c##d##a
-static const unsigned long FT1[256] = { FT };
+static const unsigned long FT1[256] __attribute__((section(".sys.1"))) = { FT };
 #undef V
 
 #define V(a,b,c,d) 0x##c##d##a##b
-static const unsigned long FT2[256] = { FT };
+static const unsigned long FT2[256] __attribute__((section(".sys.2"))) = { FT };
 #undef V
 
 #define V(a,b,c,d) 0x##d##a##b##c
@@ -753,6 +753,7 @@ int aes_crypt_ecb( aes_context *ctx,
     return( 0 );
 }
 
+#if 0
 /*
  * AES-CBC buffer encryption/decryption
  */
@@ -816,6 +817,7 @@ int aes_crypt_cbc( aes_context *ctx,
 
     return( 0 );
 }
+#endif
 
 /*
  * AES-CFB128 buffer encryption/decryption

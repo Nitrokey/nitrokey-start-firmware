@@ -1,7 +1,7 @@
 /*
  * ac.c -- Check access condition
  *
- * Copyright (C) 2010 Free Software Initiative of Japan
+ * Copyright (C) 2010, 2012 Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
  * This file is a part of Gnuk, a GnuPG USB Token implementation.
@@ -24,9 +24,7 @@
 #include "config.h"
 #include "ch.h"
 #include "gnuk.h"
-
-#include "polarssl/config.h"
-#include "polarssl/sha1.h"
+#include "sha256.h"
 
 uint8_t volatile auth_status;	/* Initialized to AC_NONE_AUTHORIZED */
 
@@ -57,11 +55,11 @@ ac_reset_other (void)
 }
 
 int
-verify_user_0 (const uint8_t *pw, int buf_len, int pw_len_known,
+verify_user_0 (uint8_t access, const uint8_t *pw, int buf_len, int pw_len_known,
 	       const uint8_t *ks_pw1)
 {
   int pw_len;
-  int r;
+  int r1, r2;
   uint8_t keystring[KEYSTRING_MD_SIZE];
 
   if (gpg_pw_locked (PW_ERR_PW1))
@@ -75,7 +73,7 @@ verify_user_0 (const uint8_t *pw, int buf_len, int pw_len_known,
 	  || strncmp ((const char *)pw, OPENPGP_CARD_INITIAL_PW1, pw_len))
 	goto failure;
       else
-	goto success;
+	goto success_one_step;
     }
   else
     pw_len = ks_pw1[0];
@@ -88,15 +86,28 @@ verify_user_0 (const uint8_t *pw, int buf_len, int pw_len_known,
       return -1;
     }
 
-  sha1 (pw, pw_len, keystring);
-  if ((r = gpg_do_load_prvkey (GPG_KEY_FOR_SIGNING, BY_USER, keystring))
-      < 0)
-    goto failure;
-  else if (r == 0)
-    if (memcmp (ks_pw1+1, keystring, KEYSTRING_MD_SIZE) != 0)
+ success_one_step:
+  s2k (BY_USER, pw, pw_len, keystring);
+  if (access == AC_PSO_CDS_AUTHORIZED)
+    {
+      r1 = gpg_do_load_prvkey (GPG_KEY_FOR_SIGNING, BY_USER, keystring);
+      r2 = 0;
+    }
+  else
+    {
+      r1 = gpg_do_load_prvkey (GPG_KEY_FOR_DECRYPTION, BY_USER, keystring);
+      r2 = gpg_do_load_prvkey (GPG_KEY_FOR_AUTHENTICATION, BY_USER, keystring);
+    }
+
+  if (r1 < 0 || r2 < 0)
+    {
+      gpg_pw_increment_err_counter (PW_ERR_PW1);
+      return -1;
+    }
+  else if (r1 == 0 && r2 == 0)
+    if (ks_pw1 != NULL && memcmp (ks_pw1+1, keystring, KEYSTRING_MD_SIZE) != 0)
       goto failure;
 
- success:
   gpg_pw_reset_err_counter (PW_ERR_PW1);
   return pw_len;
 }
@@ -113,7 +124,7 @@ verify_pso_cds (const uint8_t *pw, int pw_len)
   DEBUG_INFO ("verify_pso_cds\r\n");
   DEBUG_BYTE (pw_len);
 
-  r = verify_user_0 (pw, pw_len, pw_len, ks_pw1);
+  r = verify_user_0 (AC_PSO_CDS_AUTHORIZED, pw, pw_len, pw_len, ks_pw1);
   if (r > 0)
     auth_status |= AC_PSO_CDS_AUTHORIZED;
   return r;
@@ -122,29 +133,16 @@ verify_pso_cds (const uint8_t *pw, int pw_len)
 int
 verify_other (const uint8_t *pw, int pw_len)
 {
-  int r1, r2;
-  uint8_t keystring[KEYSTRING_MD_SIZE];
+  const uint8_t *ks_pw1 = gpg_do_read_simple (NR_DO_KEYSTRING_PW1);
+  int r;
 
   DEBUG_INFO ("verify_other\r\n");
+  DEBUG_BYTE (pw_len);
 
-  if (gpg_pw_locked (PW_ERR_PW1))
-    return 0;
-
-  sha1 (pw, pw_len, keystring);
-  if ((r1 = gpg_do_load_prvkey (GPG_KEY_FOR_DECRYPTION, BY_USER, keystring)) < 0
-      || (r2 = gpg_do_load_prvkey (GPG_KEY_FOR_AUTHENTICATION, BY_USER,
-				   keystring)) < 0)
-    {
-      gpg_pw_increment_err_counter (PW_ERR_PW1);
-      return -1;
-    }
-  else if (r1 == 0 && r2 == 0)
-    /* No key is available.  Fail even if password can match.  */
-    return -1;
-
-  gpg_pw_reset_err_counter (PW_ERR_PW1);
-  auth_status |= AC_OTHER_AUTHORIZED;
-  return 1;
+  r = verify_user_0 (AC_OTHER_AUTHORIZED, pw, pw_len, pw_len, ks_pw1);
+  if (r > 0)
+    auth_status |= AC_OTHER_AUTHORIZED;
+  return r;
 }
 
 /*
@@ -161,28 +159,27 @@ static void
 calc_md (int count, const uint8_t *salt, const uint8_t *pw, int pw_len,
 	 uint8_t md[KEYSTRING_MD_SIZE])
 {
-  sha1_context sha1_ctx;
+  sha256_context sha256_ctx;
 
-  sha1_starts (&sha1_ctx);
+  sha256_start (&sha256_ctx);
 
   while (count > pw_len + 8)
     {
-      sha1_update (&sha1_ctx, salt, 8);
-      sha1_update (&sha1_ctx, pw, pw_len);
+      sha256_update (&sha256_ctx, salt, 8);
+      sha256_update (&sha256_ctx, pw, pw_len);
       count -= pw_len + 8;
     }
 
-  if (count < 8)
-    sha1_update (&sha1_ctx, salt, count);
+  if (count <= 8)
+    sha256_update (&sha256_ctx, salt, count);
   else
     {
-      sha1_update (&sha1_ctx, salt, 8);
+      sha256_update (&sha256_ctx, salt, 8);
       count -= 8;
-      sha1_update (&sha1_ctx, pw, count);
+      sha256_update (&sha256_ctx, pw, count);
     }
 
-  sha1_finish (&sha1_ctx, md);
-  memset (&sha1_ctx, 0, sizeof (sha1_ctx));
+  sha256_finish (&sha256_ctx, md);
 }
 
 uint8_t keystring_md_pw3[KEYSTRING_MD_SIZE];
@@ -205,7 +202,7 @@ verify_admin_0 (const uint8_t *pw, int buf_len, int pw_len_known)
 	return 0;
 
       pw_len = pw3_keystring[0];
-      if ((pw_len_known >= 0 && pw_len_known != pw_len) || pw_len < buf_len)
+      if ((pw_len_known >= 0 && pw_len_known != pw_len) || pw_len > buf_len)
 	goto failure;
 
       salt = &pw3_keystring[1];
@@ -230,7 +227,8 @@ verify_admin_0 (const uint8_t *pw, int buf_len, int pw_len_known)
 
       if (ks_pw1 != NULL)
 	{	  /* empty PW3, but PW1 exists */
-	  int r = verify_user_0 (pw, buf_len, pw_len_known, ks_pw1);
+	  int r = verify_user_0 (AC_PSO_CDS_AUTHORIZED,
+				 pw, buf_len, pw_len_known, ks_pw1);
 
 	  if (r > 0)
 	    admin_authorized = BY_USER;
@@ -282,7 +280,7 @@ verify_admin (const uint8_t *pw, int pw_len)
   if (r <= 0)
     return r;
 
-  sha1 (pw, pw_len, keystring_md_pw3);
+  s2k (admin_authorized, pw, pw_len, keystring_md_pw3);
   auth_status |= AC_ADMIN_AUTHORIZED;
   return 1;
 }
@@ -292,6 +290,7 @@ ac_reset_admin (void)
 {
   memset (keystring_md_pw3, 0, KEYSTRING_MD_SIZE);
   auth_status &= ~AC_ADMIN_AUTHORIZED;
+  admin_authorized = 0;
 }
 
 void
@@ -302,4 +301,5 @@ ac_fini (void)
   gpg_do_clear_prvkey (GPG_KEY_FOR_DECRYPTION);
   gpg_do_clear_prvkey (GPG_KEY_FOR_AUTHENTICATION);
   auth_status = AC_NONE_AUTHORIZED;
+  admin_authorized = 0;
 }

@@ -5,17 +5,10 @@
 #include "../common/hwinit.c"
 
 void
-hwinit0 (void)
-{
-  hwinit0_common ();
-}
-
-void
 hwinit1 (void)
 {
   hwinit1_common ();
 
-#if defined(PINPAD_SUPPORT)
 #if defined(PINPAD_CIR_SUPPORT)
   /* EXTI0 <= PB0 */
   AFIO->EXTICR[0] = AFIO_EXTICR1_EXTI0_PB;
@@ -69,28 +62,8 @@ hwinit1 (void)
   /* Generate UEV to upload PSC and ARR	 */
   TIM4->EGR = TIM_EGR_UG;
 #endif
-#endif
 }
 
-void
-USB_Cable_Config (FunctionalState NewState)
-{
-  if (NewState != DISABLE)
-    palClearPad (IOPORT4, GPIOD_USB_ENABLE);
-  else
-    palSetPad (IOPORT4, GPIOD_USB_ENABLE);
-}
-
-void
-set_led (int value)
-{
-  if (value)
-    palClearPad (IOPORT4, GPIOD_LED1);
-  else
-    palSetPad (IOPORT4, GPIOD_LED1);
-}
-
-#if defined(PINPAD_SUPPORT)
 #if defined(PINPAD_CIR_SUPPORT)
 void
 cir_ext_disable (void)
@@ -155,5 +128,4 @@ CH_IRQ_HANDLER (EXTI2_IRQHandler)
   chSysUnlockFromIsr ();
   CH_IRQ_EPILOGUE ();
 }
-#endif
 #endif

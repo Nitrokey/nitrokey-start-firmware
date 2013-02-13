@@ -1,0 +1,20 @@
+This is a functionality test suite for Gnuk.
+
+You need python-nose, python-freshen as well as python-usb.
+
+Besides, python-crypto is needed when you use generate_keys.py to
+update contents of *.key.
+
+
+Type:
+
+  $ nosetests --with-freshen
+
+or
+
+  $ nosetests -v --with-freshen
+
+to run the test suite.
+
+To skip tests for key generation, add an option "--tag ~keygen".  To
+stop running tests after the first error or failure, add "--stop" option.

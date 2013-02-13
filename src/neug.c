@@ -32,15 +32,15 @@ static Thread *rng_thread;
 
 /* Total number of channels to be sampled by a single ADC operation.*/
 #define ADC_GRP1_NUM_CHANNELS   2
- 
+
 /* Depth of the conversion buffer, channels are sampled one time each.*/
 #define ADC_GRP1_BUF_DEPTH      4
- 
+
 /*
  * ADC samples buffer.
  */
 static adcsample_t samp[ADC_GRP1_NUM_CHANNELS * ADC_GRP1_BUF_DEPTH];
- 
+
 static void adccb (adcsample_t *buffer, size_t n);
 
 /*

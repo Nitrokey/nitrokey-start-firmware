@@ -1,0 +1,89 @@
+USB communication (current)
+===========================
+
+* Get response, command chaining, short APDU only.
+
+
+If it were only for token and no smartcard:
+
+* Get response, command chaining and short APDU would be considered
+  useless.
+
+* It would be wise to use extended APDU and CCID/ICCD block chaining.
+
+The question would be: When lower layer (CCID/ICCD layer) support
+enough mechanism of block assembly, why not use one in the application
+layer (ISO 7816)?
+
+For token implementation, CCID/ICCD would be lower layer and ISO 7816
+would be higher layer, but it's different in fact.  The figure of
+communication is like::
+
+    host <-----------> reader <---------> smartcard
+           CCID/ICCD           ISO 7816
+    
+    host <--> token
+
+Given the situation host side (GnuPG) already has the features of
+handling get response, command chaining, and short APDU only, it is
+rather better to do that on token side too.
+
+Besides, supporting extended APDU on host side, it would be needed to
+prepare 64KB buffer (that's the maximum size), as there is no explicit
+limitation for buffer size.  64KB would be large, and this could be
+avoided when we use short APDU only.
+
+
+USB communication (second attempt)
+==================================
+
+* No get response, no command chaining, but extended APDU and extended
+  Lc and Le.  I think that this keep the code simple.
+
+* The value of dwMaxCCIDMessageLength is 320, that's the size
+  of header of ICC block plus size of maximum APDU (by 64
+  granularity).  Still, some ccid implementation (ccid 1.3.11, for
+  example) sends ICC block using chaining unfortunately, so we keep
+  the code of ICC block chaining.
+
+
+USB communication (initial attempt)
+===================================
+
+* Once in the past (version <= 0.4), the value of
+  dwMaxCCIDMessageLength was 64 and we supported CCID/ICCD block chaining,
+  so that we could not handle multple Bulk transactions.
+
+
+OpenPGP card protocol implementation
+====================================
+
+I try to follow "no clear password(s)" policy, even if it is on
+protected flash memory.  Further, keystrings for user and reset code
+are removed after key imports.  Because of this, replacing keys are
+not possible without password information.  (Thus, replacing existing
+keys are not supported.)
+
+Therefore, there is "no clear password" and "no keystrings" on flash
+ROM when Gnuk is used by admin-less mode.  When it is used with admin,
+the keystring of admin is on flash ROM.
+
+
+How a private key is stored
+===========================
+
+KEYPTR
+         ----> [   P   ][   Q   ][       N        ]
+               <---encrypted----><---  plain  ---->
+
+key_addr                       4-byte
+initial_vector (random)        16-byte
+checksum_encrypted             16-byte
+dek_encrypted_by_keystring_pw1 16-byte
+dek_encrypted_by_keystring_rc  16-byte
+dek_encrypted_by_keystring_pw3 16-byte
+
+... decrypted to
+
+[   P   ][   Q   ]
+checksum 16-byte

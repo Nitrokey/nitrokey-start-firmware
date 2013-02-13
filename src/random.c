@@ -1,7 +1,7 @@
 /*
  * random.c -- get random bytes
  *
- * Copyright (C) 2010, 2011 Free Software Initiative of Japan
+ * Copyright (C) 2010, 2011, 2012 Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
  * This file is a part of Gnuk, a GnuPG USB Token implementation.
@@ -59,6 +59,7 @@ void
 random_bytes_free (const uint8_t *p)
 {
   (void)p;
+  memset (random_word, 0, RANDOM_BYTES_LENGTH);
   neug_flush ();
 }
 
@@ -70,3 +71,32 @@ get_salt (void)
 {
   return neug_get (NEUG_KICK_FILLING);
 }
+
+
+#ifdef KEYGEN_SUPPORT
+/*
+ * Random byte iterator
+ */
+uint8_t
+random_byte (void *arg)
+{
+  uint8_t *index_p = (uint8_t *)arg;
+  uint8_t index = *index_p;
+  uint8_t *p = ((uint8_t *)random_word) + index;
+  uint8_t v;
+
+  neug_wait_full ();
+
+  v = *p;
+
+  if (++index >= RANDOM_BYTES_LENGTH)
+    {
+      index = 0;
+      neug_flush ();
+    }
+
+  *index_p = index;
+
+  return v;
+}
+#endif

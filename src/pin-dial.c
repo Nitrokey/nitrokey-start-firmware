@@ -51,7 +51,7 @@ uint8_t pin_input_len;
 
 #define OFF   '\x00'
 #define ENTER '\x0a'
-static struct led_pattern { uint8_t c, v; } led_pattern[] = 
+static struct led_pattern { uint8_t c, v; } led_pattern[] =
 {
 		     /* char : dp a b c d e f g */
   { ENTER, 0xf8 },   /* |-   :  1 1 1 1 1 0 0 0  (enter) */
@@ -117,21 +117,19 @@ blink_dp (void)
 }
 
 static Thread *pin_thread;
-#define EV_SW_PUSH (eventmask_t)1
 
 void
 dial_sw_interrupt (void)
 {
   dial_sw_disable ();
-  chEvtSignalI (pin_thread, EV_SW_PUSH);
+  chEvtSignalI (pin_thread, EV_PINPAD_INPUT_DONE);
   palClearPad (IOPORT1, GPIOA_LED2);
 }
 
 
-msg_t
-pin_main (void *arg)
+int
+pinpad_getline (int msg_code, systime_t timeout)
 {
-  int msg_code = (int)arg;
   uint16_t count, count_prev;
   uint8_t input_mode;
   uint8_t sw_push_count;
@@ -150,7 +148,7 @@ pin_main (void *arg)
   sw_push_count = 0;
   sw_event = 0;
 
-  while (!chThdShouldTerminate ())
+  while (1)
     {
       eventmask_t m;
 
@@ -158,7 +156,7 @@ pin_main (void *arg)
       dial_sw_enable ();
       m = chEvtWaitOneTimeout (ALL_EVENTS, LED_DISP_BLINK_INTERVAL0);
 
-      if (m == EV_SW_PUSH || sw_push_count)
+      if (m == EV_PINPAD_INPUT_DONE || sw_push_count)
 	{
 	  if (palReadPad (IOPORT2, GPIOB_BUTTON) == 0)
 	    sw_push_count++;
@@ -218,5 +216,5 @@ pin_main (void *arg)
   led_disp (OFF);
   TIM4->CR1 &= ~TIM_CR1_CEN;
   dial_sw_disable ();
-  return 0;
+  return pin_input_len;
 }

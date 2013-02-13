@@ -32,11 +32,16 @@
  * Setup for the ST-Link part of STM8S-Discovery board.
  */
 
+#undef	SET_USB_CONDITION		/* No functionality to disconnect USB */
+#define	SET_LED_CONDITION(on) on	/* To emit light, call palSetPad */
+#define GPIO_LED	GPIOA_LED
+#define IOPORT_LED	GPIOA
+
 /*
  * Board identifier.
  */
 #define BOARD_ST_DISCOVERY
-#define BOARD_NAME "ST-Link"
+#define BOARD_NAME "STM8S Discovery"
 #define CPU_WITH_NO_GPIOE	1
 
 /*
@@ -55,6 +60,11 @@
  * IO pins assignments.
  */
 #define GPIOA_LED                8
+
+/*
+ * Timer assignment for CIR
+ */
+#define TIMx	TIM3
 
 /*
  * I/O ports initial setup, this configuration is established soon after reset
@@ -91,7 +101,7 @@
 #define VAL_GPIOACRH            0x88888883      /* PA15...PA8 */
 #define VAL_GPIOAODR            0xFFFFFFFF
 
-#if defined(PINPAD_SUPPORT)
+#if defined(PINPAD_CIR_SUPPORT)
 /*
  * Port B setup.
  * Everything input with pull-up except:

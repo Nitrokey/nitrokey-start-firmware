@@ -1,0 +1,34 @@
+On GNU/Linux Desktop, I use udisks-glue so that DnDpinentry folder can
+be mounted with sync and noatime options.
+
+After installing udisks-glue, I invoke gnome-session-properties to
+add udisks-glue to "Startup Program".
+
+Then, I have two files to configure udisks (disable udisks for
+DnDpinentry) and udisks-glue (enable and specify options for DnDpinentry).
+
+/etc/udev/rules.d/88-udisks.rules
+---------------
+ENV{ID_VENDOR}=="FSIJ", ENV{DEVTYPE}=="disk", ENV{ID_FS_LABEL}=="DnDpinentry", ENV{UDISKS_PRESENTATION_NOPOLICY}="1"
+---------------
+
+~/.udisks-glue.conf
+---------------
+filter gone {
+    label = "DnDpinentry"
+    optical = false
+}
+
+match gone {
+    automount = true
+    automount_options = { sync, noatime }
+}
+---------------
+
+We need following setting for pinentry.  Or else, you can't do
+anything when pinentry grabs mouse focus.
+
+~/.gnupg/gpg-agent.conf
+---------------
+no-grab
+---------------

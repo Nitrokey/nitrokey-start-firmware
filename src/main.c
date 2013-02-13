@@ -1,7 +1,7 @@
 /*
  * main.c - main routine of Gnuk
  *
- * Copyright (C) 2010 Free Software Initiative of Japan
+ * Copyright (C) 2010, 2011, 2012 Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
  * This file is a part of Gnuk, a GnuPG USB Token implementation.
@@ -22,16 +22,12 @@
  */
 
 #include "config.h"
-
-#include "usb_lib.h"
-
 #include "ch.h"
+#include "hal.h"
+#include "sys.h"
 #include "gnuk.h"
 #include "usb_lld.h"
-#include "usb_istr.h"
-#include "usb_desc.h"
-#include "hw_config.h"
-#include "usb_pwr.h"
+#include "usb-cdc.h"
 
 #ifdef DEBUG
 struct stdout {
@@ -106,9 +102,13 @@ STDOUTthread (void *arg)
 
       p = stdout.str;
       len = stdout.size;
-      while (len > 0)
+      while (1)
 	{
 	  int i;
+
+	  if (len == 0)
+	    if (count_in != VIRTUAL_COM_PORT_DATA_SIZE)
+	      break;
 
 	  if (len < VIRTUAL_COM_PORT_DATA_SIZE)
 	    {
@@ -128,8 +128,7 @@ STDOUTthread (void *arg)
 
 	  chEvtClear (EV_TX_READY);
 
-	  USB_SIL_Write (EP3_IN, buffer_in, count_in);
-	  SetEPTxValid (ENDP3);
+	  usb_lld_write (ENDP3, buffer_in, count_in);
 
 	  chEvtWaitOne (EV_TX_READY);
 	}
@@ -142,6 +141,19 @@ STDOUTthread (void *arg)
 
   goto again;
   return 0;
+}
+
+void
+EP3_IN_Callback (void)
+{
+  if (stdout_thread)
+    chEvtSignalI (stdout_thread, EV_TX_READY);
+}
+
+void
+EP5_OUT_Callback (void)
+{
+  usb_lld_rx_enable (ENDP5);
 }
 #else
 void
@@ -158,13 +170,15 @@ extern msg_t USBthread (void *arg);
 /*
  * main thread does 1-bit LED display output
  */
-#define LED_TIMEOUT_INTERVAL	MS2ST(100)
-#define LED_TIMEOUT_ZERO	MS2ST(50)
-#define LED_TIMEOUT_ONE		MS2ST(200)
-#define LED_TIMEOUT_STOP	MS2ST(500)
+#define MAIN_TIMEOUT_INTERVAL	MS2ST(5000)
+
+#define LED_TIMEOUT_INTERVAL	MS2ST(75)
+#define LED_TIMEOUT_ZERO	MS2ST(25)
+#define LED_TIMEOUT_ONE		MS2ST(100)
+#define LED_TIMEOUT_STOP	MS2ST(200)
 
 
-#define ID_OFFSET 12
+#define ID_OFFSET 24
 static void
 device_initialize_once (void)
 {
@@ -182,7 +196,7 @@ device_initialize_once (void)
       for (i = 0; i < 4; i++)
 	{
 	  uint8_t b = u[i];
-	  uint8_t nibble; 
+	  uint8_t nibble;
 
 	  nibble = (b >> 4);
 	  nibble += (nibble >= 10 ? ('A' - 10) : '0');
@@ -196,6 +210,115 @@ device_initialize_once (void)
 
 static volatile uint8_t fatal_code;
 
+static Thread *main_thread;
+
+static void display_fatal_code (void)
+{
+  while (1)
+    {
+      set_led (1);
+      chThdSleep (LED_TIMEOUT_ZERO);
+      set_led (0);
+      chThdSleep (LED_TIMEOUT_INTERVAL);
+      set_led (1);
+      chThdSleep (LED_TIMEOUT_ZERO);
+      set_led (0);
+      chThdSleep (LED_TIMEOUT_INTERVAL);
+      set_led (1);
+      chThdSleep (LED_TIMEOUT_ZERO);
+      set_led (0);
+      chThdSleep (LED_TIMEOUT_STOP);
+      set_led (1);
+      if (fatal_code & 1)
+	chThdSleep (LED_TIMEOUT_ONE);
+      else
+	chThdSleep (LED_TIMEOUT_ZERO);
+      set_led (0);
+      chThdSleep (LED_TIMEOUT_INTERVAL);
+      set_led (1);
+      if (fatal_code & 2)
+	chThdSleep (LED_TIMEOUT_ONE);
+      else
+	chThdSleep (LED_TIMEOUT_ZERO);
+      set_led (0);
+      chThdSleep (LED_TIMEOUT_INTERVAL);
+      set_led (1);
+      chThdSleep (LED_TIMEOUT_STOP);
+      set_led (0);
+      chThdSleep (LED_TIMEOUT_INTERVAL*10);
+    }
+}
+
+static uint8_t led_inverted;
+
+static eventmask_t emit_led (int on_time, int off_time)
+{
+  eventmask_t m;
+
+  set_led (!led_inverted);
+  m = chEvtWaitOneTimeout (ALL_EVENTS, on_time);
+  set_led (led_inverted);
+  if (m) return m;
+  if ((m = chEvtWaitOneTimeout (ALL_EVENTS, off_time)))
+    return m;
+  return 0;
+}
+
+static eventmask_t display_status_code (void)
+{
+  enum icc_state icc_state;
+  eventmask_t m;
+
+  if (icc_state_p == NULL)
+    icc_state = ICC_STATE_START;
+  else
+    icc_state = *icc_state_p;
+
+  if (icc_state == ICC_STATE_START)
+    return emit_led (LED_TIMEOUT_ONE, LED_TIMEOUT_STOP);
+  else
+    /* GPGthread  running */
+    {
+      if ((m = emit_led ((auth_status & AC_ADMIN_AUTHORIZED)?
+			  LED_TIMEOUT_ONE : LED_TIMEOUT_ZERO,
+			  LED_TIMEOUT_INTERVAL)))
+	return m;
+      if ((m = emit_led ((auth_status & AC_OTHER_AUTHORIZED)?
+			  LED_TIMEOUT_ONE : LED_TIMEOUT_ZERO,
+			  LED_TIMEOUT_INTERVAL)))
+	return m;
+      if ((m = emit_led ((auth_status & AC_PSO_CDS_AUTHORIZED)?
+			  LED_TIMEOUT_ONE : LED_TIMEOUT_ZERO,
+			  LED_TIMEOUT_INTERVAL)))
+	return m;
+
+      if (icc_state == ICC_STATE_WAIT)
+	{
+	  if ((m = chEvtWaitOneTimeout (ALL_EVENTS, LED_TIMEOUT_STOP * 2)))
+	    return m;
+	}
+      else
+	{
+	  if ((m = chEvtWaitOneTimeout (ALL_EVENTS, LED_TIMEOUT_INTERVAL)))
+	    return m;
+
+	  if ((m = emit_led (icc_state == ICC_STATE_RECEIVE?
+			      LED_TIMEOUT_ONE : LED_TIMEOUT_ZERO,
+			      LED_TIMEOUT_STOP)))
+	    return m;
+	}
+
+      return 0;
+    }
+}
+
+void
+led_blink (int spec)
+{
+  chEvtSignal (main_thread, spec);
+}
+
+
 /*
  * Entry point.
  *
@@ -203,18 +326,27 @@ static volatile uint8_t fatal_code;
  *       See the hwinit1_common function.
  */
 int
-main (int argc, char **argv)
+main (int argc, char *argv[])
 {
-  int count = 0;
+  unsigned int count = 0;
 
   (void)argc;
   (void)argv;
 
+  main_thread = chThdSelf ();
+
   flash_unlock ();
   device_initialize_once ();
-  usb_lld_init ();
-  USB_Init ();
+  usb_lld_init (Config_Descriptor.Descriptor[7]);
   random_init ();
+
+  while (1)
+    {
+      if (bDeviceState != UNCONNECTED)
+	break;
+
+      chThdSleepMilliseconds (250);
+    }
 
 #ifdef DEBUG
   stdout_init ();
@@ -229,107 +361,53 @@ main (int argc, char **argv)
   chThdCreateStatic (waUSBthread, sizeof(waUSBthread),
 		     NORMALPRIO, USBthread, NULL);
 
+#ifdef PINPAD_DND_SUPPORT
+  msc_init ();
+#endif
+
+
   while (1)
     {
+      eventmask_t m;
+
+      if (icc_state_p != NULL && *icc_state_p == ICC_STATE_EXEC_REQUESTED)
+	break;
+
+      m = chEvtWaitOneTimeout (ALL_EVENTS, MAIN_TIMEOUT_INTERVAL);
+    got_it:
       count++;
-
-      if (fatal_code != 0)
+      switch (m)
 	{
+	case LED_ONESHOT:
+	  if ((m = emit_led (MS2ST (100), MAIN_TIMEOUT_INTERVAL))) goto got_it;
+	  break;
+	case LED_TWOSHOTS:
+	  if ((m = emit_led (MS2ST (50), MS2ST (50)))) goto got_it;
+	  if ((m = emit_led (MS2ST (50), MAIN_TIMEOUT_INTERVAL))) goto got_it;
+	  break;
+	case LED_SHOW_STATUS:
+	  if ((count & 0x07) != 0) continue; /* Display once for eight times */
+	  if ((m = display_status_code ())) goto got_it;
+	  break;
+	case LED_START_COMMAND:
 	  set_led (1);
-	  chThdSleep (LED_TIMEOUT_ZERO);
+	  led_inverted = 1;
+	  break;
+	case LED_FINISH_COMMAND:
+	  m = chEvtWaitOneTimeout (ALL_EVENTS, LED_TIMEOUT_STOP);
+	  led_inverted = 0;
 	  set_led (0);
-	  chThdSleep (LED_TIMEOUT_INTERVAL);
-	  set_led (1);
-	  chThdSleep (LED_TIMEOUT_ZERO);
-	  set_led (0);
-	  chThdSleep (LED_TIMEOUT_INTERVAL);
-	  set_led (1);
-	  chThdSleep (LED_TIMEOUT_ZERO);
-	  set_led (0);
-	  chThdSleep (LED_TIMEOUT_STOP);
-	  set_led (1);
-	  if (fatal_code & 1)
-	    chThdSleep (LED_TIMEOUT_ONE);
-	  else
-	    chThdSleep (LED_TIMEOUT_ZERO);
-	  set_led (0);
-	  chThdSleep (LED_TIMEOUT_INTERVAL);
-	  set_led (1);
-	  if (fatal_code & 2)
-	    chThdSleep (LED_TIMEOUT_ONE);
-	  else
-	    chThdSleep (LED_TIMEOUT_ZERO);
-	  set_led (0);
-	  chThdSleep (LED_TIMEOUT_INTERVAL);
-	  set_led (1);
-	  chThdSleep (LED_TIMEOUT_STOP);
-	  set_led (0);
-	  chThdSleep (LED_TIMEOUT_INTERVAL);
-	} 
-
-      if (bDeviceState != CONFIGURED)
-	{
-	  set_led (1);
-	  chThdSleep (LED_TIMEOUT_ZERO);
-	  set_led (0);
-	  chThdSleep (LED_TIMEOUT_STOP * 3);
+	  if (m)
+	    goto got_it;
+	  break;
+	case LED_FATAL:
+	  display_fatal_code ();
+	  break;
+	default:
+	  if ((m = emit_led (LED_TIMEOUT_ZERO, LED_TIMEOUT_STOP)))
+	    goto got_it;
+	  break;
 	}
-      else
-	/* Device configured */
-	if (icc_state == ICC_STATE_START)
-	  {
-	    set_led (1);
-	    chThdSleep (LED_TIMEOUT_ONE);
-	    set_led (0);
-	    chThdSleep (LED_TIMEOUT_STOP * 3);
-	  }
-	else
-	  /* GPGthread  running */
-	  {
-	    set_led (1);
-	    if ((auth_status & AC_ADMIN_AUTHORIZED) != 0)
-	      chThdSleep (LED_TIMEOUT_ONE);
-	    else
-	      chThdSleep (LED_TIMEOUT_ZERO);
-	    set_led (0);
-	    chThdSleep (LED_TIMEOUT_INTERVAL);
-	    set_led (1);
-	    if ((auth_status & AC_OTHER_AUTHORIZED) != 0)
-	      chThdSleep (LED_TIMEOUT_ONE);
-	    else
-	      chThdSleep (LED_TIMEOUT_ZERO);
-	    set_led (0);
-	    chThdSleep (LED_TIMEOUT_INTERVAL);
-	    set_led (1);
-	    if ((auth_status & AC_PSO_CDS_AUTHORIZED) != 0)
-	      chThdSleep (LED_TIMEOUT_ONE);
-	    else
-	      chThdSleep (LED_TIMEOUT_ZERO);
-
-	    if (icc_state == ICC_STATE_WAIT)
-	      {
-		set_led (0);
-		chThdSleep (LED_TIMEOUT_STOP * 2);
-	      }
-	    else if (icc_state == ICC_STATE_RECEIVE)
-	      {
-		set_led (0);
-		chThdSleep (LED_TIMEOUT_INTERVAL);
-		set_led (1);
-		chThdSleep (LED_TIMEOUT_ONE);
-		set_led (0);
-		chThdSleep (LED_TIMEOUT_STOP);
-	      }
-	    else
-	      {
-		set_led (0);
-		chThdSleep (LED_TIMEOUT_INTERVAL);
-		set_led (1);
-		chThdSleep (LED_TIMEOUT_STOP);
-		set_led (0);
-		chThdSleep (LED_TIMEOUT_INTERVAL);
-	      }
-	  }
 
 #ifdef DEBUG_MORE
       if (bDeviceState == CONFIGURED && (count % 10) == 0)
@@ -342,6 +420,41 @@ main (int argc, char **argv)
 #endif
     }
 
+  set_led (1);
+  usb_lld_shutdown ();
+  /* Disable SysTick */
+  SysTick->CTRL = 0;
+  /* Disable all interrupts */
+  port_disable ();
+  /* Set vector */
+  SCB->VTOR = (uint32_t)&_regnual_start;
+#ifdef DFU_SUPPORT
+#define FLASH_SYS_START_ADDR 0x08000000
+#define FLASH_SYS_END_ADDR (0x08000000+0x1000)
+  {
+    extern uint8_t _sys;
+    uint32_t addr;
+    handler *new_vector = (handler *)FLASH_SYS_START_ADDR;
+    void (*func) (void (*)(void)) = (void (*)(void (*)(void)))new_vector[10];
+
+    /* Kill DFU */
+    for (addr = FLASH_SYS_START_ADDR; addr < FLASH_SYS_END_ADDR;
+	 addr += FLASH_PAGE_SIZE)
+      flash_erase_page (addr);
+
+    /* copy system service routines */
+    flash_write (FLASH_SYS_START_ADDR, &_sys, 0x1000);
+
+    /* Leave Gnuk to exec reGNUal */
+    (*func) (*((void (**)(void))(&_regnual_start+4)));
+    for (;;);
+  }
+#else
+  /* Leave Gnuk to exec reGNUal */
+  flash_erase_all_and_exec (*((void (**)(void))(&_regnual_start+4)));
+#endif
+
+  /* Never reached */
   return 0;
 }
 
@@ -349,6 +462,7 @@ void
 fatal (uint8_t code)
 {
   fatal_code = code;
+  chEvtSignal (main_thread, LED_FATAL);
   _write ("fatal\r\n", 7);
   for (;;);
 }

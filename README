@@ -1,26 +1,26 @@
-Gnuk - software for GnuPG USB Token
+Gnuk - An Implementation of USB Cryptographic Token for GnuPG
 
-							   Version 0.14
-							     2011-10-07
-						           Niibe Yutaka
+							  Version 1.0.1
+							     2012-08-03
+							   Niibe Yutaka
 				      Free Software Initiative of Japan
 
 What's Gnuk?
 ============
 
-Gnuk is software implementation of a USB token for GNU Privacy Guard.
-Gnuk supports OpenPGP card protocol version 2, and it runs on STM32
-processor.
+Gnuk is an implementation of USB cryptographic token for GNU Privacy
+Guard.  Gnuk supports OpenPGP card protocol version 2, and it runs on
+STM32F103 processor.
 
 I wish that Gnuk will be a developer's soother who uses GnuPG.  I have
 been nervous of storing secret key(s) on usual secondary storage.
-While I want to work at different places, but it is not the choice for
-me to bring a card reader all the time.  With Gnuk, this issue will be
-solved by a USB token which is small enough.
+There is a solution with OpenPGP card, but it is not the choice for
+me, as card reader is not common device.  With Gnuk, this issue will
+be solved by a USB token.
 
 Please look at the graphics of "gnuk.svg" for the software name.  My
-son used to be with his NUK(R), always, everywhere.  I am with a USB
-Token by "Gnuk", always, everywhere.
+son used to be with his NUK(R), always, everywhere.  Now, I am with a
+USB Cryptographic Token by "Gnuk", always, everywhere.
 
 
 FAQ
@@ -30,18 +30,15 @@ Q0: How Gnuk USB Token is superior than other solutions (OpenPGP
     card 2.0, GPF Crypto Stick, etc.) ?
     http://www.g10code.de/p-card.html
     http://www.privacyfoundation.de/crypto_stick/
-A0: IMRHO, not quite.  There is no ready-to-use out-of-box product.
-    (It is welcome for me that some vendor will manufacture Gnuk USB
-     Token.  Even I can help design of hardware, if needed.)
-    Good points are:
+A0: Good points of Gnuk are:
     * If you have skill of electronics and like DIY, you can build
       Gnuk Token cheaper (see Q8-A8).
     * You can study Gnuk to modify and to enhance.  For example, you
       can implement your own authentication method with some sensor
-      such as acceleration sensor.
+      such as an acceleration sensor.
     * It is "of Free Software"; Gnuk is distributed under GPLv3+,
-            "by Free Software"; Gnuk development requires only Free Software
-	    	                (GNU Toolchain, Python, etc.), 
+	    "by Free Software"; Gnuk development requires only Free Software
+				(GNU Toolchain, Python, etc.), 
 	    "for Free Software"; Gnuk supports GnuPG.
 
 Q1: What kind of key algorithm is supported?
@@ -54,24 +51,25 @@ Q3: What's your recommendation for target board?
 A3: Orthodox choice is Olimex STM32-H103.
     If you have skill of electronics and like DIY, STM32 part of STM8S
     Discovery Kit might be the best choice.
-    Currently FST-01 (Flying Stone Tiny 01) is under development,
-    it will be the best choice, hopefully.
+    FST-01 (Flying Stone Tiny 01) will be soon available for sale,
+    and it will be the best choice, hopefully.
 
 Q4: What's version of GnuPG are you using?
 A4: In Debian GNU/Linux system, I use gnupg 1.4.11-3 and gnupg-agent
-    2.0.14-2 (in sid).  With older versions, you can only sign with SHA1.
+    2.0.18-2.  With older versions, you can only sign with SHA1.
     See: http://www.fsij.org/gnuk/gnupg2-fixes-needed
 
 Q5: What's version of pcscd and libccid are you using?
 A5: In Debian GNU/Linux system, I use pcscd 1.5.5-4 and libccid 1.3.11-2,
     which is in squeeze.  Note that you need to edit /etc/libccid_Info.plist
     when using libccid (< 1.4.1).
+    Note that pcscd and libccid are optional, you can use Gnuk without them.
 
 Q6: What kinds of hardware is required for development?
-A6: You need a target board plus a JTAG debugger.  If you just want to
-    test Gnuk for target boards with DfuSe, JTAG debugger is not
-    the requirement.  Note that for real use, you need JTAG debugger
-    to enable flash ROM protection.
+A6: You need a target board plus a JTAG/SWD debugger.  If you just
+    want to test Gnuk for target boards with DfuSe, JTAG debugger is
+    not the requirement.  Note that for real use, you need JTAG/SWD
+    debugger to enable flash ROM protection.
 
 Q7: How much does it cost?
 A7: Olimex STM32-H103 plus ARM-USB-TINY-H cost 70 Euro or so.
@@ -82,20 +80,46 @@ A8: STM8S Discovery Kit costs 750 JPY (< $10 USD) only.  You can build
     http://www.fsij.org/gnuk/jtag_dongle_ftdi2232
 
 Q9: I got an error like "gpg: selecting openpgp failed: ec=6.108", what's up?
+
 A9: GnuPG's SCDaemon has problems for handling insertion/removal of
-    card/reader (problems are fixed in trunk).  When your newly
-    inserted token is not found by GnuPG, try killing scdaemon and let
-    it to be invoked again.  I do:
-      $ killall -9 scdaemon
+    card/reader (problems are fixed in trunk, and backported to 2.0
+    branch, it will be 2.0.20).  When your newly inserted token is not
+    found by GnuPG, try killing scdaemon and let it to be invoked
+    again.  I do:
+
+	 $ gpg-connect-agent "SCD KILLSCD" "SCD BYE" /bye
+
     and confirm scdaemon doesn't exist, then,
-      $ gpg-connect-agent learn /bye
+
+	 $ gpg-connect-agent learn /bye
+
+Qa: With GNOME 2, I can't use Gnuk Token for SSH.  How can we use it for SSH?
+Aa: You need to deactivate seahorse-agent and gnome-keyring, but use
+    gpg-agant for the role of ssh-agent.  For gnome-keyring please do:
+
+      $ gconftool-2 --type bool --set /apps/gnome-keyring/daemon-components/ssh false
+
+Qb: With GNOME 3, I can't use Gnuk Token at all.  Why?
+Ab: That's because gnome-keyring-daemon interferes GnuPG.  Type:
+
+      $ gnome-session-properties
+
+    and at the tab of "Startup Programs", disable check buttons for
+    "GPG Password Agent" and "SSH Key Agent".
+
+Qc: Do you know a good SWD debugger to connect FST-01 or something?
+Ac: ST-Link/V2 is cheap one.  We have a tool/stlinkv2.py as flash ROM
+    writer program.
 
 
 Release notes
 =============
 
-This is fifteenth release of Gnuk.  While it works well for specific
-usages and it is considered stable, it is still somewhat experimental.
+This is a minor release in version 1.0 series of Gnuk.
+
+While it is daily use for more than a year, some newly introduced
+features (including key generation and firmware upgrade) should be
+considered experimental.
 
 Tested features are:
 
@@ -112,35 +136,42 @@ Tested features are:
 	* Changing value of password status bytes (0x00C4): forcesig
 	* Verify with pin pad
 	* Modify with pin pad
+	* Card holder certificate (read)
+	* Removal of keys
+	  (Overriding key import is not supported,
+	  but you can remove all keys to import again).
+	* Key generation on device side
+
+Original features of Gnuk, tested lightly:
+
+	* OpenPGP card serial number setup
+	* Card holder certificate (write by UPDATE BINARY)
+	* Upgrading with "EXTERNAL AUTHENTICATE" by reGNUal
 
 It is known not-working well:
 
 	* For some version of kernel and libccid, --enable-debug can't
-          work well.  Please disable DEBUG option if it doesn't work well.
+	  work well.  Please make sure to disable DEBUG option if it
+	  doesn't work well.
 
-	* Card holder certificate
-	  It is implemented in Gnuk side.  But its size matters (>
-	  1KB).  GnuPG cannot handle a data object of large size with
-	  PC/SC backend.  Specifically, handle_transmit function in
-	  pcsc-wrapper.c uses the buffer of size 1024-byte.
-
-Not supported feature(s):
-
-	* Overriding key import.  You need to remove all keys first.
-	* Key generation on device side
+It is known that the combination of libccid 1.4.1 (or newer) with
+libusb 1.0.8 (or older) has a minor problem.  It is rare but it is
+possible for USB communication to be failed, because of a bug in
+libusb implementation.  Use libusbx 1.0.9 or newer, or don't use
+PC/SC, but use internal CCID driver of GnuPG.
 
 
 Targets
 =======
 
-We use Olimex STM32-H103 board.  We also use STM32 part of STM8S
-Discovery Kit.
+We use Olimex STM32-H103 board and Flying Stone Tiny 01 (FST-01).  We
+also use STM32 part of STM8S Discovery Kit.
 
 With DfuSe support, CQ STARM, STBee, and STBee Mini are also our
 targets.  But those targets with DfuSe are basically not for normal
 use but for experiments, because it would be impossible for DfuSe to
 disable read from flash.  For real use, please consider killing DfuSe
-and enable read protection using JTAG debugger.
+and enabling read protection using JTAG debugger.
 
 I think that it could run on Olimex STM32-P103, or other boards with
 STM32F103.  Besides, we are porting it to STM32 Primer 2.
@@ -157,11 +188,21 @@ Another PIN-pad support is connecting rotary encoder, push switch and
 7-segment LED display.  Both of PIN verification and PIN modification
 are supported for this circuit extension.
 
+Note that you need pinpad support for GnuPG to use PIN-pad enabled
+Gnuk.  The pinpad support for GnuPG is currently in the master branch
+of GnuPG git repository at git.gnupg.org, and it's under evaluation.
+When it will be considered stable, it will be put onto stable branch.
+
 
 Souce code
 ==========
 
 Gnuk source code is under src/ directory.
+
+Note that SHA-2 hash function implementation, src/sha256.c, is based
+on the original implementation by Dr. Brian Gladman.  See:
+
+  http://gladman.plushost.co.uk/oldsite/cryptography_technology/sha/index.php
 
 
 License
@@ -171,12 +212,12 @@ It is distributed under GNU General Public Licence version 3 or later
 (GPLv3+).  Please see src/COPYING.
 
 Please note that it is distributed with external source code too.
-Please read relevant licenses for external source code, too.
+Please read relevant licenses for external source code as well.
 
 The author(s) of Gnuk expect users of Gnuk will be able to access the
 source code of Gnuk, so that users can study the code and can modify
 if needed.  This doesn't mean person who has a USB Token by Gnuk
-should be able to acess everything on the Token, regardless of its
+should be able to access everything on the Token, regardless of its
 protections.  Private keys, and other information should be protected
 properly.
 
@@ -195,28 +236,73 @@ Gnuk is distributed with external source code.
 * polarssl-0.14.0/  -- PolarSSL 0.14.0
 
   Taken from http://polarssl.org/
-  We use PolarSSL for RSA computation, AES encryption/decryption
-  and SHA-1 computation.
+  We use PolarSSL for RSA computation, AES encryption/decryption.
 
   The file include/polarssl/bn_mul.h is heavily modified for ARM
   Cortex-M3.
 
-* STM32_USB-FS-Device_Driver/ -- a part of USB-FS-Device_Lib
-* Virtual_COM_Port/ -- a part of USB-FS-Device_Lib
+  The files include/polarssl/rsa.h, library/rsa.c,
+  include/polarssl/bignum.h, and library/bignum.c are modified so that
+  f_rng function returns unsigned char.
 
-  STM32F10x USB Full Speed Device Library (USB-FS-Device_Lib)
-  is a STM32F10x library for USB functionality.
+  The file library/rsa.c is modified so that it only computes things
+  needed for Gnuk.
 
-  I took Libraries/STM32_USB-FS-Device_Driver and 
-  Project/Virtual_COM_Port in STM32_USB-FS-Device_Lib distribution.
-  See http://www.st.com/ for detail.
+  The file library/aes.c is modified so that some constants can
+  go to .sys section.
+
+
+USB vendor ID and product ID (USB device ID)
+============================================
+
+When you have a vender ID and assign a product ID for Gnuk, edit the
+file GNUK_USB_DEVICE_ID and add an entry for yours.  In this case,
+please contact Niibe, so that it is listed to the file in the official
+release of the source code.
+
+When you are modifing Gnuk and installing the binary to device, you
+should replace the vendor string to yours, so that users can see it's
+not by original vendor, and it is modified version.
+
+FSIJ allows you to use USB device ID of FSIJ (234b:0000) for devices
+with Gnuk under one of following conditions:
+
+  * For everyone for experimental purpose:
+
+    - You must not distribute a binary with FSIJ's USB device ID, but
+      must use the binary by yourself only for your experiment.  Note
+      that "Distributing binary" includes distributing a device which
+      holds the binary.
+
+  * For general individuals:
+
+    - You must use your Gnuk device with a card serial number which is
+      *not* by FSIJ.  Easy one would be a card serial number generated
+      by chip unique ID.
+
+  * For individuals with explicit permission from FSIJ.
+
+    - You should have an assigned card serial number by FSIJ,
+      please use that number for your device.
+      (There a file 'GNUK_SERIAL_NUMBER' in the official release.)
+
+FSIJ could give companies or business entities "second source
+manufacturer" license to use USB device ID of FSIJ for devices with
+unmodified version of Gnuk, provided they support Free Software and
+respect users' freedom for computing.  Please ask FSIJ for the
+license.
+
+Otherwise, companies which want to distribute Gnuk devices, please use
+your own USB vendor ID and product ID.  Please replace vendor string
+and possibly product string to yours, when you modify Gnuk.
 
 
 Host Requirements
 =================
 
-For GNU/Linux, libccid version >= 1.3.11 is required.
-libccid version == 1.3.9 is known not working well by the issue [r4235].
+For GNU/Linux, PC/SC service is an option, you can use GnuPG's
+internal CCID driver instead.  If you chose using PC/SC service,
+libccid version >= 1.3.11 is recommended for GNU/Linux.
 
 I think that it should not be requirment but the kernel version of my use is:
 Linux version 2.6.32-5-686 (Debian 2.6.32-18) (ben@decadent.org.uk) (gcc version 4.3.5 (Debian 4.3.5-2) ) #1 SMP Sat Jul 24 02:27:10 UTC 2010
@@ -230,8 +316,31 @@ How to compile
 
 You need GNU toolchain and newlib for 'arm-none-eabi' target.
 
-See http://github.com/uwehermann/summon-arm-toolchain/ for preparation
-of GNU Toolchain for 'arm-none-eabi' target.
+See http://github.com/esden/summon-arm-toolchain/ (which includes fix
+of binutils-2.21.1) for preparation of GNU Toolchain for
+'arm-none-eabi' target.  This is for GCC 4.5.
+
+# Note that we need to link correct C library (for string functions).
+# For this purpose, Makefile.in contains following line:
+# 
+# 	MCFLAGS= -mcpu=$(MCU) -mfix-cortex-m3-ldrd
+# 
+# This should not be needed (as -mcpu=cortex-m3 means
+# -mfix-cortex-m3-ldrd), but in practice it is needed for 
+# the configuration of patch-gcc-config-arm-t-arm-elf.diff in
+# summon-arm-toolchain.
+# 
+# In ChibiOS_2.0.8/os/ports/GCC/ARM/rules.mk, it specifies
+# -mno-thumb-interwork option.  This means that you should not
+# link C library which contains ARM (not Thumb) code.
+
+Recently, there is "gcc-arm-embedded" project.  See:
+
+    https://launchpad.net/gcc-arm-embedded/
+
+It is based on GCC 4.6.   For version 4.6-2012-q2-update, you'd
+need "-O3 -Os" instead of "-O2" and it will be slightly better.
+
 
 Change directory to `src':
 
@@ -239,7 +348,11 @@ Change directory to `src':
 
 Then, run `configure':
 
-  $ ./configure
+  $ ./configure --vidpid=<VID:PID>
+
+Here, you need to specify USB vendor ID and product ID.  For FSIJ's,
+it's: --vidpid=234b:0000 .  Please read section 'USB vendor ID and
+product ID' above.
 
 Type:
 
@@ -266,6 +379,36 @@ Then, with another terminal, type following to write "gnuk.elf" to Flash ROM:
   > reset
   > exit
   $ 
+
+
+Flying Stone Tiny 01
+--------------------
+
+If you are using Flying Stone Tiny 01, you need a SWD writer.  I am
+using revision 946 of Simon Qian's Versaloon.
+
+    svn checkout -r 946 http://vsprog.googlecode.com/svn/trunk/
+
+For OpenOCD, we need unofficial patch.
+
+See the article of Versaloon Forum:
+
+    http://www.versaloon.com/bbs/viewtopic.php?p=16179
+
+
+Type following to invoke OpenOCD:
+
+  $ openocd -f interface/vsllink.cfg -c "transport select swd" -c "swd_mode 2" -f target/stm32f1x.cfg
+
+Then, with another terminal, type following to write "gnuk.elf" to Flash ROM:
+
+  $ telnet localhost 4444
+  > reset halt
+  > flash write_image erase gnuk.elf
+  > reset
+  > exit
+  $ 
+
 
 
 STM8S Discovery Kit
@@ -345,7 +488,7 @@ PyUSB (python-usb package in Debian).
 If scdaemon is running, please kill it, or you will get "Smartcard
 Exception" by "Sharing violation".
 
-  $ killall -9 scdaemon
+  $ gpg-connect-agent "SCD KILLSCD" "SCD BYE" /bye
 
 In case of PyUSB tool, you need to stop pcscd.
 
@@ -424,9 +567,13 @@ This entry has been added into libccid 1.4.1 already ([r5425]).
 Testing Gnuk
 ------------
 
-Try following to see Gnuk runs:
+Type following command to see Gnuk runs:
 
   $ gpg --card-status
+
+
+Besides, there is a functinality test under test/ directory.  See
+test/README.
 
 
 Personalize the Token and import keys
@@ -441,18 +588,21 @@ command is:
 Note that the factory setting of user password is "123456" and admin
 password is "12345678" as the specification.
 
-No, Gnuk doesn't support key generation.  You need to create your
-keys on your computer, and import them to Gnuk Token.  After you create
-your keys (they must be 2048-bit RSA), you can import them.
+It is recommended to create your keys on your computer, and import
+them to Gnuk Token.  After you create your keys (they must be 2048-bit
+RSA), you can import them.
 
-For detail, please see doc/DEMO and doc/DEMO-2.
+Gnuk supports key generation, but this feature is young and should be
+considered experimental.
+
+For detail, please see doc/note/DEMO and doc/note/DEMO-2.
 
 Note that it make sense to preserve your keys on your computer so that
 you can import the keys (again) to (possibly another) Gnuk Token.  In
 this case, you can use GnuPG's option to specify the home directory by
 --homedir.
 
-After creating keys by:
+After creating keys on your computer by:
 
   $ gpg --gen-key
   ...
@@ -502,6 +652,12 @@ You can see the output of PCSCD:
 
 You can observe the traffic of USB using "usbmon".  See the file:
 linux/Documentation/usb/usbmon.txt
+
+
+Firmware update
+===============
+
+See doc/note/firmware-update.
 
 
 Read-only Git Repository

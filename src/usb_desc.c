@@ -3,8 +3,11 @@
  */
 
 #include "config.h"
-#include "usb_lib.h"
-#include "usb_desc.h"
+#include "ch.h"
+#include "sys.h"
+#include "usb_lld.h"
+#include "usb_conf.h"
+#include "usb-cdc.h"
 
 #define USB_ICC_INTERFACE_CLASS 0x0B
 #define USB_ICC_INTERFACE_SUBCLASS 0x00
@@ -15,27 +18,40 @@
 static const uint8_t gnukDeviceDescriptor[] = {
   18,   /* bLength */
   USB_DEVICE_DESCRIPTOR_TYPE,     /* bDescriptorType */
-  0x00, 0x02,   /* bcdUSB = 2.00 */
+  0x10, 0x01,   /* bcdUSB = 1.1 */
   0x00,   /* bDeviceClass: 0 means deferred to interface */
   0x00,   /* bDeviceSubClass */
   0x00,   /* bDeviceProtocol */
   0x40,   /* bMaxPacketSize0 */
-  0x4b, 0x23,   /* idVendor = 0x234b (FSIJ) */
-  0x00, 0x00,   /* idProduct = 0x0000 (FSIJ USB Token) */
-  0x00, 0x02,   /* bcdDevice = 2.00 */
+#include "usb-vid-pid-ver.c.inc"
   1, /* Index of string descriptor describing manufacturer */
   2, /* Index of string descriptor describing product */
   3, /* Index of string descriptor describing the device's serial number */
   0x01    /* bNumConfigurations */
 };
 
+#define ICC_TOTAL_LENGTH (9+9+54+7+7)
+#define ICC_NUM_INTERFACES 1
+
 #ifdef ENABLE_VIRTUAL_COM_PORT
-#define W_TOTAL_LENGTH (9+9+54+7+7+9+5+5+4+5+7+9+7+7)
-#define NUM_INTERFACES 3	/* two for CDC, one for GPG */
+#define VCOM_TOTAL_LENGTH (9+5+5+4+5+7+9+7+7)
+#define VCOM_NUM_INTERFACES 2
 #else
-#define W_TOTAL_LENGTH (9+9+54+7+7)
-#define NUM_INTERFACES 1	/* GPG only */
+#define VCOM_TOTAL_LENGTH 0
+#define VCOM_NUM_INTERFACES 0
 #endif
+
+#ifdef PINPAD_DND_SUPPORT
+#define MSC_TOTAL_LENGTH (9+7+7)
+#define MSC_NUM_INTERFACES 1
+#else
+#define MSC_TOTAL_LENGTH 0
+#define MSC_NUM_INTERFACES 0
+#endif
+
+#define W_TOTAL_LENGTH (ICC_TOTAL_LENGTH+VCOM_TOTAL_LENGTH+MSC_TOTAL_LENGTH)
+#define NUM_INTERFACES (ICC_NUM_INTERFACES+VCOM_NUM_INTERFACES+MSC_NUM_INTERFACES)
+
 
 /* Configuation Descriptor */
 static const uint8_t gnukConfigDescriptor[] = {
@@ -86,8 +102,8 @@ static const uint8_t gnukConfigDescriptor[] = {
    * It is different now for better interaction to GPG's in-stock
    * ccid-driver.
    */
-  0x42, 0x08, 0x04, 0x00, /* dwFeatures (not ICCD):
-			   *  Short and extended APDU level: 0x40000 *
+  0x42, 0x08, 0x02, 0x00, /* dwFeatures (not ICCD):
+			   *  Short APDU level             : 0x20000 *
 			   *  (what? means ICCD?)          : 0x00800 *
 			   *  Automatic IFSD               : 0x00400
 			   *  NAD value other than 0x00    : 0x00200
@@ -100,12 +116,12 @@ static const uint8_t gnukConfigDescriptor[] = {
 			   *  Auto activaction of ICC	   : 0x00004
 			   *  Automatic conf. based on ATR : 0x00002  g
 			   */
-  0x40, 0x01, 0, 0,	  /* dwMaxCCIDMessageLength */
+  0x0f, 0x01, 0, 0,	  /* dwMaxCCIDMessageLength: 271 */
   0xff,			  /* bClassGetResponse: */
   0xff,			  /* bClassEnvelope: */
   0, 0,			  /* wLCDLayout: FIXED VALUE */
 #if defined(PINPAD_SUPPORT)
-#if defined(PINPAD_CIR_SUPPORT)
+#if defined(PINPAD_CIR_SUPPORT) || defined(PINPAD_DND_SUPPORT)
   1,			  /* bPinSupport: with PIN pad (verify) */
 #elif defined(PINPAD_DIAL_SUPPORT)
   3,			  /* bPinSupport: with PIN pad (verify, modify) */
@@ -114,17 +130,17 @@ static const uint8_t gnukConfigDescriptor[] = {
   0,			  /* bPinSupport: No PIN pad */
 #endif
   1,			  /* bMaxCCIDBusySlots: 1 */
-  /*Endpoint 1 Descriptor*/
+  /*Endpoint IN1 Descriptor*/
   7,			       /* bLength: Endpoint Descriptor size */
   USB_ENDPOINT_DESCRIPTOR_TYPE,	/* bDescriptorType: Endpoint */
   0x81,				/* bEndpointAddress: (IN1) */
   0x02,				/* bmAttributes: Bulk */
   USB_ICC_DATA_SIZE, 0x00,      /* wMaxPacketSize: */
   0x00,				/* bInterval */
-  /*Endpoint 2 Descriptor*/
+  /*Endpoint OUT1 Descriptor*/
   7,			       /* bLength: Endpoint Descriptor size */
   USB_ENDPOINT_DESCRIPTOR_TYPE,	/* bDescriptorType: Endpoint */
-  0x02,				/* bEndpointAddress: (OUT2) */
+  0x01,				/* bEndpointAddress: (OUT1) */
   0x02,				/* bmAttributes: Bulk */
   USB_ICC_DATA_SIZE, 0x00,	/* wMaxPacketSize: */
   0x00,				/* bInterval */
@@ -193,7 +209,40 @@ static const uint8_t gnukConfigDescriptor[] = {
   0x83,				    /* bEndpointAddress: (IN3) */
   0x02,				    /* bmAttributes: Bulk */
   VIRTUAL_COM_PORT_DATA_SIZE, 0x00, /* wMaxPacketSize: */
-  0x00				    /* bInterval */
+  0x00,				    /* bInterval */
+#endif
+#ifdef PINPAD_DND_SUPPORT
+  /* Interface Descriptor.*/
+  9,			      /* bLength: Interface Descriptor size */
+  USB_INTERFACE_DESCRIPTOR_TYPE, /* bDescriptorType: Interface */
+#ifdef ENABLE_VIRTUAL_COM_PORT
+  0x03,				/* bInterfaceNumber.                */
+#else
+  0x01,				/* bInterfaceNumber.                */
+#endif
+  0x00,				/* bAlternateSetting.               */
+  0x02,				/* bNumEndpoints.                   */
+  0x08,				/* bInterfaceClass (Mass Stprage).  */
+  0x06,				/* bInterfaceSubClass (SCSI
+				   transparent command set, MSCO
+				   chapter 2).                      */
+  0x50,				/* bInterfaceProtocol (Bulk-Only
+				   Mass Storage, MSCO chapter 3).  */
+  0x00,				/* iInterface.                      */
+  /* Endpoint Descriptor.*/
+  7,			       /* bLength: Endpoint Descriptor size */
+  USB_ENDPOINT_DESCRIPTOR_TYPE,	   /* bDescriptorType: Endpoint */
+  0x86,				   /* bEndpointAddress: (IN6)   */
+  0x02,				/* bmAttributes (Bulk).             */
+  0x40, 0x00,			/* wMaxPacketSize.                  */
+  0x00,				/* bInterval (ignored for bulk).    */
+  /* Endpoint Descriptor.*/
+  7,			       /* bLength: Endpoint Descriptor size */
+  USB_ENDPOINT_DESCRIPTOR_TYPE,	   /* bDescriptorType: Endpoint */
+  0x06,				   /* bEndpointAddress: (OUT6)    */
+  0x02,			 /* bmAttributes (Bulk).             */
+  0x40, 0x00,		 /* wMaxPacketSize.                  */
+  0x00,         /* bInterval (ignored for bulk).    */
 #endif
 };
 
@@ -205,48 +254,36 @@ static const uint8_t gnukStringLangID[] = {
   0x09, 0x04			/* LangID = 0x0409: US-English */
 };
 
-static const uint8_t gnukStringVendor[] = {
-  33*2+2,			/* bLength */
-  USB_STRING_DESCRIPTOR_TYPE,	/* bDescriptorType*/
-  /* Manufacturer: "Free Software Initiative of Japan" */
-  'F', 0, 'r', 0, 'e', 0, 'e', 0, ' ', 0, 'S', 0, 'o', 0, 'f', 0,
-  't', 0, 'w', 0, 'a', 0, 'r', 0, 'e', 0, ' ', 0, 'I', 0, 'n', 0,
-  'i', 0, 't', 0, 'i', 0, 'a', 0, 't', 0, 'i', 0, 'v', 0, 'e', 0,
-  ' ', 0, 'o', 0, 'f', 0, ' ', 0, 'J', 0, 'a', 0, 'p', 0, 'a', 0,
-  'n', 0
-};
-
-static const uint8_t gnukStringProduct[] = {
-  14*2+2,			/* bLength */
-  USB_STRING_DESCRIPTOR_TYPE,	/* bDescriptorType */
-  /* Product name: "FSIJ USB Token" */
-  'F', 0, 'S', 0, 'I', 0, 'J', 0, ' ', 0, 'U', 0, 'S', 0, 'B', 0,
-  ' ', 0, 'T', 0, 'o', 0, 'k', 0, 'e', 0, 'n', 0
-};
+#define USB_STRINGS_FOR_GNUK 1
+#include "usb-strings.c.inc"
 
 const uint8_t gnukStringSerial[] = {
-  13*2+2,			/* bLength */
+  19*2+2,			/* bLength */
   USB_STRING_DESCRIPTOR_TYPE,	/* bDescriptorType */
-  '0', 0, '.', 0, '1', 0, '4', 0, /* Version number of Gnuk */
+  /* FSIJ-1.0 */
+  'F', 0, 'S', 0, 'I', 0, 'J', 0, '-', 0,
+  '1', 0, '.', 0, '0', 0, '.', 0, '1', 0, /* Version number of Gnuk */
   '-', 0,
   0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
   0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
 };
 
-
-const ONE_DESCRIPTOR Device_Descriptor = {
-  (uint8_t*)gnukDeviceDescriptor,
+const struct Descriptor Device_Descriptor = {
+  gnukDeviceDescriptor,
   sizeof (gnukDeviceDescriptor)
 };
 
-const ONE_DESCRIPTOR Config_Descriptor = {
-  (uint8_t*)gnukConfigDescriptor,
+const struct Descriptor Config_Descriptor = {
+  gnukConfigDescriptor,
   sizeof (gnukConfigDescriptor)
 };
 
-const ONE_DESCRIPTOR String_Descriptor[] = {
-  {(uint8_t*)gnukStringLangID, sizeof (gnukStringLangID)},
-  {(uint8_t*)gnukStringVendor, sizeof (gnukStringVendor)},
-  {(uint8_t*)gnukStringProduct, sizeof (gnukStringProduct)},
-  {(uint8_t*)gnukStringSerial, sizeof (gnukStringSerial)},
+const struct Descriptor String_Descriptors[NUM_STRING_DESC] = {
+  {gnukStringLangID, sizeof (gnukStringLangID)},
+  {gnukStringVendor, sizeof (gnukStringVendor)},
+  {gnukStringProduct, sizeof (gnukStringProduct)},
+  {gnukStringSerial, sizeof (gnukStringSerial)},
+  {gnuk_revision_detail, sizeof (gnuk_revision_detail)},
+  {gnuk_config_options, sizeof (gnuk_config_options)},
+  {sys_version, sizeof (sys_version)},
 };

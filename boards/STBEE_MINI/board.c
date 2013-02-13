@@ -5,21 +5,25 @@
 #include "../common/hwinit.c"
 
 void
-hwinit0 (void)
-{
-  hwinit0_common ();
-}
-
-void
 hwinit1 (void)
 {
   hwinit1_common ();
 
-#if defined(PINPAD_SUPPORT)
+#if !defined(DFU_SUPPORT)
+  if (palReadPad (IOPORT3, GPIOC_BUTTON) == 0)
+    /*
+     * Since LEDs are connected to JTMS/SWDIO and JTDI pin,
+     * we can't use LED to let know users in this state.
+     */
+    for (;;);		       /* Wait for JTAG debugger connection */
+#endif
+
+#if defined(PINPAD_SUPPORT) && !defined(DFU_SUPPORT)
   palWritePort(IOPORT2, 0x7fff); /* Only clear GPIOB_7SEG_DP */
   while (palReadPad (IOPORT2, GPIOB_BUTTON) != 0)
     ;				/* Wait for JTAG debugger connection */
   palWritePort(IOPORT2, 0xffff); /* All set */
+#endif
 
 #if defined(PINPAD_CIR_SUPPORT)
   /* EXTI0 <= PB0 */
@@ -74,7 +78,6 @@ hwinit1 (void)
   /* Generate UEV to upload PSC and ARR	 */
   TIM4->EGR = TIM_EGR_UG;
 #endif
-#endif
   /*
    * Disable JTAG and SWD, done after hwinit1_common as HAL resets AFIO
    */
@@ -83,25 +86,6 @@ hwinit1 (void)
   palSetPad (IOPORT1, GPIOA_LED2);
 }
 
-void
-USB_Cable_Config (FunctionalState NewState)
-{
-  if (NewState != DISABLE)
-    palSetPad (IOPORT1, GPIOA_USB_ENABLE);
-  else
-    palClearPad (IOPORT1, GPIOA_USB_ENABLE);
-}
-
-void
-set_led (int value)
-{
-  if (value)
-    palClearPad (IOPORT1, GPIOA_LED1);
-  else
-    palSetPad (IOPORT1, GPIOA_LED1);
-}
-
-#if defined(PINPAD_SUPPORT)
 #if defined(PINPAD_CIR_SUPPORT)
 void
 cir_ext_disable (void)
@@ -166,5 +150,4 @@ CH_IRQ_HANDLER (EXTI2_IRQHandler)
   chSysUnlockFromIsr ();
   CH_IRQ_EPILOGUE ();
 }
-#endif
 #endif

@@ -9,7 +9,7 @@ You can use/distribute/modify/etc. this for any purpose.
 
 import binascii
 
-class intel_hex:
+class intel_hex(object):
     def __init__(self, filename):
         self.start_address = 0
         self.address = 0

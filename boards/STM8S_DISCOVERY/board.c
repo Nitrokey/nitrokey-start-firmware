@@ -5,17 +5,11 @@
 #include "../common/hwinit.c"
 
 void
-hwinit0 (void)
-{
-  hwinit0_common ();
-}
-
-void
 hwinit1 (void)
 {
   hwinit1_common ();
 
-#if defined(PINPAD_SUPPORT)
+#if defined(PINPAD_CIR_SUPPORT)
   /* EXTI5 <= PB5 */
   AFIO->EXTICR[1] = AFIO_EXTICR2_EXTI5_PB;
   EXTI->IMR = 0;
@@ -46,23 +40,7 @@ hwinit1 (void)
   AFIO->MAPR |= AFIO_MAPR_TIM3_REMAP_PARTIALREMAP;
 }
 
-void
-USB_Cable_Config (FunctionalState NewState)
-{
-  /* No functionality to stop USB.  */
-  (void)NewState;
-}
-
-void
-set_led (int value)
-{
-  if (value)
-    palSetPad (IOPORT1, GPIOA_LED);
-  else
-    palClearPad (IOPORT1, GPIOA_LED);
-}
-
-#if defined(PINPAD_SUPPORT)
+#if defined(PINPAD_CIR_SUPPORT)
 void
 cir_ext_disable (void)
 {
