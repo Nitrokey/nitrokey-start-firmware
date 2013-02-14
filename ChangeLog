@@ -15,7 +15,6 @@
 	* src/gnuk.h (CHALLENGE_LEN): Moved here (was: openpgp.c).
 
 	* tool/gnuk_token.py (iso7816_compose): Add Le field.
-	(gnuk_token.cmd_get_challenge): Supply Le.
 
 2013-01-30  Niibe Yutaka  <gniibe@fsij.org>
 

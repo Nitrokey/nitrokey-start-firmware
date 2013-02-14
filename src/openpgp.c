@@ -1049,7 +1049,7 @@ cmd_get_challenge (void)
       return;
     }
   else if (len == 0)
-    /* backward compatibility */
+    /* Le is not specified.  Return full-sized challenge by GET_RESPONSE.  */
     len = CHALLENGE_LEN;
 
   if (challenge)

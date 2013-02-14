@@ -431,7 +431,7 @@ class gnuk_token(object):
             raise ValueError, ("%02x%02x" % (sw[0], sw[1]))
 
     def cmd_get_challenge(self):
-        cmd_data = iso7816_compose(0x84, 0x00, 0x00, '', le=32)
+        cmd_data = iso7816_compose(0x84, 0x00, 0x00, '')
         sw = self.icc_send_cmd(cmd_data)
         if len(sw) != 2:
             raise ValueError(sw)
