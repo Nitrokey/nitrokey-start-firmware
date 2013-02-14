@@ -1,5 +1,10 @@
 2013-02-14  Niibe Yutaka  <gniibe@fsij.org>
 
+	* test/features/002_get_data_static.feature: Value of extended
+	capabilities changed.
+	* test/features/402_get_data_static.feature: Ditto.
+	* test/features/802_get_data_static.feature: Ditto.
+
 	* src/openpgp.c (cmd_write_binary): Move erasing page of update
 	keys to...
 	(modify_binary): ...here.
