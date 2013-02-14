@@ -1,3 +1,11 @@
+2013-02-14  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/openpgp.c (cmd_write_binary): Move erasing page of update
+	keys to...
+	(modify_binary): ...here.
+
+	* src/flash.c (flash_write_binary): Handle removal of update keys.
+
 2013-02-13  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/openpgp.c (cmd_get_challenge): Handle Le field.

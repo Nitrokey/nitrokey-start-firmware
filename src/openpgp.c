@@ -1,7 +1,8 @@
 /*
  * openpgp.c -- OpenPGP card protocol support
  *
- * Copyright (C) 2010, 2011, 2012 Free Software Initiative of Japan
+ * Copyright (C) 2010, 2011, 2012, 2013
+ *               Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
  * This file is a part of Gnuk, a GnuPG USB Token implementation.
@@ -946,6 +947,26 @@ modify_binary (uint8_t op, uint8_t p1, uint8_t p2, int len)
       return;
     }
 
+  if (file_id >= FILEID_UPDATE_KEY_0 && file_id <= FILEID_UPDATE_KEY_3
+      && len == 0 && offset == 0)
+    {
+      int i;
+      const uint8_t *p;
+
+      for (i = 0; i < 4; i++)
+	{
+	  p = gpg_get_firmware_update_key (i);
+	  if (p[0] != 0x00 || p[1] != 0x00) /* still valid */
+	    break;
+	}
+
+      if (i == 4)			/* all update keys are removed */
+	{
+	  p = gpg_get_firmware_update_key (0);
+	  flash_erase_page ((uint32_t)p);
+	}
+    }
+
   GPG_SUCCESS ();
 }
 
@@ -967,25 +988,9 @@ static void
 cmd_write_binary (void)
 {
   int len = apdu.cmd_apdu_data_len;
-  int i;
-  const uint8_t *p;
 
   DEBUG_INFO (" - WRITE BINARY\r\n");
   modify_binary (MBD_OPRATION_WRITE, P1 (apdu), P2 (apdu), len);
-
-  for (i = 0; i < 4; i++)
-    {
-      p = gpg_get_firmware_update_key (i);
-      if (p[0] != 0x00 || p[1] != 0x00) /* still valid */
-	break;
-    }
-
-  if (i == 4)			/* all update keys are removed */
-    {
-      p = gpg_get_firmware_update_key (0);
-      flash_erase_page ((uint32_t)p);
-    }
-
   DEBUG_INFO ("WRITE BINARY done.\r\n");
 }
 

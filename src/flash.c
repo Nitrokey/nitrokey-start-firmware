@@ -1,7 +1,8 @@
 /*
  * flash.c -- Data Objects (DO) and GPG Key handling on Flash ROM
  *
- * Copyright (C) 2010, 2011, 2012 Free Software Initiative of Japan
+ * Copyright (C) 2010, 2011, 2012, 2013
+ *               Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
  * This file is a part of Gnuk, a GnuPG USB Token implementation.
@@ -516,6 +517,12 @@ flash_write_binary (uint8_t file_id, const uint8_t *data,
     {
       maxsize = KEY_CONTENT_LEN;
       p = gpg_get_firmware_update_key (file_id - FILEID_UPDATE_KEY_0);
+      if (len == 0 && offset == 0)
+	{ /* This means removal of update key.  */
+	  if (flash_program_halfword ((uint32_t)p, 0) != 0)
+	    flash_warning ("DO WRITE ERROR");
+	  return 0;
+	}
     }
 #if defined(CERTDO_SUPPORT)
   else if (file_id == FILEID_CH_CERTIFICATE)

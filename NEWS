@@ -2,7 +2,7 @@ Gnuk NEWS - User visible changes
 
 * Major changes in Gnuk 1.0.2
 
-  Released 2012-12-??, by NIIBE Yutaka
+  Released 2013-02-15, by NIIBE Yutaka
 
 ** Product string is now "Gnuk Token" (was: "FSIJ USB Token")
 Since the USB ID Repository suggests not including vendor name
@@ -30,6 +30,11 @@ When time extension is requested by Gnuk Token to host PC, argument
 field was 0, which was wrong (but it works for most PC/SC
 implementations and GnuPG internal driver).  Now it's 1, which means
 1*BWT.
+
+** OpenPGP card protocol enhancement
+Now, VERIFY command accepts empty data and returns remaining trial
+counts, or 0x9000 (OK) when it's already authenticated.  This is
+useful for application to synchronize card's authentication status.
 
 
 * Major changes in Gnuk 1.0.1

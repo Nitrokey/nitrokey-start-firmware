@@ -1,7 +1,7 @@
 Gnuk - An Implementation of USB Cryptographic Token for GnuPG
 
-							  Version 1.0.1
-							     2012-08-03
+							  Version 1.0.2
+							     2013-02-15
 							   Niibe Yutaka
 				      Free Software Initiative of Japan
 
@@ -42,7 +42,7 @@ A0: Good points of Gnuk are:
 	    "for Free Software"; Gnuk supports GnuPG.
 
 Q1: What kind of key algorithm is supported?
-A1: Gnuk only supports 2048-bit RSA.
+A1: Gnuk version 1 only supports 2048-bit RSA.
 
 Q2: How long does it take for digital signing?
 A2: It takes a second and a half or so. 
@@ -115,9 +115,9 @@ Ac: ST-Link/V2 is cheap one.  We have a tool/stlinkv2.py as flash ROM
 Release notes
 =============
 
-This is a minor release in version 1.0 series of Gnuk.
+This is a second minor release in version 1.0 series of Gnuk.
 
-While it is daily use for more than a year, some newly introduced
+While it is daily use for a year and a half, some newly introduced
 features (including key generation and firmware upgrade) should be
 considered experimental.
 
