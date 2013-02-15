@@ -178,6 +178,7 @@ extern msg_t USBthread (void *arg);
 #define LED_TIMEOUT_STOP	MS2ST(200)
 
 
+/* It has two-byte prefix and content is "FSIJ-1.0.1-" (2 + 11*2).  */
 #define ID_OFFSET 24
 static void
 device_initialize_once (void)

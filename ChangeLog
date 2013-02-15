@@ -1,3 +1,8 @@
+2013-02-15  Niibe Yutaka  <gniibe@fsij.org>
+
+	* Version 1.0.2.
+	* src/usb_desc.c (gnukStringSerial): Updated.
+
 2013-02-14  Niibe Yutaka  <gniibe@fsij.org>
 
 	* test/features/002_get_data_static.feature: Value of extended
