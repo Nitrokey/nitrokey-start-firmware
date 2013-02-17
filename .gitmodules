@@ -1,0 +1,3 @@
+[submodule "chibios"]
+	path = chibios
+	url = git@gitorious.org:gnuk/chibios.git
