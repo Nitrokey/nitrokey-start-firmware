@@ -8,7 +8,7 @@ Feature: command GET DATA
 
   Scenario: data object extended capabilities
      When requesting extended capabilities: c0
-     Then data should match: \x30\x00\x00\x00[\x00\x08]\x00\x00\xff\x01\x00
+     Then data should match: \x70\x00\x00\x20[\x00\x08]\x00\x00\xff\x01\x00
 
   Scenario: data object algorithm attributes 1
      When requesting algorithm attributes 1: c1

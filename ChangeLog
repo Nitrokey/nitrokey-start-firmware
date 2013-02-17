@@ -1,3 +1,21 @@
+2013-02-15  Niibe Yutaka  <gniibe@fsij.org>
+
+	* Version 1.0.2.
+	* src/usb_desc.c (gnukStringSerial): Updated.
+
+2013-02-14  Niibe Yutaka  <gniibe@fsij.org>
+
+	* test/features/002_get_data_static.feature: Value of extended
+	capabilities changed.
+	* test/features/402_get_data_static.feature: Ditto.
+	* test/features/802_get_data_static.feature: Ditto.
+
+	* src/openpgp.c (cmd_write_binary): Move erasing page of update
+	keys to...
+	(modify_binary): ...here.
+
+	* src/flash.c (flash_write_binary): Handle removal of update keys.
+
 2013-02-13  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/openpgp.c (cmd_get_challenge): Handle Le field.
@@ -7,7 +25,6 @@
 	* src/gnuk.h (CHALLENGE_LEN): Moved here (was: openpgp.c).
 
 	* tool/gnuk_token.py (iso7816_compose): Add Le field.
-	(gnuk_token.cmd_get_challenge): Supply Le.
 
 2013-01-30  Niibe Yutaka  <gniibe@fsij.org>
 

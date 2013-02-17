@@ -1,7 +1,7 @@
 """
 gnuk_token.py - a library for Gnuk Token
 
-Copyright (C) 2011, 2012 Free Software Initiative of Japan
+Copyright (C) 2011, 2012, 2013 Free Software Initiative of Japan
 Author: NIIBE Yutaka <gniibe@fsij.org>
 
 This file is a part of Gnuk, a GnuPG USB Token implementation.
@@ -431,7 +431,7 @@ class gnuk_token(object):
             raise ValueError, ("%02x%02x" % (sw[0], sw[1]))
 
     def cmd_get_challenge(self):
-        cmd_data = iso7816_compose(0x84, 0x00, 0x00, '', le=32)
+        cmd_data = iso7816_compose(0x84, 0x00, 0x00, '')
         sw = self.icc_send_cmd(cmd_data)
         if len(sw) != 2:
             raise ValueError(sw)
