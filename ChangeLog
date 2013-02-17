@@ -1,5 +1,14 @@
 2013-02-18  Niibe Yutaka  <gniibe@fsij.org>
 
+	Merge ec_p256 branch.
+	* src/Makefile.in: Add ECC files.
+	* src/bn.h, src/bn.c: New.
+	* src/jpc-ac.h, src/jpc.c: New.
+	* src/ec_p256.h, src/ec_p256.c, src/ecc-cdh.c: New.
+	* src/mod.h, src/mod.c, src/modp256.h, src/modp256.c: New.
+
+2013-02-17  Niibe Yutaka  <gniibe@fsij.org>
+
 	* chibios: New submodule for ChibioS/RT 2.4.x.
 	* boards/*/*: Update for ChibiOS/RT 2.4.x.
 
