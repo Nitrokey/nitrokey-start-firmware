@@ -84,6 +84,7 @@ CSRC = $(PORTSRC) \
        main.c usb_stm32f103.c adc_stm32f103.c \
 	usb_desc.c usb_ctrl.c \
 	usb-icc.c openpgp.c ac.c openpgp-do.c flash.c \
+	bn.c modp256.c jpc.c mod.c ec_p256.c \
 	random.c neug.c sys.c
 
 ifneq ($(ENABLE_DEBUG),)
