@@ -2,13 +2,11 @@
 #include "ch.h"
 #include "hal.h"
 
-#include "../common/hwinit.c"
-
-void
-hwinit1 (void)
+/*
+ * Board-specific initialization code.
+ */
+void boardInit(void)
 {
-  hwinit1_common ();
-
 #if defined(PINPAD_CIR_SUPPORT)
   /* PA0/TIM2_CH1 = 1 (pull up)   */
   /* PA1/TIM2_CH2 = 0 (pull down) */

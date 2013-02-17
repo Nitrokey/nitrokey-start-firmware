@@ -1,18 +1,18 @@
 /*
  * neug.c - random number generation (from NeuG/src/random.c)
  *
- * Copyright (C) 2011 Free Software Initiative of Japan
+ * Copyright (C) 2011, 2012 Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
- * This file is a part of NeuG, a Random Number Generator
- * implementation (for STM32F103).
+ * This file is a part of NeuG, a True Random Number Generator
+ * implementation based on quantization error of ADC (for STM32F103).
  *
  * NeuG is free software: you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * Gnuk is distributed in the hope that it will be useful, but WITHOUT
+ * NeuG is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
  * or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
  * License for more details.
@@ -22,221 +22,335 @@
  *
  */
 
+#include <string.h>		/* for memcpy */
 #include "config.h"
 
 #include "ch.h"
 #include "hal.h"
+#include "sys.h"
+#include "neug.h"
+#include "adc.h"
+#include "sha256.h"
 
-static Thread *rng_thread;
+Thread *rng_thread;
 #define ADC_DATA_AVAILABLE ((eventmask_t)1)
 
-/* Total number of channels to be sampled by a single ADC operation.*/
-#define ADC_GRP1_NUM_CHANNELS   2
+static uint32_t adc_buf[SHA256_BLOCK_SIZE/sizeof (uint32_t)];
 
-/* Depth of the conversion buffer, channels are sampled one time each.*/
-#define ADC_GRP1_BUF_DEPTH      4
-
-/*
- * ADC samples buffer.
- */
-static adcsample_t samp[ADC_GRP1_NUM_CHANNELS * ADC_GRP1_BUF_DEPTH];
-
-static void adccb (adcsample_t *buffer, size_t n);
+static sha256_context sha256_ctx_data;
+static uint32_t sha256_output[SHA256_DIGEST_SIZE/sizeof (uint32_t)];
 
 /*
- * ADC conversion group.
- * Mode:        Linear buffer, 4 samples of 2 channels, SW triggered.
- * Channels:    Vref   (1.5 cycles sample time, violating the spec.)
- *              Sensor (1.5 cycles sample time, violating the spec.)
+ * To be a full entropy source, the requirement is to have N samples
+ * for output of 256-bit, where:
+ *
+ *      N = (256 * 2) / <min-entropy of a sample>
+ *
+ * For example, N should be more than 103 for min-entropy = 5.0.
+ *
+ * On the other hand, in the section 6.2 "Full Entropy Source
+ * Requirements", it says:
+ *
+ *     At least twice the block size of the underlying cryptographic
+ *     primitive shall be provided as input to the conditioning
+ *     function to produce full entropy output.
+ *
+ * For us, cryptographic primitive is SHA-256 and its blocksize is
+ * 512-bit (64-byte), thus, N >= 128.
+ *
+ * We chose N=140.  Note that we have "additional bits" of 16-byte for
+ * last block (feedback from previous output of SHA-256) to feed
+ * hash_df function of SHA-256, together with sample data of 140-byte.
+ *
+ * N=140 corresponds to min-entropy >= 3.68.
+ *
  */
-static const ADCConversionGroup adcgrpcfg = {
-  FALSE,
-  ADC_GRP1_NUM_CHANNELS,
-  0,
-  ADC_CR2_EXTSEL_SWSTART | ADC_CR2_TSVREFE | ADC_CR2_CONT,
-  ADC_SMPR1_SMP_SENSOR(ADC_SAMPLE_1P5) | ADC_SMPR1_SMP_VREF(ADC_SAMPLE_1P5),
-  0,
-  ADC_SQR1_NUM_CH(ADC_GRP1_NUM_CHANNELS),
-  0,
-  ADC_SQR3_SQ2_N(ADC_CHANNEL_SENSOR) | ADC_SQR3_SQ1_N(ADC_CHANNEL_VREFINT)
-};
+#define NUM_NOISE_INPUTS 140
+
+#define EP_ROUND_0 0 /* initial-five-byte and 3-byte, then 56-byte-input */
+#define EP_ROUND_1 1 /* 64-byte-input */
+#define EP_ROUND_2 2 /* 17-byte-input */
+#define EP_ROUND_RAW      3 /* 32-byte-input */
+#define EP_ROUND_RAW_DATA 4 /* 32-byte-input */
+
+#define EP_ROUND_0_INPUTS 56
+#define EP_ROUND_1_INPUTS 64
+#define EP_ROUND_2_INPUTS 17
+#define EP_ROUND_RAW_INPUTS 32
+#define EP_ROUND_RAW_DATA_INPUTS 32
+
+static uint8_t ep_round;
 
 /*
- * ADC end conversion callback.
+ * Hash_df initial string:
+ *
+ *  1,          : counter = 1
+ *  0, 0, 1, 0  : no_of_bits_returned (in big endian)
  */
-static void adccb (adcsample_t *buffer, size_t n)
+static void ep_fill_initial_string (void)
 {
-  ADCDriver *adcp = &ADCD1;
+  adc_buf[0] = 0x01000001; /* Regardless of endian */
+  adc_buf[1] = (CRC->DR & 0xffffff00);
+}
 
-  (void) buffer; (void) n;
-  if (adcp->ad_state == ADC_COMPLETE)
-    chEvtSignalI (rng_thread, ADC_DATA_AVAILABLE);
+static void ep_init (int mode)
+{
+  chEvtClearFlags (ADC_DATA_AVAILABLE);
+  if (mode == NEUG_MODE_RAW)
+    {
+      ep_round = EP_ROUND_RAW;
+      adc_start_conversion (ADC_CRC32_MODE, adc_buf, EP_ROUND_RAW_INPUTS);
+    }
+  else if (mode == NEUG_MODE_RAW_DATA)
+    {
+      ep_round = EP_ROUND_RAW_DATA;
+      adc_start_conversion (ADC_SAMPLE_MODE, adc_buf, EP_ROUND_RAW_DATA_INPUTS);
+    }
+  else
+    {
+      ep_round = EP_ROUND_0;
+      ep_fill_initial_string ();
+      adc_start_conversion (ADC_CRC32_MODE,
+			    &adc_buf[2], EP_ROUND_0_INPUTS);
+    }
+}
+
+static void noise_source_continuous_test (uint8_t noise);
+
+static void ep_fill_wbuf (int i, int flip, int test)
+{
+  uint32_t v = adc_buf[i];
+
+  if (test)
+    {
+      uint8_t b0, b1, b2, b3;
+
+      b3 = v >> 24;
+      b2 = v >> 16;
+      b1 = v >> 8;
+      b0 = v;
+
+      noise_source_continuous_test (b0);
+      noise_source_continuous_test (b1);
+      noise_source_continuous_test (b2);
+      noise_source_continuous_test (b3);
+    }
+
+  if (flip)
+    v = __builtin_bswap32 (v);
+
+  sha256_ctx_data.wbuf[i] = v;
+}
+
+/* Here assumes little endian architecture.  */
+static int ep_process (int mode)
+{
+  int i, n;
+
+  if (ep_round == EP_ROUND_RAW)
+    {
+      for (i = 0; i < EP_ROUND_RAW_INPUTS / 4; i++)
+	ep_fill_wbuf (i, 0, 1);
+
+      ep_init (mode);
+      return EP_ROUND_RAW_INPUTS / 4;
+    }
+  else if (ep_round == EP_ROUND_RAW_DATA)
+    {
+      for (i = 0; i < EP_ROUND_RAW_DATA_INPUTS / 4; i++)
+	ep_fill_wbuf (i, 0, 0);
+
+      ep_init (mode);
+      return EP_ROUND_RAW_DATA_INPUTS / 4;
+    }
+
+  if (ep_round == EP_ROUND_0)
+    {
+      for (i = 0; i < 64 / 4; i++)
+	ep_fill_wbuf (i, 1, 1);
+
+      adc_start_conversion (ADC_CRC32_MODE, adc_buf, EP_ROUND_1_INPUTS);
+      sha256_start (&sha256_ctx_data);
+      sha256_process (&sha256_ctx_data);
+      ep_round++;
+      return 0;
+    }
+  else if (ep_round == EP_ROUND_1)
+    {
+      for (i = 0; i < 64 / 4; i++)
+	ep_fill_wbuf (i, 1, 1);
+
+      adc_start_conversion (ADC_CRC32_MODE, adc_buf, EP_ROUND_2_INPUTS);
+      sha256_process (&sha256_ctx_data);
+      ep_round++;
+      return 0;
+    }
+  else
+    {
+      for (i = 0; i < (EP_ROUND_2_INPUTS + 3) / 4; i++)
+	ep_fill_wbuf (i, 0, 1);
+
+      n = SHA256_DIGEST_SIZE / 2;
+      ep_init (NEUG_MODE_CONDITIONED); /* The three-byte is used here.  */
+      memcpy (((uint8_t *)sha256_ctx_data.wbuf)
+	      + ((NUM_NOISE_INPUTS+5)%SHA256_BLOCK_SIZE),
+	      sha256_output, n); /* Don't use the last three-byte.  */
+      sha256_ctx_data.total[0] = 5 + NUM_NOISE_INPUTS + n;
+      sha256_finish (&sha256_ctx_data, (uint8_t *)sha256_output);
+      return SHA256_DIGEST_SIZE / sizeof (uint32_t);
+    }
+}
+
+
+static const uint32_t *ep_output (int mode)
+{
+  if (mode)
+    return sha256_ctx_data.wbuf;
+  else
+    return sha256_output;
 }
 
-/*
- * TinyMT routines.
- *
- * See
- * "Tiny Mersenne Twister (TinyMT): A small-sized variant of Mersenne Twister"
- * by Mutsuo Saito and Makoto Matsumoto
- *     http://www.math.sci.hiroshima-u.ac.jp/~m-mat/MT/TINYMT/
- */
+#define REPETITION_COUNT           1
+#define ADAPTIVE_PROPORTION_64     2
+#define ADAPTIVE_PROPORTION_4096   4
 
-/* Use the first example of TinyMT */
-#define TMT_MAT1 0x8f7011ee
-#define TMT_MAT2 0xfc78ff1f
-#define TMT_TMAT 0x3793fdff
+uint8_t neug_err_state;
+uint16_t neug_err_cnt;
+uint16_t neug_err_cnt_rc;
+uint16_t neug_err_cnt_p64;
+uint16_t neug_err_cnt_p4k;
 
-static uint32_t tmt[4];
+uint16_t neug_rc_max;
+uint16_t neug_p64_max;
+uint16_t neug_p4k_max;
 
-static void tmt_one_step (void);
+#include "board.h"
 
-#define TMT_INIT_MIN_LOOP 8
-#define TMT_INIT_PRE_LOOP 8
-
-/**
- * @brief  TinyMT initialize function.
- */
-static void tmt_init (uint32_t seed)
+static void noise_source_cnt_max_reset (void)
 {
-  int i;
-
-  tmt[0] = seed;
-  tmt[1] = TMT_MAT1;
-  tmt[2] = TMT_MAT2;
-  tmt[3] = TMT_TMAT;
-
-  for (i = 1; i < TMT_INIT_MIN_LOOP; i++)
-    tmt[i & 3] ^= i + UINT32_C(1812433253) * (tmt[(i - 1) & 3]
-					      ^ (tmt[(i - 1) & 3] >> 30));
-
-  if ((tmt[0] & 0x7fffffff) == 0 && tmt[1] == 0 && tmt[2] == 0 && tmt[3] == 0)
-    {				/* Prevent all zero */
-      tmt[0] = 'T';
-      tmt[1] = 'I';
-      tmt[2] = 'N';
-      tmt[3] = 'Y';
-    }
-
-  for (i = 0; i < TMT_INIT_PRE_LOOP; i++)
-    tmt_one_step ();
+  neug_err_cnt = neug_err_cnt_rc = neug_err_cnt_p64 = neug_err_cnt_p4k = 0;
+  neug_rc_max = neug_p64_max = neug_p4k_max = 0;
 }
 
-/**
- * @brief  TinyMT one step function, call this every time before tmt_value.
- */
-static void tmt_one_step (void)
+static void noise_source_error_reset (void)
 {
-  uint32_t x, y;
-
-  y = tmt[3];
-  x = (tmt[0] & 0x7fffffff) ^ tmt[1] ^ tmt[2];
-  x ^= (x << 1);
-  y ^= (y >> 1) ^ x;
-  tmt[0] = tmt[1];
-  tmt[1] = tmt[2];
-  tmt[2] = x ^ (y << 10);
-  tmt[3] = y;
-  if ((y & 1))
-    {
-      tmt[1] ^= TMT_MAT1;
-      tmt[2] ^= TMT_MAT2;
-    }
+  neug_err_state = 0;
 }
 
-/**
- * @brief  Get a random word (32-bit).
- */
-static uint32_t tmt_value (void)
+static void noise_source_error (uint32_t err)
 {
-  uint32_t t0, t1;
+  neug_err_state |= err;
+  neug_err_cnt++;
 
-  t0 = tmt[3];
-  t1 = tmt[0] + (tmt[2] >> 8);
-  t0 ^= t1;
-  if ((t1 & 1))
-    t0 ^= TMT_TMAT;
-  return t0;
+  if ((err & REPETITION_COUNT))
+    neug_err_cnt_rc++;
+  if ((err & ADAPTIVE_PROPORTION_64))
+    neug_err_cnt_p64++;
+  if ((err & ADAPTIVE_PROPORTION_4096))
+    neug_err_cnt_p4k++;
 }
-
-/* 8 parallel CRC-16 shift registers, with randomly rotated feedback */
-#define EPOOL_SIZE 16
-static uint8_t epool[EPOOL_SIZE];	/* Big-endian */
-static uint8_t ep_count;
 
 /*
- * Magic number seven.
+ * For health tests, we assume that the device noise source has
+ * min-entropy >= 4.2.  Observing raw data stream (before CRC-32) has
+ * more than 4.2 bit/byte entropy.  When the data stream after CRC-32
+ * filter will be less than 4.2 bit/byte entropy, that must be
+ * something wrong.  Note that even we observe < 4.2, we still have
+ * some margin, since we use NUM_NOISE_INPUTS=140.
  *
- * We did an experiment of measuring entropy of ADC output with MUST.
- * The entropy of a byte by raw sampling of LSBs has more than 6.0 bit/byte.
- * So, it is considered OK to get 4-byte from 7-byte (6x7 = 42 > 32).
  */
-#define NUM_NOISE_INPUTS 7
 
-#define SHIFT_RIGHT(f) ((f)>>1)
+/* Cuttoff = 9, when min-entropy = 4.2, W= 2^-30 */
+/* ceiling of (1+30/4.2) */
+#define REPITITION_COUNT_TEST_CUTOFF 9
 
-static void ep_add (uint8_t entropy_bits, uint8_t another_random_bit)
+static uint8_t rct_a;
+static uint8_t rct_b;
+
+static void repetition_count_test (uint8_t sample)
 {
-  uint8_t v = epool[ep_count];
-
-  /* CRC-16-CCITT's Polynomial is: x^16 + x^12 + x^5 + 1 */
-  epool[(ep_count - 12)& 0x0f] ^= v;
-  epool[(ep_count - 5)& 0x0f] ^= v;
-  epool[ep_count] = SHIFT_RIGHT (v) ^ entropy_bits;
-
-  if ((v&1) || another_random_bit)
-    epool[ep_count] ^= 0xff;
-
-  ep_count = (ep_count + 1) & 0x0f;
-}
-
-#define FNV_INIT	2166136261U
-#define FNV_PRIME	16777619
-
-static uint32_t fnv32_hash (const uint8_t *buf, int len)
-{
-  uint32_t v = FNV_INIT;
-  int i;
-
-  for (i = 0; i < len; i++)
+  if (rct_a == sample)
     {
-      v ^= buf[i];
-      v *= FNV_PRIME;
+      rct_b++;
+      if (rct_b >= REPITITION_COUNT_TEST_CUTOFF)
+	noise_source_error (REPETITION_COUNT);
+      if (rct_b > neug_rc_max)
+	neug_rc_max = rct_b;
+   }
+  else
+    {
+      rct_a = sample;
+      rct_b = 1;
     }
-
-  return v;
 }
 
-#define PROBABILITY_50_BY_TICK() ((SysTick->VAL & 0x02) != 0)
+/* Cuttoff = 18, when min-entropy = 4.2, W= 2^-30 */
+/* With R, qbinom(1-2^-30,64,2^-4.2) */
+#define ADAPTIVE_PROPORTION_64_TEST_CUTOFF 18
 
-static uint32_t ep_output (void)
+static uint8_t ap64t_a;
+static uint8_t ap64t_b;
+static uint8_t ap64t_s;
+
+static void adaptive_proportion_64_test (uint8_t sample)
 {
-  int i;
-  uint8_t buf[NUM_NOISE_INPUTS];
-  uint8_t *p = buf;
-
-  /*
-   * NUM_NOISE_INPUTS is seven.
-   *
-   * There are sixteen bytes in the CRC-16 buffer.  We use seven
-   * outputs of CRC-16 buffer for final output.  There are two parts;
-   * former 4 outputs which will be used directly, and latter 3
-   * outputs which will be used with feedback loop.
-   */
-
-  /* At some probability, use latter 3 outputs of CRC-16 buffer */
-  for (i = NUM_NOISE_INPUTS - 1; i >= 4; i--)
-    if (PROBABILITY_50_BY_TICK ())
-      *p++ = epool[(ep_count+i) & 0x0f] ^ epool[(ep_count+i-4) & 0x0f];
-
-  /* Use former 4 outputs of CRC-16 buffer */
-  for (i = 3; i >= 0; i--)
-    *p++ = epool[(ep_count+i) & 0x0f];
-
-  return fnv32_hash (buf, p - buf);
+  if (ap64t_s >= 64)
+    {
+      ap64t_a = sample;
+      ap64t_s = 0;
+      ap64t_b = 0;
+    }
+  else
+    {
+      ap64t_s++;
+      if (ap64t_a == sample)
+	{
+	  ap64t_b++;
+	  if (ap64t_b > ADAPTIVE_PROPORTION_64_TEST_CUTOFF)
+	    noise_source_error (ADAPTIVE_PROPORTION_64);
+	  if (ap64t_b > neug_p64_max)
+	    neug_p64_max = ap64t_b;
+	}
+    }
 }
 
+/* Cuttoff = 315, when min-entropy = 4.2, W= 2^-30 */
+/* With R, qbinom(1-2^-30,4096,2^-4.2) */
+#define ADAPTIVE_PROPORTION_4096_TEST_CUTOFF 315
 
+static uint8_t ap4096t_a;
+static uint16_t ap4096t_b;
+static uint16_t ap4096t_s;
+
+static void adaptive_proportion_4096_test (uint8_t sample)
+{
+  if (ap4096t_s >= 4096)
+    {
+      ap4096t_a = sample;
+      ap4096t_s = 0;
+      ap4096t_b = 0;
+    }
+  else
+    {
+      ap4096t_s++;
+      if (ap4096t_a == sample)
+	{
+	  ap4096t_b++;
+	  if (ap4096t_b > ADAPTIVE_PROPORTION_4096_TEST_CUTOFF)
+	    noise_source_error (ADAPTIVE_PROPORTION_4096);
+	  if (ap4096t_b > neug_p4k_max)
+	    neug_p4k_max = ap4096t_b;
+	}
+    }
+}
+
+static void noise_source_continuous_test (uint8_t noise)
+{
+  repetition_count_test (noise);
+  adaptive_proportion_64_test (noise);
+  adaptive_proportion_4096_test (noise);
+}
+
 /*
  * Ring buffer, filled by generator, consumed by neug_get routine.
  */
@@ -286,55 +400,7 @@ static uint32_t rb_del (struct rng_rb *rb)
   return v;
 }
 
-/**
- * @brief  Random number generation from ADC sampling.
- * @param  RB: Pointer to ring buffer structure
- * @return -1 when failure, 0 otherwise.
- * @note   Called holding the mutex, with RB->full == 0.
- *         Keep generating until RB->full == 1.
- */
-static int rng_gen (struct rng_rb *rb)
-{
-  static uint8_t round = 0;
-  uint8_t b;
-
-  while (1)
-    {
-      chEvtWaitOne (ADC_DATA_AVAILABLE);
-
-      /* Got, ADC sampling data */
-      round++;
-      b = (((samp[0] & 0x01) << 0) | ((samp[1] & 0x01) << 1)
-	   | ((samp[2] & 0x01) << 2) | ((samp[3] & 0x01) << 3)
-	   | ((samp[4] & 0x01) << 4) | ((samp[5] & 0x01) << 5)
-	   | ((samp[6] & 0x01) << 6) | ((samp[7] & 0x01) << 7));
-
-      adcStartConversion (&ADCD1, &adcgrpcfg, samp, ADC_GRP1_BUF_DEPTH, adccb);
-
-      /*
-       * Put a random byte to entropy pool.
-       */
-      ep_add (b, PROBABILITY_50_BY_TICK ());
-
-      if ((round % NUM_NOISE_INPUTS) == 0)
-	{		            /* We have enough entropy in the pool.  */
-	  uint32_t v = ep_output (); /* Get the random bits from the pool.  */
-
-	  /* Mix the random bits from the pool with the output of PRNG.  */
-	  tmt_one_step ();
-	  v ^= tmt_value ();
-
-	  /* We got the final random bits, add it to the ring buffer.  */
-	  rb_add (rb, v);
-	  round = 0;
-	  if (rb->full)
-	    /* fully generated */
-	    break;
-	}
-    }
-
-  return 0;			/* success */
-}
+uint8_t neug_mode;
 
 /**
  * @brief Random number generation thread.
@@ -345,24 +411,56 @@ static msg_t rng (void *arg)
 
   rng_thread = chThdSelf ();
 
-  adcStart (&ADCD1, NULL);
-  adcStartConversion (&ADCD1, &adcgrpcfg, samp, ADC_GRP1_BUF_DEPTH, adccb);
+  /* Enable ADCs */
+  adc_start ();
 
-  while (1)
+  ep_init (NEUG_MODE_CONDITIONED);
+
+  while (!chThdShouldTerminate ())
     {
-      chMtxLock (&rb->m);
-      while (rb->full)
-	chCondWait (&rb->space_available);
-      rng_gen (rb);
-      chCondSignal (&rb->data_available);
-      chMtxUnlock ();
+      int n;
+      int mode = neug_mode;
+
+      chEvtWaitOne (ADC_DATA_AVAILABLE); /* Get ADC sampling.  */
+
+      if ((n = ep_process (mode)))
+	{
+	  int i;
+	  const uint32_t *vp;
+
+	  if (neug_err_state != 0
+	      && (mode == NEUG_MODE_CONDITIONED || mode == NEUG_MODE_RAW))
+	    {
+	      /* Don't use the result and do it again.  */
+	      noise_source_error_reset ();
+	      continue;
+	    }
+
+	  vp = ep_output (mode);
+
+	  chMtxLock (&rb->m);
+	  while (rb->full)
+	    chCondWait (&rb->space_available);
+
+	  for (i = 0; i < n; i++)
+	    {
+	      rb_add (rb, *vp++);
+	      if (rb->full)
+		break;
+	    }
+
+	  chCondSignal (&rb->data_available);
+	  chMtxUnlock ();
+	}
     }
+
+  adc_stop ();
 
   return 0;
 }
 
 static struct rng_rb the_ring_buffer;
-static WORKING_AREA(wa_rng, 128);
+static WORKING_AREA(wa_rng, 256);
 
 /**
  * @brief Initialize NeuG.
@@ -370,9 +468,21 @@ static WORKING_AREA(wa_rng, 128);
 void
 neug_init (uint32_t *buf, uint8_t size)
 {
+  const uint32_t *u = (const uint32_t *)unique_device_id ();
   struct rng_rb *rb = &the_ring_buffer;
+  int i;
 
-  tmt_init (0);
+  RCC->AHBENR |= RCC_AHBENR_CRCEN;
+  CRC->CR = CRC_CR_RESET;
+
+  /*
+   * This initialization ensures that it generates different sequence
+   * even if all physical conditions are same.
+   */
+  for (i = 0; i < 3; i++)
+    CRC->DR = *u++;
+
+  neug_mode = NEUG_MODE_CONDITIONED;
   rb_init (rb, buf, size);
   chThdCreateStatic (wa_rng, sizeof (wa_rng), NORMALPRIO, rng, rb);
 }
@@ -392,17 +502,6 @@ neug_flush (void)
   chMtxUnlock ();
 }
 
-/**
- * @breif Set seed to PRNG
- */
-void
-neug_prng_reseed (void)
-{
-  uint32_t seed = ep_output ();
-
-  tmt_init (seed);
-  neug_flush ();
-}
 
 /**
  * @brief  Wakes up RNG thread to generate random numbers.
@@ -441,6 +540,45 @@ neug_get (int kick)
   return v;
 }
 
+int
+neug_get_nonblock (uint32_t *p)
+{
+  struct rng_rb *rb = &the_ring_buffer;
+  int r = 0;
+
+  chMtxLock (&rb->m);
+  if (rb->empty)
+    {
+      r = -1;
+      chCondSignal (&rb->space_available);
+    }
+  else
+    *p = rb_del (rb);
+  chMtxUnlock ();
+
+  return r;
+}
+
+int neug_consume_random (void (*proc) (uint32_t, int))
+{
+  int i = 0;
+  struct rng_rb *rb = &the_ring_buffer;
+
+  chMtxLock (&rb->m);
+  while (!rb->empty)
+    {
+      uint32_t v;
+
+      v = rb_del (rb);
+      proc (v, i);
+      i++;
+    }
+  chCondSignal (&rb->space_available);
+  chMtxUnlock ();
+
+  return i;
+}
+
 void
 neug_wait_full (void)
 {
@@ -450,4 +588,33 @@ neug_wait_full (void)
   while (!rb->full)
     chCondWait (&rb->data_available);
   chMtxUnlock ();
+}
+
+void
+neug_fini (void)
+{
+  if (rng_thread)
+    {
+      chThdTerminate (rng_thread);
+      neug_get (1);
+      chThdWait (rng_thread);
+      rng_thread = NULL;
+    }
+}
+
+void
+neug_mode_select (uint8_t mode)
+{
+  if (neug_mode == mode)
+    return;
+
+  neug_wait_full ();
+
+  while (rng_thread->p_state != THD_STATE_WTCOND)
+    chThdSleep (MS2ST (1));
+
+  ep_init (mode);
+  noise_source_cnt_max_reset ();
+  neug_mode = mode;
+  neug_flush ();
 }

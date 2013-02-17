@@ -147,7 +147,7 @@ void
 EP3_IN_Callback (void)
 {
   if (stdout_thread)
-    chEvtSignalI (stdout_thread, EV_TX_READY);
+    chEvtSignalFlagsI (stdout_thread, EV_TX_READY);
 }
 
 void
@@ -316,7 +316,7 @@ static eventmask_t display_status_code (void)
 void
 led_blink (int spec)
 {
-  chEvtSignal (main_thread, spec);
+  chEvtSignalFlags (main_thread, spec);
 }
 
 
@@ -463,7 +463,7 @@ void
 fatal (uint8_t code)
 {
   fatal_code = code;
-  chEvtSignal (main_thread, LED_FATAL);
+  chEvtSignalFlags (main_thread, LED_FATAL);
   _write ("fatal\r\n", 7);
   for (;;);
 }

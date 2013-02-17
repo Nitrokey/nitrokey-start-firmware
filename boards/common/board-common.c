@@ -24,36 +24,46 @@
     for full details of how and when the exception can be applied.
 */
 
+#include "ch.h"
+#include "hal.h"
+#include "config.h"
+
+/**
+ * @brief   PAL setup.
+ * @details Digital I/O ports static configuration as defined in @p board.h.
+ *          This variable is used by the HAL when initializing the PAL driver.
+ */
+#if HAL_USE_PAL || defined(__DOXYGEN__)
+const PALConfig pal_default_config =
+{
+  {VAL_GPIOAODR, VAL_GPIOACRL, VAL_GPIOACRH},
+  {VAL_GPIOBODR, VAL_GPIOBCRL, VAL_GPIOBCRH},
+  {VAL_GPIOCODR, VAL_GPIOCCRL, VAL_GPIOCCRH},
+  {VAL_GPIODODR, VAL_GPIODCRL, VAL_GPIODCRH},
+  {VAL_GPIOEODR, VAL_GPIOECRL, VAL_GPIOECRH},
+#if defined(STM32F10X_HD)
+  {VAL_GPIOFODR, VAL_GPIOFCRL, VAL_GPIOFCRH},
+  {VAL_GPIOGODR, VAL_GPIOGCRL, VAL_GPIOGCRH},
+#endif
+};
+#endif
+
 /*
  * Early initialization code.
- * This initialization is performed just after reset before BSS and DATA
- * segments initialization.
+ * This initialization must be performed just after stack setup and before
+ * any other initialization.
  */
 void
-hwinit0 (void)
+__early_init(void)
 {
   stm32_clock_init();
 }
 
-/*
- * Late initialization code.
- * This initialization is performed after BSS and DATA segments initialization
- * and before invoking the main() function.
- */
-
-/*
- * Common code for hwinit1
- *
- */
-static void hwinit1_common (void)
+const uint8_t *
+unique_device_id (void)
 {
-  /*
-   * HAL initialization.
-   */
-  halInit();
+  /* STM32F103 has 96-bit unique device identifier */
+  const uint8_t *addr = (const uint8_t *)0x1ffff7e8;
 
-  /*
-   * ChibiOS/RT initialization.
-   */
-  chSysInit();
+  return addr;
 }

@@ -310,7 +310,7 @@ static void notify_tx (struct ep_in *epi)
   struct ccid *c = (struct ccid *)epi->priv;
 
   /* The sequence of Bulk-IN transactions finished */
-  chEvtSignalI (c->icc_thread, EV_TX_FINISHED);
+  chEvtSignalFlagsI (c->icc_thread, EV_TX_FINISHED);
 }
 
 static void no_buf (struct ep_in *epi, size_t len)
@@ -405,7 +405,7 @@ static void notify_icc (struct ep_out *epo)
   struct ccid *c = (struct ccid *)epo->priv;
 
   c->err = epo->err;
-  chEvtSignalI (c->icc_thread, EV_RX_DATA_READY);
+  chEvtSignalFlagsI (c->icc_thread, EV_RX_DATA_READY);
 }
 
 static int end_icc_rx (struct ep_out *epo, size_t orig_len)
@@ -815,7 +815,7 @@ icc_power_off (struct ccid *c)
   if (c->application)
     {
       chThdTerminate (c->application);
-      chEvtSignal (c->application, EV_NOP);
+      chEvtSignalFlags (c->application, EV_NOP);
       chThdWait (c->application);
       c->application = NULL;
     }
@@ -1140,7 +1140,7 @@ icc_handle_data (struct ccid *c)
 		      c->a->res_apdu_data_len = 0;
 		      c->a->res_apdu_data = &icc_buffer[5];
 
-		      chEvtSignal (c->application, EV_CMD_AVAILABLE);
+		      chEvtSignalFlags (c->application, EV_CMD_AVAILABLE);
 		      next_state = ICC_STATE_EXECUTE;
 		    }
 		}
@@ -1199,7 +1199,7 @@ icc_handle_data (struct ccid *c)
 	      c->a->res_apdu_data_len = 0;
 	      c->a->res_apdu_data = &c->p[5];
 
-	      chEvtSignal (c->application, EV_VERIFY_CMD_AVAILABLE);
+	      chEvtSignalFlags (c->application, EV_VERIFY_CMD_AVAILABLE);
 	      next_state = ICC_STATE_EXECUTE;
 	    }
 	  else if (c->p[10-10] == 0x01) /* PIN Modification */
@@ -1233,7 +1233,7 @@ icc_handle_data (struct ccid *c)
 	      c->a->res_apdu_data_len = 0;
 	      c->a->res_apdu_data = &icc_buffer[5];
 
-	      chEvtSignal (c->application, EV_MODIFY_CMD_AVAILABLE);
+	      chEvtSignalFlags (c->application, EV_MODIFY_CMD_AVAILABLE);
 	      next_state = ICC_STATE_EXECUTE;
 	    }
 	  else
@@ -1307,7 +1307,7 @@ USBthread (void *arg)
   ccid_init (c, epi, epo, a, chThdSelf ());
   apdu_init (a);
 
-  chEvtClear (ALL_EVENTS);
+  chEvtClearFlags (ALL_EVENTS);
 
   icc_prepare_receive (c);
   while (1)

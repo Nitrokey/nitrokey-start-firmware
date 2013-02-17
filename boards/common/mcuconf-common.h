@@ -39,6 +39,20 @@
  */
 
 /*
+ * HAL driver system settings.
+ */
+#define STM32_NO_INIT                       FALSE
+#define STM32_HSI_ENABLED                   TRUE
+#define STM32_LSI_ENABLED                   FALSE
+#define STM32_HSE_ENABLED                   TRUE
+#define STM32_LSE_ENABLED                   FALSE
+#define STM32_USB_CLOCK_REQUIRED            TRUE
+#define STM32_USBPRE                        STM32_USBPRE_DIV1P5
+#define STM32_MCOSEL                        STM32_MCOSEL_NOCLOCK
+#define STM32_PVD_ENABLE                    FALSE
+#define STM32_PLS                           STM32_PLS_LEV0
+
+/*
  * ADC driver system settings.
  */
 #define USE_STM32_ADC1              TRUE
@@ -92,3 +106,11 @@
 #define STM32_SPI1_IRQ_PRIORITY     10
 #define STM32_SPI2_IRQ_PRIORITY     10
 #define STM32_SPI1_DMA_ERROR_HOOK() chSysHalt()
+
+/*
+ * USB driver system settings.
+ */
+#define STM32_USB_USE_USB1                  TRUE
+#define STM32_USB_LOW_POWER_ON_SUSPEND      FALSE
+#define STM32_USB_USB1_HP_IRQ_PRIORITY      6
+#define STM32_USB_USB1_LP_IRQ_PRIORITY      14

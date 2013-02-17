@@ -1118,7 +1118,7 @@ GPGthread (void *arg)
 
   gpg_init ();
 
-  chEvtClear (ALL_EVENTS);
+  chEvtClearFlags (ALL_EVENTS);
 
   while (!chThdShouldTerminate ())
     {
@@ -1216,7 +1216,7 @@ GPGthread (void *arg)
       process_command_apdu ();
       led_blink (LED_FINISH_COMMAND);
     done:
-      chEvtSignal (icc_thread, EV_EXEC_FINISHED);
+      chEvtSignalFlags (icc_thread, EV_EXEC_FINISHED);
     }
 
   gpg_fini ();

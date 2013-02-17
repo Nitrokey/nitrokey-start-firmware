@@ -1,3 +1,21 @@
+2013-02-18  Niibe Yutaka  <gniibe@fsij.org>
+
+	* chibios: New submodule for ChibioS/RT 2.4.x.
+	* boards/*/*: Update for ChibiOS/RT 2.4.x.
+
+	* src/chconf.h, src/halconf.h, src/Makefile.in, src/gnuk.ld.in:
+	Update for ChibiOS/RT 2.4.x.
+
+	* src/main.c, src/openpgp.c, src/usb-icc.c: Follow the change of
+	ChibiOS/RT 2.4.x.
+	* boards/common/board-common.c: Rename from hwinit.c.
+	* src/usb_stm32f103.c: Rename from usb_lld.c.
+
+	* src/neug.h, src/neug.h: Update NeuG 0.05.
+	* src/adc_stm32f103.c, src/adc.h: New from NeuG 0.05.
+
+	* src/random.c: Follow the change of NeuG 0.05.
+
 2013-02-15  Niibe Yutaka  <gniibe@fsij.org>
 
 	* Version 1.0.2.

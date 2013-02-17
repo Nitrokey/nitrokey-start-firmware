@@ -37,6 +37,14 @@
 #define GPIO_LED	GPIOB_LED
 #define IOPORT_LED	GPIOB
 
+/* NeuG settings for ADC2.  */
+#define NEUG_ADC_SETTING2_SMPR1 0
+#define NEUG_ADC_SETTING2_SMPR2 ADC_SMPR2_SMP_AN0(ADC_SAMPLE_1P5)    \
+                              | ADC_SMPR2_SMP_AN9(ADC_SAMPLE_1P5)
+#define NEUG_ADC_SETTING2_SQR3  ADC_SQR3_SQ1_N(ADC_CHANNEL_IN0)      \
+                              | ADC_SQR3_SQ2_N(ADC_CHANNEL_IN9)
+#define NEUG_ADC_SETTING2_NUM_CHANNELS 2
+
 /*
  * Board identifier.
  */
@@ -54,7 +62,6 @@
  * native STM32 HAL.
  */
 #define STM32F10X_MD
-#define CPU_WITH_NO_GPIOE	1
 
 /*
  * IO pins assignments.
@@ -94,10 +101,11 @@
 
 /*
  * Port A setup.
- * PA0  - input with pull-up (TIM2_CH1)
+ * PA0  - input with pull-up (TIM2_CH1): AN0 for NeuG
  * PA1  - input with pull-down (TIM2_CH2)
- * PA2  - input with pull-up (TIM2_CH3)
- * PA4  - Push pull output   (SPI1_NSS)
+ * PA2  - input with pull-up (TIM2_CH3) connected to CIR module
+ * PA3  - input with pull-up: external pin available to user
+ * PA4  - Push pull output           (SPI1_NSS)
  * PA5  - Alternate Push pull output (SPI1_SCK)
  * PA6  - Alternate Push pull output (SPI1_MISO)
  * PA7  - Alternate Push pull output (SPI1_MOSI)
@@ -111,6 +119,7 @@
 
 /*
  * Port B setup.
+ * PB1  - input with pull-up: AN9 for NeuG
  * Everything input with pull-up except:
  * PB0  - Push pull output   (LED 1:ON 0:OFF)
  */
@@ -143,5 +152,15 @@
 #define VAL_GPIOECRL            0x88888888      /*  PE7...PE0 */
 #define VAL_GPIOECRH            0x88888888      /* PE15...PE8 */
 #define VAL_GPIOEODR            0xFFFFFFFF
+
+#if !defined(_FROM_ASM_)
+#ifdef __cplusplus
+extern "C" {
+#endif
+  void boardInit(void);
+#ifdef __cplusplus
+}
+#endif
+#endif /* _FROM_ASM_ */
 
 #endif /* _BOARD_H_ */
