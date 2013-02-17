@@ -1,5 +1,37 @@
 /*
  * ec_p256.c - Elliptic curve over GF(p256)
+ *
+ * Copyright (C) 2011 Free Software Initiative of Japan
+ * Author: NIIBE Yutaka <gniibe@fsij.org>
+ *
+ * This file is a part of Gnuk, a GnuPG USB Token implementation.
+ *
+ * Gnuk is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Gnuk is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+ * or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+ * License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+
+/*
+ * References:
+ *
+ * [1] Suite B Implementer's Guide to FIPS 186-3 (ECDSA), February 3, 2010.
+ *
+ * [2] Michael Brown, Darrel Hankerson, Julio López, and Alfred Menezes,
+ *     Software Implementation of the NIST Elliptic Curves Over Prime Fields,
+ *     Proceedings of the 2001 Conference on Topics in Cryptology: The
+ *     Cryptographer's Track at RSA
+ *     Pages 250-265, Springer-Verlag London, UK, 2001
+ *     ISBN:3-540-41898-9
  */
 
 #include <stdint.h>
@@ -10,7 +42,7 @@
 #include "mod.h"
 #include "ec_p256.h"
 
-#if 0
+#if TEST
 /*
  * Generator of Elliptic curve over GF(p256)
  */
@@ -24,6 +56,7 @@ bn256 Gy[1] = {
       0x7c0f9e16, 0x8ee7eb4a, 0xfe1a7f9b, 0x4fe342e2  }}
 };
 #endif
+
 
 /*
  * w = 4
@@ -190,18 +223,23 @@ static const ac precomputed_2E_KG[15] = {
   }
 };
 
+/**
+ * @brief	X  = k * G
+ *
+ * @param K	scalar k
+ */
 void
 compute_kG (ac *X, const bn256 *K)
 {
   int i;
-  int q_infinite = 1;
+  int q_is_infinite = 1;
   jpc Q[1];
 
   for (i = 31; i >= 0; i--)
     {
       int k_i, k_i_e;
 
-      if (!q_infinite)
+      if (!q_is_infinite)
 	jpc_double (Q, Q);
 
       k_i = (((K->words[6] >> i) & 1) << 3)
@@ -215,7 +253,7 @@ compute_kG (ac *X, const bn256 *K)
 
       if (k_i)
 	{
-	  if (q_infinite)
+	  if (q_is_infinite)
 	    {
 	      memcpy (Q->x, (&precomputed_KG[k_i - 1])->x, sizeof (bn256));
 	      memcpy (Q->y, (&precomputed_KG[k_i - 1])->y, sizeof (bn256));
@@ -223,20 +261,20 @@ compute_kG (ac *X, const bn256 *K)
 	      Q->z->words[1] = Q->z->words[2] = Q->z->words[3]
 		= Q->z->words[4] = Q->z->words[5] = Q->z->words[6]
 		= Q->z->words[7] = 0;
-	      q_infinite = 0;
+	      q_is_infinite = 0;
 	    }
 	  else
 	    jpc_add_ac (Q, Q, &precomputed_KG[k_i - 1]);
 	}
       if (k_i_e)
 	{
-	  if (q_infinite)
+	  if (q_is_infinite)
 	    {
 	      memcpy (Q->x, (&precomputed_2E_KG[k_i_e - 1])->x, sizeof (bn256));
 	      memcpy (Q->y, (&precomputed_2E_KG[k_i_e - 1])->y, sizeof (bn256));
 	      memset (Q->z, 0, sizeof (bn256));
 	      Q->z->words[0] = 1;
-	      q_infinite = 0;
+	      q_is_infinite = 0;
 	    }
 	  else
 	    jpc_add_ac (Q, Q, &precomputed_2E_KG[k_i_e - 1]);
@@ -250,7 +288,7 @@ compute_kG (ac *X, const bn256 *K)
 #define NAF_K_SIGN(k)	(k&8)
 #define NAF_K_INDEX(k)	((k&7)-1)
 
-void
+static void
 naf4_257_set (naf4_257 *NAF_K, int i, int ki)
 {
   if (ki != 0)
@@ -270,7 +308,7 @@ naf4_257_set (naf4_257 *NAF_K, int i, int ki)
     }
 }
 
-int
+static int
 naf4_257_get (const naf4_257 *NAF_K, int i)
 {
   int ki;
@@ -286,6 +324,10 @@ naf4_257_get (const naf4_257 *NAF_K, int i)
   return ki;
 }
 
+
+/*
+ * convert 256-bit bignum into non-adjacent form (NAF)
+ */
 void
 compute_naf4_257 (naf4_257 *NAF_K, const bn256 *K)
 {
@@ -325,11 +367,17 @@ compute_naf4_257 (naf4_257 *NAF_K, const bn256 *K)
     }
 }
 
+/**
+ * @brief	X  = k * P
+ *
+ * @param NAF_K	NAF representation of k
+ * @param P	P in affin coordiate
+ */
 void
 compute_kP (ac *X, const naf4_257 *NAF_K, const ac *P)
 {
   int i;
-  int q_infinite = 1;
+  int q_is_infinite = 1;
   jpc Q[1];
   ac P3[1], P5[1], P7[1];
   const ac *p_Pi[4];
@@ -367,13 +415,13 @@ compute_kP (ac *X, const naf4_257 *NAF_K, const ac *P)
     {
       int k_i;
 
-      if (!q_infinite)
+      if (!q_is_infinite)
 	jpc_double (Q, Q);
 
       k_i = naf4_257_get (NAF_K, i);
       if (k_i)
 	{
-	  if (q_infinite)
+	  if (q_is_infinite)
 	    {
 	      memcpy (Q->x, p_Pi[NAF_K_INDEX(k_i)]->x, sizeof (bn256));
 	      if (NAF_K_SIGN (k_i))
@@ -382,7 +430,7 @@ compute_kP (ac *X, const naf4_257 *NAF_K, const ac *P)
 		memcpy (Q->y, p_Pi[NAF_K_INDEX(k_i)]->y, sizeof (bn256));
 	      memset (Q->z, 0, sizeof (bn256));
 	      Q->z->words[0] = 1;
-	      q_infinite = 0;
+	      q_is_infinite = 0;
 	    }
 	  else
 	    jpc_add_ac_signed (Q, Q, p_Pi[NAF_K_INDEX(k_i)], NAF_K_SIGN (k_i));
@@ -412,7 +460,7 @@ static const bn256 MU_lower[1] = {
 
 
 /**
- * @brief Compute signature (r,s) of hash string z with secret key dA
+ * @brief Compute signature (r,s) of hash string z with secret key d
  */
 void
 ecdsa (bn256 *r, bn256 *s, const bn256 *z, const bn256 *d)
@@ -423,11 +471,18 @@ ecdsa (bn256 *r, bn256 *s, const bn256 *z, const bn256 *d)
   bn256 k_inv[1];
   uint32_t carry;
 
+#define tmp_k k_inv
+
   do
     {
       do
 	{
 	  bn256_random (k);
+	  if (bn256_sub (tmp_k, k, N) == 0)	/* > N, it's too big.  */
+	    continue;
+	  if (bn256_add_uint (tmp_k, tmp_k, 2)) /* > N - 2, still big.  */
+	    continue;
+	  bn256_add_uint (k, 1);
 	  compute_kG (KG, k);
 	  if (bn256_is_ge (KG->x, N))
 	    bn256_sub (r, KG->x, N);

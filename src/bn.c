@@ -1,5 +1,5 @@
 /*
- * bn.c -- 256-bit and 512-bit bignum calculation
+ * bn.c -- 256-bit (and 512-bit) bignum calculation
  *
  * Copyright (C) 2011 Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
