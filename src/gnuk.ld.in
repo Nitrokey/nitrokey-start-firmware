@@ -32,9 +32,9 @@ __process_stack_size__  = 0x0200;
 
 MEMORY
 {
-    flash0 : org = 0x08000000, len = 4k
-    flash  : org = 0x08000000+0x1000, len = 128k - 4k
-    ram : org = 0x20000000, len = 20k
+    flash0 : org = @ORIGIN@, len = 4k
+    flash  : org = @ORIGIN@+0x1000, len = @FLASH_SIZE@ - 4k
+    ram : org = 0x20000000, len = @MEMORY_SIZE@k
 }
 
 /* __flash_start__: flash ROM start address regardless of DFU_SUPPORT */

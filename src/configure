@@ -119,6 +119,8 @@ fi
 FLASH_PAGE_SIZE=1024
 # Flash memory size in KB
 FLASH_SIZE=128
+# Memory size in KiB
+MEMORY_SIZE=20
 
 # Settings for TARGET
 case $target in
@@ -129,10 +131,12 @@ CQ_STARM|STBEE_MINI)
 STM32_PRIMER2)
   FLASH_PAGE_SIZE=2048
   FLASH_SIZE=512
+  MEMORY_SIZE=64
   ;;
 STBEE)
   FLASH_PAGE_SIZE=2048
   FLASH_SIZE=512
+  MEMORY_SIZE=64
   if test "$with_dfu" = "default"; then
     with_dfu=yes;
   fi  ;;
@@ -254,11 +258,13 @@ sed -e "s%@BOARD_DIR@%$BOARD_DIR%" \
 if test "$certdo" = "yes"; then
   sed -e "/^@CERTDO_SUPPORT_START@$/ d" -e "/^@CERTDO_SUPPORT_END@$/ d" \
       -e "s/@ORIGIN@/$ORIGIN/" -e "s/@FLASH_SIZE@/$FLASH_SIZE/" \
+      -e "s/@MEMORY_SIZE@/$MEMORY_SIZE/" \
       -e "s/@FLASH_PAGE_SIZE@/$FLASH_PAGE_SIZE/" \
 	< gnuk.ld.in > gnuk.ld
 else
   sed -e "/^@CERTDO_SUPPORT_START@$/,/^@CERTDO_SUPPORT_END@$/ d" \
       -e "s/@ORIGIN@/$ORIGIN/" -e "s/@FLASH_SIZE@/$FLASH_SIZE/" \
+      -e "s/@MEMORY_SIZE@/$MEMORY_SIZE/" \
       -e "s/@FLASH_PAGE_SIZE@/$FLASH_PAGE_SIZE/" \
 	< gnuk.ld.in > gnuk.ld
 fi

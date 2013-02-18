@@ -482,7 +482,7 @@ ecdsa (bn256 *r, bn256 *s, const bn256 *z, const bn256 *d)
 	    continue;
 	  if (bn256_add_uint (tmp_k, tmp_k, 2)) /* > N - 2, still big.  */
 	    continue;
-	  bn256_add_uint (k, 1);
+	  bn256_add_uint (k, k, 1);
 	  compute_kG (KG, k);
 	  if (bn256_is_ge (KG->x, N))
 	    bn256_sub (r, KG->x, N);

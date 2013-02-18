@@ -22,6 +22,7 @@
  */
 
 #include <stdint.h>
+#include "random.h"
 #include "bn.h"
 
 uint32_t

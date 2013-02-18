@@ -25,9 +25,11 @@
 #include "ch.h"
 #include "hal.h"
 #include "sys.h"
+#include "adc.h"
 #include "gnuk.h"
 #include "usb_lld.h"
 #include "usb-cdc.h"
+#include "random.h"
 
 #ifdef DEBUG
 struct stdout {
@@ -334,10 +336,15 @@ main (int argc, char *argv[])
   (void)argc;
   (void)argv;
 
-  main_thread = chThdSelf ();
-
   flash_unlock ();
   device_initialize_once ();
+
+  halInit ();
+  adc_init ();
+  chSysInit ();
+
+  main_thread = chThdSelf ();
+
   usb_lld_init (Config_Descriptor.Descriptor[7]);
   random_init ();
 

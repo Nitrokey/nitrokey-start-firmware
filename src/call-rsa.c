@@ -26,6 +26,7 @@
 #include "ch.h"
 #include "gnuk.h"
 #include "openpgp.h"
+#include "random.h"
 #include "polarssl/config.h"
 #include "polarssl/rsa.h"
 

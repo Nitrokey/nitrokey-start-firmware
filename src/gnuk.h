@@ -329,16 +329,6 @@ extern uint8_t admin_authorized;
 
 #define SIZE_PW_STATUS_BYTES 7
 
-extern void random_init (void);
-/* 16-byte random bytes */
-extern const uint8_t *random_bytes_get (void);
-extern void random_bytes_free (const uint8_t *);
-/* 4-byte salt */
-extern uint32_t get_salt (void);
-/* iterator returning a byta at a time */
-extern uint8_t random_byte (void *arg);
-
-extern uint32_t hardclock (void);
 
 #define NUM_ALL_PRV_KEYS 3	/* SIG, DEC and AUT */
 

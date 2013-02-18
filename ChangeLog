@@ -1,5 +1,16 @@
 2013-02-18  Niibe Yutaka  <gniibe@fsij.org>
 
+	Changes for new ChibiOS/RT.
+	* src/main.c: Include adc.h.
+	(main): Call halInit, adc_init, and chSysInit (change for
+	ChibiOS/RT 2.4.x).
+	* src/random.h: New.
+	* src/ac.c, src/bn.c, src/call-rsa.c, src/main.c: Include random.h.
+	* src/openpgp.c, src/openpgp-do.c: Likewise.
+	* src/configure, src/gnuk.ld.in: Add MEMORY_SIZE.
+	* src/ec_p256.c: Fix call of bn256_add_uint.
+	* boards/STM8S_DISCOVERY/*: Update for ChibiOS/RT 2.4.x.
+
 	Merge ec_p256 branch.
 	* src/Makefile.in: Add ECC files.
 	* src/bn.h, src/bn.c: New.
@@ -10,7 +21,8 @@
 2013-02-17  Niibe Yutaka  <gniibe@fsij.org>
 
 	* chibios: New submodule for ChibioS/RT 2.4.x.
-	* boards/*/*: Update for ChibiOS/RT 2.4.x.
+	* boards/FST_01/*: Update for ChibiOS/RT 2.4.x.
+	* boards/common/mcuconf-common.h: Ditto.
 
 	* src/chconf.h, src/halconf.h, src/Makefile.in, src/gnuk.ld.in:
 	Update for ChibiOS/RT 2.4.x.

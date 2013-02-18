@@ -29,6 +29,7 @@
 #include "sys.h"
 #include "openpgp.h"
 #include "sha256.h"
+#include "random.h"
 
 #define ADMIN_PASSWD_MINLEN 8
 

@@ -2,13 +2,11 @@
 #include "ch.h"
 #include "hal.h"
 
-#include "../common/hwinit.c"
-
-void
-hwinit1 (void)
+/*
+ * Board-specific initialization code.
+ */
+void boardInit(void)
 {
-  hwinit1_common ();
-
 #if defined(PINPAD_CIR_SUPPORT)
   /* EXTI5 <= PB5 */
   AFIO->EXTICR[1] = AFIO_EXTICR2_EXTI5_PB;
