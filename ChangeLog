@@ -10,6 +10,11 @@
 	* src/configure, src/gnuk.ld.in: Add MEMORY_SIZE.
 	* src/ec_p256.c: Fix call of bn256_add_uint.
 	* boards/STM8S_DISCOVERY/*: Update for ChibiOS/RT 2.4.x.
+	* boards/CQ_STARM/*: Likewise.
+	* boards/FST_01_00/*: Likewise.
+	* boards/OLIMEX_STM32_H103/*: Likewise.
+	* boards/STBEE/*: Likewise.
+	* boards/STBEE_MINI/*: Likewise.
 
 	Merge ec_p256 branch.
 	* src/Makefile.in: Add ECC files.
@@ -32,7 +37,7 @@
 	* boards/common/board-common.c: Rename from hwinit.c.
 	* src/usb_stm32f103.c: Rename from usb_lld.c.
 
-	* src/neug.h, src/neug.h: Update NeuG 0.05.
+	* src/neug.h, src/neug.c: Update NeuG 0.05.
 	* src/adc_stm32f103.c, src/adc.h: New from NeuG 0.05.
 
 	* src/random.c: Follow the change of NeuG 0.05.

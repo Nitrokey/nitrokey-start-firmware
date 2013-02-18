@@ -37,6 +37,8 @@
 #define GPIO_LED	GPIOA_LED
 #define IOPORT_LED	GPIOA
 
+/* NeuG settings for ADC2 is default.  */
+
 /*
  * Board identifier.
  */
@@ -54,7 +56,6 @@
  * native STM32 HAL.
  */
 #define STM32F10X_MD
-#define CPU_WITH_NO_GPIOE	1
 
 /*
  * IO pins assignments.
@@ -88,6 +89,8 @@
 
 /*
  * Port A setup.
+ * PA0  - Digital input with PullUp.  AN0
+ * PA1  - Digital input with PullUp.  AN1
  * PA11 - input with pull-up (USBDM)
  * PA12 - input with pull-up (USBDP)
  * Everything input with pull-up except:
@@ -131,5 +134,15 @@
 #define VAL_GPIOECRL            0x88888888      /*  PE7...PE0 */
 #define VAL_GPIOECRH            0x88888888      /* PE15...PE8 */
 #define VAL_GPIOEODR            0xFFFFFFFF
+
+#if !defined(_FROM_ASM_)
+#ifdef __cplusplus
+extern "C" {
+#endif
+  void boardInit(void);
+#ifdef __cplusplus
+}
+#endif
+#endif /* _FROM_ASM_ */
 
 #endif /* _BOARD_H_ */

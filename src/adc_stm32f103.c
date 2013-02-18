@@ -54,8 +54,8 @@
 
 #define ADC_CHANNEL_IN0         0
 #define ADC_CHANNEL_IN1         1
-#define ADC_CHANNEL_IN9         9
 #define ADC_CHANNEL_IN2         2
+#define ADC_CHANNEL_IN9         9
 #define ADC_CHANNEL_IN10        10
 #define ADC_CHANNEL_IN11        11
 #define ADC_CHANNEL_SENSOR      16

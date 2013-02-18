@@ -38,12 +38,18 @@
 #define GPIO_LED	GPIOA_LED1
 #define IOPORT_LED	GPIOA
 
+#define NEUG_ADC_SETTING2_SMPR1 0
+#define NEUG_ADC_SETTING2_SMPR2 ADC_SMPR2_SMP_AN1(ADC_SAMPLE_1P5)    \
+                              | ADC_SMPR2_SMP_AN2(ADC_SAMPLE_1P5)
+#define NEUG_ADC_SETTING2_SQR3  ADC_SQR3_SQ1_N(ADC_CHANNEL_IN1)      \
+                              | ADC_SQR3_SQ2_N(ADC_CHANNEL_IN2)
+#define NEUG_ADC_SETTING2_NUM_CHANNELS 2
+
 /*
  * Board identifier.
  */
 #define BOARD_STBEE_MINI
 #define BOARD_NAME "STBee Mini"
-#define CPU_WITH_NO_GPIOE	1
 
 #if defined(PINPAD_CIR_SUPPORT) || defined(PINPAD_DIAL_SUPPORT)
 #define HAVE_7SEGLED	1
@@ -101,6 +107,8 @@
 #if defined(PINPAD_CIR_SUPPORT) || defined(PINPAD_DIAL_SUPPORT)
 /*
  * Port A setup.
+ * PA1  - Digital input with PullUp.  AN1 for NeuG
+ * PA2  - Digital input with PullUp.  AN2 for NeuG
  * PA6  - (TIM3_CH1) input with pull-up
  * PA7  - (TIM3_CH2) input with pull-down
  * PA11 - input with pull-up (USBDM)
@@ -135,6 +143,8 @@
 #else
 /*
  * Port A setup.
+ * PA1  - Digital input with PullUp.  AN1 for NeuG
+ * PA2  - Digital input with PullUp.  AN2 for NeuG
  * PA11 - input with pull-up (USBDM)
  * PA12 - input with pull-up (USBDP)
  * Everything input with pull-up except:
@@ -173,5 +183,23 @@
 #define VAL_GPIODCRL            0x88888844      /*  PD7...PD0 */
 #define VAL_GPIODCRH            0x88888888      /* PD15...PD8 */
 #define VAL_GPIODODR            0xFFFFFFFF
+
+/*
+ * Port E setup.
+ * Everything input with pull-up except:
+ */
+#define VAL_GPIOECRL            0x88888888      /*  PE7...PE0 */
+#define VAL_GPIOECRH            0x88888888      /* PE15...PE8 */
+#define VAL_GPIOEODR            0xFFFFFFFF
+
+#if !defined(_FROM_ASM_)
+#ifdef __cplusplus
+extern "C" {
+#endif
+  void boardInit(void);
+#ifdef __cplusplus
+}
+#endif
+#endif /* _FROM_ASM_ */
 
 #endif /* _BOARD_H_ */

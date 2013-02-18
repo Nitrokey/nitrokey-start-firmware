@@ -2,13 +2,11 @@
 #include "ch.h"
 #include "hal.h"
 
-#include "../common/hwinit.c"
-
-void
-hwinit1 (void)
+/*
+ * Board-specific initialization code.
+ */
+void boardInit(void)
 {
-  hwinit1_common ();
-
 #if !defined(DFU_SUPPORT)
   if (palReadPad (IOPORT3, GPIOC_BUTTON) == 0)
     /*

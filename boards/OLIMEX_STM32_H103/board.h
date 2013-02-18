@@ -37,6 +37,14 @@
 #define GPIO_LED	GPIOC_LED
 #define IOPORT_LED	GPIOC
 
+/* NeuG settings for ADC2.  */
+#define NEUG_ADC_SETTING2_SMPR1 ADC_SMPR1_SMP_AN10(ADC_SAMPLE_1P5) \
+                              | ADC_SMPR1_SMP_AN11(ADC_SAMPLE_1P5)
+#define NEUG_ADC_SETTING2_SMPR2 0
+#define NEUG_ADC_SETTING2_SQR3  ADC_SQR3_SQ1_N(ADC_CHANNEL_IN10)   \
+                              | ADC_SQR3_SQ2_N(ADC_CHANNEL_IN11)
+#define NEUG_ADC_SETTING2_NUM_CHANNELS 2
+
 /*
  * Board identifier.
  */
@@ -117,6 +125,8 @@
 
 /*
  * Port C setup.
+ * PC0  - Digital input with PullUp.  AN10 for NeuG
+ * PC1  - Digital input with PullUp.  AN11 for NeuG
  * Everything input with pull-up except:
  * PC6  - Normal input because there is an external resistor.
  * PC7  - Normal input because there is an external resistor.
@@ -144,5 +154,15 @@
 #define VAL_GPIOECRL            0x88888888      /*  PE7...PE0 */
 #define VAL_GPIOECRH            0x88888888      /* PE15...PE8 */
 #define VAL_GPIOEODR            0xFFFFFFFF
+
+#if !defined(_FROM_ASM_)
+#ifdef __cplusplus
+extern "C" {
+#endif
+  void boardInit(void);
+#ifdef __cplusplus
+}
+#endif
+#endif /* _FROM_ASM_ */
 
 #endif /* _BOARD_H_ */
