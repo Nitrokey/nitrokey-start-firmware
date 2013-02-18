@@ -15,6 +15,7 @@
 	* boards/OLIMEX_STM32_H103/*: Likewise.
 	* boards/STBEE/*: Likewise.
 	* boards/STBEE_MINI/*: Likewise.
+	* boards/STM32_PRIMER2/*: Likewise.
 
 	Merge ec_p256 branch.
 	* src/Makefile.in: Add ECC files.
