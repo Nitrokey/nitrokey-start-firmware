@@ -7,8 +7,8 @@ __stacks_total_size__   = __main_stack_size__ + __process_stack_size__;
 
 MEMORY
 {
-    ram0 : org = 0x20000000, len = 0x1400
-    ram1 : org = 0x20001400, len = 20k - 0x1400
+    ram0 : org = 0x20000000, len = 0x1a00
+    ram1 : org = 0x20001400, len = 20k - 0x1a00
 }
 
 vector = 0x08000000;

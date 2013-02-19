@@ -2,7 +2,7 @@
 
 PROJECT = regnual
 
-OBJS = regnual.o usb_lld.o sys.o
+OBJS = regnual.o usb_stm32f103.o sys.o
 LDSCRIPT= regnual.ld
 
 ###################################
@@ -18,10 +18,11 @@ OBJDUMP   = $(TRGT)objdump
 TOPT = -mthumb -DTHUMB -mno-thumb-interwork
 # Define C warning options here
 CWARN = -Wall -Wextra -Wstrict-prototypes
-MCFLAGS= -mcpu=$(MCU) -mfix-cortex-m3-ldrd
+MCFLAGS= -mcpu=$(MCU)
 DEFS = -DFREE_STANDING
 
 CFLAGS = -O2 -g
+CFLAGS += -Wa,-alms=$(notdir $(<:.c=.lst))
 CFLAGS += $(CWARN) -I . -I ../src -fno-common $(MCFLAGS) $(TOPT) $(DEFS)
 
 LDFLAGS = -T$(LDSCRIPT) -nostartfiles $(MCFLAGS) $(TOPT)
@@ -37,8 +38,8 @@ regnual.hex: regnual.elf
 	$(OBJCOPY) -Obinary regnual.elf regnual.bin
 	$(OBJCOPY) -Oihex regnual.elf regnual.hex
 
-usb_lld.o: ../src/usb_lld.c
-	$(CC) $(CFLAGS) -c -o usb_lld.o ../src/usb_lld.c
+usb_stm32f103.o: ../src/usb_stm32f103.c
+	$(CC) $(CFLAGS) -c -o usb_stm32f103.o ../src/usb_stm32f103.c
 
 regnual.elf: $(OBJS) $(LDSCRIPT)
 	$(CC) $(LDFLAGS) -o regnual.elf $(OBJS)

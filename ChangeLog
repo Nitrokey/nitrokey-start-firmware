@@ -1,5 +1,11 @@
 2013-02-19  Niibe Yutaka  <gniibe@fsij.org>
 
+	* regnual/regnual.ld (MEMORY): Fix address of regnual.
+
+	* regnual/Makefile (MCFLAGS): Remove -mfix-cortex-m3-ldrd.
+	(CFLAGS): Add output to .lst.
+	* src/Makefile.in (MCFLAGS): Remove.
+
 	* src/sha256.c: Update from NeuG 0.05.
 
 	* ChibiOS_2.0.8: Remove.

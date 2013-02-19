@@ -164,7 +164,6 @@ SECTIONS
     . = ALIGN(512);
 
     _regnual_start = .;
-    /* It was __ram_start__ + 0x1a00 in 1.0.x */
 
 @CERTDO_SUPPORT_START@
     .gnuk_ch_certificate :
