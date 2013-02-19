@@ -52,10 +52,13 @@
 
 #define SHA256_MASK (SHA256_BLOCK_SIZE - 1)
 
-static void bswap32_buf (uint32_t *p, int n)
+static void memcpy_bswap32 (void *dst, const uint32_t *p, int n)
 {
+  uint32_t *q = (uint32_t *)dst;
+
+  n >>= 2;
   while (n--)
-    p[n] = __builtin_bswap32 (p[n]); /* bswap32 is GCC extention */
+    q[n] = __builtin_bswap32 (p[n]); /* bswap32 is GCC extention */
 }
 
 #define rotr32(x,n)   (((x) >> n) | ((x) << (32 - n)))
@@ -69,8 +72,15 @@ static void bswap32_buf (uint32_t *p, int n)
 #define hf(i) (p[i & 15] += \
     g_1(p[(i + 14) & 15]) + p[(i + 9) & 15] + g_0(p[(i + 1) & 15]))
 
-#define v_cycle(i,j)                                \
-    vf(7,i) += (j ? hf(i) : p[i]) + k_0[i+j]        \
+#define v_cycle0(i)                                 \
+    p[i] = __builtin_bswap32 (p[i]);                \
+    vf(7,i) += p[i] + k_0[i]                        \
+    + s_1(vf(4,i)) + ch(vf(4,i),vf(5,i),vf(6,i));   \
+    vf(3,i) += vf(7,i);                             \
+    vf(7,i) += s_0(vf(0,i))+ maj(vf(0,i),vf(1,i),vf(2,i))
+
+#define v_cycle(i, j)                               \
+    vf(7,i) += hf(i) + k_0[i+j]                     \
     + s_1(vf(4,i)) + ch(vf(4,i),vf(5,i),vf(6,i));   \
     vf(3,i) += vf(7,i);                             \
     vf(7,i) += s_0(vf(0,i))+ maj(vf(0,i),vf(1,i),vf(2,i))
@@ -81,7 +91,7 @@ static void bswap32_buf (uint32_t *p, int n)
 #define g_1(x)  (rotr32((x), 17) ^ rotr32((x), 19) ^ ((x) >> 10))
 #define k_0     k256
 
-const uint32_t k256[64] = {
+static const uint32_t k256[64] = {
   0X428A2F98, 0X71374491, 0XB5C0FBCF, 0XE9B5DBA5,
   0X3956C25B, 0X59F111F1, 0X923F82A4, 0XAB1C5ED5,
   0XD807AA98, 0X12835B01, 0X243185BE, 0X550C7DC3,
@@ -109,24 +119,17 @@ sha256_process (sha256_context *ctx)
 
   memcpy (v, ctx->state, 8 * sizeof (uint32_t));
 
-  for (i = 0; i < 64; i += 16)
+  v_cycle0 ( 0); v_cycle0 ( 1); v_cycle0 ( 2); v_cycle0 ( 3);
+  v_cycle0 ( 4); v_cycle0 ( 5); v_cycle0 ( 6); v_cycle0 ( 7);
+  v_cycle0 ( 8); v_cycle0 ( 9); v_cycle0 (10); v_cycle0 (11);
+  v_cycle0 (12); v_cycle0 (13); v_cycle0 (14); v_cycle0 (15);
+
+  for (i = 16; i < 64; i += 16)
     {
-      v_cycle ( 0, i);
-      v_cycle ( 1, i);
-      v_cycle ( 2, i);
-      v_cycle ( 3, i);
-      v_cycle ( 4, i);
-      v_cycle ( 5, i);
-      v_cycle ( 6, i);
-      v_cycle ( 7, i);
-      v_cycle ( 8, i);
-      v_cycle ( 9, i);
-      v_cycle (10, i);
-      v_cycle (11, i);
-      v_cycle (12, i);
-      v_cycle (13, i);
-      v_cycle (14, i);
-      v_cycle (15, i);
+      v_cycle ( 0, i); v_cycle ( 1, i); v_cycle ( 2, i); v_cycle ( 3, i);
+      v_cycle ( 4, i); v_cycle ( 5, i); v_cycle ( 6, i); v_cycle ( 7, i);
+      v_cycle ( 8, i); v_cycle ( 9, i); v_cycle (10, i); v_cycle (11, i);
+      v_cycle (12, i); v_cycle (13, i); v_cycle (14, i); v_cycle (15, i);
     }
 
   ctx->state[0] += v[0];
@@ -141,7 +144,7 @@ sha256_process (sha256_context *ctx)
 
 void
 sha256_update (sha256_context *ctx, const unsigned char *input,
-	       unsigned int ilen)
+               unsigned int ilen)
 {
   uint32_t left = (ctx->total[0] & SHA256_MASK);
   uint32_t fill = SHA256_BLOCK_SIZE - left;
@@ -153,7 +156,6 @@ sha256_update (sha256_context *ctx, const unsigned char *input,
   while (ilen >= fill)
     {
       memcpy (((unsigned char*)ctx->wbuf) + left, input, fill);
-      bswap32_buf (ctx->wbuf, SHA256_BLOCK_SIZE >> 2);
       sha256_process (ctx);
       input += fill;
       ilen -= fill;
@@ -169,15 +171,15 @@ sha256_finish (sha256_context *ctx, unsigned char output[32])
 {
   uint32_t last = (ctx->total[0] & SHA256_MASK);
 
-  bswap32_buf (ctx->wbuf, (last + 3) >> 2);
-
+  ctx->wbuf[last >> 2] = __builtin_bswap32 (ctx->wbuf[last >> 2]);
   ctx->wbuf[last >> 2] &= 0xffffff80 << (8 * (~last & 3));
   ctx->wbuf[last >> 2] |= 0x00000080 << (8 * (~last & 3));
+  ctx->wbuf[last >> 2] = __builtin_bswap32 (ctx->wbuf[last >> 2]);
 
   if (last > SHA256_BLOCK_SIZE - 9)
     {
       if (last < 60)
-	ctx->wbuf[15] = 0;
+        ctx->wbuf[15] = 0;
       sha256_process (ctx);
       last = 0;
     }
@@ -187,12 +189,11 @@ sha256_finish (sha256_context *ctx, unsigned char output[32])
   while (last < 14)
     ctx->wbuf[last++] = 0;
 
-  ctx->wbuf[14] = (ctx->total[0] >> 29) | (ctx->total[1] << 3);
-  ctx->wbuf[15] = ctx->total[0] << 3;
+  ctx->wbuf[14] = __builtin_bswap32 ((ctx->total[0] >> 29) | (ctx->total[1] << 3));
+  ctx->wbuf[15] = __builtin_bswap32 (ctx->total[0] << 3);
   sha256_process (ctx);
 
-  bswap32_buf (ctx->state, SHA256_DIGEST_SIZE >> 2);
-  memcpy (output, ctx->state, SHA256_DIGEST_SIZE);
+  memcpy_bswap32 (output, ctx->state, SHA256_DIGEST_SIZE);
   memset (ctx, 0, sizeof (sha256_context));
 }
 
@@ -211,7 +212,7 @@ sha256_start (sha256_context *ctx)
 
 void
 sha256 (const unsigned char *input, unsigned int ilen,
-	unsigned char output[32])
+        unsigned char output[32])
 {
   sha256_context ctx;
 

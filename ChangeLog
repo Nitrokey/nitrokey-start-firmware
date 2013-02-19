@@ -1,5 +1,7 @@
 2013-02-19  Niibe Yutaka  <gniibe@fsij.org>
 
+	* src/sha256.c: Update from NeuG 0.05.
+
 	* ChibiOS_2.0.8: Remove.
 
 2013-02-18  Niibe Yutaka  <gniibe@fsij.org>
