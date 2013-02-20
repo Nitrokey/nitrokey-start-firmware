@@ -107,11 +107,6 @@ modulus_calc (const uint8_t *p, int len)
   return modulus;
 }
 
-void
-modulus_free (const uint8_t *p)
-{
-  free ((void *)p);
-}
 
 int
 rsa_decrypt (const uint8_t *input, uint8_t *output, int msg_len,

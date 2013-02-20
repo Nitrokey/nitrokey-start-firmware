@@ -833,6 +833,7 @@ cmd_pso (void)
 }
 
 
+#if RSA_AUTH
 #define MAX_DIGEST_INFO_LEN 102 /* 40% */
 static void
 cmd_internal_authenticate (void)
@@ -876,6 +877,54 @@ cmd_internal_authenticate (void)
 
   DEBUG_INFO ("INTERNAL AUTHENTICATE done.\r\n");
 }
+#else
+#define ECDSA_P256_HASH_LEN 32
+#define ECDSA_SIGNATURE_LENGTH 64
+
+static void
+cmd_internal_authenticate (void)
+{
+  int len = apdu.cmd_apdu_data_len;
+  int r;
+
+  DEBUG_INFO (" - INTERNAL AUTHENTICATE\r\n");
+
+  if (P1 (apdu) == 0x00 && P2 (apdu) == 0x00)
+    {
+      DEBUG_SHORT (len);
+
+      if (!ac_check_status (AC_OTHER_AUTHORIZED))
+	{
+	  DEBUG_INFO ("security error.");
+	  GPG_SECURITY_FAILURE ();
+	  return;
+	}
+
+      if (len != ECDSA_P256_HASH_LEN)
+	{
+	  DEBUG_INFO ("wrong hash length.");
+	  GPG_CONDITION_NOT_SATISFIED ();
+	  return;
+	}
+
+      res_APDU_size = ECDSA_SIGNATURE_LENGTH;
+      r = ecdsa_sign (apdu.cmd_apdu_data, res_APDU,
+		      &kd[GPG_KEY_FOR_AUTHENTICATION]);
+      if (r < 0)
+	GPG_ERROR ();
+    }
+  else
+    {
+      DEBUG_INFO (" - ??");
+      DEBUG_BYTE (P1 (apdu));
+      DEBUG_INFO (" - ??");
+      DEBUG_BYTE (P2 (apdu));
+      GPG_ERROR ();
+    }
+
+  DEBUG_INFO ("INTERNAL AUTHENTICATE done.\r\n");
+}
+#endif
 
 #define MBD_OPRATION_WRITE  0
 #define MBD_OPRATION_UPDATE 1

@@ -122,12 +122,18 @@ static const uint8_t extended_capabilities[] __attribute__ ((aligned (1))) = {
 };
 
 /* Algorithm Attributes */
-static const uint8_t algorithm_attr[] __attribute__ ((aligned (1))) = {
+static const uint8_t algorithm_attr_rsa[] __attribute__ ((aligned (1))) = {
   6,
   0x01, /* RSA */
   0x08, 0x00,	      /* Length modulus (in bit): 2048 */
   0x00, 0x20,	      /* Length exponent (in bit): 32  */
   0x00		      /* 0: p&q , 3: CRT with N (not yet supported) */
+};
+
+static const uint8_t algorithm_attr_ecdsa[] __attribute__ ((aligned (1))) = {
+  9,
+  0x13, /* ECDSA */
+  0x2a, 0x86, 0x48, 0xce, 0x3d, 0x03, 0x01, 0x07 /* OID of NIST curve P-256 */
 };
 
 #define PW_LEN_MAX 127
@@ -722,7 +728,7 @@ static int8_t num_prv_keys;
 
 static int
 gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
-		     const uint8_t *keystring_admin, const uint8_t *modulus)
+		     const uint8_t *keystring_admin, const uint8_t *pubkey)
 {
   uint8_t nr = get_do_ptr_nr_for_kk (kk);
   const uint8_t *p;
@@ -734,7 +740,7 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
   const uint8_t *ks_pw1;
   const uint8_t *ks_rc;
   struct key_data_internal kdi;
-  int modulus_allocated_here = 0;
+  int pubkey_allocated_here = 0;
   uint8_t ks_pw1_len = 0;
   uint8_t ks_rc_len = 0;
 
@@ -745,23 +751,28 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
     /* No replace support, you need to remove it first.  */
     return -1;
 
-  if (key_len != KEY_CONTENT_LEN)
+  if (kk != GPG_KEY_FOR_AUTHENTICATION && key_len != KEY_CONTENT_LEN)
+    return -1;
+  if (kk == GPG_KEY_FOR_AUTHENTICATION && key_len != 32)
     return -1;
 
   pd = (struct prvkey_data *)malloc (sizeof (struct prvkey_data));
   if (pd == NULL)
     return -1;
 
-  if (modulus == NULL)
+  if (pubkey == NULL)
     {
-      modulus = modulus_calc (key_data, key_len);
-      if (modulus == NULL)
+      if (kk == GPG_KEY_FOR_AUTHENTICATION)
+	pubkey = ecdsa_compute_public (key_data);
+      else
+	pubkey = modulus_calc (key_data, key_len);
+      if (pubkey == NULL)
 	{
 	  free (pd);
 	  return -1;
 	}
 
-      modulus_allocated_here = 1;
+      pubkey_allocated_here = 1;
     }
 
   DEBUG_INFO ("Getting keystore address...\r\n");
@@ -769,15 +780,21 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
   if (key_addr == NULL)
     {
       free (pd);
-      if (modulus_allocated_here)
-	modulus_free (modulus);
+      if (pubkey_allocated_here)
+	free ((void *)pubkey);
       return -1;
     }
 
   DEBUG_INFO ("key_addr: ");
   DEBUG_WORD ((uint32_t)key_addr);
 
-  memcpy (kdi.data, key_data, KEY_CONTENT_LEN);
+  if (kk == GPG_KEY_FOR_AUTHENTICATION)
+    {
+      memcpy (kdi.data, key_data, key_len);
+      memset (kdi.data + key_len, 0, KEY_CONTENT_LEN - key_len);
+    }
+  else
+    memcpy (kdi.data, key_data, KEY_CONTENT_LEN);
   compute_key_data_checksum (&kdi, 0);
 
   dek = random_bytes_get (); /* 32-byte random bytes */
@@ -790,9 +807,9 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
 
   encrypt (dek, iv, (uint8_t *)&kdi, sizeof (struct key_data_internal));
 
-  r = flash_key_write (key_addr, kdi.data, modulus);
-  if (modulus_allocated_here)
-    modulus_free (modulus);
+  r = flash_key_write (key_addr, kdi.data, pubkey);
+  if (pubkey_allocated_here)
+    free ((void *)pubkey);
 
   if (r < 0)
     {
@@ -895,13 +912,23 @@ gpg_do_chks_prvkey (enum kind_of_key kk,
 }
 
 /*
+ * RSA:
  * 4d, xx, xx, xx:    Extended Header List
  *   b6 00 (SIG) / b8 00 (DEC) / a4 00 (AUT)
  *   7f48, xx: cardholder private key template
- *       91 xx
- *       92 xx xx
- *       93 xx xx
+ *       91 xx: length of E
+ *       92 xx xx: length of P
+ *       93 xx xx: length of Q
  *   5f48, xx xx xx: cardholder private key
+ * <E: 4-byte>, <P: 128-byte>, <Q: 128-byte>
+ *
+ * ECDSA:
+ * 4d, xx:    Extended Header List
+ *   a4 00 (AUT)
+ *   7f48, xx: cardholder private key template
+ *       91 xx: length of d
+ *   5f48, xx : cardholder private key
+ * <d>
  */
 static int
 proc_key_import (const uint8_t *data, int len)
@@ -944,7 +971,8 @@ proc_key_import (const uint8_t *data, int len)
       ac_reset_other ();
     }
 
-  if (len <= 22)
+  if ((kk != GPG_KEY_FOR_AUTHENTICATION && len <= 22)
+      || (kk == GPG_KEY_FOR_AUTHENTICATION && len <= 12))
     {					    /* Deletion of the key */
       uint8_t nr = get_do_ptr_nr_for_kk (kk);
       const uint8_t *do_data = do_ptr[nr - NR_DO__FIRST__];
@@ -972,9 +1000,15 @@ proc_key_import (const uint8_t *data, int len)
       return 1;
     }
 
-  /* It should starts with 00 01 00 01 (E) */
-  /* Skip E, 4-byte */
-  r = gpg_do_write_prvkey (kk, &data[26], len - 26, keystring_admin, NULL);
+  if (kk != GPG_KEY_FOR_AUTHENTICATION)
+    {			   /* RSA */
+      /* It should starts with 00 01 00 01 (E) */
+      /* Skip E, 4-byte */
+      r = gpg_do_write_prvkey (kk, &data[26], len - 26, keystring_admin, NULL);
+    }
+  else
+    r = gpg_do_write_prvkey (kk, &data[12], len - 12, keystring_admin, NULL);
+
   if (r < 0)
     return 0;
   else
@@ -1032,9 +1066,9 @@ gpg_do_table[] = {
     rw_pw_status },
   /* Fixed data */
   { GPG_DO_EXTCAP, DO_FIXED, AC_ALWAYS, AC_NEVER, extended_capabilities },
-  { GPG_DO_ALG_SIG, DO_FIXED, AC_ALWAYS, AC_NEVER, algorithm_attr },
-  { GPG_DO_ALG_DEC, DO_FIXED, AC_ALWAYS, AC_NEVER, algorithm_attr },
-  { GPG_DO_ALG_AUT, DO_FIXED, AC_ALWAYS, AC_NEVER, algorithm_attr },
+  { GPG_DO_ALG_SIG, DO_FIXED, AC_ALWAYS, AC_NEVER, algorithm_attr_rsa },
+  { GPG_DO_ALG_DEC, DO_FIXED, AC_ALWAYS, AC_NEVER, algorithm_attr_rsa },
+  { GPG_DO_ALG_AUT, DO_FIXED, AC_ALWAYS, AC_NEVER, algorithm_attr_ecdsa },
   /* Compound data: Read access only */
   { GPG_DO_CH_DATA, DO_CMP_READ, AC_ALWAYS, AC_NEVER, cmp_ch_data },
   { GPG_DO_APP_DATA, DO_CMP_READ, AC_ALWAYS, AC_NEVER, cmp_app_data },
@@ -1475,26 +1509,42 @@ gpg_do_public_key (uint8_t kk_byte)
 
   /* TAG */
   *res_p++ = 0x7f; *res_p++ = 0x49;
-  /* LEN = 9+256 */
-  *res_p++ = 0x82; *res_p++ = 0x01; *res_p++ = 0x09;
 
-  {
-    /*TAG*/          /*LEN = 256 */
-    *res_p++ = 0x81; *res_p++ = 0x82; *res_p++ = 0x01; *res_p++ = 0x00;
-    /* 256-byte binary (big endian) */
-    memcpy (res_p, key_addr + KEY_CONTENT_LEN, KEY_CONTENT_LEN);
-    res_p += 256;
-  }
-  {
-    /*TAG*/          /*LEN= 3 */
-    *res_p++ = 0x82; *res_p++ = 3;
-    /* 3-byte E=0x10001 (big endian) */
-    *res_p++ = 0x01; *res_p++ = 0x00; *res_p++ = 0x01;
+  if (kk_byte != 0xa4)
+    {				/* RSA */
+      /* LEN = 9+256 */
+      *res_p++ = 0x82; *res_p++ = 0x01; *res_p++ = 0x09;
 
-    /* Success */
-    res_APDU_size = res_p - res_APDU;
-    GPG_SUCCESS ();
-  }
+      {
+	/*TAG*/          /* LEN = 256 */
+	*res_p++ = 0x81; *res_p++ = 0x82; *res_p++ = 0x01; *res_p++ = 0x00;
+	/* 256-byte binary (big endian) */
+	memcpy (res_p, key_addr + KEY_CONTENT_LEN, KEY_CONTENT_LEN);
+	res_p += 256;
+      }
+      {
+	/*TAG*/          /* LEN= 3 */
+	*res_p++ = 0x82; *res_p++ = 3;
+	/* 3-byte E=0x10001 (big endian) */
+	*res_p++ = 0x01; *res_p++ = 0x00; *res_p++ = 0x01;
+      }
+    }
+  else
+    {				/* ECDSA */
+      /* LEN = 2+64 */
+      *res_p++ = 0x42;
+      {
+	/*TAG*/          /* LEN = 64 */
+	*res_p++ = 0x81; *res_p++ = 0x40;
+	/* 64-byte binary (big endian) */
+	memcpy (res_p, key_addr + KEY_CONTENT_LEN, 64);
+	res_p += 64;
+      }
+    }
+
+  /* Success */
+  res_APDU_size = res_p - res_APDU;
+  GPG_SUCCESS ();
 
   DEBUG_INFO ("done.\r\n");
   return;
