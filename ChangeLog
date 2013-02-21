@@ -1,5 +1,7 @@
 2013-02-21  Niibe Yutaka  <gniibe@fsij.org>
 
+	* src/gnuk.ld.in (MEMORY): Fix adding FLASH_SIZE unit.
+
 	* src/call-ec_p256.c (ecdsa_sign): Fix secret key access.
 
 2013-02-20  Niibe Yutaka  <gniibe@fsij.org>
