@@ -247,7 +247,7 @@ static const struct do_table_entry *get_do_entry (uint16_t tag);
 #define GPG_DO_LOGIN_DATA	0x005e
 #define GPG_DO_CH_DATA		0x0065
 #define GPG_DO_APP_DATA		0x006e
-/* XXX: 0x0073 ??? */
+#define GPG_DO_DISCRETIONARY    0x0073
 #define GPG_DO_SS_TEMP		0x007a
 #define GPG_DO_DS_COUNT		0x0093
 #define GPG_DO_EXTCAP		0x00c0
@@ -1023,10 +1023,14 @@ static const uint16_t cmp_ch_data[] = {
 };
 
 static const uint16_t cmp_app_data[] = {
-  10,
+  3,
   GPG_DO_AID,
   GPG_DO_HIST_BYTES,
-  /* XXX Discretionary data objects 0x0073 ??? */
+  GPG_DO_DISCRETIONARY,
+};
+
+static const uint16_t cmp_discretionary[] = {
+  8,
   GPG_DO_EXTCAP,
   GPG_DO_ALG_SIG, GPG_DO_ALG_DEC, GPG_DO_ALG_AUT,
   GPG_DO_PW_STATUS,
@@ -1072,6 +1076,7 @@ gpg_do_table[] = {
   /* Compound data: Read access only */
   { GPG_DO_CH_DATA, DO_CMP_READ, AC_ALWAYS, AC_NEVER, cmp_ch_data },
   { GPG_DO_APP_DATA, DO_CMP_READ, AC_ALWAYS, AC_NEVER, cmp_app_data },
+  { GPG_DO_DISCRETIONARY, DO_CMP_READ, AC_ALWAYS, AC_NEVER, cmp_discretionary },
   { GPG_DO_SS_TEMP, DO_CMP_READ, AC_ALWAYS, AC_NEVER, cmp_ss_temp },
   /* Simple data: write access only */
   { GPG_DO_RESETTING_CODE, DO_PROC_WRITE, AC_NEVER, AC_ADMIN_AUTHORIZED,
