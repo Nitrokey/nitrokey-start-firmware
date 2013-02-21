@@ -40,14 +40,18 @@ ecdsa_sign (const uint8_t *hash, uint8_t *output,
 	    const struct key_data *kd)
 {
   int i;
-  bn256 r[1], s[1], z[1];
+  bn256 r[1], s[1], z[1], d[1];
   uint8_t *p;
+
+  p = (uint8_t *)d;
+  for (i = 0; i < ECDSA_BYTE_SIZE; i++)
+    p[ECDSA_BYTE_SIZE - i - 1] = kd->data[i];
 
   p = (uint8_t *)z;
   for (i = 0; i < ECDSA_BYTE_SIZE; i++)
     p[ECDSA_BYTE_SIZE - i - 1] = hash[i];
 
-  ecdsa (r, s, z, (const bn256 *)kd);
+  ecdsa (r, s, z, d);
   p = (uint8_t *)r;
   for (i = 0; i < ECDSA_BYTE_SIZE; i++)
     *output++ = p[ECDSA_BYTE_SIZE - i - 1];
