@@ -1539,8 +1539,9 @@ gpg_do_public_key (uint8_t kk_byte)
       /* LEN = 2+64 */
       *res_p++ = 0x42;
       {
-	/*TAG*/          /* LEN = 64 */
-	*res_p++ = 0x81; *res_p++ = 0x40;
+	/*TAG*/          /* LEN = 1+64 */
+	*res_p++ = 0x81; *res_p++ = 0x41;
+	*res_p++ = 0x04; 	/* No compression of EC point.  */
 	/* 64-byte binary (big endian) */
 	memcpy (res_p, key_addr + KEY_CONTENT_LEN, 64);
 	res_p += 64;

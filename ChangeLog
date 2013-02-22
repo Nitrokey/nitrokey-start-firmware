@@ -1,5 +1,7 @@
 2013-02-22  Niibe Yutaka  <gniibe@fsij.org>
 
+	* src/openpgp-do.c (gpg_do_public_key): Add header of EC point.
+
 	* src/openpgp-do.c (GPG_DO_DISCRETIONARY, cmp_discretionary): New.
 	(cmp_app_data): Change to factor out GPG_DO_DISCRETIONARY.
 	(gpg_do_table): Add GPG_DO_DISCRETIONARY.
