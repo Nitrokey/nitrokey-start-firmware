@@ -1,14 +1,8 @@
-2013-02-23  Niibe Yutaka  <gniibe@fsij.org>
+2013-02-22  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/openpgp-do.c (GPG_DO_DISCRETIONARY, cmp_discretionary): New.
 	(cmp_app_data): Change to factor out GPG_DO_DISCRETIONARY.
 	(gpg_do_table): Add GPG_DO_DISCRETIONARY.
-
-2013-02-22  Niibe Yutaka  <gniibe@fsij.org>
-
-	* src/openpgp.c (ECDSA_SIGNATURE_LENGTH): It's 65.
-
-	* src/call-ec_p256.c (ecdsa_sign): Add a header byte.
 
 2013-02-21  Niibe Yutaka  <gniibe@fsij.org>
 

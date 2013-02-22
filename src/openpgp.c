@@ -879,7 +879,7 @@ cmd_internal_authenticate (void)
 }
 #else
 #define ECDSA_P256_HASH_LEN 32
-#define ECDSA_SIGNATURE_LENGTH (1+64)
+#define ECDSA_SIGNATURE_LENGTH 64
 
 static void
 cmd_internal_authenticate (void)

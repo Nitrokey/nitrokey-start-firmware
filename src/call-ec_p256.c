@@ -43,8 +43,6 @@ ecdsa_sign (const uint8_t *hash, uint8_t *output,
   bn256 r[1], s[1], z[1], d[1];
   uint8_t *p;
 
-  *output++ = '\x04';		/* No compression.  */
-
   p = (uint8_t *)d;
   for (i = 0; i < ECDSA_BYTE_SIZE; i++)
     p[ECDSA_BYTE_SIZE - i - 1] = kd->data[i];
