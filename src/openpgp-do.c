@@ -1536,8 +1536,8 @@ gpg_do_public_key (uint8_t kk_byte)
     }
   else
     {				/* ECDSA */
-      /* LEN = 2+64 */
-      *res_p++ = 0x42;
+      /* LEN = 2+1+64 */
+      *res_p++ = 0x43;
       {
 	/*TAG*/          /* LEN = 1+64 */
 	*res_p++ = 0x81; *res_p++ = 0x41;
