@@ -84,7 +84,7 @@ Configuration:
   -h, --help		display this help and exit	[no]
   --vidpid=VID:PID	specify vendor/product ID	[<NONE>]
   --target=TARGET	specify target			[OLIMEX_STM32_H103]
-			supported targes are:
+			supported targets are:
 			   OLIMEX_STM32_H103
 			   STM32_PRIMER2
 			   CQ_STARM
