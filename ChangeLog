@@ -1,3 +1,12 @@
+2013-02-25  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/configure: Correct typo in help text.
+
+	* src/gnuk.h (struct key_data_internal): Use uint32_t.
+	* src/openpgp-do.c (do_openpgpcard_aid): Fix calculation of VID.
+	(compute_key_data_checksum): Don't use type-punning pointer.
+	(gpg_do_write_prvkey): Use coercing to char *.
+
 2013-02-22  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/openpgp-do.c (GPG_DO_DISCRETIONARY, cmp_discretionary): New.

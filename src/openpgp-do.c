@@ -447,7 +447,7 @@ const uint8_t openpgpcard_aid[] = {
 static int
 do_openpgpcard_aid (uint16_t tag, int with_tag)
 {
-  uint16_t vid = *((const volatile uint16_t *)&openpgpcard_aid[8]);
+  uint16_t vid = (openpgpcard_aid[8] << 8) | openpgpcard_aid[9];
 
   if (with_tag)
     {
@@ -664,7 +664,7 @@ compute_key_data_checksum (struct key_data_internal *kdi, int check_or_calc)
   uint32_t d[4] = { 0, 0, 0, 0 };
 
   for (i = 0; i < KEY_CONTENT_LEN / sizeof (uint32_t); i++)
-    d[i&3] ^= *(uint32_t *)(&kdi->data[i*4]);
+    d[i&3] ^= kdi->data[i];
 
   if (check_or_calc == 0)	/* store */
     {
@@ -790,7 +790,7 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
 
   encrypt (dek, iv, (uint8_t *)&kdi, sizeof (struct key_data_internal));
 
-  r = flash_key_write (key_addr, kdi.data, modulus);
+  r = flash_key_write (key_addr, (const uint8_t *)kdi.data, modulus);
   if (modulus_allocated_here)
     modulus_free (modulus);
 

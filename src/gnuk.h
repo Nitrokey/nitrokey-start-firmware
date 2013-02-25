@@ -171,8 +171,8 @@ struct key_data {
 };
 
 struct key_data_internal {
-  uint8_t data[KEY_CONTENT_LEN]; /* p and q */
-  uint8_t checksum[DATA_ENCRYPTION_KEY_SIZE];
+  uint32_t data[KEY_CONTENT_LEN/4]; /* p and q */
+  uint32_t checksum[DATA_ENCRYPTION_KEY_SIZE/4];
 };
 
 struct prvkey_data {
