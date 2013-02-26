@@ -428,6 +428,8 @@ main (int argc, char *argv[])
 #endif
     }
 
+  random_fini ();
+
   set_led (1);
   usb_lld_shutdown ();
   /* Disable SysTick */

@@ -1,3 +1,10 @@
+2013-02-26  Niibe Yutaka  <gniibe@fsij.org>
+
+	* regnual/regnual.ld (MEMORY): Fix start address.
+
+	* src/random.c (random_fini): New.
+	* src/main.c (main): Call random_fini.
+
 2013-02-25  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/configure: Correct typo in help text.

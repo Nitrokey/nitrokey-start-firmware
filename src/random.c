@@ -1,7 +1,7 @@
 /*
  * random.c -- get random bytes
  *
- * Copyright (C) 2010, 2011, 2012 Free Software Initiative of Japan
+ * Copyright (C) 2010, 2011, 2012, 2013 Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
  * This file is a part of Gnuk, a GnuPG USB Token implementation.
@@ -38,6 +38,12 @@ random_init (void)
 
   for (i = 0; i < NEUG_PRE_LOOP; i++)
     (void)neug_get (NEUG_KICK_FILLING);
+}
+
+void
+random_fini (void)
+{
+  neug_fini ();
 }
 
 /*
