@@ -321,10 +321,8 @@ static void no_buf (struct ep_in *epi, size_t len)
   epi->buf_len = 0;
 }
 
-static void set_sw1sw2 (struct ep_in *epi)
+static void set_sw1sw2 (struct ccid *c, size_t chunk_len)
 {
-  struct ccid *c = (struct ccid *)epi->priv;
-
   if (c->a->expected_res_size >= c->len)
     {
       c->sw1sw2[0] = 0x90;
@@ -333,10 +331,10 @@ static void set_sw1sw2 (struct ep_in *epi)
   else
     {
       c->sw1sw2[0] = 0x61;
-      if (c->len >= 256)
+      if (c->len - chunk_len >= 256)
 	c->sw1sw2[1] = 0;
       else
-	c->sw1sw2[1] = (uint8_t)c->len;
+	c->sw1sw2[1] = (uint8_t)(c->len - chunk_len);
     }
 }
 
@@ -968,7 +966,7 @@ icc_send_data_block_gr (struct ccid *c, size_t chunk_len)
 
   usb_lld_txcpy (p, c->epi->ep_num, 0, ICC_MSG_HEADER_SIZE);
 
-  set_sw1sw2 (c->epi);
+  set_sw1sw2 (c, chunk_len);
 
   if (chunk_len <= USB_LL_BUF_SIZE - ICC_MSG_HEADER_SIZE)
     {
