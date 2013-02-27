@@ -1,3 +1,10 @@
+2013-02-27  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/usb-icc.c (set_sw1sw2): Arguments are C and CHUNK_LEN.
+	Fix reporting remaining bytes.
+	(icc_send_data_block_gr): Follow the arguments change of
+	set_sw1sw2.
+
 2013-02-25  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/configure: Correct typo in help text.
