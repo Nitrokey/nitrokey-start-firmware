@@ -1,3 +1,20 @@
+2013-03-07  Niibe Yutaka  <gniibe@fsij.org>
+
+	Follow the USB stack change.
+
+	* regnual/regnual.c (usb_cb_device_reset): Rename from
+	regnual_device_reset.
+	(mem): Change type to uint32_t.
+	(mem_info): Removed.
+	(fetch): Avoid pointer punning.
+	(usb_cb_ctrl_write_finish): Rename from regnual_ctrl_write_finish.
+	(usb_cb_setup): Rename from regnual_setup.
+	(usb_cb_get_descriptor): Rename from regnual_get_descriptor.
+	(usb_cb_handle_event): Rename regnual_usb_event.
+	(usb_cb_interface): Rename regnual_interface.
+	(Device_Method): Remove.
+	(usb_cb_get_descriptor): Not use struct Descriptor.
+
 2013-03-06  Niibe Yutaka  <gniibe@fsij.org>
 
 	USB stack implementation improvement.
