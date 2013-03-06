@@ -338,7 +338,7 @@ main (int argc, char *argv[])
 
   flash_unlock ();
   device_initialize_once ();
-  usb_lld_init (Config_Descriptor.Descriptor[7]);
+  usb_lld_init (usb_initial_feature);
   random_init ();
 
   while (1)

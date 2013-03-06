@@ -1,3 +1,44 @@
+2013-03-06  Niibe Yutaka  <gniibe@fsij.org>
+
+	USB stack implementation improvement.
+
+	* src/usb_lld.c (Device_Method, method_p): Remove.
+	(usb_interrupt_handler): Call usb_cb_device_reset.
+	(std_get_descriptor): Call usb_cb_get_descriptor.
+	(std_set_configuration): Call usb_cb_handle_event.
+	(std_get_status, std_get_interface, std_set_interface): Call
+	usb_cb_interface.
+	(handle_setup0): Call usb_cb_setup.
+	(handle_in0): Call usb_cb_handle_event and
+	usb_cb_ctrl_write_finish.
+	(request_handler): Remove.
+	(handle_setup0): Call std_* directly, not indirectly by
+	request_handler.
+	(ep_intr_handler_IN, ep_intr_handler_OUT): Remove.
+	(usb_handle_transfer): Call EP*_Callback directly, not indirectly
+	by ep_intr_handler_IN, ep_intr_handler_OUT.
+
+	* src/usb_lld.h (struct usb_device_method, Device_Method): Remove.
+	(usb_cb_device_reset, usb_cb_ctrl_write_finish)
+	(usb_cb_setup, usb_cb_get_descriptor, usb_cb_handle_event)
+	(usb_cb_interface): Define callbacks.
+	(usb_initial_feature): New.
+	(struct Descriptor): Move to ...
+	* src/usb_desc.c: ... here.
+	(usb_initial_feature): New.
+	(usb_cb_get_descriptor): Rename from gnuk_get_descriptor and move
+	from usb_ctrl.c.
+
+	* src/usb_ctrl.c (usb_cb_device_reset): Rename from
+	gnuk_device_reset.
+	(usb_cb_setup): Rename from gnuk_setup.
+	(usb_cb_ctrl_write_finish): Rename from gnuk_ctrl_write_finish.
+	(usb_cb_event): Rename from gnuk_usb_event.
+	(usb_cb_interface): Rename from gnuk_interface.
+	(Device_Method): Remove.
+
+	* src/main.c (main): Use usb_initial_feature.
+
 2013-02-27  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/usb-icc.c (set_sw1sw2): Arguments are C and CHUNK_LEN.

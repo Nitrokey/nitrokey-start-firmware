@@ -9,6 +9,13 @@
 #include "usb_conf.h"
 #include "usb-cdc.h"
 
+struct Descriptor
+{
+  const uint8_t *Descriptor;
+  uint16_t Descriptor_Size;
+};
+
+
 #define USB_ICC_INTERFACE_CLASS 0x0B
 #define USB_ICC_INTERFACE_SUBCLASS 0x00
 #define USB_ICC_INTERFACE_BULK_PROTOCOL 0x00
@@ -53,6 +60,15 @@ static const uint8_t gnukDeviceDescriptor[] = {
 #define NUM_INTERFACES (ICC_NUM_INTERFACES+VCOM_NUM_INTERFACES+MSC_NUM_INTERFACES)
 
 
+
+#if defined(USB_SELF_POWERED)
+#define USB_INITIAL_FEATURE 0xC0   /* bmAttributes: self powered */
+#else
+#define USB_INITIAL_FEATURE 0x80   /* bmAttributes: bus powered */
+#endif
+
+const uint8_t usb_initial_feature = USB_INITIAL_FEATURE;
+
 /* Configuation Descriptor */
 static const uint8_t gnukConfigDescriptor[] = {
   9,			   /* bLength: Configuation Descriptor size */
@@ -61,11 +77,7 @@ static const uint8_t gnukConfigDescriptor[] = {
   NUM_INTERFACES,   /* bNumInterfaces: */
   0x01,   /* bConfigurationValue: Configuration value */
   0x00,   /* iConfiguration: Index of string descriptor describing the configuration */
-#if defined(USB_SELF_POWERED)
-  0xC0,   /* bmAttributes: self powered */
-#else
-  0x80,   /* bmAttributes: bus powered */
-#endif
+  USB_INITIAL_FEATURE,  /* bmAttributes*/
   50,	  /* MaxPower 100 mA */
 
   /* Interface Descriptor */
@@ -268,17 +280,17 @@ const uint8_t gnukStringSerial[] = {
   0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
 };
 
-const struct Descriptor Device_Descriptor = {
+static const struct Descriptor Device_Descriptor = {
   gnukDeviceDescriptor,
   sizeof (gnukDeviceDescriptor)
 };
 
-const struct Descriptor Config_Descriptor = {
+static const struct Descriptor Config_Descriptor = {
   gnukConfigDescriptor,
   sizeof (gnukConfigDescriptor)
 };
 
-const struct Descriptor String_Descriptors[NUM_STRING_DESC] = {
+static const struct Descriptor String_Descriptors[NUM_STRING_DESC] = {
   {gnukStringLangID, sizeof (gnukStringLangID)},
   {gnukStringVendor, sizeof (gnukStringVendor)},
   {gnukStringProduct, sizeof (gnukStringProduct)},
@@ -287,3 +299,34 @@ const struct Descriptor String_Descriptors[NUM_STRING_DESC] = {
   {gnuk_config_options, sizeof (gnuk_config_options)},
   {sys_version, sizeof (sys_version)},
 };
+
+int
+usb_cb_get_descriptor (uint8_t desc_type, uint16_t index, uint16_t value)
+{
+  (void)index;
+  if (desc_type == DEVICE_DESCRIPTOR)
+    {
+      usb_lld_set_data_to_send (Device_Descriptor.Descriptor,
+				Device_Descriptor.Descriptor_Size);
+      return USB_SUCCESS;
+    }
+  else if (desc_type == CONFIG_DESCRIPTOR)
+    {
+      usb_lld_set_data_to_send (Config_Descriptor.Descriptor,
+				Config_Descriptor.Descriptor_Size);
+      return USB_SUCCESS;
+    }
+  else if (desc_type == STRING_DESCRIPTOR)
+    {
+      uint8_t desc_index = value & 0xff;
+
+      if (desc_index < NUM_STRING_DESC)
+	{
+	  usb_lld_set_data_to_send (String_Descriptors[desc_index].Descriptor,
+			    String_Descriptors[desc_index].Descriptor_Size);
+	  return USB_SUCCESS;
+	}
+    }
+
+  return USB_UNSUPPORT;
+}
