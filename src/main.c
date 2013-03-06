@@ -345,7 +345,7 @@ main (int argc, char *argv[])
 
   main_thread = chThdSelf ();
 
-  usb_lld_init (Config_Descriptor.Descriptor[7]);
+  usb_lld_init (usb_initial_feature);
   random_init ();
 
   while (1)

@@ -1,7 +1,7 @@
 /*
  * usb_ctrl.c - USB control pipe device specific code for Gnuk
  *
- * Copyright (C) 2010, 2011, 2012 Free Software Initiative of Japan
+ * Copyright (C) 2010, 2011, 2012, 2013 Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
  * This file is a part of Gnuk, a GnuPG USB Token implementation.
@@ -147,8 +147,8 @@ gnuk_setup_endpoints_for_interface (uint16_t interface, int stop)
 #endif
 }
 
-static void
-gnuk_device_reset (void)
+void
+usb_cb_device_reset (void)
 {
   int i;
 
@@ -156,7 +156,7 @@ gnuk_device_reset (void)
   usb_lld_set_configuration (0);
 
   /* Current Feature initialization */
-  usb_lld_set_feature (Config_Descriptor.Descriptor[7]);
+  usb_lld_set_feature (usb_initial_feature);
 
   usb_lld_reset ();
 
@@ -214,9 +214,9 @@ static int download_check_crc32 (const uint32_t *end_p)
   return USB_UNSUPPORT;
 }
 
-static int
-gnuk_setup (uint8_t req, uint8_t req_no,
-	    uint16_t value, uint16_t index, uint16_t len)
+int
+usb_cb_setup (uint8_t req, uint8_t req_no,
+	      uint16_t value, uint16_t index, uint16_t len)
 {
   uint8_t type_rcp = req & (REQUEST_TYPE|RECIPIENT);
 
@@ -310,9 +310,8 @@ gnuk_setup (uint8_t req, uint8_t req_no,
   return USB_UNSUPPORT;
 }
 
-static void gnuk_ctrl_write_finish (uint8_t req, uint8_t req_no,
-				    uint16_t value, uint16_t index,
-				    uint16_t len)
+void usb_cb_ctrl_write_finish (uint8_t req, uint8_t req_no, uint16_t value,
+			       uint16_t index, uint16_t len)
 {
   uint8_t type_rcp = req & (REQUEST_TYPE|RECIPIENT);
 
@@ -329,38 +328,7 @@ static void gnuk_ctrl_write_finish (uint8_t req, uint8_t req_no,
 }
 
 
-static int
-gnuk_get_descriptor (uint8_t desc_type, uint16_t index, uint16_t value)
-{
-  (void)index;
-  if (desc_type == DEVICE_DESCRIPTOR)
-    {
-      usb_lld_set_data_to_send (Device_Descriptor.Descriptor,
-				Device_Descriptor.Descriptor_Size);
-      return USB_SUCCESS;
-    }
-  else if (desc_type == CONFIG_DESCRIPTOR)
-    {
-      usb_lld_set_data_to_send (Config_Descriptor.Descriptor,
-				Config_Descriptor.Descriptor_Size);
-      return USB_SUCCESS;
-    }
-  else if (desc_type == STRING_DESCRIPTOR)
-    {
-      uint8_t desc_index = value & 0xff;
-
-      if (desc_index < NUM_STRING_DESC)
-	{
-	  usb_lld_set_data_to_send (String_Descriptors[desc_index].Descriptor,
-			    String_Descriptors[desc_index].Descriptor_Size);
-	  return USB_SUCCESS;
-	}
-    }
-
-  return USB_UNSUPPORT;
-}
-
-static int gnuk_usb_event (uint8_t event_type, uint16_t value)
+int usb_cb_handle_event (uint8_t event_type, uint16_t value)
 {
   int i;
   uint8_t current_conf;
@@ -401,7 +369,7 @@ static int gnuk_usb_event (uint8_t event_type, uint16_t value)
   return USB_UNSUPPORT;
 }
 
-static int gnuk_interface (uint8_t cmd, uint16_t interface, uint16_t alt)
+int usb_cb_interface (uint8_t cmd, uint16_t interface, uint16_t alt)
 {
   static uint8_t zero = 0;
 
@@ -429,18 +397,6 @@ static int gnuk_interface (uint8_t cmd, uint16_t interface, uint16_t alt)
     }
 }
 
-/*
- * Interface to USB core
- */
-
-const struct usb_device_method Device_Method = {
-  gnuk_device_reset,
-  gnuk_ctrl_write_finish,
-  gnuk_setup,
-  gnuk_get_descriptor,
-  gnuk_usb_event,
-  gnuk_interface,
-};
 
 CH_IRQ_HANDLER (Vector90)
 {

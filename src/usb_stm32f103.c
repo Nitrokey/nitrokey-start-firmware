@@ -74,12 +74,10 @@ struct DEVICE_INFO
 static struct CONTROL_INFO control_info;
 static struct DEVICE_INFO device_info;
 static struct DATA_INFO data_info;
-extern const struct usb_device_method Device_Method;
 
 static struct CONTROL_INFO *const ctrl_p = &control_info;
 static struct DEVICE_INFO *const dev_p = &device_info;
 static struct DATA_INFO *const data_p = &data_info;
-static const struct usb_device_method *const method_p = &Device_Method;
 
 #define REG_BASE  (0x40005C00UL) /* USB_IP Peripheral Registers base address */
 #define PMA_ADDR  (0x40006000UL) /* USB_IP Packet Memory Area base address   */
@@ -399,7 +397,7 @@ usb_interrupt_handler (void)
   if (istr_value & ISTR_RESET)
     {
       st103_set_istr (CLR_RESET);
-      method_p->reset ();
+      usb_cb_device_reset ();
     }
 
   if (istr_value & ISTR_DOVR)
@@ -529,7 +527,7 @@ static int std_get_status (uint8_t req,
       if (dev_p->current_configuration == 0)
 	return USB_UNSUPPORT;
 
-      r = (*method_p->interface) (USB_QUERY_INTERFACE, index, 0);
+      r = usb_cb_interface (USB_QUERY_INTERFACE, index, 0);
       if (r != USB_SUCCESS)
 	return USB_UNSUPPORT;
 
@@ -700,7 +698,7 @@ static int std_get_descriptor (uint8_t req, uint16_t value,
 
   (void)length;
   if (rcp == DEVICE_RECIPIENT)
-    return (*method_p->get_descriptor) ((value >> 8), index, value);
+    return usb_cb_get_descriptor ((value >> 8), index, value);
 
   return USB_UNSUPPORT;
 }
@@ -736,7 +734,7 @@ static int std_set_configuration (uint8_t req, uint16_t value,
     {
       int r;
 
-      r = (*method_p->event) (USB_EVENT_CONFIG, value);
+      r = usb_cb_handle_event (USB_EVENT_CONFIG, value);
       if (r == USB_SUCCESS)
 	return USB_SUCCESS;
     }
@@ -760,7 +758,7 @@ static int std_get_interface (uint8_t req, uint16_t value,
       if (dev_p->current_configuration == 0)
 	return USB_UNSUPPORT;
 
-      return (*method_p->interface) (USB_GET_INTERFACE, index, 0);
+      return usb_cb_interface (USB_GET_INTERFACE, index, 0);
     }
 
   return USB_UNSUPPORT;
@@ -784,7 +782,7 @@ static int std_set_interface (uint8_t req, uint16_t value,
       if (dev_p->current_configuration != 0)
 	return USB_UNSUPPORT;
 
-      r = (*method_p->interface) (USB_SET_INTERFACE, index, value);
+      r = usb_cb_interface (USB_SET_INTERFACE, index, value);
       if (r == USB_SUCCESS)
 	return USB_SUCCESS;
     }
@@ -792,21 +790,6 @@ static int std_set_interface (uint8_t req, uint16_t value,
   return USB_UNSUPPORT;
 }
 
-static const HANDLER std_request_handler[TOTAL_REQUEST] = {
-  std_get_status,
-  std_clear_feature,
-  std_none,
-  std_set_feature,
-  std_none,
-  std_set_address,
-  std_get_descriptor,
-  std_none,			/* set_descriptor is not supported */
-  std_get_configuration,
-  std_set_configuration,
-  std_get_interface,
-  std_set_interface,
-  std_none,			/* sync_frame is not  supported (for now) */
-};
 
 static void handle_setup0 (void)
 {
@@ -836,14 +819,30 @@ static void handle_setup0 (void)
     {
       if (req < TOTAL_REQUEST)
 	{
-	  handler = std_request_handler[req];
+	  switch ((req)&0x07)
+	    {
+	    case 0: handler = std_get_status;  break;
+	    case 1: handler = std_clear_feature;  break;
+	    case 2: handler = std_none;  break;
+	    case 3: handler = std_set_feature;  break;
+	    case 4: handler = std_none;  break;
+	    case 5: handler = std_set_address;  break;
+	    case 6: handler = std_get_descriptor;  break;
+	    case 7: handler = std_none;  break;
+	    case 8: handler = std_get_configuration;  break;
+	    case 9: handler = std_set_configuration;  break;
+	    case 10: handler = std_get_interface;  break;
+	    case 11: handler = std_set_interface;  break;
+	    case 12: handler = std_none;  break;
+	    }
+
 	  r = (*handler) (ctrl_p->bmRequestType,
 			  ctrl_p->wValue, ctrl_p->wIndex, ctrl_p->wLength);
 	}
     }
   else
-    r = (*method_p->setup) (ctrl_p->bmRequestType, req,
-			    ctrl_p->wValue, ctrl_p->wIndex, ctrl_p->wLength);
+    r = usb_cb_setup (ctrl_p->bmRequestType, req,
+		      ctrl_p->wValue, ctrl_p->wIndex, ctrl_p->wLength);
 
   if (r != USB_SUCCESS)
     dev_p->state = STALLED;
@@ -890,12 +889,12 @@ static void handle_in0 (void)
 	   == (STANDARD_REQUEST | DEVICE_RECIPIENT)))
 	{
 	  st103_set_daddr (ctrl_p->wValue);
-	  (*method_p->event) (USB_EVENT_ADDRESS, ctrl_p->wValue);
+	  usb_cb_handle_event (USB_EVENT_ADDRESS, ctrl_p->wValue);
 	}
       else
-	(*method_p->ctrl_write_finish)  (ctrl_p->bmRequestType,
-					 ctrl_p->bRequest, ctrl_p->wValue,
-					 ctrl_p->wIndex, ctrl_p->wLength);
+	usb_cb_ctrl_write_finish  (ctrl_p->bmRequestType,
+				   ctrl_p->bRequest, ctrl_p->wValue,
+				   ctrl_p->wIndex, ctrl_p->wLength);
 
       dev_p->state = STALLED;
     }
@@ -937,26 +936,6 @@ void WEAK EP4_OUT_Callback (void);
 void WEAK EP5_OUT_Callback (void);
 void WEAK EP6_OUT_Callback (void);
 void WEAK EP7_OUT_Callback (void);
-
-void (*const ep_intr_handler_IN[7]) (void) = {
-  EP1_IN_Callback,
-  EP2_IN_Callback,
-  EP3_IN_Callback,
-  EP4_IN_Callback,
-  EP5_IN_Callback,
-  EP6_IN_Callback,
-  EP7_IN_Callback,
-};
-
-void (*const ep_intr_handler_OUT[7]) (void) = {
-  EP1_OUT_Callback,
-  EP2_OUT_Callback,
-  EP3_OUT_Callback,
-  EP4_OUT_Callback,
-  EP5_OUT_Callback,
-  EP6_OUT_Callback,
-  EP7_OUT_Callback,
-};
 
 static void
 usb_handle_transfer (void)
@@ -1008,13 +987,31 @@ usb_handle_transfer (void)
 	  if ((ep_value & EP_CTR_RX) != 0)
 	    {
 	      st103_ep_clear_ctr_rx (ep_index);
-	      (*ep_intr_handler_OUT[ep_index-1]) ();
+	      switch ((ep_index - 1))
+		{
+		case 0: EP1_OUT_Callback ();  break;
+		case 1: EP2_OUT_Callback ();  break;
+		case 2: EP3_OUT_Callback ();  break;
+		case 3: EP4_OUT_Callback ();  break;
+		case 4: EP5_OUT_Callback ();  break;
+		case 5: EP6_OUT_Callback ();  break;
+		case 6: EP7_OUT_Callback ();  break;
+		}
 	    }
 
 	  if ((ep_value & EP_CTR_TX) != 0)
 	    {
 	      st103_ep_clear_ctr_tx (ep_index);
-	      (*ep_intr_handler_IN[ep_index-1]) ();
+	      switch ((ep_index - 1))
+		{
+		case 0: EP1_IN_Callback ();  break;
+		case 1: EP2_IN_Callback ();  break;
+		case 2: EP3_IN_Callback ();  break;
+		case 3: EP4_IN_Callback ();  break;
+		case 4: EP5_IN_Callback ();  break;
+		case 5: EP6_IN_Callback ();  break;
+		case 6: EP7_IN_Callback ();  break;
+		}
 	    }
 	}
     }

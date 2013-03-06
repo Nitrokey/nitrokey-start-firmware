@@ -49,29 +49,20 @@ enum DESCRIPTOR_TYPE
 #define USB_SETUP_SET(req) ((req & REQUEST_DIR) == 0)
 #define USB_SETUP_GET(req) ((req & REQUEST_DIR) != 0)
 
-struct Descriptor
-{
-  const uint8_t *Descriptor;
-  uint16_t Descriptor_Size;
-};
-
 enum
 {
   USB_UNSUPPORT = 0,
   USB_SUCCESS = 1,
 };
 
-struct usb_device_method
-{
-  void (*reset) (void);
-  void (*ctrl_write_finish) (uint8_t req, uint8_t req_no,
-			     uint16_t value, uint16_t index, uint16_t len);
-  int (*setup) (uint8_t req, uint8_t req_no,
-		uint16_t value, uint16_t index, uint16_t len);
-  int (*get_descriptor) (uint8_t desc_type, uint16_t index, uint16_t value);
-  int (*event) (uint8_t event_type, uint16_t value);
-  int (*interface) (uint8_t cmd, uint16_t interface, uint16_t value);
-};
+void usb_cb_device_reset (void);
+void usb_cb_ctrl_write_finish (uint8_t req, uint8_t req_no,
+			       uint16_t value, uint16_t index, uint16_t len);
+int usb_cb_setup (uint8_t req, uint8_t req_no, uint16_t value,
+		  uint16_t index, uint16_t len);
+int usb_cb_get_descriptor (uint8_t desc_type, uint16_t index, uint16_t value);
+int usb_cb_handle_event (uint8_t event_type, uint16_t value);
+int usb_cb_interface (uint8_t cmd, uint16_t interface, uint16_t value);
 
 enum {
   USB_EVENT_ADDRESS,
@@ -87,14 +78,6 @@ enum {
   USB_QUERY_INTERFACE,
 };
 
-extern void USB_Cable_Config (int NewState);
-
-extern const struct usb_device_method Device_Method;
-
-extern const struct Descriptor Device_Descriptor;
-extern const struct Descriptor Config_Descriptor;
-extern const struct Descriptor String_Descriptors[];
-
 enum DEVICE_STATE
 {
   UNCONNECTED,
@@ -106,6 +89,7 @@ enum DEVICE_STATE
 };
 
 extern uint32_t bDeviceState;
+extern const uint8_t usb_initial_feature;
 
 #define STM32_USB_IRQ_PRIORITY     11
 
