@@ -1,3 +1,19 @@
+2013-03-08  Niibe Yutaka  <gniibe@fsij.org>
+
+	Relocatable reGNUal.
+
+	* regnual/regnual.ld (MEMORY): 0x1400 was the value of Gnuk 1.0.1.
+	Keep this value.
+	(.text): Include .text.entry next to the .vectors.
+	(.got): New.
+
+	* regnual/sys.c (entry): Now, it's at .text.entry section.
+	Do relocations.
+	Don't use absolute values which causes relocations, but
+	access at GOT.
+
+	* regnual/Makefile (CFLAGS): Add -fpie.
+
 2013-03-07  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/usb_stm32f103.c (handle_setup0): Fix selecting handler.

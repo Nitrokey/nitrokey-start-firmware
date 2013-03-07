@@ -39,6 +39,7 @@ SECTIONS
     {
         _text = .;
         KEEP(*(.vectors))
+        *(.text.entry)
         *(.text)
         *(.text.*)
         *(.rodata)
@@ -46,6 +47,12 @@ SECTIONS
         *(.glue_7t)
         *(.glue_7)
         *(.gcc*)
+    } > ram1
+
+    .got :
+    {
+	*(.got)
+	*(.got.*)
     } > ram1
 
     .ctors :
