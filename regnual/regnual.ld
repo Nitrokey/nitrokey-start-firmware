@@ -7,8 +7,8 @@ __stacks_total_size__   = __main_stack_size__ + __process_stack_size__;
 
 MEMORY
 {
-    ram0 : org = 0x20000000, len = 0x1c00
-    ram1 : org = 0x20001c00, len = 20k - 0x1c00
+    ram0 : org = 0x20000000, len = 0x1400
+    ram1 : org = 0x20001400, len = 20k - 0x1400
 }
 
 vector = 0x08000000;
@@ -39,6 +39,7 @@ SECTIONS
     {
         _text = .;
         KEEP(*(.vectors))
+        *(.text.entry)
         *(.text)
         *(.text.*)
         *(.rodata)
@@ -46,6 +47,12 @@ SECTIONS
         *(.glue_7t)
         *(.glue_7)
         *(.gcc*)
+    } > ram1
+
+    .got :
+    {
+	*(.got)
+	*(.got.*)
     } > ram1
 
     .ctors :

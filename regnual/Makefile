@@ -22,7 +22,7 @@ MCFLAGS= -mcpu=$(MCU)
 DEFS = -DFREE_STANDING
 
 CFLAGS = -O2 -g
-CFLAGS += -Wa,-alms=$(notdir $(<:.c=.lst))
+CFLAGS += -Wa,-alms=$(notdir $(<:.c=.lst)) -fpie
 CFLAGS += $(CWARN) -I . -I ../src -fno-common $(MCFLAGS) $(TOPT) $(DEFS)
 
 LDFLAGS = -T$(LDSCRIPT) -nostartfiles $(MCFLAGS) $(TOPT)
