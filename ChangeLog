@@ -1,5 +1,7 @@
 2013-03-07  Niibe Yutaka  <gniibe@fsij.org>
 
+	* src/usb_stm32f103.c (handle_setup0): Fix selecting handler.
+
 	Follow the USB stack change.
 
 	* regnual/regnual.c (usb_cb_device_reset): Rename from

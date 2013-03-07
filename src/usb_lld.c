@@ -819,21 +819,18 @@ static void handle_setup0 (void)
     {
       if (req < TOTAL_REQUEST)
 	{
-	  switch ((req)&0x07)
+	  switch (req)
 	    {
 	    case 0: handler = std_get_status;  break;
 	    case 1: handler = std_clear_feature;  break;
-	    case 2: handler = std_none;  break;
 	    case 3: handler = std_set_feature;  break;
-	    case 4: handler = std_none;  break;
 	    case 5: handler = std_set_address;  break;
 	    case 6: handler = std_get_descriptor;  break;
-	    case 7: handler = std_none;  break;
 	    case 8: handler = std_get_configuration;  break;
 	    case 9: handler = std_set_configuration;  break;
 	    case 10: handler = std_get_interface;  break;
 	    case 11: handler = std_set_interface;  break;
-	    case 12: handler = std_none;  break;
+	    default: handler = std_none;  break;
 	    }
 
 	  r = (*handler) (ctrl_p->bmRequestType,
