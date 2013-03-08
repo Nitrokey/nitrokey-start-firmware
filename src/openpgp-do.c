@@ -791,7 +791,7 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
   if (kk == GPG_KEY_FOR_AUTHENTICATION)
     {
       memcpy (kdi.data, key_data, key_len);
-      memset (kdi.data + key_len, 0, KEY_CONTENT_LEN - key_len);
+      memset ((uint8_t *)kdi.data + key_len, 0, KEY_CONTENT_LEN - key_len);
     }
   else
     memcpy (kdi.data, key_data, KEY_CONTENT_LEN);
