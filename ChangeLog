@@ -1,5 +1,13 @@
 2013-03-09  Niibe Yutaka  <gniibe@fsij.org>
 
+	* src/openpgp-do.c (gpg_do_public_key): Add OID for ECDSA.
+	(gpg_do_write_prvkey): Add PUBKEY_LEN for ECDSA.
+
+	* src/flash.c (flash_key_write): Argument change for ECDSA key.
+
+	* src/main.c (calculate_regnual_entry_address): New.
+	(main): Use calculate_regnual_entry_address for entry point.
+
 	* src/openpgp-do.c (gpg_do_write_prvkey): Coerce KDI.DATA to
 	uint8_t *.
 
