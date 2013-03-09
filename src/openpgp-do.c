@@ -743,6 +743,7 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
   int pubkey_allocated_here = 0;
   uint8_t ks_pw1_len = 0;
   uint8_t ks_rc_len = 0;
+  int pubkey_len = KEY_CONTENT_LEN;
 
   DEBUG_INFO ("Key import\r\n");
   DEBUG_SHORT (key_len);
@@ -753,8 +754,12 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
 
   if (kk != GPG_KEY_FOR_AUTHENTICATION && key_len != KEY_CONTENT_LEN)
     return -1;
-  if (kk == GPG_KEY_FOR_AUTHENTICATION && key_len != 32)
-    return -1;
+  if (kk == GPG_KEY_FOR_AUTHENTICATION)
+    {
+      pubkey_len = key_len * 2;
+      if (key_len != 32)
+	return -1;
+    }
 
   pd = (struct prvkey_data *)malloc (sizeof (struct prvkey_data));
   if (pd == NULL)
@@ -779,9 +784,9 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
   key_addr = flash_key_alloc ();
   if (key_addr == NULL)
     {
-      free (pd);
       if (pubkey_allocated_here)
 	free ((void *)pubkey);
+      free (pd);
       return -1;
     }
 
@@ -807,7 +812,7 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
 
   encrypt (dek, iv, (uint8_t *)&kdi, sizeof (struct key_data_internal));
 
-  r = flash_key_write (key_addr, (const uint8_t *)kdi.data, pubkey);
+  r = flash_key_write (key_addr, (const uint8_t *)kdi.data, pubkey, pubkey_len);
   if (pubkey_allocated_here)
     free ((void *)pubkey);
 
@@ -1536,11 +1541,16 @@ gpg_do_public_key (uint8_t kk_byte)
     }
   else
     {				/* ECDSA */
-      /* LEN = 2+1+64 */
-      *res_p++ = 0x43;
+      /* LEN */
+      *res_p++ = 2 + 8 + 2 + 1 + 64;
       {
+	/*TAG*/          /* LEN = 8 */
+	*res_p++ = 0x06; *res_p++ = 0x08;
+	memcpy (res_p, algorithm_attr_ecdsa+2, 8);
+	res_p += 8;
+
 	/*TAG*/          /* LEN = 1+64 */
-	*res_p++ = 0x81; *res_p++ = 0x41;
+	*res_p++ = 0x86; *res_p++ = 0x41;
 	*res_p++ = 0x04; 	/* No compression of EC point.  */
 	/* 64-byte binary (big endian) */
 	memcpy (res_p, key_addr + KEY_CONTENT_LEN, 64);

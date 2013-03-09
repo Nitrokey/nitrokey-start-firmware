@@ -288,7 +288,7 @@ flash_key_alloc (void)
 
 int
 flash_key_write (uint8_t *key_addr, const uint8_t *key_data,
-		 const uint8_t *modulus)
+		 const uint8_t *pubkey, int pubkey_len)
 {
   uint16_t hw;
   uint32_t addr;
@@ -303,9 +303,9 @@ flash_key_write (uint8_t *key_addr, const uint8_t *key_data,
       addr += 2;
     }
 
-  for (i = 0; i < KEY_CONTENT_LEN/2; i ++)
+  for (i = 0; i < pubkey_len/2; i ++)
     {
-      hw = modulus[i*2] | (modulus[i*2+1]<<8);
+      hw = pubkey[i*2] | (pubkey[i*2+1]<<8);
       if (flash_program_halfword (addr, hw) != 0)
 	return -1;
       addr += 2;
