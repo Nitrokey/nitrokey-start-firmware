@@ -1,3 +1,8 @@
+2013-03-09  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/main.c (calculate_regnual_entry_address): New.
+	(main): Use calculate_regnual_entry_address for entry point.
+
 2013-03-08  Niibe Yutaka  <gniibe@fsij.org>
 
 	Relocatable reGNUal.
