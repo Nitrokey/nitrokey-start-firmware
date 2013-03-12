@@ -166,19 +166,19 @@ class stlinkv2(object):
         return (v[1] * 256 + v[0])
 
     def exit_from_debug_swd(self):
-        self.__devhandle.bulkWrite(self.__bulkout, "\xf2\x21", self.__timeout)
+        self.execute_put("\xf2\x21\x00")
         time.sleep(1)
 
     def exit_from_dfu(self):
-        self.__devhandle.bulkWrite(self.__bulkout, "\xf3\x07", self.__timeout)
+        self.execute_put("\xf3\x07\x00")
         time.sleep(1)
 
     def exit_from_debug_swim(self):
-        self.__devhandle.bulkWrite(self.__bulkout, "\xf4\x01", self.__timeout)
+        self.execute_put("\xf4\x01\x00")
         time.sleep(1)
 
     def enter_swd(self):
-        self.__devhandle.bulkWrite(self.__bulkout, "\xf2\x20\xa3", self.__timeout)
+        self.execute_put("\xf2\x20\xa3")
         time.sleep(1)
 
     def get_status(self):
@@ -457,12 +457,16 @@ class stlinkv2(object):
             self.exit_from_debug_swim()
         elif mode != 1 and mode != 4:
             self.exit_from_dfu()
-        mode = self.stl_mode()
-        print "Change ST-Link/V2 mode to: %04x" % mode
+        new_mode = self.stl_mode()
+        print "Change ST-Link/V2 mode %04x -> %04x" % (mode, new_mode)
         self.enter_swd()
         s = self.get_status()
         if s != 0x0080:
-            raise ValueError("Status of core is not running.", s)
+            print "Status is %04x" % s
+            self.run()
+            s = self.get_status()
+            if s != 0x0080:
+                raise ValueError("Status of core is not running.", s)
         mode = self.stl_mode()
         if mode != 2:
             raise ValueError("Failed to switch debug mode.", mode)
