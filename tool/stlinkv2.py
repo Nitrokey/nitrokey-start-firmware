@@ -3,7 +3,7 @@
 """
 stlinkv2.py - a tool to control ST-Link/V2
 
-Copyright (C) 2012 Free Software Initiative of Japan
+Copyright (C) 2012, 2013 Free Software Initiative of Japan
 Author: NIIBE Yutaka <gniibe@fsij.org>
 
 This file is a part of Gnuk, a GnuPG USB Token implementation.
@@ -165,8 +165,16 @@ class stlinkv2(object):
         v = self.execute_get("\xf5\x00", 2)
         return (v[1] * 256 + v[0])
 
+    def exit_from_debug_swd(self):
+        self.__devhandle.bulkWrite(self.__bulkout, "\xf2\x21", self.__timeout)
+        time.sleep(1)
+
     def exit_from_dfu(self):
         self.__devhandle.bulkWrite(self.__bulkout, "\xf3\x07", self.__timeout)
+        time.sleep(1)
+
+    def exit_from_debug_swim(self):
+        self.__devhandle.bulkWrite(self.__bulkout, "\xf4\x01", self.__timeout)
         time.sleep(1)
 
     def enter_swd(self):
@@ -444,11 +452,13 @@ class stlinkv2(object):
     def start(self):
         mode = self.stl_mode()
         if mode == 2:
-            return
-        elif mode != 1:
+            self.exit_from_debug_swd()
+        elif mode == 5:
+            self.exit_from_debug_swim()
+        elif mode != 1 and mode != 4:
             self.exit_from_dfu()
-            mode = self.stl_mode()
-            print "Change ST-Link/V2 mode to: %04x" % mode
+        mode = self.stl_mode()
+        print "Change ST-Link/V2 mode to: %04x" % mode
         self.enter_swd()
         s = self.get_status()
         if s != 0x0080:
