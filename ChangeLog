@@ -1,3 +1,10 @@
+2013-03-12  Niibe Yutaka  <gniibe@fsij.org>
+
+	* tool/stlinkv2.py (stlinkv2.exit_from_debug_swd)
+	(stlinkv2.exit_from_debug_swim): New.
+	(stlinkv2.start): Call exit_from_debug_swd or
+	exit_from_debug_swim.
+
 2013-03-09  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/main.c (calculate_regnual_entry_address): New.
