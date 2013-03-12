@@ -1,3 +1,7 @@
+2013-03-12  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/gnuk.ld.in (__process_stack_size__): Increase (was: 0x200).
+
 2013-03-09  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/openpgp-do.c (gpg_do_public_key): Add OID for ECDSA.
