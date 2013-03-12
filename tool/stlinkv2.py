@@ -216,6 +216,9 @@ class stlinkv2(object):
     def write_reg(self, regno, value):
         return self.execute_get("\xf2\x06" + pack('<BI', regno, value), 2)
 
+    def write_debug_reg(self, addr, value):
+        return self.execute_get("\xf2\x35" + pack('<II', addr, value), 2)
+
     def run(self):
         v = self.execute_get("\xf2\x09\x00", 2)
         return (v[1] << 8) + v[0]
@@ -554,7 +557,12 @@ def main(show_help, erase_only, no_protect, spi_flash_check,
     stl.enter_debug()
     status = stl.get_status()
     if status != 0x0081:
-        raise ValueError("Status of core is not halt.", status)
+        print "Core does not halt, try API V2 halt."
+        #                   DCB_DHCSR    DBGKEY|C_HALT|C_DEBUGEN
+        stl.write_debug_reg(0xE000EDF0, 0xA05F0003)
+        status = stl.get_status()
+        if status != 0x0081:
+            raise ValueError("Status of core is not halt.", status)
 
     if protection:
         if status_only:
