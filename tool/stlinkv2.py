@@ -224,6 +224,11 @@ class stlinkv2(object):
         v = self.execute_get("\xf2\x22\x00", 4)
         return v[0] + (v[1]<<8) + (v[2]<<16) + (v[3]<<24)
 
+    def version(self):
+        v = self.execute_get("\xf1", 6)
+        val = (v[0] << 8) + v[1]
+        return ((val >> 12) & 0x0f, (val >> 6) & 0x3f, val & 0x3f)
+
     # For FST-01-00 and FST-01: LED on, USB connect
     def setup_gpio(self):
         apb2enr = self.read_memory_u32(0x40021018)
@@ -525,6 +530,7 @@ def main(show_help, erase_only, no_protect, spi_flash_check,
     if not stl:
         raise ValueError("No ST-Link/V2 device found.", None)
 
+    print "ST-Link/V2 version info: %d %d %d" % stl.version()
     stl.start()
     core_id = stl.core_id()
     chip_id = stl.read_memory_u32(0xE0042000)
