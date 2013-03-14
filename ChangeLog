@@ -1,8 +1,16 @@
+2013-03-14  Niibe Yutaka  <gniibe@fsij.org>
+
+	* Version 1.0.3.
+	* src/usb_desc.c (gnukStringSerial): Updated.
+
+	* tool/stlinkv2.py (stlinkv2.start): Call write_debug_reg to run
+	the core again.
+
 2013-03-13  Niibe Yutaka  <gniibe@fsij.org>
 
 	* ChibiOS_2.0.8/os/ports/GCC/ARMCMx/cmsis/core_cm3.c (__STREXB)
 	(__STREXH, __STREXW): Specify R2 to avoid %0 and %2 will be same
-	register.  This is for newer binutils (>= 2.22).
+	register.  This is for newer GNU binutils (>= 2.22).
 
 2013-03-12  Niibe Yutaka  <gniibe@fsij.org>
 
