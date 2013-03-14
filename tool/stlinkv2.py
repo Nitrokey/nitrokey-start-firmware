@@ -474,7 +474,11 @@ class stlinkv2(object):
             self.run()
             s = self.get_status()
             if s != 0x0080:
-                raise ValueError("Status of core is not running.", s)
+                #                   DCB_DHCSR    DBGKEY
+                self.write_debug_reg(0xE000EDF0, 0xA05F0000)
+                s = self.get_status()
+                if s != 0x0080:
+                    raise ValueError("Status of core is not running.", s)
         mode = self.stl_mode()
         if mode != 2:
             raise ValueError("Failed to switch debug mode.", mode)
