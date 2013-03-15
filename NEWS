@@ -1,5 +1,14 @@
 Gnuk NEWS - User visible changes
 
+* Major changes in Gnuk 1.0.4
+
+  Released 2013-03-15, by NIIBE Yutaka
+
+** Relocatable reGNUal, really 
+In 1.0.3, reGNUal was not fully relocatable.  It worked loaded on higher
+address, but didn't work for lower address.  This was fixed.
+
+
 * Major changes in Gnuk 1.0.3
 
   Released 2013-03-14, by NIIBE Yutaka

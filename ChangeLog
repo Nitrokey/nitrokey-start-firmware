@@ -1,5 +1,8 @@
 2013-03-15  Niibe Yutaka  <gniibe@fsij.org>
 
+	* Version 1.0.4.
+	* src/usb_desc.c (gnukStringSerial): Updated.
+
 	* regnual/regnual.ld (.bss): Put at RAM1.  This makes reGNUal can
 	be loaded on the lower address.
 

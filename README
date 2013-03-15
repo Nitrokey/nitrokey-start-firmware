@@ -1,7 +1,7 @@
 Gnuk - An Implementation of USB Cryptographic Token for GnuPG
 
-							  Version 1.0.3
-							     2013-03-14
+							  Version 1.0.4
+							     2013-03-15
 							   Niibe Yutaka
 				      Free Software Initiative of Japan
 
@@ -120,7 +120,7 @@ Ac: ST-Link/V2 is cheap one and works, although it's not very good
 Release notes
 =============
 
-This is a third minor release in version 1.0 series of Gnuk.
+This is a fourth minor release in version 1.0 series of Gnuk.
 
 While it is daily use for a year and a half, some newly introduced
 features (including key generation and firmware upgrade) should be
