@@ -1,5 +1,23 @@
 Gnuk NEWS - User visible changes
 
+* Major changes in Gnuk 1.0.3
+
+  Released 2013-03-14, by NIIBE Yutaka
+
+** Relocatable reGNUal
+The upgrade helper, reGNUal, is now relocatable (other than the first
+vector table).  It runs well when loaded at different address.  This
+makes the upgrade procedure more stable.
+
+** Compilation by newer GNU Toolchain
+Now, Gnuk can be compiled with newer GNU Toolchain, specifically GCC
+4.7.x and GNU Binutils 2.22.  Old versions of Gnuk had problem for
+ChibiOS_2.0.8/os/ports/GCC/ARMCMx/cmsis/core_cm3.c, which was fixed.
+
+** Data object 0x0073
+Data object 0x0073 is now available.
+
+
 * Major changes in Gnuk 1.0.2
 
   Released 2013-02-15, by NIIBE Yutaka

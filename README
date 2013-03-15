@@ -413,6 +413,11 @@ Then, with another terminal, type following to write "gnuk.elf" to Flash ROM:
   > exit
   $ 
 
+OpenOCD 0.6.1 now supports ST-Link/V2.  We can use it:
+
+  $ openocd -f interface/stlink-v2.cfg -f target/stm32f1x_stlink.cfg
+
+But it doesn't support option bytes handling yet.
 
 
 STM8S Discovery Kit
