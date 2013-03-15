@@ -13,36 +13,33 @@ static void none (void)
  * Note: the address of this routine 'entry' will be in the vectors as
  * RESET, but this will be called from application.  It's not RESET
  * state, then.
+ *
+ * This routine doesn't change PSP and MSP.  Application should
+ * prepare those stack pointers.
  */
 static __attribute__ ((naked,section(".text.entry")))
 void entry (void)
 {
   asm volatile ("mov	r0, pc\n\t"
-		"bic	r0, r0, #255\n\t" /* R0 := vector_table address */
-		"mov	r1, #0x90\n"	  /* R1 := numbers of entries * 4 */
+		"bic	r0, r0, #255\n\t" /* R0 := vector_table address    */
+		"mov	r1, #0x90\n\t"	  /* R1 := numbers of entries * 4  */
+		"ldr	r3, .L01\n"	  /* R3 := -0x20001400 fixed addr  */
 	"0:\n\t"
 		"ldr	r2, [r0, r1]\n\t"
-		"add	r2, r2, #-0x20000000\n\t"
-		"sub	r2, r2, #0x1400\n\t"
-		"add	r2, r2, r0\n\t" /* Relocate: -0x20001400 + R0 */
+		"add	r2, r0\n\t" /* Relocate: R0 - 0x20001400 */
+		"add	r2, r3\n\t"
 		"str	r2, [r0, r1]\n\t"
 		"subs	r1, r1, #4\n\t"
 		"bne	0b\n\t"
-		/* Relocation done.  We don't care the first entry.  */
+		/* Relocation done. */
 		"ldr	r3, .L00\n"
 	".LPIC00:\n\t"
 		"add	r3, pc\n\t" /* R3 := @_GLOBAL_OFFSET_TABLE_ */
-		"ldr	r4, .L00+4\n\t"
-		"ldr	r0, [r3, r4]\n\t"
-		"ldr	r4, .L00+8\n\t"
-		"ldr	r1, [r3, r4]\n\t"
-		"sub	r0, r0, r1\n\t"
-		"mov	sp, r0\n\t"
 		/* Clear BSS.  */
 		"mov	r0, #0\n\t"
-		"ldr	r4, .L00+12\n\t"
+		"ldr	r4, .L00+4\n\t"
 		"ldr	r1, [r3, r4]\n\t"
-		"ldr	r4, .L00+16\n\t"
+		"ldr	r4, .L00+8\n\t"
 		"ldr	r2, [r3, r4]\n"
 	"0:\n\t"
 		"str	r0, [r1], #4\n\t"
@@ -53,11 +50,12 @@ void entry (void)
 		"mov	r1, r0\n\t"
 		"bl	main\n"
 	"1:\n\t"
-		"b	1b\n"
+		"b	1b\n\t"
+		".align	2\n"
+	".L01:\n\t"
+		".word	-0x20001400\n"
 	".L00:\n\t"
 		".word	_GLOBAL_OFFSET_TABLE_-(.LPIC00+4)\n\t"
-		".word	__ram_end__(GOT)\n\t"
-		".word	__main_stack_size__(GOT)\n\t"
 		".word	_bss_start(GOT)\n\t"
 		".word	_bss_end(GOT)"
 		: /* no output */ : /* no input */ : "memory");
