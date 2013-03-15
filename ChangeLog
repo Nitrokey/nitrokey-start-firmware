@@ -1,5 +1,10 @@
 2013-03-15  Niibe Yutaka  <gniibe@fsij.org>
 
+	* regnual/regnual.ld (.bss): Put at RAM1.  This makes reGNUal can
+	be loaded on the lower address.
+
+	* regnual/sys.c (entry): Don't change SP.  Put alignment.
+
 	* regnual/regnual.c (usb_cb_get_descriptor): Fix adding break.
 
 2013-03-14  Niibe Yutaka  <gniibe@fsij.org>
