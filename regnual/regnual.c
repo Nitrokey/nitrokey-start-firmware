@@ -275,12 +275,15 @@ usb_cb_get_descriptor (uint8_t desc_type, uint16_t index, uint16_t value)
 	case 0:
 	  str = regnual_string_lang_id;
 	  size = sizeof (regnual_string_lang_id);
+	  break;
 	case 1:
 	  str = gnukStringVendor;
 	  size = sizeof (gnukStringVendor);
+	  break;
 	case 2:
 	  str = gnukStringProduct;
 	  size = sizeof (gnukStringProduct);
+	  break;
 	case 3:
 	  str = regnual_string_serial;
 	  size = sizeof (regnual_string_serial);
