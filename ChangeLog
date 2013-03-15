@@ -1,3 +1,7 @@
+2013-03-15  Niibe Yutaka  <gniibe@fsij.org>
+
+	* regnual/regnual.c (usb_cb_get_descriptor): Fix adding break.
+
 2013-03-14  Niibe Yutaka  <gniibe@fsij.org>
 
 	* Version 1.0.3.
