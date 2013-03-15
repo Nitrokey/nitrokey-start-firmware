@@ -23,18 +23,6 @@ SECTIONS
 {
     . = 0;
 
-    .bss :
-    {
-        _bss_start = .;
-        *(.bss)
-        . = ALIGN(4);
-        *(.bss.*)
-        . = ALIGN(4);
-        *(COMMON)
-        . = ALIGN(4);
-        _bss_end = .;
-    } > ram0
-
     .text : ALIGN(16) SUBALIGN(16)
     {
         _text = .;
@@ -95,6 +83,18 @@ SECTIONS
         *(.ramtext)
         . = ALIGN(4);
         _edata = .;
+    } > ram1
+
+    .bss :
+    {
+        _bss_start = .;
+        *(.bss)
+        . = ALIGN(4);
+        *(.bss.*)
+        . = ALIGN(4);
+        *(COMMON)
+        . = ALIGN(4);
+        _bss_end = .;
     } > ram1
 
     PROVIDE(end = .);
