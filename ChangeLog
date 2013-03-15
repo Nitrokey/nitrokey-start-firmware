@@ -1,3 +1,7 @@
+2013-03-15  Niibe Yutaka  <gniibe@fsij.org>
+
+	* regnual/regnual.c (usb_cb_get_descriptor): Fix adding break.
+
 2013-03-14  Niibe Yutaka  <gniibe@fsij.org>
 
 	* tool/stlinkv2.py (stlinkv2.start): Call write_debug_reg to run
