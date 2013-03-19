@@ -237,12 +237,18 @@ Gnuk is distributed with external source code.
 
   We use ChibiOS/RT as the kernel for Gnuk.
 
+  ChibiOS/RT is distributed under GPLv3+ (with a special exception
+  for unmodified code).
+
 
 * polarssl/  -- PolarSSL 1.2.6
 
   Souce code taken from: http://polarssl.org/
 
-  We use PolarSSL for RSA computation, AES encryption/decryption.
+  We use PolarSSL for RSA computation, and AES encryption/decryption.
+
+  PolarSSL is distributed under GPLv2+.  We use PolarSSL under GPLv3
+  as our options.
 
   The file include/polarssl/bn_mul.h is heavily modified for ARM
   Cortex-M3.
@@ -264,6 +270,13 @@ Gnuk is distributed with external source code.
 
   The file library/aes.c is modified so that some constants can
   go to .sys section.
+
+  The file include/polarssl/config.h are modified not to define
+  POLARSSL_HAVE_LONGLONG to avoid linking libgcc, to define
+  POLARSSL_AES_ROM_TABLES to have AES tables, not to define
+  POLARSSL_CIPHER_MODE_CTR, POLARSSL_FS_IO, POLARSSL_PKCS1_V21,
+  POLARSSL_SELF_TEST, and POLARSSL_PADLOCK_C, and only define
+  POLARSSL_GENPRIME when defined KEYGEN_SUPPORT.
 
 
 USB vendor ID and product ID (USB device ID)
