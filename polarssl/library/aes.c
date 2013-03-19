@@ -767,7 +767,6 @@ int aes_crypt_ecb( aes_context *ctx,
     return( 0 );
 }
 
-#if 0
 /*
  * AES-CBC buffer encryption/decryption
  */
@@ -831,7 +830,6 @@ int aes_crypt_cbc( aes_context *ctx,
 
     return( 0 );
 }
-#endif
 
 #if defined(POLARSSL_CIPHER_MODE_CFB)
 /*

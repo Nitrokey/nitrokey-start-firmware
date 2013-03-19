@@ -132,7 +132,6 @@ cleanup:
 
 #endif
 
-#if 0
 /*
  * Check a public RSA key
  */
@@ -217,7 +216,6 @@ cleanup:
 
     return( 0 );
 }
-#endif
 
 /*
  * Do an RSA public key operation
@@ -438,7 +436,6 @@ int rsa_rsaes_oaep_encrypt( rsa_context *ctx,
 }
 #endif /* POLARSSL_PKCS1_V21 */
 
-#if 0
 /*
  * Implementation of the PKCS#1 v2.1 RSAES-PKCS1-V1_5-ENCRYPT function
  */
@@ -526,7 +523,6 @@ int rsa_pkcs1_encrypt( rsa_context *ctx,
             return( POLARSSL_ERR_RSA_INVALID_PADDING );
     }
 }
-#endif
 
 #if defined(POLARSSL_PKCS1_V21)
 /*
@@ -713,7 +709,6 @@ int rsa_rsaes_pkcs1_v15_decrypt( rsa_context *ctx,
     return( 0 );
 }
 
-#if 0
 /*
  * Do an RSA operation, then remove the message padding
  */
@@ -739,7 +734,6 @@ int rsa_pkcs1_decrypt( rsa_context *ctx,
             return( POLARSSL_ERR_RSA_INVALID_PADDING );
     }
 }
-#endif
 
 #if defined(POLARSSL_PKCS1_V21)
 /*
@@ -982,7 +976,6 @@ int rsa_rsassa_pkcs1_v15_sign( rsa_context *ctx,
             : rsa_private( ctx, sig, sig ) );
 }
 
-#if 0
 /*
  * Do an RSA operation to sign the message digest
  */
@@ -995,6 +988,8 @@ int rsa_pkcs1_sign( rsa_context *ctx,
                     const unsigned char *hash,
                     unsigned char *sig )
 {
+    (void)f_rng;
+    (void)p_rng;
     switch( ctx->padding )
     {
         case RSA_PKCS_V15:
@@ -1011,7 +1006,6 @@ int rsa_pkcs1_sign( rsa_context *ctx,
             return( POLARSSL_ERR_RSA_INVALID_PADDING );
     }
 }
-#endif
 
 #if defined(POLARSSL_PKCS1_V21)
 /*
@@ -1253,7 +1247,6 @@ int rsa_rsassa_pkcs1_v15_verify( rsa_context *ctx,
     return( POLARSSL_ERR_RSA_INVALID_PADDING );
 }
 
-#if 0
 /*
  * Do an RSA operation and check the message digest
  */
@@ -1280,7 +1273,6 @@ int rsa_pkcs1_verify( rsa_context *ctx,
             return( POLARSSL_ERR_RSA_INVALID_PADDING );
     }
 }
-#endif
 
 /*
  * Free the components of an RSA key

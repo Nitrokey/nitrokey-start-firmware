@@ -249,7 +249,6 @@ size_t mpi_size( const mpi *X )
     return( ( mpi_msb( X ) + 7 ) >> 3 );
 }
 
-#if 0
 /*
  * Convert an ASCII character to digit value
  */
@@ -432,7 +431,6 @@ cleanup:
 
     return( ret );
 }
-#endif
 
 #if defined(POLARSSL_FS_IO)
 /*

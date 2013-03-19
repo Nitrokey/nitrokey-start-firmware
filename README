@@ -231,26 +231,36 @@ External source code
 
 Gnuk is distributed with external source code.
 
-* ChibiOS_2.0.8/  -- ChibiOS/RT 2.0.8
+* chibios/  -- ChibiOS/RT 2.4.3
 
-  Taken from http://chibios.sourceforge.net/
-  Note that CRLF is converted to LF in this repository.
+  Source code taken from: http://chibios.sourceforge.net/
+
   We use ChibiOS/RT as the kernel for Gnuk.
 
-* polarssl-0.14.0/  -- PolarSSL 0.14.0
 
-  Taken from http://polarssl.org/
+* polarssl/  -- PolarSSL 1.2.6
+
+  Souce code taken from: http://polarssl.org/
+
   We use PolarSSL for RSA computation, AES encryption/decryption.
 
   The file include/polarssl/bn_mul.h is heavily modified for ARM
   Cortex-M3.
 
-  The files include/polarssl/rsa.h, library/rsa.c,
-  include/polarssl/bignum.h, and library/bignum.c are modified so that
-  f_rng function returns unsigned char.
+  The function rsa_private in polarssl/library/rsa.c is modified so
+  that it doesn't check T against N.  The function rsa_pkcs1_sign is
+  modified to avoid warnings in case of !POLARSSL_PKCS1_V21.
 
-  The file library/rsa.c is modified so that it only computes things
-  needed for Gnuk.
+  The functions rsa_pkcs1_verify and rsa_rsassa_pkcs1_v15_verify in
+  include/polarssl/rsa.h and polarssl/library/rsa.c are modified
+  (fixed) for last argument SIG, as the memory at SIG aren't modified
+  by those routines.
+
+  The constant POLARSSL_MPI_MAX_SIZE in include/polarssl/bignum.h is
+  modified for 2048-bit keys only Gnuk.
+
+  The function mpi_mul_hlp in library/bignum.c is modified for more
+  optimization for ARM Cortex-M3.
 
   The file library/aes.c is modified so that some constants can
   go to .sys section.
