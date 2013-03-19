@@ -177,15 +177,15 @@ static const unsigned char FSb[256] =
     V(CB,B0,B0,7B), V(FC,54,54,A8), V(D6,BB,BB,6D), V(3A,16,16,2C)
 
 #define V(a,b,c,d) 0x##a##b##c##d
-static const uint32_t FT0[256] = { FT };
+static const uint32_t FT0[256] __attribute__((section(".sys.0"))) = { FT };
 #undef V
 
 #define V(a,b,c,d) 0x##b##c##d##a
-static const uint32_t FT1[256] = { FT };
+static const uint32_t FT1[256] __attribute__((section(".sys.1"))) = { FT };
 #undef V
 
 #define V(a,b,c,d) 0x##c##d##a##b
-static const uint32_t FT2[256] = { FT };
+static const uint32_t FT2[256] __attribute__((section(".sys.2"))) = { FT };
 #undef V
 
 #define V(a,b,c,d) 0x##d##a##b##c
