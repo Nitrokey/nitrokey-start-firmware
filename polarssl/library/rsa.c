@@ -711,6 +711,7 @@ int rsa_rsaes_pkcs1_v15_decrypt( rsa_context *ctx,
     return( 0 );
 }
 
+#if 0
 /*
  * Do an RSA operation, then remove the message padding
  */
@@ -736,6 +737,7 @@ int rsa_pkcs1_decrypt( rsa_context *ctx,
             return( POLARSSL_ERR_RSA_INVALID_PADDING );
     }
 }
+#endif
 
 #if defined(POLARSSL_PKCS1_V21)
 /*
