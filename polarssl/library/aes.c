@@ -34,7 +34,6 @@
 #if defined(POLARSSL_AES_C)
 
 #include "polarssl/aes.h"
-#include "polarssl/padlock.h"
 
 #include <string.h>
 

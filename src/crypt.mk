@@ -1,4 +1,4 @@
-CRYPTDIR = ../polarssl-0.14.0
+CRYPTDIR = ../polarssl
 CRYPTSRCDIR = $(CRYPTDIR)/library
 CRYPTINCDIR = $(CRYPTDIR)/include
 CRYPTSRC = $(CRYPTSRCDIR)/bignum.c $(CRYPTSRCDIR)/rsa.c \
