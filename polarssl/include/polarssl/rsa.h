@@ -490,7 +490,7 @@ int rsa_rsassa_pss_sign( rsa_context *ctx,
                          int hash_id,
                          unsigned int hashlen,
                          const unsigned char *hash,
-                         unsigned char *sig );
+                         const unsigned char *sig );
 
 /**
  * \brief          Generic wrapper to perform a PKCS#1 verification using the
@@ -521,7 +521,7 @@ int rsa_pkcs1_verify( rsa_context *ctx,
                       int hash_id,
                       unsigned int hashlen,
                       const unsigned char *hash,
-                      unsigned char *sig );
+                      const unsigned char *sig );
 
 /**
  * \brief          Perform a PKCS#1 v1.5 verification (RSASSA-PKCS1-v1_5-VERIFY)
@@ -544,7 +544,7 @@ int rsa_rsassa_pkcs1_v15_verify( rsa_context *ctx,
                                  int hash_id,
                                  unsigned int hashlen,
                                  const unsigned char *hash,
-                                 unsigned char *sig );
+                                 const unsigned char *sig );
 
 /**
  * \brief          Perform a PKCS#1 v2.1 PSS verification (RSASSA-PSS-VERIFY)

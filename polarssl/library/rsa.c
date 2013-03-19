@@ -132,6 +132,7 @@ cleanup:
 
 #endif
 
+#if 0
 /*
  * Check a public RSA key
  */
@@ -216,6 +217,7 @@ cleanup:
 
     return( 0 );
 }
+#endif
 
 /*
  * Do an RSA public key operation
@@ -267,11 +269,13 @@ int rsa_private( rsa_context *ctx,
 
     MPI_CHK( mpi_read_binary( &T, input, ctx->len ) );
 
+#if 0
     if( mpi_cmp_mpi( &T, &ctx->N ) >= 0 )
     {
         mpi_free( &T );
         return( POLARSSL_ERR_RSA_BAD_INPUT_DATA );
     }
+#endif
 
 #if defined(POLARSSL_RSA_NO_CRT)
     MPI_CHK( mpi_exp_mod( &T, &T, &ctx->D, &ctx->N, &ctx->RN ) );
@@ -974,6 +978,7 @@ int rsa_rsassa_pkcs1_v15_sign( rsa_context *ctx,
             : rsa_private( ctx, sig, sig ) );
 }
 
+#if 0
 /*
  * Do an RSA operation to sign the message digest
  */
@@ -1002,6 +1007,7 @@ int rsa_pkcs1_sign( rsa_context *ctx,
             return( POLARSSL_ERR_RSA_INVALID_PADDING );
     }
 }
+#endif
 
 #if defined(POLARSSL_PKCS1_V21)
 /*
@@ -1143,7 +1149,7 @@ int rsa_rsassa_pkcs1_v15_verify( rsa_context *ctx,
                                  int hash_id,
                                  unsigned int hashlen,
                                  const unsigned char *hash,
-                                 unsigned char *sig )
+                                 const unsigned char *sig )
 {
     int ret;
     size_t len, siglen;
@@ -1243,6 +1249,7 @@ int rsa_rsassa_pkcs1_v15_verify( rsa_context *ctx,
     return( POLARSSL_ERR_RSA_INVALID_PADDING );
 }
 
+#if 0
 /*
  * Do an RSA operation and check the message digest
  */
@@ -1251,7 +1258,7 @@ int rsa_pkcs1_verify( rsa_context *ctx,
                       int hash_id,
                       unsigned int hashlen,
                       const unsigned char *hash,
-                      unsigned char *sig )
+                      const unsigned char *sig )
 {
     switch( ctx->padding )
     {
@@ -1269,6 +1276,7 @@ int rsa_pkcs1_verify( rsa_context *ctx,
             return( POLARSSL_ERR_RSA_INVALID_PADDING );
     }
 }
+#endif
 
 /*
  * Free the components of an RSA key
