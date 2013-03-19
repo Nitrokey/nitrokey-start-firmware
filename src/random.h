@@ -9,4 +9,4 @@ void random_bytes_free (const uint8_t *p);
 uint32_t get_salt (void);
 
 /* iterator returning a byta at a time */
-uint8_t random_byte (void *arg);
+int random_gen (void *arg, unsigned char *output, size_t output_len);

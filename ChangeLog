@@ -1,7 +1,10 @@
 2013-03-19  Niibe Yutaka  <gniibe@fsij.org>
 
+	* src/random.c (random_gen): New (was: random_byte).
+
 	* src/call-rsa.c (rsa_sign): Follow change of API.
-	(modulus_calc, rsa_decrypt, rsa_verify): Likewise.
+	(rsa_genkey): Use random_gen.
+	(modulus_calc, rsa_decrypt, rsa_verify): Follow change of API.
 	* src/openpgp-do.c (encrypt, decrypt): Likewise.
 
 	* polarssl/include/polarssl/aes.h: Updated from PolarSSL 1.2.6.

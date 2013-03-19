@@ -22,6 +22,7 @@
  */
 
 #include <stdint.h>
+#include <stdlib.h>
 #include "random.h"
 #include "bn.h"
 

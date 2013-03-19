@@ -1,7 +1,7 @@
 /*
  * call-rsa.c -- Glue code between RSA computation and OpenPGP card protocol
  *
- * Copyright (C) 2010, 2011, 2012 Free Software Initiative of Japan
+ * Copyright (C) 2010, 2011, 2012, 2013 Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
  * This file is a part of Gnuk, a GnuPG USB Token implementation.
@@ -219,7 +219,7 @@ rsa_genkey (void)
     return NULL;
 
   rsa_init (&rsa_ctx, RSA_PKCS_V15, 0);
-  r = rsa_gen_key (&rsa_ctx, random_byte, &index,
+  r = rsa_gen_key (&rsa_ctx, random_gen, &index,
 		   KEY_CONTENT_LEN * 8, RSA_EXPONENT);
   if (r < 0)
     {

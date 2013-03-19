@@ -81,26 +81,35 @@ get_salt (void)
 /*
  * Random byte iterator
  */
-uint8_t
-random_byte (void *arg)
+int
+random_gen (void *arg, unsigned char *out, size_t out_len)
 {
   uint8_t *index_p = (uint8_t *)arg;
   uint8_t index = *index_p;
-  uint8_t *p = ((uint8_t *)random_word) + index;
-  uint8_t v;
+  size_t n;
 
-  neug_wait_full ();
-
-  v = *p;
-
-  if (++index >= RANDOM_BYTES_LENGTH)
+  while (out_len)
     {
-      index = 0;
-      neug_flush ();
+      neug_wait_full ();
+
+      n = RANDOM_BYTES_LENGTH - index;
+      if (n > out_len)
+	n = out_len;
+
+      memcpy (out, random_word + index, n);
+      out += n;
+      out_len -= n;
+      index += n;
+
+      if (index >= RANDOM_BYTES_LENGTH)
+	{
+	  index = 0;
+	  neug_flush ();
+	}
     }
 
   *index_p = index;
 
-  return v;
+  return 0;
 }
 #endif
