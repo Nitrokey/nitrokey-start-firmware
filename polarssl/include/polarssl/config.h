@@ -65,8 +65,9 @@
  *
  * The compiler supports the 'long long' type.
  * (Only used on 32-bit platforms)
- */
+ *
 #define POLARSSL_HAVE_LONGLONG
+ */
 
 /**
  * \def POLARSSL_HAVE_ASM
