@@ -249,6 +249,7 @@ size_t mpi_size( const mpi *X )
     return( ( mpi_msb( X ) + 7 ) >> 3 );
 }
 
+#if 0
 /*
  * Convert an ASCII character to digit value
  */
@@ -431,6 +432,7 @@ cleanup:
 
     return( ret );
 }
+#endif
 
 #if defined(POLARSSL_FS_IO)
 /*
@@ -939,7 +941,16 @@ static void mpi_mul_hlp( size_t i, t_uint *s, t_uint *d, t_uint b )
 {
     t_uint c = 0, t = 0;
 
-#if defined(MULADDC_HUIT)
+#if defined(MULADDC_1024_LOOP)
+    MULADDC_1024_LOOP
+
+    for( ; i > 0; i-- )
+    {
+        MULADDC_INIT
+        MULADDC_CORE
+        MULADDC_STOP
+    }
+#elif defined(MULADDC_HUIT)
     for( ; i >= 8; i -= 8 )
     {
         MULADDC_INIT
