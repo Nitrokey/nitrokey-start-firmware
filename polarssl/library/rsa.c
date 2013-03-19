@@ -438,6 +438,7 @@ int rsa_rsaes_oaep_encrypt( rsa_context *ctx,
 }
 #endif /* POLARSSL_PKCS1_V21 */
 
+#if 0
 /*
  * Implementation of the PKCS#1 v2.1 RSAES-PKCS1-V1_5-ENCRYPT function
  */
@@ -525,6 +526,7 @@ int rsa_pkcs1_encrypt( rsa_context *ctx,
             return( POLARSSL_ERR_RSA_INVALID_PADDING );
     }
 }
+#endif
 
 #if defined(POLARSSL_PKCS1_V21)
 /*
