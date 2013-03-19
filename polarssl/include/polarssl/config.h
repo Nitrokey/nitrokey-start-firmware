@@ -111,8 +111,8 @@
  *
  * Uncomment this macro to store the AES tables in ROM.
  *
-#define POLARSSL_AES_ROM_TABLES
  */
+#define POLARSSL_AES_ROM_TABLES
 
 /**
  * \def POLARSSL_CIPHER_MODE_CFB
@@ -125,8 +125,9 @@
  * \def POLARSSL_CIPHER_MODE_CTR
  *
  * Enable Counter Block Cipher mode (CTR) for symmetric ciphers.
- */
+ *
 #define POLARSSL_CIPHER_MODE_CTR
+ */
 
 /**
  * \def POLARSSL_CIPHER_NULL_CIPHER
@@ -178,7 +179,9 @@
  *
  * Enable the RSA prime-number generation code.
  */
+#ifdef KEYGEN_SUPPORT
 #define POLARSSL_GENPRIME
+#endif
 
 /**
  * \def POLARSSL_FS_IO
@@ -235,8 +238,9 @@
  * \def POLARSSL_SELF_TEST
  *
  * Enable the checkup functions (*_self_test).
- */
+ *
 #define POLARSSL_SELF_TEST
+ */
 
 /**
  * \def POLARSSL_SSL_ALL_ALERT_MESSAGES
@@ -666,8 +670,9 @@
  * Caller:  library/aes.c
  *
  * This modules adds support for the VIA PadLock on x86.
- */
+ *
 #define POLARSSL_PADLOCK_C
+ */
 
 /**
  * \def POLARSSL_PBKDF2_C
