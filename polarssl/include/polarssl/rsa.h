@@ -490,7 +490,7 @@ int rsa_rsassa_pss_sign( rsa_context *ctx,
                          int hash_id,
                          unsigned int hashlen,
                          const unsigned char *hash,
-                         const unsigned char *sig );
+                         unsigned char *sig );
 
 /**
  * \brief          Generic wrapper to perform a PKCS#1 verification using the
