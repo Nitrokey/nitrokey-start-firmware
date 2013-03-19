@@ -187,8 +187,9 @@
  * \def POLARSSL_FS_IO
  *
  * Enable functions that use the filesystem.
- */
+ *
 #define POLARSSL_FS_IO
+ */
 
 /**
  * \def POLARSSL_NO_DEFAULT_ENTROPY_SOURCES
@@ -221,8 +222,9 @@
  *
  * Enable support for PKCS#1 v2.1 encoding.
  * This enables support for RSAES-OAEP and RSASSA-PSS operations.
- */
+ *
 #define POLARSSL_PKCS1_V21
+ */
 
 /**
  * \def POLARSSL_RSA_NO_CRT
