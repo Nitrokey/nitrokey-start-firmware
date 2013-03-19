@@ -1,3 +1,17 @@
+2013-03-19  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/call-rsa.c (rsa_sign): Follow change of API.
+	(modulus_calc, rsa_decrypt, rsa_verify): Likewise.
+	* src/openpgp-do.c (encrypt, decrypt): Likewise.
+
+	* polarssl/include/polarssl/aes.h: Updated from PolarSSL 1.2.6.
+	* polarssl/library/aes.c: Ditto.
+	* polarssl/include/polarssl/rsa.h: Ditto.
+	* polarssl/library/rsa.c: Ditto.
+	* polarssl/include/polarssl/bignum.h: Ditto.
+	* polarssl/library/bignum.c: Ditto.
+	* polarssl: Move from polarssl-0.14.0, and needed files only.
+
 2013-03-15  Niibe Yutaka  <gniibe@fsij.org>
 
 	* regnual/regnual.ld (.bss): Put at RAM1.  This makes reGNUal can

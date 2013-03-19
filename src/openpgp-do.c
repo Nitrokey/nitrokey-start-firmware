@@ -593,7 +593,7 @@ encrypt (const uint8_t *key, const uint8_t *iv, uint8_t *data, int len)
 {
   aes_context aes;
   uint8_t iv0[INITIAL_VECTOR_SIZE];
-  int iv_offset;
+  unsigned int iv_offset;
 
   DEBUG_INFO ("ENC\r\n");
   DEBUG_BINARY (data, len);
@@ -612,7 +612,7 @@ decrypt (const uint8_t *key, const uint8_t *iv, uint8_t *data, int len)
 {
   aes_context aes;
   uint8_t iv0[INITIAL_VECTOR_SIZE];
-  int iv_offset;
+  unsigned int iv_offset;
 
   aes_setkey_enc (&aes, key, 128); /* This is setkey_enc, because of CFB.  */
   memcpy (iv0, iv, INITIAL_VECTOR_SIZE);

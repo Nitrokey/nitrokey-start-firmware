@@ -44,7 +44,10 @@ rsa_sign (const uint8_t *raw_message, uint8_t *output, int msg_len,
   int r;
   unsigned char temp[RSA_SIGNATURE_LENGTH];
 
-  mpi_init (&P1, &Q1, &H, NULL);
+  mpi_init (&P1);
+  mpi_init (&Q1);
+  mpi_init (&H);
+
   rsa_init (&rsa_ctx, RSA_PKCS_V15, 0);
 
   rsa_ctx.len = KEY_CONTENT_LEN;
@@ -61,12 +64,14 @@ rsa_sign (const uint8_t *raw_message, uint8_t *output, int msg_len,
   mpi_mod_mpi (&rsa_ctx.DP, &rsa_ctx.D, &P1);
   mpi_mod_mpi (&rsa_ctx.DQ, &rsa_ctx.D, &Q1);
   mpi_inv_mod (&rsa_ctx.QP, &rsa_ctx.Q, &rsa_ctx.P);
-  mpi_free (&P1, &Q1, &H, NULL);
+  mpi_free (&P1);
+  mpi_free (&Q1);
+  mpi_free (&H);
 
   DEBUG_INFO ("RSA sign...");
 
-  r = rsa_pkcs1_sign (&rsa_ctx, RSA_PRIVATE, SIG_RSA_RAW,
-		      msg_len, raw_message, temp);
+  r = rsa_rsassa_pkcs1_v15_sign (&rsa_ctx, RSA_PRIVATE, SIG_RSA_RAW,
+				 msg_len, raw_message, temp);
   memcpy (output, temp, RSA_SIGNATURE_LENGTH);
   rsa_free (&rsa_ctx);
   if (r < 0)
@@ -97,13 +102,17 @@ modulus_calc (const uint8_t *p, int len)
   if (modulus == NULL)
     return NULL;
 
-  mpi_init (&P, &Q, &N, NULL);
+  mpi_init (&P);
+  mpi_init (&Q);
+  mpi_init (&N);
   mpi_read_binary (&P, p, len / 2);
   mpi_read_binary (&Q, p + len / 2, len / 2);
   mpi_mul_mpi (&N, &P, &Q);
 
   mpi_write_binary (&N, modulus, len);
-  mpi_free (&P, &Q, &N, NULL);
+  mpi_free (&P);
+  mpi_free (&Q);
+  mpi_free (&N);
   return modulus;
 }
 
@@ -114,12 +123,14 @@ rsa_decrypt (const uint8_t *input, uint8_t *output, int msg_len,
 {
   mpi P1, Q1, H;
   int r;
-  int output_len;
+  unsigned int output_len;
 
   DEBUG_INFO ("RSA decrypt:");
   DEBUG_WORD ((uint32_t)&output_len);
 
-  mpi_init (&P1, &Q1, &H, NULL);
+  mpi_init (&P1);
+  mpi_init (&Q1);
+  mpi_init (&H);
   rsa_init (&rsa_ctx, RSA_PKCS_V15, 0);
 
   rsa_ctx.len = msg_len;
@@ -139,7 +150,9 @@ rsa_decrypt (const uint8_t *input, uint8_t *output, int msg_len,
   mpi_mod_mpi (&rsa_ctx.DP, &rsa_ctx.D, &P1);
   mpi_mod_mpi (&rsa_ctx.DQ, &rsa_ctx.D, &Q1);
   mpi_inv_mod (&rsa_ctx.QP, &rsa_ctx.Q, &rsa_ctx.P);
-  mpi_free (&P1, &Q1, &H, NULL);
+  mpi_free (&P1);
+  mpi_free (&Q1);
+  mpi_free (&H);
 
   DEBUG_INFO ("RSA decrypt ...");
 
@@ -173,7 +186,7 @@ rsa_verify (const uint8_t *pubkey, const uint8_t *hash, const uint8_t *sig)
 
   DEBUG_INFO ("RSA verify...");
 
-  r = rsa_pkcs1_verify (&rsa_ctx, RSA_PUBLIC, SIG_RSA_SHA256, 32, hash, sig);
+  r = rsa_rsassa_pkcs1_v15_verify (&rsa_ctx, RSA_PUBLIC, SIG_RSA_SHA256, 32, hash, sig);
 
   rsa_free (&rsa_ctx);
   if (r < 0)
