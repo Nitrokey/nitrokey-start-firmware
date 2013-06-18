@@ -1,3 +1,7 @@
+2013-06-18  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/modp256.c (p256): Add const qualifier.
+
 2013-03-19  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/random.c (random_gen): New (was: random_byte).

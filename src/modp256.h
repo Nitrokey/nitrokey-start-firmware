@@ -1,4 +1,4 @@
-extern bn256 p256;
+extern const bn256 p256;
 #define P256 (&p256)
 
 void modp256_add (bn256 *X, const bn256 *A, const bn256 *B);

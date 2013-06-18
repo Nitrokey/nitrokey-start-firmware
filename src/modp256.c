@@ -43,8 +43,8 @@
 2^256 - 2^224 + 2^192 + 2^96 - 1
   0 ffffffff 00000001 00000000 00000000 00000000 ffffffff ffffffff ffffffff
 */
-bn256 p256 = { {0xffffffff, 0xffffffff, 0xffffffff, 0x00000000,
-		0x00000000, 0x00000000, 0x00000001, 0xffffffff} };
+const bn256 p256 = { {0xffffffff, 0xffffffff, 0xffffffff, 0x00000000,
+		      0x00000000, 0x00000000, 0x00000001, 0xffffffff} };
 
 /**
  * @brief  X = (A + B) mod p256
