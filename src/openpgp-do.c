@@ -752,6 +752,10 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
     /* No replace support, you need to remove it first.  */
     return -1;
 
+#ifdef RSA_AUTH
+  if (key_len != KEY_CONTENT_LEN)
+     return -1;
+#else /* ECDSA for authentication */
   if (kk != GPG_KEY_FOR_AUTHENTICATION && key_len != KEY_CONTENT_LEN)
     return -1;
   if (kk == GPG_KEY_FOR_AUTHENTICATION)
@@ -760,6 +764,7 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
       if (key_len != 32)
 	return -1;
     }
+#endif
 
   pd = (struct prvkey_data *)malloc (sizeof (struct prvkey_data));
   if (pd == NULL)
@@ -767,10 +772,14 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
 
   if (pubkey == NULL)
     {
+#ifdef RSA_AUTH
+      pubkey = modulus_calc (key_data, key_len);
+#else /* ECDSA for authentication */
       if (kk == GPG_KEY_FOR_AUTHENTICATION)
 	pubkey = ecdsa_compute_public (key_data);
       else
 	pubkey = modulus_calc (key_data, key_len);
+#endif
       if (pubkey == NULL)
 	{
 	  free (pd);
@@ -793,6 +802,9 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
   DEBUG_INFO ("key_addr: ");
   DEBUG_WORD ((uint32_t)key_addr);
 
+#ifdef RSA_AUTH
+  memcpy (kdi.data, key_data, KEY_CONTENT_LEN);
+#else /* ECDSA for authentication */
   if (kk == GPG_KEY_FOR_AUTHENTICATION)
     {
       memcpy (kdi.data, key_data, key_len);
@@ -800,6 +812,7 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
     }
   else
     memcpy (kdi.data, key_data, KEY_CONTENT_LEN);
+#endif
   compute_key_data_checksum (&kdi, 0);
 
   dek = random_bytes_get (); /* 32-byte random bytes */
@@ -976,8 +989,12 @@ proc_key_import (const uint8_t *data, int len)
       ac_reset_other ();
     }
 
+#ifdef RSA_AUTH
+  if (len <= 22)
+#else /* ECDSA for authentication */
   if ((kk != GPG_KEY_FOR_AUTHENTICATION && len <= 22)
       || (kk == GPG_KEY_FOR_AUTHENTICATION && len <= 12))
+#endif
     {					    /* Deletion of the key */
       uint8_t nr = get_do_ptr_nr_for_kk (kk);
       const uint8_t *do_data = do_ptr[nr - NR_DO__FIRST__];
@@ -1005,6 +1022,9 @@ proc_key_import (const uint8_t *data, int len)
       return 1;
     }
 
+#ifdef RSA_AUTH
+  r = gpg_do_write_prvkey (kk, &data[26], len - 26, keystring_admin, NULL);
+#else /* ECDSA for authentication */
   if (kk != GPG_KEY_FOR_AUTHENTICATION)
     {			   /* RSA */
       /* It should starts with 00 01 00 01 (E) */
@@ -1013,6 +1033,7 @@ proc_key_import (const uint8_t *data, int len)
     }
   else
     r = gpg_do_write_prvkey (kk, &data[12], len - 12, keystring_admin, NULL);
+#endif
 
   if (r < 0)
     return 0;
@@ -1077,7 +1098,11 @@ gpg_do_table[] = {
   { GPG_DO_EXTCAP, DO_FIXED, AC_ALWAYS, AC_NEVER, extended_capabilities },
   { GPG_DO_ALG_SIG, DO_FIXED, AC_ALWAYS, AC_NEVER, algorithm_attr_rsa },
   { GPG_DO_ALG_DEC, DO_FIXED, AC_ALWAYS, AC_NEVER, algorithm_attr_rsa },
+#ifdef RSA_AUTH
+  { GPG_DO_ALG_AUT, DO_FIXED, AC_ALWAYS, AC_NEVER, algorithm_attr_rsa },
+#else
   { GPG_DO_ALG_AUT, DO_FIXED, AC_ALWAYS, AC_NEVER, algorithm_attr_ecdsa },
+#endif
   /* Compound data: Read access only */
   { GPG_DO_CH_DATA, DO_CMP_READ, AC_ALWAYS, AC_NEVER, cmp_ch_data },
   { GPG_DO_APP_DATA, DO_CMP_READ, AC_ALWAYS, AC_NEVER, cmp_app_data },
@@ -1520,7 +1545,27 @@ gpg_do_public_key (uint8_t kk_byte)
   /* TAG */
   *res_p++ = 0x7f; *res_p++ = 0x49;
 
-  if (kk_byte != 0xa4)
+#ifndef RSA_AUTH /* ECDSA for authentication */
+  if (kk_byte == 0xa4)
+    {				/* ECDSA */
+      /* LEN */
+      *res_p++ = 2 + 8 + 2 + 1 + 64;
+      {
+	/*TAG*/          /* LEN = 8 */
+	*res_p++ = 0x06; *res_p++ = 0x08;
+	memcpy (res_p, algorithm_attr_ecdsa+2, 8);
+	res_p += 8;
+
+	/*TAG*/          /* LEN = 1+64 */
+	*res_p++ = 0x86; *res_p++ = 0x41;
+	*res_p++ = 0x04; 	/* No compression of EC point.  */
+	/* 64-byte binary (big endian) */
+	memcpy (res_p, key_addr + KEY_CONTENT_LEN, 64);
+	res_p += 64;
+      }
+    }
+  else
+#endif
     {				/* RSA */
       /* LEN = 9+256 */
       *res_p++ = 0x82; *res_p++ = 0x01; *res_p++ = 0x09;
@@ -1537,24 +1582,6 @@ gpg_do_public_key (uint8_t kk_byte)
 	*res_p++ = 0x82; *res_p++ = 3;
 	/* 3-byte E=0x10001 (big endian) */
 	*res_p++ = 0x01; *res_p++ = 0x00; *res_p++ = 0x01;
-      }
-    }
-  else
-    {				/* ECDSA */
-      /* LEN */
-      *res_p++ = 2 + 8 + 2 + 1 + 64;
-      {
-	/*TAG*/          /* LEN = 8 */
-	*res_p++ = 0x06; *res_p++ = 0x08;
-	memcpy (res_p, algorithm_attr_ecdsa+2, 8);
-	res_p += 8;
-
-	/*TAG*/          /* LEN = 1+64 */
-	*res_p++ = 0x86; *res_p++ = 0x41;
-	*res_p++ = 0x04; 	/* No compression of EC point.  */
-	/* 64-byte binary (big endian) */
-	memcpy (res_p, key_addr + KEY_CONTENT_LEN, 64);
-	res_p += 64;
       }
     }
 

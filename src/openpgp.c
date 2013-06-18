@@ -833,7 +833,7 @@ cmd_pso (void)
 }
 
 
-#if RSA_AUTH
+#ifdef RSA_AUTH
 #define MAX_DIGEST_INFO_LEN 102 /* 40% */
 static void
 cmd_internal_authenticate (void)

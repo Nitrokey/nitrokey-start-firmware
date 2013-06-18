@@ -1,5 +1,9 @@
 2013-06-18  Niibe Yutaka  <gniibe@fsij.org>
 
+	* src/openpgp-do.c (gpg_do_write_prvkey, proc_key_import, gpg_do_table)
+	(gpg_do_public_key) [RSA_AUTH]: Conditional compilation for RSA/ECDSA.
+	* src/openpgp.c (cmd_internal_authenticate) [RSA_AUTH]: Likewise.
+
 	* src/modp256.c (p256): Add const qualifier.
 
 2013-03-19  Niibe Yutaka  <gniibe@fsij.org>
