@@ -1,32 +1,4 @@
 /*
- * We declare some of libc functions here, because we will
- * remove dependency on libc in future, possibly.
- */
-extern size_t strlen (const char *s);
-extern int strncmp(const char *s1, const char *s2, size_t n);
-extern void *memcpy (void *dest, const void *src, size_t n);
-extern void *memset (void *s, int c, size_t n);
-extern int memcmp (const void *s1, const void *s2, size_t n);
-extern void *memmove(void *dest, const void *src, size_t n);
-
-/*
- * Debug functions
- */
-extern Thread *stdout_thread;
-#define EV_TX_READY ((eventmask_t)1)
-
-extern void put_byte (uint8_t b);
-extern void put_byte_with_no_nl (uint8_t b);
-extern void put_short (uint16_t x);
-extern void put_word (uint32_t x);
-extern void put_int (uint32_t x);
-extern void put_string (const char *s);
-extern void put_binary (const char *s, int len);
-
-extern void _write (const char *, int);
-
-
-/*
  * Application layer <-> CCID layer data structure
  */
 struct apdu {
@@ -49,9 +21,9 @@ extern struct apdu apdu;
 #define EV_EXEC_FINISHED ((eventmask_t)2)	 /* GPG Execution finished */
 
 /* GPG thread */
-#define EV_PINPAD_INPUT_DONE ((eventmask_t)1)
-#define EV_NOP ((eventmask_t)2)
-#define EV_CMD_AVAILABLE ((eventmask_t)4)
+#define EV_PINPAD_INPUT_DONE    ((eventmask_t)1)
+#define EV_EXIT                 ((eventmask_t)2)
+#define EV_CMD_AVAILABLE        ((eventmask_t)4)
 #define EV_VERIFY_CMD_AVAILABLE ((eventmask_t)8)
 #define EV_MODIFY_CMD_AVAILABLE ((eventmask_t)16)
 
@@ -222,6 +194,18 @@ extern int gpg_change_keystring (int who_old, const uint8_t *old_ks,
 extern struct key_data kd[3];
 
 #ifdef DEBUG
+#define DEBUG_MORE 1
+/*
+ * Debug functions in debug.c
+ */
+extern void put_byte (uint8_t b);
+extern void put_byte_with_no_nl (uint8_t b);
+extern void put_short (uint16_t x);
+extern void put_word (uint32_t x);
+extern void put_int (uint32_t x);
+extern void put_string (const char *s);
+extern void put_binary (const char *s, int len);
+
 #define DEBUG_INFO(msg)	    put_string (msg)
 #define DEBUG_WORD(w)	    put_word (w)
 #define DEBUG_SHORT(h)	    put_short (h)
@@ -396,4 +380,4 @@ extern int pinpad_getline (int msg_code, systime_t timeout);
 
 #endif
 
-extern uint8_t _regnual_start, __heap_end__;
+extern uint8_t _regnual_start, __heap_end__[];

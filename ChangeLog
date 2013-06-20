@@ -1,3 +1,9 @@
+2013-06-20  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/sys.c, src/sys.h, src/neug.c, rc/usb_stm32f103.c: Update
+	from NeuG 0.10.
+	* src/stm32f103.h: New.  From NeuG 0.10.
+
 2013-06-18  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/openpgp-do.c (gpg_do_write_prvkey, proc_key_import, gpg_do_table)

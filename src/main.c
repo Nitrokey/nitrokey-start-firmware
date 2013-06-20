@@ -21,141 +21,83 @@
  *
  */
 
+#include <stdint.h>
+#include <string.h>
+#include <chopstx.h>
+#include <eventflag.h>
+
 #include "config.h"
-#include "ch.h"
-#include "hal.h"
+
 #include "sys.h"
 #include "adc.h"
 #include "gnuk.h"
 #include "usb_lld.h"
 #include "usb-cdc.h"
 #include "random.h"
+#include "stm32f103.h"
 
 #ifdef DEBUG
-struct stdout {
-  Mutex m;
-  CondVar start_cnd;
-  CondVar finish_cnd;
-  const char *str;
-  int size;
-};
+#include "debug.h"
 
-static struct stdout stdout;
+struct stdout stdout;
 
 static void
 stdout_init (void)
 {
-  chMtxInit (&stdout.m);
-  chCondInit (&stdout.start_cnd);
-  chCondInit (&stdout.finish_cnd);
-  stdout.size = 0;
-  stdout.str = NULL;
+  chopstx_mutex_init (&stdout.m);
+  chopstx_mutex_init (&stdout.m_dev);
+  chopstx_cond_init (&stdout.cond_dev);
+  stdout.connected = 0;
 }
 
 void
-_write (const char *s, int size)
+_write (const char *s, int len)
 {
-  if (size == 0)
+  int packet_len;
+
+  if (len == 0)
     return;
 
-  chMtxLock (&stdout.m);
-  while (stdout.str)
-    chCondWait (&stdout.finish_cnd);
-  stdout.str = s;
-  stdout.size = size;
-  chCondSignal (&stdout.start_cnd);
-  chCondWait (&stdout.finish_cnd);
-  chMtxUnlock ();
-}
+  chopstx_mutex_lock (&stdout.m);
 
-Thread *stdout_thread;
-uint32_t count_in;
-uint8_t buffer_in[VIRTUAL_COM_PORT_DATA_SIZE];
+  chopstx_mutex_lock (&stdout.m_dev);
+  if (!stdout.connected)
+    chopstx_cond_wait (&stdout.cond_dev, &stdout.m_dev);
+  chopstx_mutex_unlock (&stdout.m_dev);
 
-static WORKING_AREA(waSTDOUTthread, 128);
-
-static msg_t
-STDOUTthread (void *arg)
-{
-  (void)arg;
-  stdout_thread = chThdSelf ();
-
- again:
-
-  while (1)
+  do
     {
-      if (bDeviceState == CONFIGURED)
-	break;
+      packet_len =
+	(len < VIRTUAL_COM_PORT_DATA_SIZE) ? len : VIRTUAL_COM_PORT_DATA_SIZE;
 
-      chThdSleepMilliseconds (100);
+      chopstx_mutex_lock (&stdout.m_dev);     
+      usb_lld_write (ENDP3, s, packet_len);
+      chopstx_cond_wait (&stdout.cond_dev, &stdout.m_dev);
+      chopstx_mutex_unlock (&stdout.m_dev);
+
+      s += packet_len;
+      len -= packet_len;
     }
+  /* Send a Zero-Length-Packet if the last packet is full size.  */
+  while (len != 0 || packet_len == VIRTUAL_COM_PORT_DATA_SIZE);
 
-  while (1)
-    {
-      const char *p;
-      int len;
-
-      if (bDeviceState != CONFIGURED)
-	break;
-
-      chMtxLock (&stdout.m);
-      if (stdout.str == NULL)
-	chCondWait (&stdout.start_cnd);
-
-      p = stdout.str;
-      len = stdout.size;
-      while (1)
-	{
-	  int i;
-
-	  if (len == 0)
-	    if (count_in != VIRTUAL_COM_PORT_DATA_SIZE)
-	      break;
-
-	  if (len < VIRTUAL_COM_PORT_DATA_SIZE)
-	    {
-	      for (i = 0; i < len; i++)
-		buffer_in[i] = p[i];
-	      count_in = len;
-	      len = 0;
-	    }
-	  else
-	    {
-	      for (i = 0; i < VIRTUAL_COM_PORT_DATA_SIZE; i++)
-		buffer_in[i] = p[i];
-	      len -= VIRTUAL_COM_PORT_DATA_SIZE;
-	      count_in = VIRTUAL_COM_PORT_DATA_SIZE;
-	      p += count_in;
-	    }
-
-	  chEvtClear (EV_TX_READY);
-
-	  usb_lld_write (ENDP3, buffer_in, count_in);
-
-	  chEvtWaitOne (EV_TX_READY);
-	}
-
-      stdout.str = NULL;
-      stdout.size = 0;
-      chCondBroadcast (&stdout.finish_cnd);
-      chMtxUnlock ();
-    }
-
-  goto again;
-  return 0;
+  chopstx_mutex_unlock (&stdout.m);
 }
 
 void
 EP3_IN_Callback (void)
 {
-  if (stdout_thread)
-    chEvtSignalFlagsI (stdout_thread, EV_TX_READY);
+  chopstx_mutex_lock (&stdout.m_dev);
+  chopstx_cond_signal (&stdout.cond_dev);
+  chopstx_mutex_unlock (&stdout.m_dev);
 }
 
 void
 EP5_OUT_Callback (void)
 {
+  chopstx_mutex_lock (&stdout.m_dev);
   usb_lld_rx_enable (ENDP5);
+  chopstx_mutex_unlock (&stdout.m_dev);
 }
 #else
 void
@@ -166,18 +108,17 @@ _write (const char *s, int size)
 }
 #endif
 
-static WORKING_AREA(waUSBthread, 128);
-extern msg_t USBthread (void *arg);
+extern void *USBthread (void *arg);
 
 /*
  * main thread does 1-bit LED display output
  */
-#define MAIN_TIMEOUT_INTERVAL	MS2ST(5000)
+#define MAIN_TIMEOUT_INTERVAL	(5000*1000)
 
-#define LED_TIMEOUT_INTERVAL	MS2ST(75)
-#define LED_TIMEOUT_ZERO	MS2ST(25)
-#define LED_TIMEOUT_ONE		MS2ST(100)
-#define LED_TIMEOUT_STOP	MS2ST(200)
+#define LED_TIMEOUT_INTERVAL	(75*1000)
+#define LED_TIMEOUT_ZERO	(25*1000)
+#define LED_TIMEOUT_ONE		(100*1000)
+#define LED_TIMEOUT_STOP	(200*1000)
 
 
 /* It has two-byte prefix and content is "FSIJ-1.0.1-" (2 + 11*2).  */
@@ -211,44 +152,44 @@ device_initialize_once (void)
     }
 }
 
-static volatile uint8_t fatal_code;
 
-static Thread *main_thread;
+static volatile uint8_t fatal_code;
+static struct eventflag led_event;
 
 static void display_fatal_code (void)
 {
   while (1)
     {
       set_led (1);
-      chThdSleep (LED_TIMEOUT_ZERO);
+      chopstx_usec_wait (LED_TIMEOUT_ZERO);
       set_led (0);
-      chThdSleep (LED_TIMEOUT_INTERVAL);
+      chopstx_usec_wait (LED_TIMEOUT_INTERVAL);
       set_led (1);
-      chThdSleep (LED_TIMEOUT_ZERO);
+      chopstx_usec_wait (LED_TIMEOUT_ZERO);
       set_led (0);
-      chThdSleep (LED_TIMEOUT_INTERVAL);
+      chopstx_usec_wait (LED_TIMEOUT_INTERVAL);
       set_led (1);
-      chThdSleep (LED_TIMEOUT_ZERO);
+      chopstx_usec_wait (LED_TIMEOUT_ZERO);
       set_led (0);
-      chThdSleep (LED_TIMEOUT_STOP);
+      chopstx_usec_wait (LED_TIMEOUT_STOP);
       set_led (1);
       if (fatal_code & 1)
-	chThdSleep (LED_TIMEOUT_ONE);
+	chopstx_usec_wait (LED_TIMEOUT_ONE);
       else
-	chThdSleep (LED_TIMEOUT_ZERO);
+	chopstx_usec_wait (LED_TIMEOUT_ZERO);
       set_led (0);
-      chThdSleep (LED_TIMEOUT_INTERVAL);
+      chopstx_usec_wait (LED_TIMEOUT_INTERVAL);
       set_led (1);
       if (fatal_code & 2)
-	chThdSleep (LED_TIMEOUT_ONE);
+	chopstx_usec_wait (LED_TIMEOUT_ONE);
       else
-	chThdSleep (LED_TIMEOUT_ZERO);
+	chopstx_usec_wait (LED_TIMEOUT_ZERO);
       set_led (0);
-      chThdSleep (LED_TIMEOUT_INTERVAL);
+      chopstx_usec_wait (LED_TIMEOUT_INTERVAL);
       set_led (1);
-      chThdSleep (LED_TIMEOUT_STOP);
+      chopstx_usec_wait (LED_TIMEOUT_STOP);
       set_led (0);
-      chThdSleep (LED_TIMEOUT_INTERVAL*10);
+      chopstx_usec_wait (LED_TIMEOUT_INTERVAL*10);
     }
 }
 
@@ -259,10 +200,10 @@ static eventmask_t emit_led (int on_time, int off_time)
   eventmask_t m;
 
   set_led (!led_inverted);
-  m = chEvtWaitOneTimeout (ALL_EVENTS, on_time);
+  m = eventflag_wait_timeout (&led_event, on_time);
   set_led (led_inverted);
   if (m) return m;
-  if ((m = chEvtWaitOneTimeout (ALL_EVENTS, off_time)))
+  if ((m = eventflag_wait_timeout (&led_event, off_time)))
     return m;
   return 0;
 }
@@ -297,12 +238,12 @@ static eventmask_t display_status_code (void)
 
       if (icc_state == ICC_STATE_WAIT)
 	{
-	  if ((m = chEvtWaitOneTimeout (ALL_EVENTS, LED_TIMEOUT_STOP * 2)))
+	  if ((m = eventflag_wait_timeout (&led_event, LED_TIMEOUT_STOP * 2)))
 	    return m;
 	}
       else
 	{
-	  if ((m = chEvtWaitOneTimeout (ALL_EVENTS, LED_TIMEOUT_INTERVAL)))
+	  if ((m = eventflag_wait_timeout (&led_event, LED_TIMEOUT_INTERVAL)))
 	    return m;
 
 	  if ((m = emit_led (icc_state == ICC_STATE_RECEIVE?
@@ -318,7 +259,7 @@ static eventmask_t display_status_code (void)
 void
 led_blink (int spec)
 {
-  chEvtSignalFlags (main_thread, spec);
+  eventflag_signal (&led_event, spec);
 }
 
 /*
@@ -338,6 +279,22 @@ calculate_regnual_entry_address (const uint8_t *addr)
   return v;
 }
 
+extern uint8_t __process1_stack_base__, __process1_stack_size__;
+extern uint8_t __process5_stack_base__, __process5_stack_size__;
+
+const uint32_t __stackaddr_ccid = (uint32_t)&__process1_stack_base__;
+const size_t __stacksize_ccid = (size_t)&__process1_stack_size__;
+
+const uint32_t __stackaddr_usb = (uint32_t)&__process5_stack_base__;
+const size_t __stacksize_usb = (size_t)&__process5_stack_size__;
+
+#define PRIO_CCID 2
+#define PRIO_USB 4
+
+extern void *usb_intr (void *arg);
+
+static void gnuk_malloc_init (void);
+
 
 /*
  * Entry point.
@@ -350,47 +307,44 @@ main (int argc, char *argv[])
 {
   unsigned int count = 0;
   uint32_t entry;
+  chopstx_t usb_thd;
+  chopstx_t ccid_thd;
 
   (void)argc;
   (void)argv;
 
+  gnuk_malloc_init ();
+
   flash_unlock ();
   device_initialize_once ();
 
-  halInit ();
   adc_init ();
-  chSysInit ();
 
-  main_thread = chThdSelf ();
+  eventflag_init (&led_event, chopstx_main);
 
-  usb_lld_init (usb_initial_feature);
   random_init ();
+
+#ifdef DEBUG
+  stdout_init ();
+#endif
+
+  ccid_thd = chopstx_create (PRIO_CCID, __stackaddr_ccid,
+			     __stacksize_ccid, USBthread, NULL);
+
+  usb_thd = chopstx_create (PRIO_USB, __stackaddr_usb, __stacksize_usb,
+			    usb_intr, NULL);
+
+#ifdef PINPAD_DND_SUPPORT
+  msc_init ();
+#endif
 
   while (1)
     {
       if (bDeviceState != UNCONNECTED)
 	break;
 
-      chThdSleepMilliseconds (250);
+      chopstx_usec_wait (250*1000);
     }
-
-#ifdef DEBUG
-  stdout_init ();
-
-  /*
-   * Creates 'stdout' thread.
-   */
-  chThdCreateStatic (waSTDOUTthread, sizeof(waSTDOUTthread),
-		     NORMALPRIO, STDOUTthread, NULL);
-#endif
-
-  chThdCreateStatic (waUSBthread, sizeof(waUSBthread),
-		     NORMALPRIO, USBthread, NULL);
-
-#ifdef PINPAD_DND_SUPPORT
-  msc_init ();
-#endif
-
 
   while (1)
     {
@@ -399,17 +353,17 @@ main (int argc, char *argv[])
       if (icc_state_p != NULL && *icc_state_p == ICC_STATE_EXEC_REQUESTED)
 	break;
 
-      m = chEvtWaitOneTimeout (ALL_EVENTS, MAIN_TIMEOUT_INTERVAL);
+      m = eventflag_wait_timeout (&led_event, MAIN_TIMEOUT_INTERVAL);
     got_it:
       count++;
       switch (m)
 	{
 	case LED_ONESHOT:
-	  if ((m = emit_led (MS2ST (100), MAIN_TIMEOUT_INTERVAL))) goto got_it;
+	  if ((m = emit_led (100*1000, MAIN_TIMEOUT_INTERVAL))) goto got_it;
 	  break;
 	case LED_TWOSHOTS:
-	  if ((m = emit_led (MS2ST (50), MS2ST (50)))) goto got_it;
-	  if ((m = emit_led (MS2ST (50), MAIN_TIMEOUT_INTERVAL))) goto got_it;
+	  if ((m = emit_led (50*1000, 50*1000))) goto got_it;
+	  if ((m = emit_led (50*1000, MAIN_TIMEOUT_INTERVAL))) goto got_it;
 	  break;
 	case LED_SHOW_STATUS:
 	  if ((count & 0x07) != 0) continue; /* Display once for eight times */
@@ -420,7 +374,7 @@ main (int argc, char *argv[])
 	  led_inverted = 1;
 	  break;
 	case LED_FINISH_COMMAND:
-	  m = chEvtWaitOneTimeout (ALL_EVENTS, LED_TIMEOUT_STOP);
+	  m = eventflag_wait_timeout (&led_event, LED_TIMEOUT_STOP);
 	  led_inverted = 0;
 	  set_led (0);
 	  if (m)
@@ -436,12 +390,12 @@ main (int argc, char *argv[])
 	}
 
 #ifdef DEBUG_MORE
-      if (bDeviceState == CONFIGURED && (count % 10) == 0)
+      if (stdout.connected && (count % 10) == 0)
 	{
 	  DEBUG_SHORT (count / 10);
-	  _write ("\r\nThis is ChibiOS 2.0.8 on STM32.\r\n"
+	  _write ("\r\nThis is Gnuk on STM32F103.\r\n"
 		  "Testing USB driver.\n\n"
-		  "Hello world\r\n\r\n", 35+21+15);
+		  "Hello world\r\n\r\n", 30+21+15);
 	}
 #endif
     }
@@ -450,10 +404,13 @@ main (int argc, char *argv[])
 
   set_led (1);
   usb_lld_shutdown ();
-  /* Disable SysTick */
-  SysTick->CTRL = 0;
-  /* Disable all interrupts */
-  port_disable ();
+
+  /* Finish application.  */
+  chopstx_join (ccid_thd, NULL);
+
+  chopstx_cancel (usb_thd);
+  chopstx_join (usb_thd, NULL);
+
   /* Set vector */
   SCB->VTOR = (uint32_t)&_regnual_start;
   entry = calculate_regnual_entry_address (&_regnual_start);
@@ -491,7 +448,115 @@ void
 fatal (uint8_t code)
 {
   fatal_code = code;
-  chEvtSignalFlags (main_thread, LED_FATAL);
+  eventflag_signal (&led_event, LED_FATAL);
   _write ("fatal\r\n", 7);
   for (;;);
+}
+
+
+extern uint8_t __heap_base__[];
+extern uint8_t __heap_end__[];
+
+#define MEMORY_END (__heap_end__)
+#define ALIGN_TO_WORD(n) ((n + 3) & ~3)
+
+static uint8_t *heap_p;
+static chopstx_mutex_t malloc_mtx;
+
+/*
+ * Assume the size of heap is less than 64KiB - 1.
+ */
+struct mem_head {
+  uint16_t next_mem_offset;	/* pointer to next.  */
+  uint16_t size;
+} __attribute__((packed));
+
+static uint16_t free_mem_offset;
+#define FREE_MEM_NONE (0xffff)
+
+static void
+gnuk_malloc_init (void)
+{
+  chopstx_mutex_init (&malloc_mtx);
+  heap_p = __heap_base__;
+  free_mem_offset = FREE_MEM_NONE;
+}
+
+static
+void *sbrk (size_t size)
+{
+  void *p = (void *)heap_p;
+
+  if ((size_t)(__heap_end__ - heap_p) < size)
+    return NULL;
+
+  heap_p += size;
+  return p;
+}
+
+void *
+gnuk_malloc (size_t size)
+{
+  struct mem_head *m;
+  uint16_t mem_offset;
+  uint16_t *mem_offset_prev;
+
+  size = ALIGN_TO_WORD (size);
+
+  chopstx_mutex_lock (&malloc_mtx);
+  DEBUG_INFO ("malloc: ");
+  DEBUG_SHORT (size);
+  mem_offset_prev = &free_mem_offset;
+  mem_offset = free_mem_offset;
+
+  while (1)
+    {
+      if (mem_offset == FREE_MEM_NONE)
+	{
+	  m = sbrk (size + sizeof (struct mem_head));
+	  if (m)
+	    {
+	      m->next_mem_offset = FREE_MEM_NONE;
+	      m->size = size;
+	    }
+	  break;
+	}
+
+      m = (struct mem_head *)(__heap_base__ + mem_offset);
+      if (m->size >= size)
+	{
+	  *mem_offset_prev = m->next_mem_offset;
+	  m->next_mem_offset = FREE_MEM_NONE;
+	  break;
+	}
+
+      mem_offset_prev = &m->next_mem_offset;
+      mem_offset = m->next_mem_offset;
+    }
+
+  chopstx_mutex_unlock (&malloc_mtx);
+  if (m == NULL)
+    {
+      DEBUG_WORD (0);
+      return m;
+    }
+  else
+    {
+      DEBUG_WORD ((uint32_t)(m+1));
+      return (void *)(m + 1);
+    }
+}
+
+void
+gnuk_free (void *p)
+{
+  struct mem_head *m = ((struct mem_head *)p) - 1;
+
+  chopstx_mutex_lock (&malloc_mtx);
+  DEBUG_INFO ("free: ");
+  DEBUG_SHORT (m->size);
+  DEBUG_WORD ((uint32_t)p);
+  m->next_mem_offset = free_mem_offset;
+  free_mem_offset = (uint16_t)((uint8_t *)m - __heap_base__);
+  chopstx_mutex_unlock (&malloc_mtx);
 }

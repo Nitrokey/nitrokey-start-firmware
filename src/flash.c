@@ -30,9 +30,12 @@
  *       page(s).
  */
 
+#include <stdint.h>
+#include <string.h>
+
 #include "config.h"
-#include "ch.h"
-#include "hal.h"
+
+#include "board.h"
 #include "sys.h"
 #include "gnuk.h"
 

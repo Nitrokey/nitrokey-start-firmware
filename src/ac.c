@@ -21,8 +21,11 @@
  *
  */
 
+#include <stdint.h>
+#include <string.h>
+
 #include "config.h"
-#include "ch.h"
+
 #include "gnuk.h"
 #include "sha256.h"
 #include "random.h"

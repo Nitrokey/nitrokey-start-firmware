@@ -24,12 +24,20 @@
 /* Packet size of USB Bulk transfer for full speed */
 #define GNUK_MAX_PACKET_SIZE 64
 
+#include <stdint.h>
+#include <string.h>
+#include <chopstx.h>
+
 #include "config.h"
-#include "ch.h"
-#include "hal.h"
+
+#ifdef DEBUG
+#include "debug.h"
+#endif
+
 #include "usb_lld.h"
 #include "usb_conf.h"
 #include "gnuk.h"
+#include "stm32f103.h"
 
 #ifdef ENABLE_VIRTUAL_COM_PORT
 #include "usb-cdc.h"
@@ -50,7 +58,7 @@ static struct line_coding line_coding = {
 };
 
 static int
-vcom_port_data_setup (uint8_t req, uint8_t req_no)
+vcom_port_data_setup (uint8_t req, uint8_t req_no, uint16_t value)
 {
   if (USB_SETUP_GET (req))
     {
@@ -68,8 +76,29 @@ vcom_port_data_setup (uint8_t req, uint8_t req_no)
 	  return USB_SUCCESS;
 	}
       else if (req_no == USB_CDC_REQ_SET_CONTROL_LINE_STATE)
-	/* Do nothing and success  */
-	return USB_SUCCESS;
+	{
+	  uint8_t connected_saved = stdout.connected;
+
+	  if (value != 0)
+	    {
+	      if (stdout.connected == 0)
+		/* It's Open call */
+		stdout.connected++;
+	    }
+	  else
+	    {
+	      if (stdout.connected)
+		/* Close call */
+		stdout.connected = 0;
+	    }
+
+	  chopstx_mutex_lock (&stdout.m_dev);
+	  if (stdout.connected != connected_saved)
+	    chopstx_cond_signal (&stdout.cond_dev);
+	  chopstx_mutex_unlock (&stdout.m_dev);
+
+	  return USB_SUCCESS;
+	}
     }
 
   return USB_UNSUPPORT;
@@ -182,7 +211,7 @@ static const uint8_t data_rate_table[] = { 0x80, 0x25, 0, 0, }; /* dwDataRate */
 static const uint8_t lun_table[] = { 0, 0, 0, 0, };
 #endif
 
-static const uint8_t *const mem_info[] = { &_regnual_start,  &__heap_end__, };
+static const uint8_t *const mem_info[] = { &_regnual_start,  __heap_end__, };
 
 #define USB_FSIJ_GNUK_MEMINFO  0
 #define USB_FSIJ_GNUK_DOWNLOAD 1
@@ -239,7 +268,7 @@ usb_cb_setup (uint8_t req, uint8_t req_no,
 	      if (icc_state_p == NULL || *icc_state_p != ICC_STATE_EXITED)
 		return USB_UNSUPPORT;
 
-	      if (addr < &_regnual_start || addr + len > &__heap_end__)
+	      if (addr < &_regnual_start || addr + len > __heap_end__)
 		return USB_UNSUPPORT;
 
 	      if (index + len < 256)
@@ -261,51 +290,53 @@ usb_cb_setup (uint8_t req, uint8_t req_no,
 	}
     }
   else if (type_rcp == (CLASS_REQUEST | INTERFACE_RECIPIENT))
-    if (index == 0)
-      {
-	if (USB_SETUP_GET (req))
-	  {
-	    if (req_no == USB_CCID_REQ_GET_CLOCK_FREQUENCIES)
-	      {
-		usb_lld_set_data_to_send (freq_table, sizeof (freq_table));
-		return USB_SUCCESS;
-	      }
-	    else if (req_no == USB_CCID_REQ_GET_DATA_RATES)
-	      {
-		usb_lld_set_data_to_send (data_rate_table,
-					  sizeof (data_rate_table));
-		return USB_SUCCESS;
-	      }
-	  }
-	else
-	  {
-	    if (req_no == USB_CCID_REQ_ABORT)
-	      /* wValue: bSeq, bSlot */
-	      /* Abortion is not supported in Gnuk */
-	      return USB_UNSUPPORT;
-	  }
-      }
+    {
+      if (index == 0)
+	{
+	  if (USB_SETUP_GET (req))
+	    {
+	      if (req_no == USB_CCID_REQ_GET_CLOCK_FREQUENCIES)
+		{
+		  usb_lld_set_data_to_send (freq_table, sizeof (freq_table));
+		  return USB_SUCCESS;
+		}
+	      else if (req_no == USB_CCID_REQ_GET_DATA_RATES)
+		{
+		  usb_lld_set_data_to_send (data_rate_table,
+					    sizeof (data_rate_table));
+		  return USB_SUCCESS;
+		}
+	    }
+	  else
+	    {
+	      if (req_no == USB_CCID_REQ_ABORT)
+		/* wValue: bSeq, bSlot */
+		/* Abortion is not supported in Gnuk */
+		return USB_UNSUPPORT;
+	    }
+	}
 #ifdef ENABLE_VIRTUAL_COM_PORT
-    else if (index == 1)
-      return vcom_port_data_setup (req, req_no);
+      else if (index == 1)
+	return vcom_port_data_setup (req, req_no, value);
 #endif
 #ifdef PINPAD_DND_SUPPORT
-    else if (index == MSC_INTERFACE_NO)
-      {
-	if (USB_SETUP_GET (req))
-	  {
-	    if (req_no == MSC_GET_MAX_LUN_COMMAND)
-	      {
-		usb_lld_set_data_to_send (lun_table, sizeof (lun_table));
-		return USB_SUCCESS;
-	      }
-	  }
-	else
-	  if (req_no == MSC_MASS_STORAGE_RESET_COMMAND)
-	    /* Should call resetting MSC thread, something like msc_reset() */
-	    return USB_SUCCESS;
-      }
+      else if (index == MSC_INTERFACE_NO)
+	{
+	  if (USB_SETUP_GET (req))
+	    {
+	      if (req_no == MSC_GET_MAX_LUN_COMMAND)
+		{
+		  usb_lld_set_data_to_send (lun_table, sizeof (lun_table));
+		  return USB_SUCCESS;
+		}
+	    }
+	  else
+	    if (req_no == MSC_MASS_STORAGE_RESET_COMMAND)
+	      /* Should call resetting MSC thread, something like msc_reset() */
+	      return USB_SUCCESS;
+	}
 #endif
+    }
 
   return USB_UNSUPPORT;
 }
@@ -398,13 +429,25 @@ int usb_cb_interface (uint8_t cmd, uint16_t interface, uint16_t alt)
 }
 
 
-CH_IRQ_HANDLER (Vector90)
-{
-  CH_IRQ_PROLOGUE();
-  chSysLockFromIsr();
+#define INTR_REQ_USB 20
 
+void *
+usb_intr (void *arg)
+{
+  chopstx_intr_t interrupt;
+
+  (void)arg;
+  usb_lld_init (usb_initial_feature);
+  chopstx_claim_irq (&interrupt, INTR_REQ_USB);
   usb_interrupt_handler ();
 
-  chSysUnlockFromIsr();
-  CH_IRQ_EPILOGUE();
+  while (1)
+    {
+      chopstx_intr_wait (&interrupt);
+
+      /* Process interrupt. */
+      usb_interrupt_handler ();
+    }
+
+  return NULL;
 }

@@ -22,10 +22,12 @@
  *
  */
 
+#include <stdint.h>
+#include <string.h>
 #include <stdlib.h>
 
 #include "config.h"
-#include "ch.h"
+
 #include "sys.h"
 #include "gnuk.h"
 #include "openpgp.h"

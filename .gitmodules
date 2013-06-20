@@ -1,3 +1,6 @@
 [submodule "chibios"]
 	path = chibios
 	url = git@gitorious.org:gnuk/chibios.git
+[submodule "chopstx"]
+	path = chopstx
+	url = git@gitorious.org:chopstx/chopstx.git

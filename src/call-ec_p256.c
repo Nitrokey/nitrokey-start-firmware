@@ -28,7 +28,8 @@
 #include "jpc-ac.h"
 #include "ec_p256.h"
 
-#include "ch.h"
+#include "config.h"
+
 #include "gnuk.h"
 
 /* We are little endian.  */

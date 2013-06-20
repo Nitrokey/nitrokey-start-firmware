@@ -1,34 +1,14 @@
 /*
-    ChibiOS/RT - Copyright (C) 2006,2007,2008,2009,2010 Giovanni Di Sirio.
-
-    This file is part of ChibiOS/RT.
-
-    ChibiOS/RT is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 3 of the License, or
-    (at your option) any later version.
-
-    ChibiOS/RT is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program. If not, see <http://www.gnu.org/licenses/>.
-
-                                      ---
-
-    A special exception to the GPL can be applied should you wish to distribute
-    a combined work that includes ChibiOS/RT, without being obliged to provide
-    the source code for any proprietary components. See the file exception.txt
-    for full details of how and when the exception can be applied.
-*/
-
-/*
  * ST32F103 memory setup.
  */
-__main_stack_size__     = 0x0400;
-__process_stack_size__  = 0x0400;
+__main_stack_size__      = 0x0100;      /* Exception handlers     */
+__process0_stack_size__  = 0x0100;      /* main */
+__process1_stack_size__  = 0x0140;      /* ccid */
+__process2_stack_size__  = 0x0180;      /* rng */
+__process3_stack_size__  = 0x0b00;      /* gpg */
+__process4_stack_size__  = 0x0100;      /* intr: adc dma */
+__process5_stack_size__  = 0x0100;      /* intr: usb */
+__process6_stack_size__  = @MSC_SIZE@;      /* msc */
 
 MEMORY
 {
@@ -39,7 +19,7 @@ MEMORY
 
 /* __flash_start__: flash ROM start address regardless of DFU_SUPPORT */
 __flash_start__         = 0x08001000;
-__flash_end__		= ORIGIN(flash) + LENGTH(flash);
+__flash_end__           = ORIGIN(flash) + LENGTH(flash);
 
 __ram_start__           = ORIGIN(ram);
 __ram_size__            = LENGTH(ram);
@@ -49,45 +29,29 @@ SECTIONS
 {
     . = 0;
 
-    .sys : ALIGN(16) SUBALIGN(16)
+    .sys : ALIGN(4) SUBALIGN(4)
     {
         _sys = .;
         KEEP(*(.vectors))
-	. = ALIGN(16);
-	*(.sys.version)
-	*/sys.o(.text)
-	*/sys.o(.text.*)
-        */sys.o(.rodata)
-	*/sys.o(.rodata.*)
-	. = ALIGN(1024);
-	*(.sys.0)
-	*(.sys.1)
-	*(.sys.2)
+        . = ALIGN(16);
+        *(.sys.version)
+        build/sys.o(.text)
+        build/sys.o(.text.*)
+        build/sys.o(.rodata)
+        build/sys.o(.rodata.*)
+        . = ALIGN(1024);
+        *(.sys.0)
+        *(.sys.1)
+        *(.sys.2)
     } > flash0
 
     _text = .;
 
-    startup : ALIGN(16) SUBALIGN(16)
+    .startup : ALIGN(128) SUBALIGN(128)
     {
-        KEEP(*(vectors))
+        KEEP(*(.startup.vectors))
         . = ALIGN (16);
     } > flash =0xffffffff
-
-    constructors : ALIGN(4) SUBALIGN(4)
-    {
-        PROVIDE(__init_array_start = .);
-        KEEP(*(SORT(.init_array.*)))
-        KEEP(*(.init_array))
-        PROVIDE(__init_array_end = .);
-    } > flash
-
-    destructors : ALIGN(4) SUBALIGN(4)
-    {
-        PROVIDE(__fini_array_start = .);
-        KEEP(*(.fini_array))
-        KEEP(*(SORT(.fini_array.*)))
-        PROVIDE(__fini_array_end = .);
-    } > flash
 
     .text : ALIGN(16) SUBALIGN(16)
     {
@@ -121,16 +85,39 @@ SECTIONS
     .stacks :
     {
         . = ALIGN(8);
+        __process6_stack_base__ = .;
+        . += __process6_stack_size__;
+        . = ALIGN(8);
+        __process6_stack_end__ = .;
+        __process5_stack_base__ = .;
+        . += __process5_stack_size__;
+        . = ALIGN(8);
+        __process5_stack_end__ = .;
+        __process4_stack_base__ = .;
+        . += __process4_stack_size__;
+        . = ALIGN(8);
+        __process4_stack_end__ = .;
+        __process3_stack_base__ = .;
+        . += __process3_stack_size__;
+        . = ALIGN(8);
+        __process3_stack_end__ = .;
+        __process2_stack_base__ = .;
+        . += __process2_stack_size__;
+        . = ALIGN(8);
+        __process2_stack_end__ = .;
+        __process1_stack_base__ = .;
+        . += __process1_stack_size__;
+        . = ALIGN(8);
+        __process1_stack_end__ = .;
+        __process0_stack_base__ = .;
+        . += __process0_stack_size__;
+        . = ALIGN(8);
+        __process0_stack_end__ = .;
+        . = ALIGN(8);
         __main_stack_base__ = .;
         . += __main_stack_size__;
         . = ALIGN(8);
         __main_stack_end__ = .;
-        __process_stack_base__ = .;
-        __main_thread_stack_base__ = .;
-        . += __process_stack_size__;
-        . = ALIGN(8);
-        __process_stack_end__ = .;
-        __main_thread_stack_end__ = .;
     } > ram
 
     .data :
@@ -170,8 +157,8 @@ SECTIONS
     {
         . = ALIGN (@FLASH_PAGE_SIZE@);
         ch_certificate_start = .;
-	LONG(0xffffffff);
-	. += 1920;
+        LONG(0xffffffff);
+        . += 1920;
         . = ALIGN (@FLASH_PAGE_SIZE@);
     } > flash =0xffffffff
 @CERTDO_SUPPORT_END@
@@ -179,16 +166,16 @@ SECTIONS
     .gnuk_flash :
     {
         . = ALIGN (@FLASH_PAGE_SIZE@);
-	_data_pool = .;
-	KEEP(*(.gnuk_data))
-	. = ALIGN(@FLASH_PAGE_SIZE@);
-	. += @FLASH_PAGE_SIZE@;
-	_keystore_pool = .;
-	. += 512*3;
-	. = ALIGN(@FLASH_PAGE_SIZE@);
-	_updatekey_store = .;
-	. += 1024;
-	. = ALIGN(@FLASH_PAGE_SIZE@);
+        _data_pool = .;
+        KEEP(*(.gnuk_data))
+        . = ALIGN(@FLASH_PAGE_SIZE@);
+        . += @FLASH_PAGE_SIZE@;
+        _keystore_pool = .;
+        . += 512*3;
+        . = ALIGN(@FLASH_PAGE_SIZE@);
+        _updatekey_store = .;
+        . += 1024;
+        . = ALIGN(@FLASH_PAGE_SIZE@);
     } > flash =0xffffffff
 }
 

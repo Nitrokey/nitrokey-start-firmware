@@ -1,7 +1,7 @@
 /*
- * usb-icc.c -- USB CCID/ICCD protocol handling
+ * usb-icc.c -- USB CCID protocol handling
  *
- * Copyright (C) 2010, 2011, 2012 Free Software Initiative of Japan
+ * Copyright (C) 2010, 2011, 2012, 2013 Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
  * This file is a part of Gnuk, a GnuPG USB Token implementation.
@@ -21,14 +21,18 @@
  *
  */
 
+#include <stdint.h>
+#include <string.h>
+#include <chopstx.h>
+#include <eventflag.h>
+
 #include "config.h"
-#include "ch.h"
-#include "hal.h"
+
 #include "gnuk.h"
 #include "usb_lld.h"
 
 /*
- * USB buffer size of USB-ICC driver
+ * USB buffer size of USB-CCID driver
  */
 #if MAX_RES_APDU_DATA_SIZE > MAX_CMD_APDU_DATA_SIZE
 #define USB_BUF_SIZE (MAX_RES_APDU_DATA_SIZE+5)
@@ -189,14 +193,16 @@ struct ccid {
   uint8_t sw1sw2[2];
   uint8_t chained_cls_ins_p1_p2[4];
 
-  Thread *icc_thread;
-  Thread *application;
-
   /* lower layer */
   struct ep_out *epo;
   struct ep_in *epi;
 
+  /* from both layers */
+  struct eventflag ccid_comm;
+
   /* upper layer */
+  struct eventflag openpgp_comm;
+  chopstx_t application;
   struct apdu *a;
 };
 
@@ -242,7 +248,7 @@ static void ccid_reset (struct ccid *c)
 }
 
 static void ccid_init (struct ccid *c, struct ep_in *epi, struct ep_out *epo,
-		       struct apdu *a, Thread *t)
+		       struct apdu *a, chopstx_t thd)
 {
   icc_state_p = &c->icc_state;
 
@@ -257,8 +263,9 @@ static void ccid_init (struct ccid *c, struct ep_in *epi, struct ep_out *epo,
   memset (&c->icc_header, 0, sizeof (struct icc_header));
   c->sw1sw2[0] = 0x90;
   c->sw1sw2[1] = 0x00;
-  c->icc_thread = t;
-  c->application = NULL;
+  eventflag_init (&c->ccid_comm, thd);
+  c->application = 0;
+  eventflag_init (&c->openpgp_comm, 0);
   c->epi = epi;
   c->epo = epo;
   c->a = a;
@@ -310,7 +317,7 @@ static void notify_tx (struct ep_in *epi)
   struct ccid *c = (struct ccid *)epi->priv;
 
   /* The sequence of Bulk-IN transactions finished */
-  chEvtSignalFlagsI (c->icc_thread, EV_TX_FINISHED);
+  eventflag_signal (&c->ccid_comm, EV_TX_FINISHED);
 }
 
 static void no_buf (struct ep_in *epi, size_t len)
@@ -403,7 +410,7 @@ static void notify_icc (struct ep_out *epo)
   struct ccid *c = (struct ccid *)epo->priv;
 
   c->err = epo->err;
-  chEvtSignalFlagsI (c->icc_thread, EV_RX_DATA_READY);
+  eventflag_signal (&c->ccid_comm, EV_RX_DATA_READY);
 }
 
 static int end_icc_rx (struct ep_out *epo, size_t orig_len)
@@ -617,8 +624,6 @@ static void icc_abdata (struct ep_out *epo, size_t len)
 static void
 icc_prepare_receive (struct ccid *c)
 {
-  DEBUG_INFO ("Rx ready\r\n");
-
   c->epo->err = 0;
   c->epo->buf = (uint8_t *)&c->icc_header;
   c->epo->buf_len = sizeof (struct icc_header);
@@ -626,6 +631,7 @@ icc_prepare_receive (struct ccid *c)
   c->epo->next_buf = icc_abdata;
   c->epo->end_rx = end_icc_rx;
   usb_lld_rx_enable (c->epo->ep_num);
+  DEBUG_INFO ("Rx ready\r\n");
 }
 
 /*
@@ -736,8 +742,12 @@ static void icc_error (struct ccid *c, int offset)
   usb_lld_write (c->epi->ep_num, icc_reply, ICC_MSG_HEADER_SIZE);
 }
 
-static WORKING_AREA(waGPGthread, 128*16);
-extern msg_t GPGthread (void *arg);
+extern void *GPGthread (void *arg);
+
+extern uint8_t __process3_stack_base__, __process3_stack_size__;
+const uint32_t __stackaddr_gpg = (uint32_t)&__process3_stack_base__;
+const size_t __stacksize_gpg = (size_t)&__process3_stack_size__;
+#define PRIO_GPG 1
 
 
 /* Send back ATR (Answer To Reset) */
@@ -747,10 +757,10 @@ icc_power_on (struct ccid *c)
   size_t size_atr = sizeof (ATR);
   uint8_t p[ICC_MSG_HEADER_SIZE];
 
-  if (c->application == NULL)
-    c->application = chThdCreateStatic (waGPGthread, sizeof(waGPGthread),
-					NORMALPRIO, GPGthread,
-					(void *)c->icc_thread);
+  if (c->application == 0)
+    c->application = chopstx_create (PRIO_GPG, __stackaddr_gpg,
+				     __stacksize_gpg,
+				     GPGthread, (void *)&c->ccid_comm);
 
   p[0] = ICC_DATA_BLOCK_RET;
   p[1] = size_atr;
@@ -812,10 +822,9 @@ icc_power_off (struct ccid *c)
 {
   if (c->application)
     {
-      chThdTerminate (c->application);
-      chEvtSignalFlags (c->application, EV_NOP);
-      chThdWait (c->application);
-      c->application = NULL;
+      eventflag_signal (&c->openpgp_comm, EV_EXIT);
+      chopstx_join (c->application, NULL);
+      c->application = 0;
     }
 
   c->icc_state = ICC_STATE_START; /* This status change should be here */
@@ -1138,7 +1147,7 @@ icc_handle_data (struct ccid *c)
 		      c->a->res_apdu_data_len = 0;
 		      c->a->res_apdu_data = &icc_buffer[5];
 
-		      chEvtSignalFlags (c->application, EV_CMD_AVAILABLE);
+		      eventflag_signal (&c->openpgp_comm, EV_CMD_AVAILABLE);
 		      next_state = ICC_STATE_EXECUTE;
 		    }
 		}
@@ -1197,7 +1206,7 @@ icc_handle_data (struct ccid *c)
 	      c->a->res_apdu_data_len = 0;
 	      c->a->res_apdu_data = &c->p[5];
 
-	      chEvtSignalFlags (c->application, EV_VERIFY_CMD_AVAILABLE);
+	      eventflag_signal (&c->openpgp_comm, EV_VERIFY_CMD_AVAILABLE);
 	      next_state = ICC_STATE_EXECUTE;
 	    }
 	  else if (c->p[10-10] == 0x01) /* PIN Modification */
@@ -1231,7 +1240,7 @@ icc_handle_data (struct ccid *c)
 	      c->a->res_apdu_data_len = 0;
 	      c->a->res_apdu_data = &icc_buffer[5];
 
-	      chEvtSignalFlags (c->application, EV_MODIFY_CMD_AVAILABLE);
+	      eventflag_signal (&c->openpgp_comm, EV_MODIFY_CMD_AVAILABLE);
 	      next_state = ICC_STATE_EXECUTE;
 	    }
 	  else
@@ -1283,36 +1292,44 @@ icc_handle_timeout (struct ccid *c)
   return next_state;
 }
 
-#define USB_ICC_TIMEOUT MS2ST(1950)
+#define USB_ICC_TIMEOUT (1950*1000)
 
 
 static struct ccid ccid;
 
 #define GPG_THREAD_TERMINATED 0xffff
 
-msg_t
+static void *ccid_thread (chopstx_t) __attribute__ ((noinline));
+
+void * __attribute__ ((naked))
 USBthread (void *arg)
+{
+  chopstx_t thd;
+  (void)arg;
+
+  asm ("mov	%0, sp" : "=r" (thd));
+  return ccid_thread (thd);
+}
+
+static void *
+ccid_thread (chopstx_t thd)
 {
   struct ep_in *epi = &endpoint_in;
   struct ep_out *epo = &endpoint_out;
   struct ccid *c = &ccid;
   struct apdu *a = &apdu;
 
-  (void)arg;
-
   epi_init (epi, ENDP1, notify_tx, c);
   epo_init (epo, ENDP1, notify_icc, c);
-  ccid_init (c, epi, epo, a, chThdSelf ());
+  ccid_init (c, epi, epo, a, thd);
   apdu_init (a);
-
-  chEvtClearFlags (ALL_EVENTS);
 
   icc_prepare_receive (c);
   while (1)
     {
       eventmask_t m;
 
-      m = chEvtWaitOneTimeout (ALL_EVENTS, USB_ICC_TIMEOUT);
+      m = eventflag_wait_timeout (&c->ccid_comm, USB_ICC_TIMEOUT);
 
       if (m == EV_RX_DATA_READY)
 	c->icc_state = icc_handle_data (c);
@@ -1373,5 +1390,5 @@ USBthread (void *arg)
 	c->icc_state = icc_handle_timeout (c);
     }
 
-  return 0;
+  return NULL;
 }

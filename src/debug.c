@@ -21,9 +21,10 @@
  *
  */
 
-#include "config.h"
-#include "ch.h"
-#include "gnuk.h"
+#include <stdint.h>
+#include <string.h>
+
+extern void _write (const char *s, int len);
 
 static void
 put_hex (uint8_t nibble)

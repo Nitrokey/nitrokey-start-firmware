@@ -2,8 +2,11 @@
  * usb_desc.c - USB Descriptor
  */
 
+#include <stdint.h>
+#include <string.h>
+
 #include "config.h"
-#include "ch.h"
+
 #include "sys.h"
 #include "usb_lld.h"
 #include "usb_conf.h"

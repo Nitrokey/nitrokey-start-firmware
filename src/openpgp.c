@@ -22,14 +22,20 @@
  *
  */
 
+#include <stdint.h>
+#include <string.h>
+#include <chopstx.h>
+#include <eventflag.h>
+
 #include "config.h"
-#include "ch.h"
-#include "hal.h"
+
 #include "gnuk.h"
 #include "sys.h"
 #include "openpgp.h"
 #include "sha256.h"
 #include "random.h"
+
+static struct eventflag *openpgp_comm;
 
 #define ADMIN_PASSWD_MINLEN 8
 
@@ -1081,7 +1087,7 @@ cmd_external_authenticate (void)
       return;
     }
 
-  chThdTerminate (chThdSelf ());
+  eventflag_signal (openpgp_comm, EV_EXIT); /* signal to self.  */
   set_res_sw (0xff, 0xff);
   DEBUG_INFO ("EXTERNAL AUTHENTICATE done.\r\n");
 }
@@ -1161,18 +1167,17 @@ process_command_apdu (void)
     }
 }
 
-msg_t
+void *
 GPGthread (void *arg)
 {
-  Thread *icc_thread = (Thread *)arg;
+  struct eventflag *ccid_comm = (struct eventflag *)arg;
+  openpgp_comm = ccid_comm + 1;
 
   gpg_init ();
 
-  chEvtClearFlags (ALL_EVENTS);
-
-  while (!chThdShouldTerminate ())
+  while (1)
     {
-      eventmask_t m = chEvtWaitOne (ALL_EVENTS);
+      eventmask_t m = eventflag_wait (openpgp_comm);
 #if defined(PINPAD_SUPPORT)
       int len, pw_len, newpw_len;
 #endif
@@ -1259,16 +1264,16 @@ GPGthread (void *arg)
 	  goto done;
 #endif
 	}
-      else if (m == EV_NOP)
-	continue;
+      else if (m == EV_EXIT)
+	break;
 
       led_blink (LED_START_COMMAND);
       process_command_apdu ();
       led_blink (LED_FINISH_COMMAND);
     done:
-      chEvtSignalFlags (icc_thread, EV_EXEC_FINISHED);
+      eventflag_signal (ccid_comm, EV_EXEC_FINISHED);
     }
 
   gpg_fini ();
-  return 0;
+  return NULL;
 }

@@ -1,7 +1,7 @@
 /*
  * neug.c - random number generation (from NeuG/src/random.c)
  *
- * Copyright (C) 2011, 2012 Free Software Initiative of Japan
+ * Copyright (C) 2011, 2012, 2013 Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
  * This file is a part of NeuG, a True Random Number Generator
@@ -22,18 +22,20 @@
  *
  */
 
-#include <string.h>		/* for memcpy */
-#include "config.h"
+#include <stdint.h>
+#include <string.h>
+#include <chopstx.h>
 
-#include "ch.h"
-#include "hal.h"
 #include "sys.h"
 #include "neug.h"
+#include "stm32f103.h"
 #include "adc.h"
 #include "sha256.h"
 
-Thread *rng_thread;
-#define ADC_DATA_AVAILABLE ((eventmask_t)1)
+chopstx_mutex_t adc_mtx;
+chopstx_cond_t adc_cond;
+int adc_waiting;
+int adc_data_available;
 
 static uint32_t adc_buf[SHA256_BLOCK_SIZE/sizeof (uint32_t)];
 
@@ -95,7 +97,8 @@ static void ep_fill_initial_string (void)
 
 static void ep_init (int mode)
 {
-  chEvtClearFlags (ADC_DATA_AVAILABLE);
+  adc_data_available = 0;
+
   if (mode == NEUG_MODE_RAW)
     {
       ep_round = EP_ROUND_RAW;
@@ -356,9 +359,9 @@ static void noise_source_continuous_test (uint8_t noise)
  */
 struct rng_rb {
   uint32_t *buf;
-  Mutex m;
-  CondVar data_available;
-  CondVar space_available;
+  chopstx_mutex_t m;
+  chopstx_cond_t data_available;
+  chopstx_cond_t space_available;
   uint8_t head, tail;
   uint8_t size;
   unsigned int full :1;
@@ -369,9 +372,9 @@ static void rb_init (struct rng_rb *rb, uint32_t *p, uint8_t size)
 {
   rb->buf = p;
   rb->size = size;
-  chMtxInit (&rb->m);
-  chCondInit (&rb->data_available);
-  chCondInit (&rb->space_available);
+  chopstx_mutex_init (&rb->m);
+  chopstx_cond_init (&rb->data_available);
+  chopstx_cond_init (&rb->space_available);
   rb->head = rb->tail = 0;
   rb->full = 0;
   rb->empty = 1;
@@ -401,27 +404,41 @@ static uint32_t rb_del (struct rng_rb *rb)
 }
 
 uint8_t neug_mode;
+static int rng_should_terminate;
+static chopstx_t rng_thread;
+
 
 /**
  * @brief Random number generation thread.
  */
-static msg_t rng (void *arg)
+static void *
+rng (void *arg)
 {
   struct rng_rb *rb = (struct rng_rb *)arg;
 
-  rng_thread = chThdSelf ();
+  rng_should_terminate = 0;
+  chopstx_mutex_init (&adc_mtx);
+  chopstx_cond_init (&adc_cond);
 
   /* Enable ADCs */
   adc_start ();
 
   ep_init (NEUG_MODE_CONDITIONED);
 
-  while (!chThdShouldTerminate ())
+  while (!rng_should_terminate)
     {
       int n;
       int mode = neug_mode;
 
-      chEvtWaitOne (ADC_DATA_AVAILABLE); /* Get ADC sampling.  */
+      chopstx_mutex_lock (&adc_mtx);
+      if (!adc_data_available)
+	{
+	  adc_waiting = 1;
+	  chopstx_cond_wait (&adc_cond, &adc_mtx);
+	  adc_waiting = 0;
+	}
+      adc_data_available = 0;
+      chopstx_mutex_unlock (&adc_mtx);
 
       if ((n = ep_process (mode)))
 	{
@@ -438,9 +455,9 @@ static msg_t rng (void *arg)
 
 	  vp = ep_output (mode);
 
-	  chMtxLock (&rb->m);
+	  chopstx_mutex_lock (&rb->m);
 	  while (rb->full)
-	    chCondWait (&rb->space_available);
+	    chopstx_cond_wait (&rb->space_available, &rb->m);
 
 	  for (i = 0; i < n; i++)
 	    {
@@ -449,18 +466,22 @@ static msg_t rng (void *arg)
 		break;
 	    }
 
-	  chCondSignal (&rb->data_available);
-	  chMtxUnlock ();
+	  chopstx_cond_signal (&rb->data_available);
+	  chopstx_mutex_unlock (&rb->m);
 	}
     }
 
   adc_stop ();
 
-  return 0;
+  return NULL;
 }
 
 static struct rng_rb the_ring_buffer;
-static WORKING_AREA(wa_rng, 256);
+
+extern uint8_t __process2_stack_base__, __process2_stack_size__;
+const uint32_t __stackaddr_rng = (uint32_t)&__process2_stack_base__;
+const size_t __stacksize_rng = (size_t)&__process2_stack_size__;
+#define PRIO_RNG 2
 
 /**
  * @brief Initialize NeuG.
@@ -484,7 +505,9 @@ neug_init (uint32_t *buf, uint8_t size)
 
   neug_mode = NEUG_MODE_CONDITIONED;
   rb_init (rb, buf, size);
-  chThdCreateStatic (wa_rng, sizeof (wa_rng), NORMALPRIO, rng, rb);
+
+  rng_thread = chopstx_create (PRIO_RNG, __stackaddr_rng, __stacksize_rng,
+			       rng, rb);
 }
 
 /**
@@ -495,11 +518,11 @@ neug_flush (void)
 {
   struct rng_rb *rb = &the_ring_buffer;
 
-  chMtxLock (&rb->m);
+  chopstx_mutex_lock (&rb->m);
   while (!rb->empty)
     (void)rb_del (rb);
-  chCondSignal (&rb->space_available);
-  chMtxUnlock ();
+  chopstx_cond_signal (&rb->space_available);
+  chopstx_mutex_unlock (&rb->m);
 }
 
 
@@ -511,10 +534,10 @@ neug_kick_filling (void)
 {
   struct rng_rb *rb = &the_ring_buffer;
 
-  chMtxLock (&rb->m);
+  chopstx_mutex_lock (&rb->m);
   if (!rb->full)
-    chCondSignal (&rb->space_available);
-  chMtxUnlock ();
+    chopstx_cond_signal (&rb->space_available);
+  chopstx_mutex_unlock (&rb->m);
 }
 
 /**
@@ -529,13 +552,13 @@ neug_get (int kick)
   struct rng_rb *rb = &the_ring_buffer;
   uint32_t v;
 
-  chMtxLock (&rb->m);
+  chopstx_mutex_lock (&rb->m);
   while (rb->empty)
-    chCondWait (&rb->data_available);
+    chopstx_cond_wait (&rb->data_available, &rb->m);
   v = rb_del (rb);
   if (kick)
-    chCondSignal (&rb->space_available);
-  chMtxUnlock ();
+    chopstx_cond_signal (&rb->space_available);
+  chopstx_mutex_unlock (&rb->m);
 
   return v;
 }
@@ -546,15 +569,15 @@ neug_get_nonblock (uint32_t *p)
   struct rng_rb *rb = &the_ring_buffer;
   int r = 0;
 
-  chMtxLock (&rb->m);
+  chopstx_mutex_lock (&rb->m);
   if (rb->empty)
     {
       r = -1;
-      chCondSignal (&rb->space_available);
+      chopstx_cond_signal (&rb->space_available);
     }
   else
     *p = rb_del (rb);
-  chMtxUnlock ();
+  chopstx_mutex_unlock (&rb->m);
 
   return r;
 }
@@ -564,7 +587,7 @@ int neug_consume_random (void (*proc) (uint32_t, int))
   int i = 0;
   struct rng_rb *rb = &the_ring_buffer;
 
-  chMtxLock (&rb->m);
+  chopstx_mutex_lock (&rb->m);
   while (!rb->empty)
     {
       uint32_t v;
@@ -573,8 +596,8 @@ int neug_consume_random (void (*proc) (uint32_t, int))
       proc (v, i);
       i++;
     }
-  chCondSignal (&rb->space_available);
-  chMtxUnlock ();
+  chopstx_cond_signal (&rb->space_available);
+  chopstx_mutex_unlock (&rb->m);
 
   return i;
 }
@@ -584,22 +607,18 @@ neug_wait_full (void)
 {
   struct rng_rb *rb = &the_ring_buffer;
 
-  chMtxLock (&rb->m);
+  chopstx_mutex_lock (&rb->m);
   while (!rb->full)
-    chCondWait (&rb->data_available);
-  chMtxUnlock ();
+    chopstx_cond_wait (&rb->data_available, &rb->m);
+  chopstx_mutex_unlock (&rb->m);
 }
 
 void
 neug_fini (void)
 {
-  if (rng_thread)
-    {
-      chThdTerminate (rng_thread);
-      neug_get (1);
-      chThdWait (rng_thread);
-      rng_thread = NULL;
-    }
+  rng_should_terminate = 1;
+  neug_get (1);
+  chopstx_join (rng_thread, NULL);
 }
 
 void
@@ -610,8 +629,14 @@ neug_mode_select (uint8_t mode)
 
   neug_wait_full ();
 
-  while (rng_thread->p_state != THD_STATE_WTCOND)
-    chThdSleep (MS2ST (1));
+  chopstx_mutex_lock (&adc_mtx);
+  while (adc_waiting == 0)
+    {
+      chopstx_mutex_unlock (&adc_mtx);
+      chopstx_usec_wait (1000);
+      chopstx_mutex_lock (&adc_mtx);
+    }
+  chopstx_mutex_unlock (&adc_mtx);
 
   ep_init (mode);
   noise_source_cnt_max_reset ();
