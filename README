@@ -2,6 +2,15 @@
 ************* Text written below is for release 1.0.2, *************
 ************* which might not be vaild for this code   *************
 
+For those who follow Git master:
+
+We migrate from ChibiOS/RT to Chopstix.  You need:
+
+    Edit .git/config to remove chibios reference
+    git rm --cached chibios
+
+
+
 Gnuk - An Implementation of USB Cryptographic Token for GnuPG
 
 							  Version 1.0.2
