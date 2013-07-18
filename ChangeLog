@@ -1,7 +1,32 @@
+2013-07-19  Niibe Yutaka  <gniibe@fsij.org>
+
+	Port to Chopstx.
+	* src/Makefile.in: Change for Chopstx.
+	* src/configure: Likewise.
+	* src/gnuk.h, src/gnuk.ld.in: Likewise.
+	* src/ac.c: Include stdint.h and string.h, not ch.h.
+	* src/call-rsa.c, src/debug.c, src/flash.c: Likewise.
+	* src/call-ec_p256.c, src/usb_desc.c
+	* src/openpgp-do.c, src/random.c: Likewise.
+	* src/openpgp.c: Likewise.  Use eventflag of Chopstx.
+	* src/usb-icc.c: Likewise.
+	* src/usb_ctrl.c: Update for Chopstx.
+	* src/debug.h: New.
+	* src/stdlib.h: Use gnuk_malloc and gnuk_free for malloc/free.
+	* src/config.h.in: Move FLASH_PAGE_SIZE in board.h.
+	* polarssl/library/aes.c (FT0, FT1, FT2): Export (for sys 2.0).
+	* src/main.c (struct stdout, _write, EP3_IN_Callback)
+	(EP5_OUT_Callback): Rewrite for Chopstx.  No independent thread
+	any more.
+	(display_fatal_code, emit_led, display_status_code, led_blink):
+	Use primitives of Chopstx.
+	(main): Changes for Chopstx.
+	(gnuk_malloc_init, sbrk, gnuk_malloc, gnuk_free): New.
+
 2013-06-20  Niibe Yutaka  <gniibe@fsij.org>
 
-	* src/sys.c, src/sys.h, src/neug.c, rc/usb_stm32f103.c: Update
-	from NeuG 0.10.
+	* src/sys.c, src/sys.h, src/neug.c, src/adc.h
+	* src/adc_stm32f103.c, src/usb_stm32f103.c: Update from NeuG 0.10.
 	* src/stm32f103.h: New.  From NeuG 0.10.
 
 2013-06-18  Niibe Yutaka  <gniibe@fsij.org>
