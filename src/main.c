@@ -458,7 +458,8 @@ extern uint8_t __heap_base__[];
 extern uint8_t __heap_end__[];
 
 #define MEMORY_END (__heap_end__)
-#define ALIGN_TO_WORD(n) ((n + 3) & ~3)
+#define MEMORY_ALIGNMENT 16
+#define MEMORY_ALIGN(n) (((n) + MEMORY_ALIGNMENT - 1) & ~(MEMORY_ALIGNMENT - 1))
 
 static uint8_t *heap_p;
 static chopstx_mutex_t malloc_mtx;
@@ -487,7 +488,7 @@ void *sbrk (size_t size)
 {
   void *p = (void *)heap_p;
 
-  if ((size_t)(__heap_end__ - heap_p) < size)
+  if ((size_t)(MEMORY_END - heap_p) < size)
     return NULL;
 
   heap_p += size;
@@ -501,7 +502,7 @@ gnuk_malloc (size_t size)
   uint16_t mem_offset;
   uint16_t *mem_offset_prev;
 
-  size = ALIGN_TO_WORD (size);
+  size = MEMORY_ALIGN (size + sizeof (struct mem_head));
 
   chopstx_mutex_lock (&malloc_mtx);
   DEBUG_INFO ("malloc: ");
@@ -513,7 +514,7 @@ gnuk_malloc (size_t size)
     {
       if (mem_offset == FREE_MEM_NONE)
 	{
-	  m = sbrk (size + sizeof (struct mem_head));
+	  m = sbrk (size);
 	  if (m)
 	    {
 	      m->next_mem_offset = FREE_MEM_NONE;
@@ -523,7 +524,7 @@ gnuk_malloc (size_t size)
 	}
 
       m = (struct mem_head *)(__heap_base__ + mem_offset);
-      if (m->size >= size)
+      if (m->size == size)
 	{
 	  *mem_offset_prev = m->next_mem_offset;
 	  m->next_mem_offset = FREE_MEM_NONE;

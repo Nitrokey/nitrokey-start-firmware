@@ -5,6 +5,7 @@ src/.dep
 src/Makefile
 src/config.h
 src/gnuk.ld
+src/board.h
 src/build/*
 src/*.inc
 regnual/regnual.bin
