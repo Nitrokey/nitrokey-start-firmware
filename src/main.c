@@ -421,7 +421,7 @@ main (int argc, char *argv[])
     extern uint8_t _sys;
     uint32_t addr;
     handler *new_vector = (handler *)FLASH_SYS_START_ADDR;
-    void (*func) (void (*)(void)) = (void (*)(void (*)(void)))new_vector[10];
+    void (*func) (void (*)(void)) = (void (*)(void (*)(void)))new_vector[9];
 
     /* Kill DFU */
     for (addr = FLASH_SYS_START_ADDR; addr < FLASH_SYS_END_ADDR;

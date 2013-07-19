@@ -1,5 +1,8 @@
 2013-07-19  Niibe Yutaka  <gniibe@fsij.org>
 
+	* src/main.c [DFU_SUPPORT] (main): Fix calling
+	flash_erase_all_and_exec.
+
 	* src/openpgp-do.c (gpg_do_write_prvkey, gpg_do_keygen): Fix
 	allocated memory handling.  Clean up before free.
 	* src/call-rsa.c (modulus_calc, rsa_genkey): Fix removing const.
