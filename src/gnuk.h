@@ -220,15 +220,15 @@ extern void put_binary (const char *s, int len);
 #endif
 
 extern int rsa_sign (const uint8_t *, uint8_t *, int, struct key_data *);
-extern const uint8_t *modulus_calc (const uint8_t *, int);
+extern uint8_t *modulus_calc (const uint8_t *, int);
 extern int rsa_decrypt (const uint8_t *, uint8_t *, int, struct key_data *);
 extern int rsa_verify (const uint8_t *pubkey, const uint8_t *hash,
 		       const uint8_t *signature);
-extern const uint8_t *rsa_genkey (void);
+extern uint8_t *rsa_genkey (void);
 
 extern int ecdsa_sign  (const uint8_t *hash, uint8_t *output,
 			const struct key_data *kd);
-extern const uint8_t *ecdsa_compute_public (const uint8_t *key_data);
+extern uint8_t *ecdsa_compute_public (const uint8_t *key_data);
 
 extern const uint8_t *gpg_do_read_simple (uint8_t);
 extern void gpg_do_write_simple (uint8_t, const uint8_t *, int);

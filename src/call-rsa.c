@@ -94,7 +94,7 @@ rsa_sign (const uint8_t *raw_message, uint8_t *output, int msg_len,
 /*
  * LEN: length in byte
  */
-const uint8_t *
+uint8_t *
 modulus_calc (const uint8_t *p, int len)
 {
   mpi P, Q, N;
@@ -207,7 +207,7 @@ rsa_verify (const uint8_t *pubkey, const uint8_t *hash, const uint8_t *sig)
 #define RSA_EXPONENT 0x10001
 
 #ifdef KEYGEN_SUPPORT
-const uint8_t *
+uint8_t *
 rsa_genkey (void)
 {
   int r;

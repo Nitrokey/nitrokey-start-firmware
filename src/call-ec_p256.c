@@ -62,7 +62,7 @@ ecdsa_sign (const uint8_t *hash, uint8_t *output,
   return 0;
 }
 
-const uint8_t *
+uint8_t *
 ecdsa_compute_public (const uint8_t *key_data)
 {
   uint8_t *p0, *p, *p1;

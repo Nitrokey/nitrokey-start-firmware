@@ -1,5 +1,12 @@
 2013-07-19  Niibe Yutaka  <gniibe@fsij.org>
 
+	* src/openpgp-do.c (gpg_do_write_prvkey, gpg_do_keygen): Fix
+	allocated memory handling.  Clean up before free.
+	* src/call-rsa.c (modulus_calc, rsa_genkey): Fix removing const.
+	* src/call-ec_p256.c (ecdsa_compute_public): Likewise.
+
+2013-07-18  Niibe Yutaka  <gniibe@fsij.org>
+
 	Port to Chopstx.
 	* src/Makefile.in: Change for Chopstx.
 	* src/configure: Likewise.
