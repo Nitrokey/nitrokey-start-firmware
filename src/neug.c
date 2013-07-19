@@ -1,5 +1,5 @@
 /*
- * neug.c - random number generation (from NeuG/src/random.c)
+ * neug.c - true random number generation
  *
  * Copyright (C) 2011, 2012, 2013 Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
@@ -32,10 +32,14 @@
 #include "adc.h"
 #include "sha256.h"
 
-chopstx_mutex_t adc_mtx;
-chopstx_cond_t adc_cond;
-int adc_waiting;
-int adc_data_available;
+static chopstx_mutex_t mode_mtx;
+static chopstx_cond_t  mode_cond;
+
+/*
+ * ADC finish interrupt
+ */
+#define INTR_REQ_DMA1_Channel1 11
+
 
 static uint32_t adc_buf[SHA256_BLOCK_SIZE/sizeof (uint32_t)];
 
@@ -97,8 +101,6 @@ static void ep_fill_initial_string (void)
 
 static void ep_init (int mode)
 {
-  adc_data_available = 0;
-
   if (mode == NEUG_MODE_RAW)
     {
       ep_round = EP_ROUND_RAW;
@@ -415,30 +417,36 @@ static void *
 rng (void *arg)
 {
   struct rng_rb *rb = (struct rng_rb *)arg;
+  chopstx_intr_t adc_intr;
+  int mode = neug_mode;
 
   rng_should_terminate = 0;
-  chopstx_mutex_init (&adc_mtx);
-  chopstx_cond_init (&adc_cond);
+  chopstx_mutex_init (&mode_mtx);
+  chopstx_cond_init (&mode_cond);
 
   /* Enable ADCs */
   adc_start ();
+  chopstx_claim_irq (&adc_intr, INTR_REQ_DMA1_Channel1);
 
-  ep_init (NEUG_MODE_CONDITIONED);
-
+  ep_init (mode);
   while (!rng_should_terminate)
     {
       int n;
-      int mode = neug_mode;
 
-      chopstx_mutex_lock (&adc_mtx);
-      if (!adc_data_available)
+      adc_wait (&adc_intr);
+
+      chopstx_mutex_lock (&mode_mtx);
+      if (mode != neug_mode)
 	{
-	  adc_waiting = 1;
-	  chopstx_cond_wait (&adc_cond, &adc_mtx);
-	  adc_waiting = 0;
+	  mode = neug_mode;
+
+	  noise_source_cnt_max_reset ();
+
+	  /* Discarding data available, re-initiate from the start.  */
+	  ep_init (mode);
+	  chopstx_cond_signal (&mode_cond);
 	}
-      adc_data_available = 0;
-      chopstx_mutex_unlock (&adc_mtx);
+      chopstx_mutex_unlock (&mode_mtx);
 
       if ((n = ep_process (mode)))
 	{
@@ -472,6 +480,7 @@ rng (void *arg)
     }
 
   adc_stop ();
+  chopstx_release_irq (&adc_intr);
 
   return NULL;
 }
@@ -629,17 +638,12 @@ neug_mode_select (uint8_t mode)
 
   neug_wait_full ();
 
-  chopstx_mutex_lock (&adc_mtx);
-  while (adc_waiting == 0)
-    {
-      chopstx_mutex_unlock (&adc_mtx);
-      chopstx_usec_wait (1000);
-      chopstx_mutex_lock (&adc_mtx);
-    }
-  chopstx_mutex_unlock (&adc_mtx);
-
-  ep_init (mode);
-  noise_source_cnt_max_reset ();
+  chopstx_mutex_lock (&mode_mtx);
   neug_mode = mode;
+  neug_flush ();
+  chopstx_cond_wait (&mode_cond, &mode_mtx);
+  chopstx_mutex_unlock (&mode_mtx);
+
+  neug_wait_full ();
   neug_flush ();
 }

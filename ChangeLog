@@ -1,5 +1,9 @@
 2013-07-19  Niibe Yutaka  <gniibe@fsij.org>
 
+	* src/gnuk.ld.in: Layout change following NeuG.
+
+	* src/neug.c, src/adc.h, src/adc_stm32f103.c: Update from NeuG.
+
 	* src/main.c [DFU_SUPPORT] (main): Fix calling
 	flash_erase_all_and_exec.
 

@@ -137,36 +137,6 @@ void adc_init (void)
   RCC->APB2ENR &= ~(RCC_APB2ENR_ADC1EN | RCC_APB2ENR_ADC2EN);
 }
 
-extern uint8_t __process4_stack_base__, __process4_stack_size__;
-const uint32_t __stackaddr_adc = (uint32_t)&__process4_stack_base__;
-const size_t __stacksize_adc = (size_t)&__process4_stack_size__;
-#define PRIO_ADC 3
-
-static void adc_lld_serve_rx_interrupt (uint32_t flags);
-
-#define INTR_REQ_DMA1_Channel1 11
-static void *
-adc_intr_thread (void *arg)
-{
-  chopstx_intr_t interrupt;
-
-  (void)arg;
-  chopstx_claim_irq (&interrupt, INTR_REQ_DMA1_Channel1);
-
-  while (1)
-    {
-      uint32_t flags;
-
-      chopstx_intr_wait (&interrupt);
-      flags = DMA1->ISR & STM32_DMA_ISR_MASK; /* Channel 1 interrupt cause.  */
-      DMA1->IFCR = STM32_DMA_ISR_MASK; /* Clear interrupt of channel 1.  */
-      adc_lld_serve_rx_interrupt (flags);
-    }
-
-  return NULL;
-}
-
-static chopstx_t adc_thd;
 
 void adc_start (void)
 {
@@ -200,9 +170,6 @@ void adc_start (void)
   ADC2->CR2 = 0;
   ADC1->CR2 = 0;
 #endif
-
-  adc_thd = chopstx_create (PRIO_ADC, __stackaddr_adc, __stacksize_adc,
-			    adc_intr_thread, NULL);
 }
 
 static int adc_mode;
@@ -278,9 +245,6 @@ void adc_stop (void)
 
   RCC->AHBENR &= ~RCC_AHBENR_DMA1EN;
   RCC->APB2ENR &= ~(RCC_APB2ENR_ADC1EN | RCC_APB2ENR_ADC2EN);
-
-  chopstx_cancel (adc_thd);
-  chopstx_join (adc_thd, NULL);
 }
 
 
@@ -311,12 +275,16 @@ static void adc_lld_serve_rx_interrupt (uint32_t flags)
 		  *adc_ptr++ = CRC->DR;
 		}
 	    }
-
-	  chopstx_mutex_lock (&adc_mtx);
-	  adc_data_available++;
-	  if (adc_waiting)
-	    chopstx_cond_signal (&adc_cond);
-	  chopstx_mutex_unlock (&adc_mtx);
 	}
     }
+}
+
+void adc_wait (chopstx_intr_t *intr)
+{
+  uint32_t flags;
+
+  chopstx_intr_wait (intr);
+  flags = DMA1->ISR & STM32_DMA_ISR_MASK; /* Channel 1 interrupt cause.  */
+  DMA1->IFCR = STM32_DMA_ISR_MASK; /* Clear interrupt of channel 1.  */
+  adc_lld_serve_rx_interrupt (flags);
 }

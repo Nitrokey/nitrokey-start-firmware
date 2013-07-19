@@ -280,13 +280,13 @@ calculate_regnual_entry_address (const uint8_t *addr)
 }
 
 extern uint8_t __process1_stack_base__, __process1_stack_size__;
-extern uint8_t __process5_stack_base__, __process5_stack_size__;
+extern uint8_t __process4_stack_base__, __process4_stack_size__;
 
 const uint32_t __stackaddr_ccid = (uint32_t)&__process1_stack_base__;
 const size_t __stacksize_ccid = (size_t)&__process1_stack_size__;
 
-const uint32_t __stackaddr_usb = (uint32_t)&__process5_stack_base__;
-const size_t __stacksize_usb = (size_t)&__process5_stack_size__;
+const uint32_t __stackaddr_usb = (uint32_t)&__process4_stack_base__;
+const size_t __stacksize_usb = (size_t)&__process4_stack_size__;
 
 #define PRIO_CCID 2
 #define PRIO_USB 4
