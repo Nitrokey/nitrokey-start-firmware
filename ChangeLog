@@ -1,6 +1,7 @@
 2013-07-19  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/gnuk.ld.in: Layout change following NeuG.
+	(_end): Add alignment of 16.
 
 	* src/neug.c, src/adc.h, src/adc_stm32f103.c: Update from NeuG.
 
