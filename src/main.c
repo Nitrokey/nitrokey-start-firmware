@@ -452,7 +452,20 @@ fatal (uint8_t code)
   _write ("fatal\r\n", 7);
   for (;;);
 }
-
+
+/*
+ * Malloc for Gnuk.
+ *
+ * Each memory chunk has header with size information.
+ * The size of chunk is at least 16.
+ *
+ * Free memory is managed by FREE_LIST.
+ *
+ * When it is managed in FREE_LIST, three pointers, ->NEXT, ->PREV,
+ * and ->NEIGHBOR is used.  NEXT and PREV is to implement doubly
+ * linked list.  NEIGHBOR is to link adjacent memory chunk to be
+ * reclaimed to system.
+ */
 
 extern uint8_t __heap_base__[];
 extern uint8_t __heap_end__[];
@@ -464,27 +477,25 @@ extern uint8_t __heap_end__[];
 static uint8_t *heap_p;
 static chopstx_mutex_t malloc_mtx;
 
-/*
- * Assume the size of heap is less than 64KiB - 1.
- */
 struct mem_head {
-  uint16_t next_mem_offset;	/* pointer to next.  */
-  uint16_t size;
-} __attribute__((packed));
+  uint32_t size;
+  /**/
+  struct mem_head *next, *prev;	/* free list chain */
+  struct mem_head *neighbor;	/* backlink to neighbor */
+};
 
-static uint16_t free_mem_offset;
-#define FREE_MEM_NONE (0xffff)
+static struct mem_head *free_list;
 
 static void
 gnuk_malloc_init (void)
 {
   chopstx_mutex_init (&malloc_mtx);
   heap_p = __heap_base__;
-  free_mem_offset = FREE_MEM_NONE;
+  free_list = NULL;
 }
 
-static
-void *sbrk (size_t size)
+static void *
+sbrk (size_t size)
 {
   void *p = (void *)heap_p;
 
@@ -495,44 +506,47 @@ void *sbrk (size_t size)
   return p;
 }
 
+static void
+remove_from_free_list (struct mem_head *m)
+{
+  if (m->prev)
+    m->prev->next = m->next;
+  else
+    free_list = m->next;
+  if (m->next)
+    m->next->prev = m->prev;
+}
+
+
 void *
 gnuk_malloc (size_t size)
 {
   struct mem_head *m;
-  uint16_t mem_offset;
-  uint16_t *mem_offset_prev;
 
-  size = MEMORY_ALIGN (size + sizeof (struct mem_head));
+  size = MEMORY_ALIGN (size + sizeof (uint32_t));
 
   chopstx_mutex_lock (&malloc_mtx);
   DEBUG_INFO ("malloc: ");
   DEBUG_SHORT (size);
-  mem_offset_prev = &free_mem_offset;
-  mem_offset = free_mem_offset;
+  m = free_list;
 
   while (1)
     {
-      if (mem_offset == FREE_MEM_NONE)
+      if (m == NULL)
 	{
-	  m = sbrk (size);
+	  m = (struct mem_head *)sbrk (size);
 	  if (m)
-	    {
-	      m->next_mem_offset = FREE_MEM_NONE;
-	      m->size = size;
-	    }
+	    m->size = size;
 	  break;
 	}
 
-      m = (struct mem_head *)(__heap_base__ + mem_offset);
       if (m->size == size)
 	{
-	  *mem_offset_prev = m->next_mem_offset;
-	  m->next_mem_offset = FREE_MEM_NONE;
+	  remove_from_free_list (m);
 	  break;
 	}
 
-      mem_offset_prev = &m->next_mem_offset;
-      mem_offset = m->next_mem_offset;
+      m = m->next;
     }
 
   chopstx_mutex_unlock (&malloc_mtx);
@@ -543,21 +557,54 @@ gnuk_malloc (size_t size)
     }
   else
     {
-      DEBUG_WORD ((uint32_t)(m+1));
-      return (void *)(m + 1);
+      DEBUG_WORD ((uint32_t)m + sizeof (uint32_t));
+      return (void *)m + sizeof (uint32_t);
     }
 }
+
 
 void
 gnuk_free (void *p)
 {
-  struct mem_head *m = ((struct mem_head *)p) - 1;
+  struct mem_head *m = (struct mem_head *)((void *)p - sizeof (uint32_t));
+  struct mem_head *m0 = free_list;
 
   chopstx_mutex_lock (&malloc_mtx);
   DEBUG_INFO ("free: ");
   DEBUG_SHORT (m->size);
   DEBUG_WORD ((uint32_t)p);
-  m->next_mem_offset = free_mem_offset;
-  free_mem_offset = (uint16_t)((uint8_t *)m - __heap_base__);
+
+  m->neighbor = NULL;
+  while (m0)
+    {
+      if ((void *)m + m->size == (void *)m0)
+	m0->neighbor = m;
+      else if ((void *)m0 + m0->size == (void *)m)
+	m->neighbor = m0;
+
+      m0 = m0->next;
+    }
+
+  if ((void *)m + m->size == heap_p)
+    {
+      struct mem_head *mn = m->neighbor;
+
+      heap_p -= m->size;
+      while (mn)
+	{
+	  heap_p -= mn->size;
+	  remove_from_free_list (mn);
+	  mn = mn->neighbor;
+	}
+    }
+  else
+    {
+      m->next = free_list;
+      m->prev = NULL;
+      if (free_list)
+	free_list->prev = m;
+      free_list = m;
+    }
+
   chopstx_mutex_unlock (&malloc_mtx);
 }
