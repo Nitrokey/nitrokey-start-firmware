@@ -1,7 +1,7 @@
 /*
  * ec_p256.c - Elliptic curve over GF(p256)
  *
- * Copyright (C) 2011 Free Software Initiative of Japan
+ * Copyright (C) 2011, 2013 Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
  * This file is a part of Gnuk, a GnuPG USB Token implementation.
@@ -227,8 +227,11 @@ static const ac precomputed_2E_KG[15] = {
  * @brief	X  = k * G
  *
  * @param K	scalar k
+ *
+ * Return -1 on error.
+ * Return 0 on success.
  */
-void
+int
 compute_kG (ac *X, const bn256 *K)
 {
   int i;
@@ -281,7 +284,7 @@ compute_kG (ac *X, const bn256 *K)
 	}
     }
 
-  jpc_to_ac (X, Q);
+  return jpc_to_ac (X, Q);
 }
 
 
@@ -368,12 +371,29 @@ compute_naf4_257 (naf4_257 *NAF_K, const bn256 *K)
 }
 
 /**
+ * check if P is on the curve.
+ *
+ * Return -1 on error.
+ * Return 0 on success.
+ */
+static int
+point_is_on_the_curve (const ac *P)
+{
+  /* y^2 = x^3 + a*x + b */
+  /* XXX: Not yet */
+  return 0;
+}
+
+/**
  * @brief	X  = k * P
  *
  * @param NAF_K	NAF representation of k
  * @param P	P in affin coordiate
+ *
+ * Return -1 on error.
+ * Return 0 on success.
  */
-void
+int
 compute_kP (ac *X, const naf4_257 *NAF_K, const ac *P)
 {
   int i;
@@ -381,6 +401,10 @@ compute_kP (ac *X, const naf4_257 *NAF_K, const ac *P)
   jpc Q[1];
   ac P3[1], P5[1], P7[1];
   const ac *p_Pi[4];
+  int Pi_is_infinite[4] = { 0, 0, 0, 0 };
+
+  if (point_is_on_the_curve (P) < 0)
+    return -1;
 
   p_Pi[0] = P;
   p_Pi[1] = P3;
@@ -397,18 +421,28 @@ compute_kP (ac *X, const naf4_257 *NAF_K, const ac *P)
 
     jpc_double (Q, Q);
     jpc_add_ac (Q1, Q, P);
-    jpc_to_ac (P3, Q1);
+    if (jpc_to_ac (P3, Q1) < 0)
+      Pi_is_infinite[1] = 1;
     jpc_double (Q, Q);
     jpc_add_ac (Q1, Q, P);
-    jpc_to_ac (P5, Q1);
-
-    memcpy (Q->x, P3->x, sizeof (bn256));
-    memcpy (Q->y, P3->y, sizeof (bn256));
-    memset (Q->z, 0, sizeof (bn256));
-    Q->z->words[0] = 1;
-    jpc_double (Q, Q);
-    jpc_add_ac (Q1, Q, P);
-    jpc_to_ac (P7, Q1);
+    if (jpc_to_ac (P5, Q1) < 0)
+      Pi_is_infinite[2] = 1;
+    if (Pi_is_infinite[1] == 0)
+      {
+	memcpy (Q->x, P3->x, sizeof (bn256));
+	memcpy (Q->y, P3->y, sizeof (bn256));
+	memset (Q->z, 0, sizeof (bn256));
+	Q->z->words[0] = 1;
+	jpc_double (Q, Q);
+	jpc_add_ac (Q1, Q, P);
+	if (jpc_to_ac (P7, Q1) < 0)
+	  Pi_is_infinite[3] = 1;
+      }
+    else
+      {				/* P7 <= P4 */
+	if (jpc_to_ac (P7, Q) < 0)
+	  Pi_is_infinite[3] = 1;
+      }
   }
 
   for (i = 256; i >= 0; i--)
@@ -419,7 +453,7 @@ compute_kP (ac *X, const naf4_257 *NAF_K, const ac *P)
 	jpc_double (Q, Q);
 
       k_i = naf4_257_get (NAF_K, i);
-      if (k_i)
+      if (k_i && Pi_is_infinite[NAF_K_INDEX(k_i)] == 0)
 	{
 	  if (q_is_infinite)
 	    {
@@ -437,7 +471,7 @@ compute_kP (ac *X, const naf4_257 *NAF_K, const ac *P)
 	}
     }
 
-  jpc_to_ac (X, Q);
+  return jpc_to_ac (X, Q);
 }
 
 

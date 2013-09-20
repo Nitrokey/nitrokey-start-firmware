@@ -20,4 +20,4 @@ typedef struct
 void jpc_double (jpc *X, const jpc *A);
 void jpc_add_ac (jpc *X, const jpc *A, const ac *B);
 void jpc_add_ac_signed (jpc *X, const jpc *A, const ac *B, int minus);
-void jpc_to_ac (ac *X, const jpc *A);
+int jpc_to_ac (ac *X, const jpc *A);

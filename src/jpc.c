@@ -1,7 +1,7 @@
 /*
  * jpc.c -- arithmetic on Jacobian projective coordinates and Affin coordinates
  *
- * Copyright (C) 2011 Free Software Initiative of Japan
+ * Copyright (C) 2011, 2013 Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
  * This file is a part of Gnuk, a GnuPG USB Token implementation.
@@ -88,6 +88,18 @@ jpc_add_ac_signed (jpc *X, const jpc *A, const ac *B, int minus)
 #define y3_tmp c
 #define y1_c_cube a
 
+  if (A->z == 0)		/* A is infinite */
+    {
+      memcpy (X->x, B->x, sizeof (bn256));
+      if (minus)
+	bn256_sub (X->y, P256, B->y);
+      else
+	memcpy (X->y, B->y, sizeof (bn256));
+      memset (X->z, 0, sizeof (bn256));
+      X->z->words[0] = 1;
+      return;
+    }
+
   modp256_sqr (a, A->z);
   memcpy (b, a, sizeof (bn256));
   modp256_mul (a, a, B->x);
@@ -100,6 +112,13 @@ jpc_add_ac_signed (jpc *X, const jpc *A, const ac *B, int minus)
     }
   else
     modp256_mul (b, b, B->y);
+
+  if (bn256_cmp (A->x, a) == 0)
+    if (bn256_cmp (A->y, b) == 0)
+      {
+	jpc_double (X, A);
+	return;
+      }
 
   modp256_sub (c, a, A->x);
   modp256_sub (d, b, A->y);
@@ -141,16 +160,22 @@ jpc_add_ac (jpc *X, const jpc *A, const ac *B)
  *
  * @param X	Destination AC
  * @param A	JPC
+ *
+ * Return -1 on error (infinite).
+ * Return 0 on success.
  */
-void
+int
 jpc_to_ac (ac *X, const jpc *A)
 {
   bn256 z_inv[1], z_inv_sqr[1];
 
-  modp256_inv (z_inv, A->z);
+  if (modp256_inv (z_inv, A->z) < 0)
+    return -1;
+
   modp256_sqr (z_inv_sqr, z_inv);
   modp256_mul (z_inv, z_inv, z_inv_sqr);
 
   modp256_mul (X->x, A->x, z_inv_sqr);
   modp256_mul (X->y, A->y, z_inv);
+  return 0;
 }

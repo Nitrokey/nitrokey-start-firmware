@@ -1,3 +1,18 @@
+2013-09-20  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/call-ec_p256.c (ecdsa_compute_public): Handle possible
+	error (where key_data is the order).
+
+	* src/ec_p256.c (on_the_curve): New.
+	(compute_kG, compute_kP): Handle errors.
+
+	* src/jpc.c (jpc_to_ac): Return -1 on error.
+	(jpc_add_ac_signed): Handle the case where A=inf.
+
+	* src/modp256.c (modp256_inv): Handle error case.
+
+	* src/bn.c (bn256_cmp): New.
+
 2013-07-19  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/gnuk.ld.in: Layout change following NeuG.

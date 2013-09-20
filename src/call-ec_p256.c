@@ -77,7 +77,12 @@ ecdsa_compute_public (const uint8_t *key_data)
   p = (uint8_t *)k;
   for (i = 0; i < ECDSA_BYTE_SIZE; i++)
     p[ECDSA_BYTE_SIZE - i - 1] = key_data[i];
-  compute_kG (q, k);
+  if (compute_kG (q, k) < 0)
+    {
+      free (p0);
+      return NULL;
+    }
+
   p = p0;
   p1 = (uint8_t *)q->x;
   for (i = 0; i < ECDSA_BYTE_SIZE; i++)

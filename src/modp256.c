@@ -1,7 +1,7 @@
 /*
  * modp256.c -- modulo P256 arithmetic
  *
- * Copyright (C) 2011 Free Software Initiative of Japan
+ * Copyright (C) 2011, 2013 Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
  * This file is a part of Gnuk, a GnuPG USB Token implementation.
@@ -211,12 +211,18 @@ modp256_sqr (bn256 *X, const bn256 *A)
 
 /**
  * @brief  C = (1 / a)  mod p256
+ *
+ * Return -1 on error.
+ * Return 0 on success.
  */
-void
+int
 modp256_inv (bn256 *C, const bn256 *a)
 {
   bn256 u[1], v[1];
   bn256 A[1] = { { { 1, 0, 0, 0, 0, 0, 0, 0 } } };
+
+  if (bn256_is_zero (a))
+    return -1;
 
   memset (C, 0, sizeof (bn256));
   memcpy (u, a, sizeof (bn256));
@@ -265,6 +271,8 @@ modp256_inv (bn256 *C, const bn256 *a)
 	  modp256_sub (C, C, A);
 	}
     }
+
+  return 0;
 }
 
 /**

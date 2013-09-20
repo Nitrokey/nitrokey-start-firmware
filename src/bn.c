@@ -1,7 +1,7 @@
 /*
  * bn.c -- 256-bit (and 512-bit) bignum calculation
  *
- * Copyright (C) 2011 Free Software Initiative of Japan
+ * Copyright (C) 2011, 2013 Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
  * This file is a part of Gnuk, a GnuPG USB Token implementation.
@@ -305,6 +305,22 @@ bn256_is_ge (const bn256 *A, const bn256 *B)
 
   return 1;
 }
+
+
+int
+bn256_cmp (const bn256 *A, const bn256 *B)
+{
+  int i;
+
+  for (i = BN256_WORDS - 1; i >= 0; i--)
+    if (A->words[i] > B->words[i])
+      return 1;
+    else if (A->words[i] < B->words[i])
+      return -1;
+
+  return 0;
+}
+
 
 void
 bn256_random (bn256 *X)
