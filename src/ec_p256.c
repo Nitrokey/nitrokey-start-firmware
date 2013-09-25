@@ -414,7 +414,7 @@ point_is_on_the_curve (const ac *P)
  * @brief	X  = k * P
  *
  * @param NAF_K	NAF representation of k
- * @param P	P in affin coordiate
+ * @param P	P in affine coordiate
  *
  * Return -1 on error.
  * Return 0 on success.
@@ -426,7 +426,7 @@ point_is_on_the_curve (const ac *P)
  *     Something wrong in the code.
  *
  * Mathmatically, k=1 and P=O is another possible case, but O cannot be
- * represented by affin coordinate.
+ * represented by affine coordinate.
  */
 int
 compute_kP (ac *X, const naf4_257 *NAF_K, const ac *P)
