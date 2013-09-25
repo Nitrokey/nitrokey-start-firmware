@@ -272,17 +272,6 @@ static const uint8_t gnukStringLangID[] = {
 #define USB_STRINGS_FOR_GNUK 1
 #include "usb-strings.c.inc"
 
-const uint8_t gnukStringSerial[] = {
-  19*2+2,			/* bLength */
-  USB_STRING_DESCRIPTOR_TYPE,	/* bDescriptorType */
-  /* FSIJ-1.0.1- */
-  'F', 0, 'S', 0, 'I', 0, 'J', 0, '-', 0,
-  '1', 0, '.', 0, '0', 0, '.', 0, '2', 0, /* Version number of Gnuk */
-  '-', 0,
-  0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-  0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-};
-
 static const struct Descriptor Device_Descriptor = {
   gnukDeviceDescriptor,
   sizeof (gnukDeviceDescriptor)

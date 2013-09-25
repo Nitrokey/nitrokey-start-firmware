@@ -1,5 +1,16 @@
 2013-09-25  Niibe Yutaka  <gniibe@fsij.org>
 
+	* VERSION: New file.
+
+	* src/configure (SERIALNO, SERIALNO_STR_LEN_DEFINE): New.
+	(REVISION): Use the file VERSION if it doesn't have .git.
+	Thanks to Sumedha Widyadharma for the bug report.
+
+	* src/config.h.in (SERIALNO_STR_LEN_DEFINE): New.
+	* src/main.c (ID_OFFSET): Use SERIALNO_STR_LEN.
+	* src/usb_desc.c (gnukStringSerial): Remove.  It's now
+	generated in usb-strings.c.inc.
+
 	* src/ec_p256.c (compute_kP): Fix for impossible cases.
 	(point_is_on_the_curve): New.
 	(coefficient_a, coefficient_b): New.

@@ -297,8 +297,10 @@ please contact Niibe, so that it is listed to the file in the official
 release of the source code.
 
 When you are modifing Gnuk and installing the binary to device, you
-should replace the vendor string to yours, so that users can see it's
-not by original vendor, and it is modified version.
+should replace the vendor string and serial number to yours (in the
+file GNUK_USB_DEVICE_ID and SERIALNO of the script of src/configure),
+so that users can see it's not by original vendor, and it is modified
+version.
 
 FSIJ allows you to use USB device ID of FSIJ (234b:0000) for devices
 with Gnuk under one of following conditions:
