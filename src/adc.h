@@ -8,6 +8,9 @@ void adc_start (void);
 void adc_stop (void);
 
 #define ADC_SAMPLE_MODE 0
-#define ADC_CRC32_MODE       1
-void adc_start_conversion (int mode, uint32_t *p, int size);
-void adc_wait (chopstx_intr_t *intr);
+#define ADC_CRC32_MODE  1
+
+extern uint32_t adc_buf[64];
+
+void adc_start_conversion (int offset, int count);
+int adc_wait_completion (chopstx_intr_t *intr);

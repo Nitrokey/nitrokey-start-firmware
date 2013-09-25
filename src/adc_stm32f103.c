@@ -1,5 +1,7 @@
 /*
  * adc_stm32f103.c - ADC driver for STM32F103
+ *                   In this ADC driver, there are NeuG specific parts.
+ *                   You need to modify to use this as generic ADC driver.
  *
  * Copyright (C) 2011, 2012, 2013 Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
@@ -75,17 +77,11 @@
 #endif
 
 #define NEUG_DMA_CHANNEL STM32_DMA1_STREAM1
-#define NEUG_DMA_MODE_SAMPLE                                            \
+#define NEUG_DMA_MODE							\
   (  STM32_DMA_CR_PL (STM32_ADC_ADC1_DMA_PRIORITY)			\
      | STM32_DMA_CR_MSIZE_WORD | STM32_DMA_CR_PSIZE_WORD		\
      | STM32_DMA_CR_MINC       | STM32_DMA_CR_TCIE			\
-     | STM32_DMA_CR_TEIE)
-
-#define NEUG_DMA_MODE_CRC32                                             \
-  (  STM32_DMA_CR_PL (STM32_ADC_ADC1_DMA_PRIORITY)			\
-     | STM32_DMA_CR_MSIZE_WORD | STM32_DMA_CR_PSIZE_WORD		\
-     | STM32_DMA_CR_MINC       						\
-     | STM32_DMA_CR_TCIE       | STM32_DMA_CR_TEIE)
+     | STM32_DMA_CR_TEIE  )
 
 #define NEUG_ADC_SETTING1_SMPR1 ADC_SMPR1_SMP_VREF(ADC_SAMPLE_VREF)     \
                               | ADC_SMPR1_SMP_SENSOR(ADC_SAMPLE_SENSOR)
@@ -167,58 +163,44 @@ void adc_start (void)
   ADC2->SQR3 = NEUG_ADC_SETTING2_SQR3;
 
 #ifdef DELIBARATELY_DO_IT_WRONG_START_STOP
+  /*
+   * We could just let ADC run continuously always and only enable DMA
+   * to receive stable data from ADC.  But our purpose is not to get
+   * correct data but noise.  In fact, we can get more noise when we
+   * start/stop ADC each time.
+   */
   ADC2->CR2 = 0;
   ADC1->CR2 = 0;
+#else
+  /* Start conversion.  */
+  ADC2->CR2 = ADC_CR2_EXTTRIG | ADC_CR2_CONT | ADC_CR2_ADON;
+  ADC1->CR2 = (ADC_CR2_TSVREFE | ADC_CR2_EXTTRIG | ADC_CR2_SWSTART
+	       | ADC_CR2_EXTSEL | ADC_CR2_DMA | ADC_CR2_CONT | ADC_CR2_ADON);
 #endif
 }
 
-static int adc_mode;
-static uint32_t *adc_ptr;
-static int adc_size;
-static uint32_t adc_buf[64];
+uint32_t adc_buf[64];
 
-static void adc_start_conversion_internal (void)
+void adc_start_conversion (int offset, int count)
 {
+  DMA1_Channel1->CPAR = (uint32_t)&ADC1->DR;        /* SetPeripheral */
+  DMA1_Channel1->CMAR = (uint32_t)&adc_buf[offset]; /* SetMemory0    */
+  DMA1_Channel1->CNDTR = count;                     /* Counter       */
+  DMA1_Channel1->CCR = NEUG_DMA_MODE | DMA_CCR1_EN; /* Mode   */
+
 #ifdef DELIBARATELY_DO_IT_WRONG_START_STOP
   /* Power on */
   ADC2->CR2 = ADC_CR2_EXTTRIG | ADC_CR2_CONT | ADC_CR2_ADON;
   ADC1->CR2 = (ADC_CR2_TSVREFE | ADC_CR2_EXTTRIG | ADC_CR2_SWSTART
 	       | ADC_CR2_EXTSEL | ADC_CR2_DMA | ADC_CR2_CONT | ADC_CR2_ADON);
-  /* Start conversion.  tSTAB is 1uS, but we don't follow the spec.  */
-  ADC2->CR2 = ADC_CR2_EXTTRIG | ADC_CR2_CONT | ADC_CR2_ADON;
-  ADC1->CR2 = (ADC_CR2_TSVREFE | ADC_CR2_EXTTRIG | ADC_CR2_SWSTART
-	       | ADC_CR2_EXTSEL | ADC_CR2_DMA | ADC_CR2_CONT | ADC_CR2_ADON);
-#else
+  /*
+   * Start conversion.  tSTAB is 1uS, but we don't follow the spec, to
+   * get more noise.
+   */
   ADC2->CR2 = ADC_CR2_EXTTRIG | ADC_CR2_CONT | ADC_CR2_ADON;
   ADC1->CR2 = (ADC_CR2_TSVREFE | ADC_CR2_EXTTRIG | ADC_CR2_SWSTART
 	       | ADC_CR2_EXTSEL | ADC_CR2_DMA | ADC_CR2_CONT | ADC_CR2_ADON);
 #endif
-}
-
-void adc_start_conversion (int mode, uint32_t *p, int size)
-{
-  adc_mode = mode;
-  adc_ptr = p;
-  adc_size = size;
-
- if (mode == ADC_SAMPLE_MODE)
-    {
-      DMA1_Channel1->CPAR = (uint32_t)&ADC1->DR; /* SetPeripheral */
-      DMA1_Channel1->CMAR  = (uint32_t)p; /* SetMemory0 */
-      DMA1_Channel1->CNDTR  = (uint32_t)size / 4; /* counter */
-      DMA1_Channel1->CCR  = NEUG_DMA_MODE_SAMPLE; /*mode*/
-      DMA1_Channel1->CCR |= DMA_CCR1_EN;		    /* Enable */
-    }
-  else
-    {
-      DMA1_Channel1->CPAR = (uint32_t)&ADC1->DR; /* SetPeripheral */
-      DMA1_Channel1->CMAR  = (uint32_t)adc_buf; /* SetMemory0 */
-      DMA1_Channel1->CNDTR  = size; /* counter */
-      DMA1_Channel1->CCR  = NEUG_DMA_MODE_CRC32; /*mode*/
-      DMA1_Channel1->CCR |= DMA_CCR1_EN;		    /* Enable */
-    }
-
- adc_start_conversion_internal ();
 }
 
 
@@ -227,11 +209,8 @@ static void adc_stop_conversion (void)
   DMA1_Channel1->CCR &= ~DMA_CCR1_EN;
 
 #ifdef DELIBARATELY_DO_IT_WRONG_START_STOP
-  ADC1->CR2 = 0;
   ADC2->CR2 = 0;
-#else
-  ADC2->CR2 &= ~ADC_CR2_CONT;
-  ADC1->CR2 &= ~ADC_CR2_CONT;
+  ADC1->CR2 = 0;
 #endif
 }
 
@@ -248,43 +227,46 @@ void adc_stop (void)
 }
 
 
-static void adc_lld_serve_rx_interrupt (uint32_t flags)
-{
-  if ((flags & STM32_DMA_ISR_TEIF) != 0)  /* DMA errors  */
-    {
-      /* Should never happened.  If any, it's coding error. */
-      /* Access an unmapped address space or alignment violation.  */
-      adc_stop_conversion ();
-    }
-  else
-    {
-      if ((flags & STM32_DMA_ISR_TCIF) != 0) /* Transfer complete */
-	{
-	  adc_stop_conversion ();
+static uint32_t adc_err;
 
-	  if (adc_mode != ADC_SAMPLE_MODE)
-	    {
-	      int i;
-
-	      for (i = 0; i < adc_size;)
-		{
-		  CRC->DR = adc_buf[i++];
-		  CRC->DR = adc_buf[i++];
-		  CRC->DR = adc_buf[i++];
-		  CRC->DR = adc_buf[i++];
-		  *adc_ptr++ = CRC->DR;
-		}
-	    }
-	}
-    }
-}
-
-void adc_wait (chopstx_intr_t *intr)
+/*
+ * Return 0 on success.
+ * Return 1 on error.
+ */
+int adc_wait_completion (chopstx_intr_t *intr)
 {
   uint32_t flags;
 
-  chopstx_intr_wait (intr);
-  flags = DMA1->ISR & STM32_DMA_ISR_MASK; /* Channel 1 interrupt cause.  */
-  DMA1->IFCR = STM32_DMA_ISR_MASK; /* Clear interrupt of channel 1.  */
-  adc_lld_serve_rx_interrupt (flags);
+  while (1)
+    {
+      chopstx_intr_wait (intr);
+      flags = DMA1->ISR & STM32_DMA_ISR_MASK; /* Channel 1 interrupt cause.  */
+      /*
+       * Clear interrupt cause of channel 1.
+       *
+       * Note that CGIFx=0, as CGIFx=1 clears all of GIF, HTIF, TCIF
+       * and TEIF.
+       */
+      DMA1->IFCR = (flags & ~1);
+
+      if ((flags & STM32_DMA_ISR_TEIF) != 0)  /* DMA errors  */
+	{
+	  /* Should never happened.  If any, it's coding error. */
+	  /* Access an unmapped address space or alignment violation.  */
+	  adc_err++;
+	  adc_stop_conversion ();
+	  return 1;
+	}
+      else if ((flags & STM32_DMA_ISR_TCIF) != 0) /* Transfer complete */
+	{
+	  adc_stop_conversion ();
+	  return 0;
+	}
+
+      /*
+       * Even if STM32_DMA_CR_HTIE is unset, we come here with HTIF=1,
+       * with unknown reason.  Just ignore the interrupt by HTIF to
+       * continue more data.
+       */
+    }
 }

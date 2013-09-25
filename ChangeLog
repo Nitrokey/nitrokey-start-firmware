@@ -1,5 +1,8 @@
 2013-09-25  Niibe Yutaka  <gniibe@fsij.org>
 
+	* src/sha256.h, src/adc.h
+	* src/neug.c, src/adc_stm32f103.c: Update from NeuG 0.11.
+
 	* chopstx: Upgrade to new Chopstx 0.00.
 
 	* VERSION: New file.
