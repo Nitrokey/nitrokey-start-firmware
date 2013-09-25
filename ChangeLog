@@ -1,5 +1,7 @@
 2013-09-25  Niibe Yutaka  <gniibe@fsij.org>
 
+	* chopstx: Upgrade to new Chopstx 0.00.
+
 	* VERSION: New file.
 
 	* src/configure (SERIALNO, SERIALNO_STR_LEN_DEFINE): New.
