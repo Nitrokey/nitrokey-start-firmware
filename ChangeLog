@@ -1,10 +1,15 @@
+2013-09-25  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/ec_p256.c (compute_kP): Fix for impossible cases.
+	(point_is_on_the_curve): New.
+	(coefficient_a, coefficient_b): New.
+
 2013-09-20  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/call-ec_p256.c (ecdsa_compute_public): Handle possible
 	error (where key_data is the order).
 
-	* src/ec_p256.c (on_the_curve): New.
-	(compute_kG, compute_kP): Handle errors.
+	* src/ec_p256.c	(compute_kG, compute_kP): Handle errors.
 
 	* src/jpc.c (jpc_to_ac): Return -1 on error.
 	(jpc_add_ac_signed): Handle the case where A=inf.

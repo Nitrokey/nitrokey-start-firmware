@@ -46,16 +46,30 @@
 /*
  * Generator of Elliptic curve over GF(p256)
  */
-bn256 Gx[1] = {
+const bn256 Gx[1] = {
   {{  0xd898c296, 0xf4a13945, 0x2deb33a0, 0x77037d81,
       0x63a440f2, 0xf8bce6e5, 0xe12c4247, 0x6b17d1f2  }}
 };
 
-bn256 Gy[1] = {
+const bn256 Gy[1] = {
   {{  0x37bf51f5, 0xcbb64068, 0x6b315ece, 0x2bce3357,
       0x7c0f9e16, 0x8ee7eb4a, 0xfe1a7f9b, 0x4fe342e2  }}
 };
 #endif
+
+
+/*
+ * a = -3 mod p256
+ */
+static const bn256 coefficient_a[1] = {
+  {{  0xfffffffc, 0xffffffff, 0xffffffff, 0x00000000,
+      0x00000000, 0x00000000, 0x00000001, 0xffffffff }}
+};
+
+static const bn256 coefficient_b[1] = {
+  {{ 0x27d2604b, 0x3bce3c3e, 0xcc53b0f6, 0x651d06b0,
+     0x769886bc, 0xb3ebbd55, 0xaa3a93e7, 0x5ac635d8 }}
+};
 
 
 /*
@@ -379,9 +393,21 @@ compute_naf4_257 (naf4_257 *NAF_K, const bn256 *K)
 static int
 point_is_on_the_curve (const ac *P)
 {
-  /* y^2 = x^3 + a*x + b */
-  /* XXX: Not yet */
-  return 0;
+  bn256 s[1], t[1];
+
+  /* Elliptic curve: y^2 = x^3 + a*x + b */
+  modp256_sqr (s, P->x);
+  modp256_mul (s, s, P->x);
+
+  modp256_mul (t, coefficient_a, P->x);
+  modp256_add (s, s, t);
+  modp256_add (s, s, coefficient_b);
+
+  modp256_sqr (t, P->y);
+  if (bn256_cmp (s, t) == 0)
+    return 0;
+
+  return -1;
 }
 
 /**
@@ -392,6 +418,15 @@ point_is_on_the_curve (const ac *P)
  *
  * Return -1 on error.
  * Return 0 on success.
+ *
+ * For the curve (cofactor is 1 and n is prime), possible error cases are:
+ *
+ *     P is not on the curve.
+ *     P = G, k = n
+ *     Something wrong in the code.
+ *
+ * Mathmatically, k=1 and P=O is another possible case, but O cannot be
+ * represented by affin coordinate.
  */
 int
 compute_kP (ac *X, const naf4_257 *NAF_K, const ac *P)
@@ -401,7 +436,6 @@ compute_kP (ac *X, const naf4_257 *NAF_K, const ac *P)
   jpc Q[1];
   ac P3[1], P5[1], P7[1];
   const ac *p_Pi[4];
-  int Pi_is_infinite[4] = { 0, 0, 0, 0 };
 
   if (point_is_on_the_curve (P) < 0)
     return -1;
@@ -421,28 +455,21 @@ compute_kP (ac *X, const naf4_257 *NAF_K, const ac *P)
 
     jpc_double (Q, Q);
     jpc_add_ac (Q1, Q, P);
-    if (jpc_to_ac (P3, Q1) < 0)
-      Pi_is_infinite[1] = 1;
+    if (jpc_to_ac (P3, Q1) < 0)	/* Never occurs, except coding errors.  */
+      return -1;
     jpc_double (Q, Q);
     jpc_add_ac (Q1, Q, P);
-    if (jpc_to_ac (P5, Q1) < 0)
-      Pi_is_infinite[2] = 1;
-    if (Pi_is_infinite[1] == 0)
-      {
-	memcpy (Q->x, P3->x, sizeof (bn256));
-	memcpy (Q->y, P3->y, sizeof (bn256));
-	memset (Q->z, 0, sizeof (bn256));
-	Q->z->words[0] = 1;
-	jpc_double (Q, Q);
-	jpc_add_ac (Q1, Q, P);
-	if (jpc_to_ac (P7, Q1) < 0)
-	  Pi_is_infinite[3] = 1;
-      }
-    else
-      {				/* P7 <= P4 */
-	if (jpc_to_ac (P7, Q) < 0)
-	  Pi_is_infinite[3] = 1;
-      }
+    if (jpc_to_ac (P5, Q1) < 0)	/* Never occurs, except coding errors.  */
+      return -1;
+
+    memcpy (Q->x, P3->x, sizeof (bn256));
+    memcpy (Q->y, P3->y, sizeof (bn256));
+    memset (Q->z, 0, sizeof (bn256));
+    Q->z->words[0] = 1;
+    jpc_double (Q, Q);
+    jpc_add_ac (Q1, Q, P);
+    if (jpc_to_ac (P7, Q1) < 0)	/* Never occurs, except coding errors.  */
+      return -1;
   }
 
   for (i = 256; i >= 0; i--)
@@ -453,7 +480,7 @@ compute_kP (ac *X, const naf4_257 *NAF_K, const ac *P)
 	jpc_double (Q, Q);
 
       k_i = naf4_257_get (NAF_K, i);
-      if (k_i && Pi_is_infinite[NAF_K_INDEX(k_i)] == 0)
+      if (k_i)
 	{
 	  if (q_is_infinite)
 	    {
