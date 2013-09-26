@@ -56,13 +56,21 @@ ecdh (unsigned char *key,
   ac S[1];
   sha256_context ctx;
   unsigned char kek[32];
+  unsigned char x[32];
+  int i;
+  const unsigned char *p;
 
-  compute_kP (S, naf_d, P);	/* Get shared key.  */
+  compute_kP (S, naf_d, P);	/* Get shared secret.  */
+
+  /* Endian change from big to little.  */
+  p = (const unsigned char *)S->x;
+  for (i = 0; i < 32; i++)
+    x[31-i] = p[i];
 
   /* kdf (kek, S, parameter) */
   sha256_start (&ctx);
   sha256_update (&ctx, "\x00\x00\x00\x01", 4);
-  sha256_update (&ctx, (const char *)S, size of S); /* XXX 04, X, Y bigendian!! */
+  sha256_update (&ctx, x, size of x);
   sha256_update (&ctx, (const char *)param, size of param);
   sha256_finish (&ctx, kek);
 }
