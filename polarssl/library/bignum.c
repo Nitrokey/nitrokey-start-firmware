@@ -1785,6 +1785,7 @@ static const int small_prime[] =
 /*
  * Miller-Rabin primality test  (HAC 4.24)
  */
+static
 int mpi_is_prime( mpi *X,
                   int (*f_rng)(void *, unsigned char *, size_t),
                   void *p_rng )
@@ -1805,6 +1806,7 @@ int mpi_is_prime( mpi *X,
 
     xs = X->s; X->s = 1;
 
+#if 0
     /*
      * test trivial factors first
      */
@@ -1823,6 +1825,7 @@ int mpi_is_prime( mpi *X,
         if( r == 0 )
             return( POLARSSL_ERR_MPI_NOT_ACCEPTABLE );
     }
+#endif
 
     /*
      * W = |X| - 1
@@ -1900,72 +1903,94 @@ cleanup:
     return( ret );
 }
 
+
+/*
+ * Value M: multiply all primes up to 691
+ */
+#define M_LIMBS 31
+#define M_SIZE 121
+
+static const t_uint limbs_M[] = { /* Little endian */
+  0xC4A41A2E, 0xE5EFDDEE, 0x421A588E, 0xB0FB4F7B,
+  0xA007B213, 0x384159E3, 0xDB479E8A, 0x9781B78D,
+  0xEECE412F, 0x01FF1B61, 0xF5ACB721, 0x3918A8AA,
+  0x80F6271D, 0x4E6314A2, 0x432BF67F, 0x53AF4FEB,
+  0x85FE4727, 0x2CDC5CB4, 0xC4903782, 0x0FE374A0,
+  0xCE53E956, 0x640F5175, 0x66A12FC3, 0xD42CF844,
+  0xB4C79D3F, 0x0CCFB001, 0x8FC4A724, 0x7EE7A682,
+  0x831E885C, 0xD987593B, 0x00000002,
+};
+
+static const mpi M[1] = {{ 1, M_LIMBS, (t_uint *)limbs_M }};
+
+/*
+ * MAX_A
+ */
+#define MAX_A_LIMBS 2
+#define MAX_A_SIZE  8
+static const t_uint limbs_MAX_A[] = { /* Little endian */
+  0xFE294A0D, 0x59D555BF
+};
+
+static const mpi MAX_A[1] = {{ 1, MAX_A_LIMBS, (t_uint *)limbs_MAX_A }};
+
 /*
  * Prime number generation
+ *
+ * Special version for 1024-bit only.  Ignores DH_FLAG.
  */
 int mpi_gen_prime( mpi *X, size_t nbits, int dh_flag,
                    int (*f_rng)(void *, unsigned char *, size_t),
                    void *p_rng )
 {
-    int ret;
-    size_t k, n;
-    mpi Y;
+  int ret;
+  mpi B[1], G[1];
 
-    if( nbits < 3 || nbits > POLARSSL_MPI_MAX_BITS )
-        return( POLARSSL_ERR_MPI_BAD_INPUT_DATA );
+  (void)dh_flag;
+  if (nbits != 1024)
+    return POLARSSL_ERR_MPI_BAD_INPUT_DATA;
 
-    mpi_init( &Y );
+  mpi_init ( B );  mpi_init ( G );
 
-    n = BITS_TO_LIMBS( nbits );
-
-    MPI_CHK( mpi_fill_random( X, n * ciL, f_rng, p_rng ) );
-
-    k = mpi_msb( X );
-    if( k < nbits ) MPI_CHK( mpi_shift_l( X, nbits - k ) );
-    if( k > nbits ) MPI_CHK( mpi_shift_r( X, k - nbits ) );
-
-    X->p[0] |= 3;
-
-    if( dh_flag == 0 )
+  /*
+   * Get random value 1 to M-1 avoiding bias, and proceed when it is
+   * coprime to all small primes.
+   */
+  do
     {
-        while( ( ret = mpi_is_prime( X, f_rng, p_rng ) ) != 0 )
-        {
-            if( ret != POLARSSL_ERR_MPI_NOT_ACCEPTABLE )
-                goto cleanup;
+      MPI_CHK ( mpi_fill_random ( B, M_SIZE, f_rng, p_rng ) );
+      B->p[0] |= 0x1;
+      B->p[M_LIMBS - 1] &= 0x3;
+      if (mpi_cmp_abs (B, M) >= 0)
+	continue;
 
-            MPI_CHK( mpi_add_int( X, X, 2 ) );
-        }
+      MPI_CHK ( mpi_gcd ( G, B, M ) );
     }
-    else
+  while (mpi_cmp_int ( G, 1 ) != 0);
+
+  /*
+   * Get random value 0 to MAX_A avoiding bias, comput P with the value,
+   * and check if it's prime.
+   */
+  while (1)
     {
-        MPI_CHK( mpi_sub_int( &Y, X, 1 ) );
-        MPI_CHK( mpi_shift_r( &Y, 1 ) );
+      MPI_CHK( mpi_fill_random( X, MAX_A_SIZE, f_rng, p_rng ) );
+      X->p[MAX_A_LIMBS - 1] &= 0x7fffffff;
+      if (mpi_cmp_abs (X, MAX_A) > 0)
+	continue;
+      MPI_CHK ( mpi_mul_mpi (X, X, M) );
+      MPI_CHK ( mpi_add_abs ( X, X, B ) );
 
-        while( 1 )
-        {
-            if( ( ret = mpi_is_prime( X, f_rng, p_rng ) ) == 0 )
-            {
-                if( ( ret = mpi_is_prime( &Y, f_rng, p_rng ) ) == 0 )
-                    break;
-
-                if( ret != POLARSSL_ERR_MPI_NOT_ACCEPTABLE )
-                    goto cleanup;
-            }
-
-            if( ret != POLARSSL_ERR_MPI_NOT_ACCEPTABLE )
-                goto cleanup;
-
-            MPI_CHK( mpi_add_int( &Y, X, 1 ) );
-            MPI_CHK( mpi_add_int(  X, X, 2 ) );
-            MPI_CHK( mpi_shift_r( &Y, 1 ) );
-        }
+      ret = mpi_is_prime ( X, f_rng, p_rng );
+      if (ret == 0 || ret != POLARSSL_ERR_MPI_NOT_ACCEPTABLE)
+	break;
     }
 
 cleanup:
 
-    mpi_free( &Y );
+  mpi_free ( B );  mpi_free ( G );
 
-    return( ret );
+  return ret;
 }
 
 #endif

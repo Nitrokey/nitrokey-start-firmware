@@ -1,3 +1,13 @@
+2013-09-27  Niibe Yutaka  <gniibe@fsij.org>
+
+	* polarssl/include/polarssl/bignum.h (mpi_is_prime): ifdef-out.
+	* polarssl/library/bignum.c (mpi_is_prime): It's now internal
+	function, assuming we already know its coprime to small primes.
+	(M): New constant MPI.  Multiply primes 2*...*691.
+	(MAX_A): New constant MPI.  2^1024 / M - 1.
+	(mpi_gen_prime): Specialize for 1024-bit, using Fouque-Tibouchi
+	method.
+
 2013-09-25  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/sha256.h, src/adc.h
