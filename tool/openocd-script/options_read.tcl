@@ -1,5 +1,5 @@
 init
 reset
 halt
-stm32x options_read 0
+stm32f1x options_read 0
 shutdown
