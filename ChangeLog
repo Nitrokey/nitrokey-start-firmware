@@ -1,3 +1,11 @@
+2013-09-30  Niibe Yutaka  <gniibe@fsij.org>
+
+	* polarssl/library/bignum.c (mpi_is_prime): Enable trial divisions
+	by small integers.
+	Add Fermat primality test.
+	(mpi_gen_prime): Limit random value so that two MSBs of result will
+	be 0x11.
+
 2013-09-27  Niibe Yutaka  <gniibe@fsij.org>
 
 	* polarssl/include/polarssl/bignum.h (mpi_is_prime): ifdef-out.

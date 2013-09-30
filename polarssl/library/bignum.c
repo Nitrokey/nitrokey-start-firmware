@@ -1805,6 +1805,7 @@ int mpi_is_prime( mpi *X,
     mpi_init( &RR );
 
     xs = X->s; X->s = 1;
+    ret = 0;
 
 #if 0
     /*
@@ -1812,8 +1813,10 @@ int mpi_is_prime( mpi *X,
      */
     if( ( X->p[0] & 1 ) == 0 )
         return( POLARSSL_ERR_MPI_NOT_ACCEPTABLE );
+#endif
 
-    for( i = 0; small_prime[i] > 0; i++ )
+#define SMALL_PRIME_START 124
+    for( i = SMALL_PRIME_START; small_prime[i] > 0; i++ )
     {
         t_uint r;
 
@@ -1825,7 +1828,6 @@ int mpi_is_prime( mpi *X,
         if( r == 0 )
             return( POLARSSL_ERR_MPI_NOT_ACCEPTABLE );
     }
-#endif
 
     /*
      * W = |X| - 1
@@ -1835,8 +1837,18 @@ int mpi_is_prime( mpi *X,
     s = mpi_lsb( &W );
     MPI_CHK( mpi_copy( &R, &W ) );
     MPI_CHK( mpi_shift_r( &R, s ) );
-
     i = mpi_msb( X );
+
+    /* Fermat primality test with 2.  */
+    mpi_lset (&T, 2);
+    MPI_CHK( mpi_exp_mod( &T, &T, &W, X, &RR ) );
+    if ( mpi_cmp_int (&T, 1) != 0)
+      {
+	ret = POLARSSL_ERR_MPI_NOT_ACCEPTABLE;
+	goto cleanup;
+      }
+
+
     /*
      * HAC, table 4.4
      */
@@ -1969,17 +1981,19 @@ int mpi_gen_prime( mpi *X, size_t nbits, int dh_flag,
   while (mpi_cmp_int ( G, 1 ) != 0);
 
   /*
-   * Get random value 0 to MAX_A avoiding bias, comput P with the value,
-   * and check if it's prime.
+   * Get random value avoiding bias, comput P with the value,
+   * check if it's big enough, lastly, check if it's prime.
    */
   while (1)
     {
       MPI_CHK( mpi_fill_random( X, MAX_A_SIZE, f_rng, p_rng ) );
-      X->p[MAX_A_LIMBS - 1] &= 0x7fffffff;
-      if (mpi_cmp_abs (X, MAX_A) > 0)
-	continue;
-      MPI_CHK ( mpi_mul_mpi (X, X, M) );
+      X->p[MAX_A_LIMBS - 1] &= 0x1fffffff;
+      MPI_CHK ( mpi_sub_abs (X, MAX_A, X) );
+
+      MPI_CHK ( mpi_mul_mpi ( X, X, M ) );
       MPI_CHK ( mpi_add_abs ( X, X, B ) );
+      if (X->n <= 31 || (X->p[31] & 0xc0000000) == 0)
+	continue;
 
       ret = mpi_is_prime ( X, f_rng, p_rng );
       if (ret == 0 || ret != POLARSSL_ERR_MPI_NOT_ACCEPTABLE)
