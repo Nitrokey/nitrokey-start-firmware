@@ -1775,19 +1775,23 @@ static const int small_prime[] =
       521,  523,  541,  547,  557,  563,  569,  571,
       577,  587,  593,  599,  601,  607,  613,  617,
       619,  631,  641,  643,  647,  653,  659,  661,
-      673,  677,  683,  691,
+      673,  677,  683,  691,  701,
+#else
+       97,
 #endif
-	                      701,  709,  719,  727,
+                                    709,  719,  727,
       733,  739,  743,  751,  757,  761,  769,  773,
-      787,  797,  809,  811,  821,  823,  827,  829,
+      787,  
+#if 0
+            797,
+#endif
+                  809,  811,  821,  823,  827,  829,
       839,  853,  857,  859,  863,  877,  881,  883,
       887,  907,  911,  919,  929,  937,  941,  947,
       953,  967,  971,  977,  983,  991,  997, 
-                                               1009, 
-     1013, 1019, 1021, 
-
 #if 1
-                       1031, 1033, 1039, 1049, 1051,
+                                               1009, 
+     1013, 1019, 1021, 1031, 1033, 1039, 1049, 1051,
      1061, 1063, 1069, 1087, 1091, 1093, 1097, 1103,
      1109, 1117, 1123, 1129, 1151, 1153, 1163, 1171,
      1181, 1187, 1193, 1201, 1213, 1217, 1223, 1229,
@@ -2002,31 +2006,32 @@ cleanup:
 
 
 /*
- * Value M: multiply all primes up to 691
+ * Value M: multiply all primes up to 701 (except 97) and 797
+ * (so that MAX_A will be convenient value)
  */
 #define M_LIMBS 31
-#define M_SIZE 121
+#define M_SIZE 122
 
 static const t_uint limbs_M[] = { /* Little endian */
-  0xC4A41A2E, 0xE5EFDDEE, 0x421A588E, 0xB0FB4F7B,
-  0xA007B213, 0x384159E3, 0xDB479E8A, 0x9781B78D,
-  0xEECE412F, 0x01FF1B61, 0xF5ACB721, 0x3918A8AA,
-  0x80F6271D, 0x4E6314A2, 0x432BF67F, 0x53AF4FEB,
-  0x85FE4727, 0x2CDC5CB4, 0xC4903782, 0x0FE374A0,
-  0xCE53E956, 0x640F5175, 0x66A12FC3, 0xD42CF844,
-  0xB4C79D3F, 0x0CCFB001, 0x8FC4A724, 0x7EE7A682,
-  0x831E885C, 0xD987593B, 0x00000002,
+  0x84EEB59E, 0x9344A6AB, 0xFF21529F, 0xEC855CDA,
+  0x009BAB38, 0x477E991E, 0x9F5B86F3, 0x2EEA2357,
+  0x41D6502F, 0xAC17D304, 0x0A468A6D, 0x38FF52B9,
+  0xFD42E5EF, 0x63630419, 0x91DB2572, 0x48CE17D0,
+  0xE3B57D0E, 0x708AB00A, 0xCD723598, 0xF8A9DE08,
+  0x4432C93B, 0x73141137, 0x2779FAB3, 0x554DF261,
+  0x953D2BA5, 0xDEEBDA58, 0x5F57D007, 0xD1D66F2F,
+  0xE84E9F2B, 0xB85C9607, 0x0000401D
 };
 
 static const mpi M[1] = {{ 1, M_LIMBS, (t_uint *)limbs_M }};
 
 /*
- * MAX_A
+ * MAX_A : 2^1024 / M - 1
  */
 #define MAX_A_LIMBS 2
-#define MAX_A_SIZE  8
+#define MAX_A_FILL_SIZE  6
 static const t_uint limbs_MAX_A[] = { /* Little endian */
-  0xFE294A0D, 0x59D555BF
+  0x56A2B35F, 0x0003FE25
 };
 
 static const mpi MAX_A[1] = {{ 1, MAX_A_LIMBS, (t_uint *)limbs_MAX_A }};
@@ -2057,7 +2062,7 @@ int mpi_gen_prime( mpi *X, size_t nbits, int dh_flag,
     {
       MPI_CHK ( mpi_fill_random ( B, M_SIZE, f_rng, p_rng ) );
       B->p[0] |= 0x1;
-      B->p[M_LIMBS - 1] &= 0x3;
+      B->p[M_LIMBS - 1] &= 0x00007FFF;
       if (mpi_cmp_abs (B, M) >= 0)
 	continue;
 
@@ -2071,8 +2076,7 @@ int mpi_gen_prime( mpi *X, size_t nbits, int dh_flag,
    */
   while (1)
     {
-      MPI_CHK( mpi_fill_random( X, MAX_A_SIZE, f_rng, p_rng ) );
-      X->p[MAX_A_LIMBS - 1] &= 0x1fffffff;
+      MPI_CHK( mpi_fill_random( X, MAX_A_FILL_SIZE, f_rng, p_rng ) );
       MPI_CHK ( mpi_sub_abs (X, MAX_A, X) );
 
       MPI_CHK ( mpi_mul_mpi ( X, X, M ) );
