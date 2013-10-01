@@ -1,5 +1,7 @@
 2013-10-01  Niibe Yutaka  <gniibe@fsij.org>
 
+	* src/random.c (random_gen): Bug fix for INDEXed copy.
+
 	* src/call-rsa.c (rsa_genkey): Call neug_flush and prng_seed.
 	* polarssl/library/bignum.c (small_prime): More constants.
 	(prng_seed, jkiss, mpi_fill_pseudo_random): New.
