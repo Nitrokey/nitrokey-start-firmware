@@ -99,7 +99,7 @@ random_gen (void *arg, unsigned char *out, size_t out_len)
       if (n > out_len)
 	n = out_len;
 
-      memcpy (out, random_word + index, n);
+      memcpy (out, ((unsigned char *)random_word) + index, n);
       out += n;
       out_len -= n;
       index += n;
