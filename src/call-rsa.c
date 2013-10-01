@@ -216,9 +216,15 @@ rsa_genkey (void)
   uint8_t *p = p_q_modulus;
   uint8_t *q = p_q_modulus + KEY_CONTENT_LEN/2;
   uint8_t *modulus = p_q_modulus + KEY_CONTENT_LEN;
+  extern int prng_seed (int (*f_rng)(void *, unsigned char *, size_t),
+			void *p_rng);
+  extern void neug_flush (void);
 
   if (p_q_modulus == NULL)
     return NULL;
+
+  neug_flush ();
+  prng_seed (random_gen, &index);
 
   rsa_init (&rsa_ctx, RSA_PKCS_V15, 0);
   r = rsa_gen_key (&rsa_ctx, random_gen, &index,

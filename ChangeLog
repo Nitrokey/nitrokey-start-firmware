@@ -1,3 +1,10 @@
+2013-10-01  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/call-rsa.c (rsa_genkey): Call neug_flush and prng_seed.
+	* polarssl/library/bignum.c (small_prime): More constants.
+	(prng_seed, jkiss, mpi_fill_pseudo_random): New.
+	(mpi_is_prime): Use mpi_fill_pseudo_random.
+
 2013-09-30  Niibe Yutaka  <gniibe@fsij.org>
 
 	* polarssl/library/bignum.c (mpi_is_prime): Enable trial divisions
