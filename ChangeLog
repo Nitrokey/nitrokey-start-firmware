@@ -1,3 +1,9 @@
+2013-10-04  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/main.c (gnuk_malloc): Update ->neighbor field of a chunk on
+	the free list.
+	(gnuk_free): Access free list after getting the lock.
+
 2013-10-01  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/random.c (random_gen): Bug fix for INDEXed copy.

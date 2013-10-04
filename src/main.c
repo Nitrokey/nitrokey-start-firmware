@@ -521,6 +521,7 @@ void *
 gnuk_malloc (size_t size)
 {
   struct mem_head *m;
+  struct mem_head *m0;
 
   size = MEMORY_ALIGN (size + sizeof (uint32_t));
 
@@ -542,6 +543,12 @@ gnuk_malloc (size_t size)
       if (m->size == size)
 	{
 	  remove_from_free_list (m);
+	  m0 = free_list;
+	  while (m0)
+	    if (m0->neighbor == m)
+	      m0->neighbor = NULL;
+	    else
+	      m0 = m0->next;
 	  break;
 	}
 
@@ -566,9 +573,10 @@ void
 gnuk_free (void *p)
 {
   struct mem_head *m = (struct mem_head *)((void *)p - sizeof (uint32_t));
-  struct mem_head *m0 = free_list;
+  struct mem_head *m0;
 
   chopstx_mutex_lock (&malloc_mtx);
+  m0 = free_list;
   DEBUG_INFO ("free: ");
   DEBUG_SHORT (m->size);
   DEBUG_WORD ((uint32_t)p);
