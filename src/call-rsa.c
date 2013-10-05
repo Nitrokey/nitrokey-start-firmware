@@ -43,44 +43,45 @@ rsa_sign (const uint8_t *raw_message, uint8_t *output, int msg_len,
 	  struct key_data *kd)
 {
   mpi P1, Q1, H;
-  int r;
+  int ret = 0;
   unsigned char temp[RSA_SIGNATURE_LENGTH];
-
-  mpi_init (&P1);
-  mpi_init (&Q1);
-  mpi_init (&H);
+  uint8_t index = 0;
 
   rsa_init (&rsa_ctx, RSA_PKCS_V15, 0);
 
+  mpi_init (&P1);  mpi_init (&Q1);  mpi_init (&H);
+
   rsa_ctx.len = KEY_CONTENT_LEN;
-  mpi_lset (&rsa_ctx.E, 0x10001);
-  mpi_read_binary (&rsa_ctx.P, &kd->data[0], rsa_ctx.len / 2);
-  mpi_read_binary (&rsa_ctx.Q, &kd->data[KEY_CONTENT_LEN/2], rsa_ctx.len / 2);
-#if 0 /* Using CRT, we don't use N */
-  mpi_mul_mpi (&rsa_ctx.N, &rsa_ctx.P, &rsa_ctx.Q);
-#endif
-  mpi_sub_int (&P1, &rsa_ctx.P, 1);
-  mpi_sub_int (&Q1, &rsa_ctx.Q, 1);
-  mpi_mul_mpi (&H, &P1, &Q1);
-  mpi_inv_mod (&rsa_ctx.D , &rsa_ctx.E, &H);
-  mpi_mod_mpi (&rsa_ctx.DP, &rsa_ctx.D, &P1);
-  mpi_mod_mpi (&rsa_ctx.DQ, &rsa_ctx.D, &Q1);
-  mpi_inv_mod (&rsa_ctx.QP, &rsa_ctx.Q, &rsa_ctx.P);
-  mpi_free (&P1);
-  mpi_free (&Q1);
-  mpi_free (&H);
+  MPI_CHK( mpi_lset (&rsa_ctx.E, 0x10001) );
+  MPI_CHK( mpi_read_binary (&rsa_ctx.P, &kd->data[0], rsa_ctx.len / 2) );
+  MPI_CHK( mpi_read_binary (&rsa_ctx.Q, &kd->data[KEY_CONTENT_LEN/2],
+			    rsa_ctx.len / 2) );
+  MPI_CHK( mpi_mul_mpi (&rsa_ctx.N, &rsa_ctx.P, &rsa_ctx.Q) );
+  MPI_CHK( mpi_sub_int (&P1, &rsa_ctx.P, 1) );
+  MPI_CHK( mpi_sub_int (&Q1, &rsa_ctx.Q, 1) );
+  MPI_CHK( mpi_mul_mpi (&H, &P1, &Q1) );
+  MPI_CHK( mpi_inv_mod (&rsa_ctx.D , &rsa_ctx.E, &H) );
+  MPI_CHK( mpi_mod_mpi (&rsa_ctx.DP, &rsa_ctx.D, &P1) );
+  MPI_CHK( mpi_mod_mpi (&rsa_ctx.DQ, &rsa_ctx.D, &Q1) );
+  MPI_CHK( mpi_inv_mod (&rsa_ctx.QP, &rsa_ctx.Q, &rsa_ctx.P) );
+ cleanup:
+  mpi_free (&P1);  mpi_free (&Q1);  mpi_free (&H);
+  if (ret == 0)
+    {
+      DEBUG_INFO ("RSA sign...");
 
-  DEBUG_INFO ("RSA sign...");
+      ret = rsa_rsassa_pkcs1_v15_sign (&rsa_ctx, random_gen, &index,
+				       RSA_PRIVATE, SIG_RSA_RAW,
+				       msg_len, raw_message, temp);
+      memcpy (output, temp, RSA_SIGNATURE_LENGTH);
+    }
 
-  r = rsa_rsassa_pkcs1_v15_sign (&rsa_ctx, RSA_PRIVATE, SIG_RSA_RAW,
-				 msg_len, raw_message, temp);
-  memcpy (output, temp, RSA_SIGNATURE_LENGTH);
   rsa_free (&rsa_ctx);
-  if (r < 0)
+  if (ret != 0)
     {
       DEBUG_INFO ("fail:");
-      DEBUG_SHORT (r);
-      return r;
+      DEBUG_SHORT (ret);
+      return -1;
     }
   else
     {
@@ -99,23 +100,23 @@ modulus_calc (const uint8_t *p, int len)
 {
   mpi P, Q, N;
   uint8_t *modulus;
+  int ret;
 
   modulus = malloc (len);
   if (modulus == NULL)
     return NULL;
 
-  mpi_init (&P);
-  mpi_init (&Q);
-  mpi_init (&N);
-  mpi_read_binary (&P, p, len / 2);
-  mpi_read_binary (&Q, p + len / 2, len / 2);
-  mpi_mul_mpi (&N, &P, &Q);
-
-  mpi_write_binary (&N, modulus, len);
-  mpi_free (&P);
-  mpi_free (&Q);
-  mpi_free (&N);
-  return modulus;
+  mpi_init (&P);  mpi_init (&Q);  mpi_init (&N);
+  MPI_CHK( mpi_read_binary (&P, p, len / 2) );
+  MPI_CHK( mpi_read_binary (&Q, p + len / 2, len / 2) );
+  MPI_CHK( mpi_mul_mpi (&N, &P, &Q) );
+  MPI_CHK( mpi_write_binary (&N, modulus, len) );
+ cleanup:
+  mpi_free (&P);  mpi_free (&Q);  mpi_free (&N);
+  if (ret != 0)
+    return NULL;
+  else
+    return modulus;
 }
 
 
@@ -124,48 +125,47 @@ rsa_decrypt (const uint8_t *input, uint8_t *output, int msg_len,
 	     struct key_data *kd)
 {
   mpi P1, Q1, H;
-  int r;
+  int ret;
   unsigned int output_len;
+  uint8_t index = 0;
 
   DEBUG_INFO ("RSA decrypt:");
   DEBUG_WORD ((uint32_t)&output_len);
 
-  mpi_init (&P1);
-  mpi_init (&Q1);
-  mpi_init (&H);
   rsa_init (&rsa_ctx, RSA_PKCS_V15, 0);
+  mpi_init (&P1);  mpi_init (&Q1);  mpi_init (&H);
 
   rsa_ctx.len = msg_len;
   DEBUG_WORD (msg_len);
 
-  mpi_lset (&rsa_ctx.E, 0x10001);
-  mpi_read_binary (&rsa_ctx.P, &kd->data[0], KEY_CONTENT_LEN / 2);
-  mpi_read_binary (&rsa_ctx.Q, &kd->data[KEY_CONTENT_LEN/2],
-		   KEY_CONTENT_LEN / 2);
-#if 0 /* Using CRT, we don't use N */
-  mpi_mul_mpi (&rsa_ctx.N, &rsa_ctx.P, &rsa_ctx.Q);
-#endif
-  mpi_sub_int (&P1, &rsa_ctx.P, 1);
-  mpi_sub_int (&Q1, &rsa_ctx.Q, 1);
-  mpi_mul_mpi (&H, &P1, &Q1);
-  mpi_inv_mod (&rsa_ctx.D , &rsa_ctx.E, &H);
-  mpi_mod_mpi (&rsa_ctx.DP, &rsa_ctx.D, &P1);
-  mpi_mod_mpi (&rsa_ctx.DQ, &rsa_ctx.D, &Q1);
-  mpi_inv_mod (&rsa_ctx.QP, &rsa_ctx.Q, &rsa_ctx.P);
-  mpi_free (&P1);
-  mpi_free (&Q1);
-  mpi_free (&H);
+  MPI_CHK( mpi_lset (&rsa_ctx.E, 0x10001) );
+  MPI_CHK( mpi_read_binary (&rsa_ctx.P, &kd->data[0], KEY_CONTENT_LEN / 2) );
+  MPI_CHK( mpi_read_binary (&rsa_ctx.Q, &kd->data[KEY_CONTENT_LEN/2],
+			    KEY_CONTENT_LEN / 2) );
+  MPI_CHK( mpi_mul_mpi (&rsa_ctx.N, &rsa_ctx.P, &rsa_ctx.Q) );
+  MPI_CHK( mpi_sub_int (&P1, &rsa_ctx.P, 1) );
+  MPI_CHK( mpi_sub_int (&Q1, &rsa_ctx.Q, 1) );
+  MPI_CHK( mpi_mul_mpi (&H, &P1, &Q1) );
+  MPI_CHK( mpi_inv_mod (&rsa_ctx.D , &rsa_ctx.E, &H) );
+  MPI_CHK( mpi_mod_mpi (&rsa_ctx.DP, &rsa_ctx.D, &P1) );
+  MPI_CHK( mpi_mod_mpi (&rsa_ctx.DQ, &rsa_ctx.D, &Q1) );
+  MPI_CHK( mpi_inv_mod (&rsa_ctx.QP, &rsa_ctx.Q, &rsa_ctx.P) );
+ cleanup:
+  mpi_free (&P1);  mpi_free (&Q1);  mpi_free (&H);
+  if (ret == 0)
+    {
+      DEBUG_INFO ("RSA decrypt ...");
+      ret = rsa_rsaes_pkcs1_v15_decrypt (&rsa_ctx, random_gen, &index,
+					 RSA_PRIVATE, &output_len, input,
+					 output, MAX_RES_APDU_DATA_SIZE);
+    }
 
-  DEBUG_INFO ("RSA decrypt ...");
-
-  r = rsa_rsaes_pkcs1_v15_decrypt (&rsa_ctx, RSA_PRIVATE, &output_len,
-				   input, output, MAX_RES_APDU_DATA_SIZE);
   rsa_free (&rsa_ctx);
-  if (r < 0)
+  if (ret != 0)
     {
       DEBUG_INFO ("fail:");
-      DEBUG_SHORT (r);
-      return r;
+      DEBUG_SHORT (ret);
+      return -1;
     }
   else
     {
@@ -179,23 +179,26 @@ rsa_decrypt (const uint8_t *input, uint8_t *output, int msg_len,
 int
 rsa_verify (const uint8_t *pubkey, const uint8_t *hash, const uint8_t *sig)
 {
-  int r;
+  int ret;
+  uint8_t index = 0;
 
   rsa_init (&rsa_ctx, RSA_PKCS_V15, 0);
   rsa_ctx.len = KEY_CONTENT_LEN;
-  mpi_lset (&rsa_ctx.E, 0x10001);
-  mpi_read_binary (&rsa_ctx.N, pubkey, KEY_CONTENT_LEN);
+  MPI_CHK( mpi_lset (&rsa_ctx.E, 0x10001) );
+  MPI_CHK( mpi_read_binary (&rsa_ctx.N, pubkey, KEY_CONTENT_LEN) );
 
   DEBUG_INFO ("RSA verify...");
 
-  r = rsa_rsassa_pkcs1_v15_verify (&rsa_ctx, RSA_PUBLIC, SIG_RSA_SHA256, 32, hash, sig);
-
+  MPI_CHK( rsa_rsassa_pkcs1_v15_verify (&rsa_ctx, random_gen, &index,
+					RSA_PUBLIC, SIG_RSA_SHA256, 32,
+					hash, sig) );
+ cleanup:
   rsa_free (&rsa_ctx);
-  if (r < 0)
+  if (ret != 0)
     {
       DEBUG_INFO ("fail:");
-      DEBUG_SHORT (r);
-      return r;
+      DEBUG_SHORT (ret);
+      return -1;
     }
   else
     {
@@ -210,7 +213,7 @@ rsa_verify (const uint8_t *pubkey, const uint8_t *hash, const uint8_t *sig)
 uint8_t *
 rsa_genkey (void)
 {
-  int r;
+  int ret;
   uint8_t index = 0;
   uint8_t *p_q_modulus = (uint8_t *)malloc (KEY_CONTENT_LEN*2);
   uint8_t *p = p_q_modulus;
@@ -227,19 +230,24 @@ rsa_genkey (void)
   prng_seed (random_gen, &index);
 
   rsa_init (&rsa_ctx, RSA_PKCS_V15, 0);
-  r = rsa_gen_key (&rsa_ctx, random_gen, &index,
-		   KEY_CONTENT_LEN * 8, RSA_EXPONENT);
-  if (r < 0)
+  MPI_CHK( rsa_gen_key (&rsa_ctx, random_gen, &index,
+			KEY_CONTENT_LEN * 8, RSA_EXPONENT) );
+  if (ret != 0)
     {
       free (p_q_modulus);
       rsa_free (&rsa_ctx);
       return NULL;
     }
 
-  mpi_write_binary (&rsa_ctx.P, p, KEY_CONTENT_LEN/2);
-  mpi_write_binary (&rsa_ctx.Q, q, KEY_CONTENT_LEN/2);
-  mpi_write_binary (&rsa_ctx.N, modulus, KEY_CONTENT_LEN);
+  MPI_CHK( mpi_write_binary (&rsa_ctx.P, p, KEY_CONTENT_LEN/2) );
+  MPI_CHK( mpi_write_binary (&rsa_ctx.Q, q, KEY_CONTENT_LEN/2) );
+  MPI_CHK( mpi_write_binary (&rsa_ctx.N, modulus, KEY_CONTENT_LEN) );
+
+ cleanup:
   rsa_free (&rsa_ctx);
-  return p_q_modulus;
+  if (ret != 0)
+      return NULL;
+  else
+    return p_q_modulus;
 }
 #endif

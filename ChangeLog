@@ -1,3 +1,15 @@
+2013-10-05  Niibe Yutaka  <gniibe@fsij.org>
+
+	* polarssl/include/polarssl/aes.h: Updated from PolarSSL 1.2.9.
+	* polarssl/include/polarssl/bignum.h: Ditto.
+	* polarssl/include/polarssl/config.h: Ditto.
+	* polarssl/include/polarssl/rsa.h: Ditto.
+	* polarssl/library/aes.c, polarssl/library/bignum.c: Ditto.
+	* polarssl/library/rsa.c: Ditto.  Fix rsa_free.
+	* src/call-rsa.c (rsa_sign, modulus_calc, rsa_decrypt)
+	(rsa_verify): Follow changes of PolarSSL 1.2.9 with RSA blinding.
+	Better error checking.
+
 2013-10-04  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/main.c (gnuk_malloc): Update ->neighbor field of a chunk on

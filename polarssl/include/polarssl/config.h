@@ -3,7 +3,7 @@
  *
  * \brief Configuration options (set of defines)
  *
- *  Copyright (C) 2006-2012, Brainspark B.V.
+ *  Copyright (C) 2006-2013, Brainspark B.V.
  *
  *  This file is part of PolarSSL (http://www.polarssl.org)
  *  Lead Maintainer: Paul Bakker <polarssl_maintainer at polarssl.org>
@@ -103,6 +103,35 @@
  * This section sets support for features that are or are not needed
  * within the modules that are enabled.
  * \{
+ */
+
+/**
+ * \def POLARSSL_XXX_ALT
+ *
+ * Uncomment a macro to let PolarSSL use your alternate core implementation of
+ * a symmetric or hash algorithm (e.g. platform specific assembly optimized
+ * implementations). Keep in mind that the function prototypes should remain
+ * the same.
+ *
+ * Example: In case you uncomment POLARSSL_AES_ALT, PolarSSL will no longer
+ * provide the "struct aes_context" definition and omit the base function
+ * declarations and implementations. "aes_alt.h" will be included from
+ * "aes.h" to include the new function definitions.
+ *
+ * Uncomment a macro to enable alternate implementation for core algorithm
+ * functions
+#define POLARSSL_AES_ALT
+#define POLARSSL_ARC4_ALT
+#define POLARSSL_BLOWFISH_ALT
+#define POLARSSL_CAMELLIA_ALT
+#define POLARSSL_DES_ALT
+#define POLARSSL_XTEA_ALT
+#define POLARSSL_MD2_ALT
+#define POLARSSL_MD4_ALT
+#define POLARSSL_MD5_ALT
+#define POLARSSL_SHA1_ALT
+#define POLARSSL_SHA2_ALT
+#define POLARSSL_SHA4_ALT
  */
 
 /**
@@ -590,14 +619,23 @@
  *
  * Enable the HAVEGE random generator.
  *
+ * Warning: the HAVEGE random generator is not suitable for virtualized
+ *          environments
+ *
+ * Warning: the HAVEGE random generator is dependent on timing and specific
+ *          processor traits. It is therefore not advised to use HAVEGE as
+ *          your applications primary random generator or primary entropy pool
+ *          input. As a secondary input to your entropy pool, it IS able add
+ *          the (limited) extra entropy it provides.
+ *
  * Module:  library/havege.c
  * Caller:
  *
  * Requires: POLARSSL_TIMING_C
  *
- * This module enables the HAVEGE random number generator.
- */
+ * Uncomment to enable the HAVEGE random generator.
 #define POLARSSL_HAVEGE_C
+ */
 
 /**
  * \def POLARSSL_MD_C
@@ -681,10 +719,11 @@
  * \def POLARSSL_PBKDF2_C
  *
  * Enable PKCS#5 PBKDF2 key derivation function
+ * DEPRECATED: Use POLARSSL_PKCS5_C instead
  *
  * Module:  library/pbkdf2.c
  *
- * Requires: POLARSSL_MD_C
+ * Requires: POLARSSL_PKCS5_C
  *
  * This module adds support for the PKCS#5 PBKDF2 key derivation function.
 #define POLARSSL_PBKDF2_C
@@ -705,6 +744,19 @@
 #define POLARSSL_PEM_C
 
 /**
+ * \def POLARSSL_PKCS5_C
+ *
+ * Enable PKCS#5 functions
+ *
+ * Module:  library/pkcs5.c
+ *
+ * Requires: POLARSSL_MD_C
+ *
+ * This module adds support for the PKCS#5 functions.
+ */
+#define POLARSSL_PKCS5_C
+
+/**
  * \def POLARSSL_PKCS11_C
  *
  * Enable wrapper for PKCS#11 smartcard support.
@@ -719,6 +771,22 @@
  * Requires the presence of the PKCS#11 helper library (libpkcs11-helper)
 #define POLARSSL_PKCS11_C
  */
+
+/**
+ * \def POLARSSL_PKCS12_C
+ *
+ * Enable PKCS#12 PBE functions
+ * Adds algorithms for parsing PKCS#8 encrypted private keys
+ *
+ * Module:  library/pkcs12.c
+ * Caller:  library/x509parse.c
+ *
+ * Requires: POLARSSL_ASN1_PARSE_C, POLARSSL_CIPHER_C, POLARSSL_MD_C
+ * Can use:  POLARSSL_ARC4_C
+ *
+ * This module enables PKCS#12 functions.
+ */
+#define POLARSSL_PKCS12_C
 
 /**
  * \def POLARSSL_RSA_C
@@ -897,4 +965,56 @@
 #define POLARSSL_XTEA_C
 /* \} name */
 
+/**
+ * \name SECTION: Module configuration options
+ *
+ * This section allows for the setting of module specific sizes and
+ * configuration options. The default values are already present in the
+ * relevant header files and should suffice for the regular use cases.
+ * Our advice is to enable POLARSSL_CONFIG_OPTIONS and change values here
+ * only if you have a good reason and know the consequences.
+ *
+ * If POLARSSL_CONFIG_OPTIONS is undefined here the options in the module
+ * header file take precedence.
+ *
+ * Please check the respective header file for documentation on these
+ * parameters (to prevent duplicate documentation).
+ *
+ * Uncomment POLARSSL_CONFIG_OPTIONS to enable using the values defined here.
+ * \{
+ */
+//#define POLARSSL_CONFIG_OPTIONS   /**< Enable config.h module value configuration */
+
+#if defined(POLARSSL_CONFIG_OPTIONS)
+
+// MPI / BIGNUM options
+//
+#define POLARSSL_MPI_WINDOW_SIZE            6 /**< Maximum windows size used. */
+#define POLARSSL_MPI_MAX_SIZE             512 /**< Maximum number of bytes for usable MPIs. */
+
+// CTR_DRBG options
+//
+#define CTR_DRBG_ENTROPY_LEN               48 /**< Amount of entropy used per seed by default */
+#define CTR_DRBG_RESEED_INTERVAL        10000 /**< Interval before reseed is performed by default */
+#define CTR_DRBG_MAX_INPUT                256 /**< Maximum number of additional input bytes */
+#define CTR_DRBG_MAX_REQUEST             1024 /**< Maximum number of requested bytes per call */
+#define CTR_DRBG_MAX_SEED_INPUT           384 /**< Maximum size of (re)seed buffer */
+
+// Entropy options
+//
+#define ENTROPY_MAX_SOURCES                20 /**< Maximum number of sources supported */
+#define ENTROPY_MAX_GATHER                128 /**< Maximum amount requested from entropy sources */
+
+// SSL Cache options
+//
+#define SSL_CACHE_DEFAULT_TIMEOUT       86400 /**< 1 day  */
+#define SSL_CACHE_DEFAULT_MAX_ENTRIES      50 /**< Maximum entries in cache */
+
+// SSL options
+//
+#define SSL_MAX_CONTENT_LEN             16384 /**< Size of the input / output buffer */
+
+#endif /* POLARSSL_CONFIG_OPTIONS */
+
+/* \} name */
 #endif /* config.h */
