@@ -45,7 +45,6 @@ rsa_sign (const uint8_t *raw_message, uint8_t *output, int msg_len,
   mpi P1, Q1, H;
   int ret = 0;
   unsigned char temp[RSA_SIGNATURE_LENGTH];
-  uint8_t index = 0;
 
   rsa_init (&rsa_ctx, RSA_PKCS_V15, 0);
 
@@ -56,7 +55,9 @@ rsa_sign (const uint8_t *raw_message, uint8_t *output, int msg_len,
   MPI_CHK( mpi_read_binary (&rsa_ctx.P, &kd->data[0], rsa_ctx.len / 2) );
   MPI_CHK( mpi_read_binary (&rsa_ctx.Q, &kd->data[KEY_CONTENT_LEN/2],
 			    rsa_ctx.len / 2) );
+#if 0
   MPI_CHK( mpi_mul_mpi (&rsa_ctx.N, &rsa_ctx.P, &rsa_ctx.Q) );
+#endif
   MPI_CHK( mpi_sub_int (&P1, &rsa_ctx.P, 1) );
   MPI_CHK( mpi_sub_int (&Q1, &rsa_ctx.Q, 1) );
   MPI_CHK( mpi_mul_mpi (&H, &P1, &Q1) );
@@ -70,7 +71,7 @@ rsa_sign (const uint8_t *raw_message, uint8_t *output, int msg_len,
     {
       DEBUG_INFO ("RSA sign...");
 
-      ret = rsa_rsassa_pkcs1_v15_sign (&rsa_ctx, random_gen, &index,
+      ret = rsa_rsassa_pkcs1_v15_sign (&rsa_ctx, NULL, NULL,
 				       RSA_PRIVATE, SIG_RSA_RAW,
 				       msg_len, raw_message, temp);
       memcpy (output, temp, RSA_SIGNATURE_LENGTH);
@@ -127,7 +128,6 @@ rsa_decrypt (const uint8_t *input, uint8_t *output, int msg_len,
   mpi P1, Q1, H;
   int ret;
   unsigned int output_len;
-  uint8_t index = 0;
 
   DEBUG_INFO ("RSA decrypt:");
   DEBUG_WORD ((uint32_t)&output_len);
@@ -142,7 +142,9 @@ rsa_decrypt (const uint8_t *input, uint8_t *output, int msg_len,
   MPI_CHK( mpi_read_binary (&rsa_ctx.P, &kd->data[0], KEY_CONTENT_LEN / 2) );
   MPI_CHK( mpi_read_binary (&rsa_ctx.Q, &kd->data[KEY_CONTENT_LEN/2],
 			    KEY_CONTENT_LEN / 2) );
+#if 0
   MPI_CHK( mpi_mul_mpi (&rsa_ctx.N, &rsa_ctx.P, &rsa_ctx.Q) );
+#endif
   MPI_CHK( mpi_sub_int (&P1, &rsa_ctx.P, 1) );
   MPI_CHK( mpi_sub_int (&Q1, &rsa_ctx.Q, 1) );
   MPI_CHK( mpi_mul_mpi (&H, &P1, &Q1) );
@@ -155,7 +157,7 @@ rsa_decrypt (const uint8_t *input, uint8_t *output, int msg_len,
   if (ret == 0)
     {
       DEBUG_INFO ("RSA decrypt ...");
-      ret = rsa_rsaes_pkcs1_v15_decrypt (&rsa_ctx, random_gen, &index,
+      ret = rsa_rsaes_pkcs1_v15_decrypt (&rsa_ctx, NULL, NULL,
 					 RSA_PRIVATE, &output_len, input,
 					 output, MAX_RES_APDU_DATA_SIZE);
     }
@@ -180,7 +182,6 @@ int
 rsa_verify (const uint8_t *pubkey, const uint8_t *hash, const uint8_t *sig)
 {
   int ret;
-  uint8_t index = 0;
 
   rsa_init (&rsa_ctx, RSA_PKCS_V15, 0);
   rsa_ctx.len = KEY_CONTENT_LEN;
@@ -189,7 +190,7 @@ rsa_verify (const uint8_t *pubkey, const uint8_t *hash, const uint8_t *sig)
 
   DEBUG_INFO ("RSA verify...");
 
-  MPI_CHK( rsa_rsassa_pkcs1_v15_verify (&rsa_ctx, random_gen, &index,
+  MPI_CHK( rsa_rsassa_pkcs1_v15_verify (&rsa_ctx, NULL, NULL,
 					RSA_PUBLIC, SIG_RSA_SHA256, 32,
 					hash, sig) );
  cleanup:

@@ -1326,6 +1326,72 @@ int mpi_mod_int( t_uint *r, const mpi *A, t_sint b )
     return( 0 );
 }
 
+static void mpi_mul_hlp_mm ( size_t i, t_uint *s, t_uint *d, t_uint b)
+{
+    t_uint c = 0;
+
+#if defined(MULADDC_1024_LOOP)
+    MULADDC_1024_LOOP
+
+    for( ; i > 0; i-- )
+    {
+        MULADDC_INIT
+        MULADDC_CORE
+        MULADDC_STOP
+    }
+#elif defined(MULADDC_HUIT)
+    for( ; i >= 8; i -= 8 )
+    {
+        MULADDC_INIT
+        MULADDC_HUIT
+        MULADDC_STOP
+    }
+
+    for( ; i > 0; i-- )
+    {
+        MULADDC_INIT
+        MULADDC_CORE
+        MULADDC_STOP
+    }
+#else
+    for( ; i >= 16; i -= 16 )
+    {
+        MULADDC_INIT
+        MULADDC_CORE   MULADDC_CORE
+        MULADDC_CORE   MULADDC_CORE
+        MULADDC_CORE   MULADDC_CORE
+        MULADDC_CORE   MULADDC_CORE
+
+        MULADDC_CORE   MULADDC_CORE
+        MULADDC_CORE   MULADDC_CORE
+        MULADDC_CORE   MULADDC_CORE
+        MULADDC_CORE   MULADDC_CORE
+        MULADDC_STOP
+    }
+
+    for( ; i >= 8; i -= 8 )
+    {
+        MULADDC_INIT
+        MULADDC_CORE   MULADDC_CORE
+        MULADDC_CORE   MULADDC_CORE
+
+        MULADDC_CORE   MULADDC_CORE
+        MULADDC_CORE   MULADDC_CORE
+        MULADDC_STOP
+    }
+
+    for( ; i > 0; i-- )
+    {
+        MULADDC_INIT
+        MULADDC_CORE
+        MULADDC_STOP
+    }
+#endif
+
+    *d += c; c = ( *d < c ); d++;
+    *d += c;
+}
+
 /*
  * Fast Montgomery initialization (thanks to Tom St Denis)
  */
@@ -1366,8 +1432,8 @@ static void mpi_montmul( mpi *A, const mpi *B, const mpi *N, t_uint mm, const mp
         u0 = A->p[i];
         u1 = ( d[0] + u0 * B->p[0] ) * mm;
 
-        mpi_mul_hlp( m, B->p, d, u0 );
-        mpi_mul_hlp( n, N->p, d, u1 );
+        mpi_mul_hlp_mm( m, B->p, d, u0);
+        mpi_mul_hlp_mm( n, N->p, d, u1);
 
         *d++ = u0; d[n + 1] = 0;
     }

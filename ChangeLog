@@ -1,3 +1,11 @@
+2013-10-06  Niibe Yutaka  <gniibe@fsij.org>
+
+	* polarssl/library/bignum.c (mpi_mul_hlp_mm): New.  Handle
+	extra-carry in constant time to mitigate timing attack.
+	(mpi_montmul): Use mpi_mul_hlp_mm.
+	* src/call-rsa.c (rsa_sign, rsa_decrypt, rsa_verify): Don't
+	use RSA blinding.
+
 2013-10-05  Niibe Yutaka  <gniibe@fsij.org>
 
 	* polarssl/include/polarssl/aes.h: Updated from PolarSSL 1.2.9.
