@@ -1,3 +1,7 @@
+2013-10-07  Niibe Yutaka  <gniibe@fsij.org>
+
+	* polarssl/library/bignum.c (mpi_montmul): Minimum zero-ing of D.
+
 2013-10-06  Niibe Yutaka  <gniibe@fsij.org>
 
 	* polarssl/library/bignum.c (mpi_mul_hlp_mm): New.  Handle

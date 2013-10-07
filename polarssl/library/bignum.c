@@ -1418,11 +1418,10 @@ static void mpi_montmul( mpi *A, const mpi *B, const mpi *N, t_uint mm, const mp
     size_t i, n, m;
     t_uint u0, u1, *d;
 
-    memset( T->p, 0, T->n * ciL );
-
     d = T->p;
     n = N->n;
     m = ( B->n < n ) ? B->n : n;
+    memset( d, 0, (n + 2) * ciL );
 
     for( i = 0; i < n; i++ )
     {
