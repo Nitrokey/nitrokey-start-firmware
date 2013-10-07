@@ -777,7 +777,7 @@ cleanup:
 /*
  * Helper for mpi substraction
  */
-static void mpi_sub_hlp( size_t n, t_uint *s, t_uint *d )
+static t_uint mpi_sub_hlp( size_t n, t_uint *s, t_uint *d )
 {
     size_t i;
     t_uint c, z;
@@ -788,11 +788,7 @@ static void mpi_sub_hlp( size_t n, t_uint *s, t_uint *d )
         c = ( *d < *s ) + z; *d -= *s;
     }
 
-    while( c != 0 )
-    {
-        z = ( *d < c ); *d -= c;
-        c = z; i++; d++;
-    }
+    return c;
 }
 
 /*
@@ -803,6 +799,8 @@ int mpi_sub_abs( mpi *X, const mpi *A, const mpi *B )
     mpi TB;
     int ret;
     size_t n;
+    t_uint *d;
+    t_uint c, z;
 
     if( mpi_cmp_abs( A, B ) < 0 )
         return( POLARSSL_ERR_MPI_NEGATIVE_VALUE );
@@ -829,7 +827,14 @@ int mpi_sub_abs( mpi *X, const mpi *A, const mpi *B )
         if( B->p[n - 1] != 0 )
             break;
 
-    mpi_sub_hlp( n, B->p, X->p );
+    c = mpi_sub_hlp( n, B->p, X->p );
+    d = X->p + n;
+
+    while( c != 0 )
+    {
+        z = ( *d < c ); *d -= c;
+        c = z; d++;
+    }
 
 cleanup:
 
@@ -943,7 +948,7 @@ static
  */
 __attribute__ ((noinline))
 #endif
-void mpi_mul_hlp( size_t i, t_uint *s, t_uint *d, t_uint b )
+t_uint mpi_mul_hlp( size_t i, t_uint *s, t_uint *d, t_uint b )
 {
     t_uint c = 0, t = 0;
 
@@ -1007,10 +1012,8 @@ void mpi_mul_hlp( size_t i, t_uint *s, t_uint *d, t_uint b )
 
     t++;
 
-    do {
-        *d += c; c = ( *d < c ); d++;
-    }
-    while( c != 0 );
+    *d += c; c = ( *d < c ); d++;
+    return c;
 }
 
 /*
@@ -1019,7 +1022,7 @@ void mpi_mul_hlp( size_t i, t_uint *s, t_uint *d, t_uint b )
 int mpi_mul_mpi( mpi *X, const mpi *A, const mpi *B )
 {
     int ret;
-    size_t i, j;
+    size_t i, j, k;
     mpi TA, TB;
 
     mpi_init( &TA ); mpi_init( &TB );
@@ -1038,8 +1041,8 @@ int mpi_mul_mpi( mpi *X, const mpi *A, const mpi *B )
     MPI_CHK( mpi_grow( X, i + j ) );
     MPI_CHK( mpi_lset( X, 0 ) );
 
-    for( i++; j > 0; j-- )
-        mpi_mul_hlp( i - 1, A->p, X->p + j - 1, B->p[j - 1] );
+    for(k = 0; k < j; k++ )
+        mpi_mul_hlp( i, A->p, X->p + k, B->p[k]);
 
     X->s = A->s * B->s;
 
@@ -1326,72 +1329,6 @@ int mpi_mod_int( t_uint *r, const mpi *A, t_sint b )
     return( 0 );
 }
 
-static void mpi_mul_hlp_mm ( size_t i, t_uint *s, t_uint *d, t_uint b)
-{
-    t_uint c = 0;
-
-#if defined(MULADDC_1024_LOOP)
-    MULADDC_1024_LOOP
-
-    for( ; i > 0; i-- )
-    {
-        MULADDC_INIT
-        MULADDC_CORE
-        MULADDC_STOP
-    }
-#elif defined(MULADDC_HUIT)
-    for( ; i >= 8; i -= 8 )
-    {
-        MULADDC_INIT
-        MULADDC_HUIT
-        MULADDC_STOP
-    }
-
-    for( ; i > 0; i-- )
-    {
-        MULADDC_INIT
-        MULADDC_CORE
-        MULADDC_STOP
-    }
-#else
-    for( ; i >= 16; i -= 16 )
-    {
-        MULADDC_INIT
-        MULADDC_CORE   MULADDC_CORE
-        MULADDC_CORE   MULADDC_CORE
-        MULADDC_CORE   MULADDC_CORE
-        MULADDC_CORE   MULADDC_CORE
-
-        MULADDC_CORE   MULADDC_CORE
-        MULADDC_CORE   MULADDC_CORE
-        MULADDC_CORE   MULADDC_CORE
-        MULADDC_CORE   MULADDC_CORE
-        MULADDC_STOP
-    }
-
-    for( ; i >= 8; i -= 8 )
-    {
-        MULADDC_INIT
-        MULADDC_CORE   MULADDC_CORE
-        MULADDC_CORE   MULADDC_CORE
-
-        MULADDC_CORE   MULADDC_CORE
-        MULADDC_CORE   MULADDC_CORE
-        MULADDC_STOP
-    }
-
-    for( ; i > 0; i-- )
-    {
-        MULADDC_INIT
-        MULADDC_CORE
-        MULADDC_STOP
-    }
-#endif
-
-    *d += c; c = ( *d < c ); d++;
-    *d += c;
-}
-
 /*
  * Fast Montgomery initialization (thanks to Tom St Denis)
  */
@@ -1416,12 +1353,13 @@ static void mpi_montg_init( t_uint *mm, const mpi *N )
 static void mpi_montmul( mpi *A, const mpi *B, const mpi *N, t_uint mm, const mpi *T )
 {
     size_t i, n, m;
-    t_uint u0, u1, *d;
+    t_uint u0, u1, *d, c = 0;
+    int need_subtraction;
 
     d = T->p;
     n = N->n;
     m = ( B->n < n ) ? B->n : n;
-    memset( d, 0, (n + 2) * ciL );
+    memset( d, 0, (n + 1) * ciL );
 
     for( i = 0; i < n; i++ )
     {
@@ -1431,15 +1369,16 @@ static void mpi_montmul( mpi *A, const mpi *B, const mpi *N, t_uint mm, const mp
         u0 = A->p[i];
         u1 = ( d[0] + u0 * B->p[0] ) * mm;
 
-        mpi_mul_hlp_mm( m, B->p, d, u0);
-        mpi_mul_hlp_mm( n, N->p, d, u1);
-
-        *d++ = u0; d[n + 1] = 0;
+        mpi_mul_hlp( m, B->p, d, u0 );
+        c = mpi_mul_hlp( n, N->p, d, u1 );
+        *d++ = u0; d[n] = c;
     }
 
+    d[n] = 0;
     memcpy( A->p, d, (n + 1) * ciL );
 
-    if( mpi_cmp_abs( A, N ) >= 0 )
+    need_subtraction = (mpi_cmp_abs( A, N ) >= 0) | c; /* Use '|' to prevent timing attacks */
+    if( need_subtraction )
         mpi_sub_hlp( n, N->p, A->p );
     else
         /* prevent timing attacks */
@@ -1497,7 +1436,7 @@ int mpi_exp_mod( mpi *X, const mpi *A, const mpi *E, const mpi *N, mpi *_RR )
     j = N->n + 1;
     MPI_CHK( mpi_grow( X, j ) );
     MPI_CHK( mpi_grow( &W[1],  j ) );
-    MPI_CHK( mpi_grow( &T, j * 2 ) );
+    MPI_CHK( mpi_grow( &T, j * 2 - 1 ) );
 
     /*
      * Compensate for negative A (and correct at the end)
