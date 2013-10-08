@@ -1,3 +1,7 @@
+2013-10-08  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/openpgp.c (modify_binary): Allow odd size of certificate.
+
 2013-10-07  Niibe Yutaka  <gniibe@fsij.org>
 
 	* polarssl/library/bignum.c (mpi_sub_hlp): Return CARRY.
