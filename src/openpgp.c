@@ -939,6 +939,10 @@ modify_binary (uint8_t op, uint8_t p1, uint8_t p2, int len)
   DEBUG_SHORT (len);
   DEBUG_SHORT (offset);
 
+  if (file_id == FILEID_CH_CERTIFICATE && (len&1))
+    /* It's OK the size of last write is odd.  */
+    apdu.cmd_apdu_data[len++] = 0xff;
+
   r = flash_write_binary (file_id, apdu.cmd_apdu_data, len, offset);
   if (r < 0)
     {

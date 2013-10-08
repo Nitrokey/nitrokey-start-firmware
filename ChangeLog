@@ -1,3 +1,7 @@
+2013-10-08  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/openpgp.c (modify_binary): Allow odd size of certificate.
+
 2013-03-15  Niibe Yutaka  <gniibe@fsij.org>
 
 	* Version 1.0.4.
