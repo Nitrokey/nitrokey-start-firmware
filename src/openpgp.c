@@ -245,8 +245,10 @@ static void
 cmd_change_password (void)
 {
   uint8_t old_ks[KEYSTRING_MD_SIZE];
-  uint8_t new_ks0[KEYSTRING_MD_SIZE+1];
-  uint8_t *new_ks = &new_ks0[1];
+  uint8_t new_ks0[KEYSTRING_SIZE];
+  uint8_t *new_salt = KS_GET_SALT (new_ks0);
+  int newsalt_len = SALT_SIZE;
+  uint8_t *new_ks = KS_GET_KEYSTRING (new_ks0);
   uint8_t p1 = P1 (apdu);	/* 0: change (old+new), 1: exchange (new) */
   uint8_t p2 = P2 (apdu);
   int len;
@@ -256,6 +258,9 @@ cmd_change_password (void)
   int who_old;
   int r;
   int pw3_null = 0;
+  const uint8_t *salt;
+  int salt_len;
+  const uint8_t *ks_pw3;
 
   DEBUG_INFO ("Change PW\r\n");
   DEBUG_BYTE (who);
@@ -273,8 +278,19 @@ cmd_change_password (void)
     {
       const uint8_t *ks_pw1 = gpg_do_read_simple (NR_DO_KEYSTRING_PW1);
 
-      pw_len = verify_user_0 (AC_PSO_CDS_AUTHORIZED, pw, len, -1, ks_pw1);
       who_old = who;
+      pw_len = verify_user_0 (AC_PSO_CDS_AUTHORIZED, pw, len, -1, ks_pw1, 0);
+
+      if (ks_pw1 == NULL)
+	{
+	  salt = NULL;
+	  salt_len = 0;
+	}
+      else
+	{
+	  salt = KS_GET_SALT (ks_pw1);
+	  salt_len = SALT_SIZE;
+	}
 
       if (pw_len < 0)
 	{
@@ -290,10 +306,9 @@ cmd_change_password (void)
 	}
       else
 	{
-	  const uint8_t *ks_pw3 = gpg_do_read_simple (NR_DO_KEYSTRING_PW3);
-
 	  newpw = pw + pw_len;
 	  newpw_len = len - pw_len;
+	  ks_pw3 = gpg_do_read_simple (NR_DO_KEYSTRING_PW3);
 
 	  /* Check length of password for admin-less mode.  */
 	  if (ks_pw3 == NULL && newpw_len < ADMIN_PASSWD_MINLEN)
@@ -306,7 +321,19 @@ cmd_change_password (void)
     }
   else				/* PW3 (0x83) */
     {
-      pw_len = verify_admin_0 (pw, len, -1);
+      ks_pw3 = gpg_do_read_simple (NR_DO_KEYSTRING_PW3);
+      pw_len = verify_admin_0 (pw, len, -1, ks_pw3, 0);
+
+      if (ks_pw3 == NULL)
+	{
+	  salt = NULL;
+	  salt_len = 0;
+	}
+      else
+	{
+	  salt = KS_GET_SALT (ks_pw3);
+	  salt_len = SALT_SIZE;
+	}
 
       if (pw_len < 0)
 	{
@@ -329,6 +356,7 @@ cmd_change_password (void)
 	      newpw_len = strlen (OPENPGP_CARD_INITIAL_PW3);
 	      memcpy (newpw, OPENPGP_CARD_INITIAL_PW3, newpw_len);
 	      gpg_do_write_simple (NR_DO_KEYSTRING_PW3, NULL, 0);
+	      newsalt_len = 0;
 	      pw3_null = 1;
 	    }
 
@@ -336,9 +364,12 @@ cmd_change_password (void)
 	}
     }
 
-  s2k (who_old, pw, pw_len, old_ks);
-  s2k (who, newpw, newpw_len, new_ks);
+  if (newsalt_len != 0)
+    random_get_salt (new_salt);
+  s2k (salt, salt_len, pw, pw_len, old_ks);
+  s2k (new_salt, newsalt_len, newpw, newpw_len, new_ks);
   new_ks0[0] = newpw_len;
+  *KS_GET_ITER (new_ks0) = S2K_ITER;
 
   r = gpg_change_keystring (who_old, old_ks, who, new_ks);
   if (r <= -2)
@@ -364,7 +395,7 @@ cmd_change_password (void)
     }
   else if (r > 0 && who == BY_USER)
     {
-      gpg_do_write_simple (NR_DO_KEYSTRING_PW1, new_ks0, 1);
+      gpg_do_write_simple (NR_DO_KEYSTRING_PW1, new_ks0, KS_META_SIZE);
       ac_reset_pso_cds ();
       ac_reset_other ();
       if (admin_authorized == BY_USER)
@@ -372,16 +403,14 @@ cmd_change_password (void)
       DEBUG_INFO ("Changed length of DO_KEYSTRING_PW1.\r\n");
       GPG_SUCCESS ();
     }
-#if 0
   else if (r > 0 && who == BY_ADMIN)
     {
       if (!pw3_null)
-	gpg_do_write_simple (NR_DO_KEYSTRING_PW3, new_ks0, 1);
+	gpg_do_write_simple (NR_DO_KEYSTRING_PW3, new_ks0, KS_META_SIZE);
       ac_reset_admin ();
       DEBUG_INFO ("Changed length of DO_KEYSTRING_PW3.\r\n");
       GPG_SUCCESS ();
     }
-#endif
   else /* r == 0 && who == BY_ADMIN */	/* no prvkey */
     {
       if (!pw3_null)
@@ -396,24 +425,36 @@ cmd_change_password (void)
 }
 
 
-#define USER_S2K_MAGIC	"\xffUSER\r\n"
-#define RESETCODE_S2K_MAGIC "\xffRESET\r\n"
-
+#define S2KCOUNT 65535
 void
-s2k (int who, const unsigned char *input, unsigned int ilen,
-     unsigned char output[32])
+s2k (const unsigned char *salt, size_t slen,
+     const unsigned char *input, size_t ilen, unsigned char output[32])
 {
   sha256_context ctx;
+  size_t count = S2KCOUNT;
 
   sha256_start (&ctx);
-  sha256_update (&ctx, input, ilen);
-  if (who == BY_USER)
-    sha256_update (&ctx, (unsigned char *)USER_S2K_MAGIC,
-		   sizeof (USER_S2K_MAGIC));
-  else if (who == BY_RESETCODE)
-    sha256_update (&ctx, (unsigned char *)RESETCODE_S2K_MAGIC,
-		   sizeof (RESETCODE_S2K_MAGIC));
-  /* Not add any for BY_ADMIN */
+
+  while (count > slen + ilen)
+    {
+      if (slen)
+	sha256_update (&ctx, salt, slen);
+      sha256_update (&ctx, input, ilen);
+      count -= slen + ilen;
+    }
+
+  if (count <= slen)
+    sha256_update (&ctx, salt, count);
+  else
+    {
+      if (slen)
+	{
+	  sha256_update (&ctx, salt, slen);
+	  count -= slen;
+	}
+      sha256_update (&ctx, input, count);
+    }
+
   sha256_finish (&ctx, output);
 }
 
@@ -427,8 +468,11 @@ cmd_reset_user_password (void)
   const uint8_t *newpw;
   int pw_len, newpw_len;
   int r;
-  uint8_t new_ks0[KEYSTRING_MD_SIZE+1];
-  uint8_t *new_ks = &new_ks0[1];
+  uint8_t new_ks0[KEYSTRING_SIZE];
+  uint8_t *new_ks = KS_GET_KEYSTRING (new_ks0);
+  uint8_t *new_salt = KS_GET_SALT (new_ks0);
+  const uint8_t *salt;
+  int salt_len;
 
   DEBUG_INFO ("Reset PW1\r\n");
   DEBUG_BYTE (p1);
@@ -456,11 +500,15 @@ cmd_reset_user_password (void)
 	}
 
       pw_len = ks_rc[0] & PW_LEN_MASK;
+      salt = KS_GET_SALT (ks_rc);
+      salt_len = SALT_SIZE;
       newpw = pw + pw_len;
       newpw_len = len - pw_len;
-      s2k (BY_RESETCODE, pw, pw_len, old_ks);
-      s2k (BY_USER, newpw, newpw_len, new_ks);
+      random_get_salt (new_salt);
+      s2k (salt, salt_len, pw, pw_len, old_ks);
+      s2k (new_salt, SALT_SIZE, newpw, newpw_len, new_ks);
       new_ks0[0] = newpw_len;
+      *KS_GET_ITER (new_ks0) = S2K_ITER;
       r = gpg_change_keystring (BY_RESETCODE, old_ks, BY_USER, new_ks);
       if (r <= -2)
 	{
@@ -476,7 +524,7 @@ cmd_reset_user_password (void)
 	}
       else if (r == 0)
 	{
-	  if (memcmp (ks_rc+1, old_ks, KEYSTRING_MD_SIZE) != 0)
+	  if (memcmp (KS_GET_KEYSTRING (ks_rc), old_ks, KEYSTRING_MD_SIZE) != 0)
 	    goto sec_fail;
 	  DEBUG_INFO ("done (no prvkey).\r\n");
 	  new_ks0[0] |= PW_LEN_KEYSTRING_BIT;
@@ -492,7 +540,7 @@ cmd_reset_user_password (void)
       else
 	{
 	  DEBUG_INFO ("done.\r\n");
-	  gpg_do_write_simple (NR_DO_KEYSTRING_PW1, new_ks0, 1);
+	  gpg_do_write_simple (NR_DO_KEYSTRING_PW1, new_ks0, KS_META_SIZE);
 	  ac_reset_pso_cds ();
 	  ac_reset_other ();
 	  if (admin_authorized == BY_USER)
@@ -515,7 +563,8 @@ cmd_reset_user_password (void)
 
       newpw_len = len;
       newpw = pw;
-      s2k (BY_USER, newpw, newpw_len, new_ks);
+      random_get_salt (new_salt);
+      s2k (new_salt, SALT_SIZE, newpw, newpw_len, new_ks);
       new_ks0[0] = newpw_len;
       r = gpg_change_keystring (admin_authorized, old_ks, BY_USER, new_ks);
       if (r <= -2)
@@ -543,7 +592,7 @@ cmd_reset_user_password (void)
       else
 	{
 	  DEBUG_INFO ("done.\r\n");
-	  gpg_do_write_simple (NR_DO_KEYSTRING_PW1, new_ks0, 1);
+	  gpg_do_write_simple (NR_DO_KEYSTRING_PW1, new_ks0, KS_META_SIZE);
 	  ac_reset_pso_cds ();
 	  ac_reset_other ();
 	  if (admin_authorized == BY_USER)

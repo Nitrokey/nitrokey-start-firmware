@@ -75,9 +75,10 @@ extern int ac_check_status (uint8_t ac_flag);
 extern int verify_pso_cds (const uint8_t *pw, int pw_len);
 extern int verify_other (const uint8_t *pw, int pw_len);
 extern int verify_user_0 (uint8_t access, const uint8_t *pw, int buf_len,
-			  int pw_len_known, const uint8_t *ks_pw1);
+			  int pw_len_known, const uint8_t *ks_pw1, int saveks);
 extern int verify_admin (const uint8_t *pw, int pw_len);
-extern int verify_admin_0 (const uint8_t *pw, int buf_len, int pw_len_known);
+extern int verify_admin_0 (const uint8_t *pw, int buf_len, int pw_len_known,
+			   const uint8_t *ks_pw3, int saveks);
 
 extern void ac_reset_pso_cds (void);
 extern void ac_reset_other (void);
@@ -177,19 +178,26 @@ struct prvkey_data {
 #define PW_LEN_MASK          0x7f
 #define PW_LEN_KEYSTRING_BIT 0x80
 
-extern void s2k (int who, const unsigned char *input, unsigned int ilen,
-		 unsigned char output[32]);
+#define SALT_SIZE 8
 
+void s2k (const unsigned char *salt, size_t slen,
+	  const unsigned char *input, size_t ilen, unsigned char output[32]);
+
+#define S2K_ITER 0x60	/* 65535 */
 
 #define KEYSTRING_PASSLEN_SIZE  1
-#define KEYSTRING_SALT_SIZE     8 /* optional */
-#define KEYSTRING_ITER_SIZE     1 /* optional */
+#define KEYSTRING_SALT_SIZE     SALT_SIZE
+#define KEYSTRING_ITER_SIZE     1
 #define KEYSTRING_MD_SIZE       32
-#define KEYSTRING_SIZE_PW1 (KEYSTRING_PASSLEN_SIZE+KEYSTRING_MD_SIZE)
-#define KEYSTRING_SIZE_RC  (KEYSTRING_PASSLEN_SIZE+KEYSTRING_MD_SIZE)
-#define KEYSTRING_SIZE_PW3 (KEYSTRING_PASSLEN_SIZE+KEYSTRING_SALT_SIZE \
-  				+KEYSTRING_ITER_SIZE+KEYSTRING_MD_SIZE)
-#define KEYSTRING_SIZE     (KEYSTRING_PASSLEN_SIZE+KEYSTRING_MD_SIZE)
+#define KEYSTRING_SIZE        (KEYSTRING_PASSLEN_SIZE + KEYSTRING_SALT_SIZE \
+			       + KEYSTRING_ITER_SIZE + KEYSTRING_MD_SIZE)
+#define KS_META_SIZE          (KEYSTRING_PASSLEN_SIZE + KEYSTRING_SALT_SIZE \
+			       + KEYSTRING_ITER_SIZE)
+#define KS_GET_SALT(ks)       (ks + KEYSTRING_PASSLEN_SIZE)
+#define KS_GET_ITER(ks)       (ks + KEYSTRING_PASSLEN_SIZE \
+			       + KEYSTRING_SALT_SIZE)
+#define KS_GET_KEYSTRING(ks)  (ks + KEYSTRING_PASSLEN_SIZE                  \
+                               + KEYSTRING_SALT_SIZE + KEYSTRING_ITER_SIZE)
 
 extern void gpg_do_clear_prvkey (enum kind_of_key kk);
 extern int gpg_do_load_prvkey (enum kind_of_key kk, int who, const uint8_t *keystring);
@@ -244,7 +252,6 @@ extern void gpg_do_write_simple (uint8_t, const uint8_t *, int);
 extern void gpg_increment_digital_signature_counter (void);
 
 
-extern void gpg_set_pw3 (const uint8_t *newpw, int newpw_len);
 extern void fatal (uint8_t code) __attribute__ ((noreturn));
 #define FATAL_FLASH  1
 #define FATAL_RANDOM 2
@@ -327,8 +334,6 @@ extern uint8_t admin_authorized;
 
 
 #define NUM_ALL_PRV_KEYS 3	/* SIG, DEC and AUT */
-
-extern uint8_t pw1_keystring[KEYSTRING_SIZE_PW1];
 
 #if !defined(OPENPGP_CARD_INITIAL_PW1)
 #define OPENPGP_CARD_INITIAL_PW1 "123456"

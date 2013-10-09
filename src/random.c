@@ -73,10 +73,15 @@ random_bytes_free (const uint8_t *p)
 /*
  * Return 4-byte salt
  */
-uint32_t
-get_salt (void)
+void
+random_get_salt (uint8_t *p)
 {
-  return neug_get (NEUG_KICK_FILLING);
+  uint32_t rnd;
+
+  rnd = neug_get (NEUG_KICK_FILLING);
+  memcpy (p, &rnd, sizeof (uint32_t));
+  rnd = neug_get (NEUG_KICK_FILLING);
+  memcpy (p + sizeof (uint32_t), &rnd, sizeof (uint32_t));
 }
 
 

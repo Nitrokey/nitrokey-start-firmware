@@ -1,5 +1,17 @@
 2013-10-09  Niibe Yutaka  <gniibe@fsij.org>
 
+	* src/ac.c (verify_user_0, verify_admin_00, verify_admin_0): Add a
+	flag to save into keystring_md_pw3.  Add SALT handling.
+	(decode_iterate_count, calc_md, gpg_set_pw3): Remove.
+
+	* src/openpgp-do.c (proc_resetting_code, gpg_do_write_prvkey)
+	(gpg_do_keygen): Add SALT handling.
+	* src/openpgp.c (cmd_change_password, cmd_reset_user_password)
+	(s2k): Ditto.
+	* src/random.c (random_get_salt): Rename from get_salt.
+
+2013-10-09  Niibe Yutaka  <gniibe@fsij.org>
+
 	* src/openpgp-do.c (gpg_do_write_prvkey): Remove information (but
 	pass phrase length) for admin from keystring data object.
 	(proc_key_import): Recover admin keystring to DO when key deletion.

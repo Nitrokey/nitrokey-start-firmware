@@ -551,18 +551,21 @@ static int
 proc_resetting_code (const uint8_t *data, int len)
 {
   const uint8_t *old_ks = keystring_md_pw3;
-  uint8_t new_ks0[KEYSTRING_MD_SIZE+1];
-  uint8_t *new_ks = &new_ks0[1];
+  uint8_t new_ks0[KEYSTRING_SIZE];
+  uint8_t *new_ks = KS_GET_KEYSTRING (new_ks0);
   const uint8_t *newpw;
   int newpw_len;
   int r;
+  uint8_t *salt = KS_GET_SALT (new_ks0);
 
   DEBUG_INFO ("Resetting Code!\r\n");
 
   newpw_len = len;
   newpw = data;
-  s2k (BY_RESETCODE, newpw, newpw_len, new_ks);
   new_ks0[0] = newpw_len;
+  random_get_salt (salt);
+  new_ks0[KEYSTRING_PASSLEN_SIZE+KEYSTRING_SALT_SIZE] = S2K_ITER;
+  s2k (salt, SALT_SIZE, newpw, newpw_len, new_ks);
   r = gpg_change_keystring (admin_authorized, old_ks, BY_RESETCODE, new_ks);
   if (r <= -2)
     {
@@ -583,7 +586,7 @@ proc_resetting_code (const uint8_t *data, int len)
   else
     {
       DEBUG_INFO ("done.\r\n");
-      gpg_do_write_simple (NR_DO_KEYSTRING_RC, new_ks0, 1);
+      gpg_do_write_simple (NR_DO_KEYSTRING_RC, new_ks0, KS_META_SIZE);
     }
 
   gpg_pw_reset_err_counter (PW_ERR_RC);
@@ -852,13 +855,13 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
   if (ks_pw1)
     {
       ks_pw1_len = ks_pw1[0];
-      encrypt_dek (ks_pw1+1, pd->dek_encrypted_1);
+      encrypt_dek (KS_GET_KEYSTRING (ks_pw1), pd->dek_encrypted_1);
     }
   else
     {
       uint8_t ks[KEYSTRING_MD_SIZE];
 
-      s2k (BY_USER, (const uint8_t *)OPENPGP_CARD_INITIAL_PW1,
+      s2k (NULL, 0, (const uint8_t *)OPENPGP_CARD_INITIAL_PW1,
 	   strlen (OPENPGP_CARD_INITIAL_PW1), ks);
       encrypt_dek (ks, pd->dek_encrypted_1);
     }
@@ -866,7 +869,7 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
   if (ks_rc)
     {
       ks_rc_len = ks_rc[0];
-      encrypt_dek (ks_rc+1, pd->dek_encrypted_2);
+      encrypt_dek (KS_GET_KEYSTRING (ks_rc), pd->dek_encrypted_2);
     }
   else
     memset (pd->dek_encrypted_2, 0, DATA_ENCRYPTION_KEY_SIZE);
@@ -887,28 +890,37 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
 
   if (++num_prv_keys == NUM_ALL_PRV_KEYS) /* All keys are registered.  */
     {
-      /* Remove contents of keystrings from DO, but length */
+      uint8_t ks_info[KS_META_SIZE];
+
+      /* Remove contents of keystrings from DO, but length, salt, and iter.  */
       if ((ks_pw1_len & PW_LEN_KEYSTRING_BIT))
 	{
 	  ks_pw1_len &= PW_LEN_MASK;
-	  gpg_do_write_simple (NR_DO_KEYSTRING_PW1, &ks_pw1_len, 1);
+	  ks_info[0] = ks_pw1_len;
+	  memcpy (KS_GET_SALT (ks_info), KS_GET_SALT (ks_pw1), SALT_SIZE);
+	  ks_info[KEYSTRING_PASSLEN_SIZE+KEYSTRING_SALT_SIZE] = S2K_ITER;
+	  gpg_do_write_simple (NR_DO_KEYSTRING_PW1, ks_info, KS_META_SIZE);
 	}
 
       if ((ks_rc_len & PW_LEN_KEYSTRING_BIT))
 	{
 	  ks_rc_len &= PW_LEN_MASK;
-	  gpg_do_write_simple (NR_DO_KEYSTRING_RC, &ks_rc_len, 1);
+	  ks_info[0] = ks_rc_len;
+	  memcpy (KS_GET_SALT (ks_info), KS_GET_SALT (ks_rc), SALT_SIZE);
+	  ks_info[KEYSTRING_PASSLEN_SIZE+KEYSTRING_SALT_SIZE] = S2K_ITER;
+	  gpg_do_write_simple (NR_DO_KEYSTRING_RC, ks_info, KS_META_SIZE);
 	}
 
       if (keystring_admin)
 	{
 	  const uint8_t *ks_admin = gpg_do_read_simple (NR_DO_KEYSTRING_PW3);
-	  uint8_t admin_pw_len;
 
 	  if (ks_admin != NULL)
 	    {
-	      admin_pw_len = ks_admin[0] & PW_LEN_MASK;
-	      gpg_do_write_simple (NR_DO_KEYSTRING_PW3, &admin_pw_len, 1);
+	      ks_info[0] = ks_admin[0] & PW_LEN_MASK;
+	      memcpy (KS_GET_SALT (ks_info), KS_GET_SALT (ks_admin), SALT_SIZE);
+	      ks_info[KEYSTRING_PASSLEN_SIZE+KEYSTRING_SALT_SIZE] = S2K_ITER;
+	      gpg_do_write_simple (NR_DO_KEYSTRING_PW3, ks_info, KS_META_SIZE);
 	    }
 	  else
 	    {
@@ -1044,10 +1056,13 @@ proc_key_import (const uint8_t *data, int len)
 
 	  if (ks_pw3 != NULL)
 	    {
-	      uint8_t ks0[KEYSTRING_MD_SIZE+1];
+	      uint8_t ks0[KEYSTRING_SIZE];
 
 	      ks0[0] = ks_pw3[0] | PW_LEN_KEYSTRING_BIT;
-	      memcpy (&ks0[1], keystring_md_pw3, KEYSTRING_MD_SIZE);
+	      memcpy (KS_GET_SALT (ks0), KS_GET_SALT (ks_pw3), SALT_SIZE);
+	      ks0[KEYSTRING_PASSLEN_SIZE+KEYSTRING_SALT_SIZE] = S2K_ITER;
+	      memcpy (KS_GET_KEYSTRING (ks0),
+		      keystring_md_pw3, KEYSTRING_MD_SIZE);
 	      gpg_do_write_simple (NR_DO_KEYSTRING_PW3, ks0, KEYSTRING_SIZE);
 	    }
 	}
@@ -1729,12 +1744,12 @@ gpg_do_keygen (uint8_t kk_byte)
       /* Don't call ac_reset_pso_cds here, but load the private key */
 
       if (ks_pw1)
-	ks = ks_pw1+1;
+	ks = KS_GET_KEYSTRING (ks_pw1);
       else
 	{
 	  const uint8_t * pw = (const uint8_t *)OPENPGP_CARD_INITIAL_PW1;
 
-	  s2k (BY_USER, pw, strlen (OPENPGP_CARD_INITIAL_PW1), keystring);
+	  s2k (NULL, 0, pw, strlen (OPENPGP_CARD_INITIAL_PW1), keystring);
 	  ks = keystring;
 	}
 
