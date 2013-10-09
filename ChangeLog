@@ -1,3 +1,12 @@
+2013-10-09  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/ac.c (verify_admin_00): New.  Add authentication by loading
+	signature key.
+	(verify_admin_0): Use verify_admin_00.
+
+	* src/openpgp.c (cmd_change_password): Admin keystring handling as
+	same as user's.
+
 2013-10-08  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/openpgp.c (modify_binary): Allow odd size of certificate.

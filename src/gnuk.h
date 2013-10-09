@@ -181,6 +181,7 @@ extern void s2k (int who, const unsigned char *input, unsigned int ilen,
 #define KEYSTRING_SIZE_RC  (KEYSTRING_PASSLEN_SIZE+KEYSTRING_MD_SIZE)
 #define KEYSTRING_SIZE_PW3 (KEYSTRING_PASSLEN_SIZE+KEYSTRING_SALT_SIZE \
   				+KEYSTRING_ITER_SIZE+KEYSTRING_MD_SIZE)
+#define KEYSTRING_SIZE     (KEYSTRING_PASSLEN_SIZE+KEYSTRING_MD_SIZE)
 
 extern void gpg_do_clear_prvkey (enum kind_of_key kk);
 extern int gpg_do_load_prvkey (enum kind_of_key kk, int who, const uint8_t *keystring);

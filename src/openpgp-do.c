@@ -578,7 +578,7 @@ proc_resetting_code (const uint8_t *data, int len)
   else if (r == 0)
     {
       DEBUG_INFO ("done (no prvkey).\r\n");
-      gpg_do_write_simple (NR_DO_KEYSTRING_RC, new_ks0, KEYSTRING_SIZE_RC);
+      gpg_do_write_simple (NR_DO_KEYSTRING_RC, new_ks0, KEYSTRING_SIZE);
     }
   else
     {

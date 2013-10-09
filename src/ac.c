@@ -1,7 +1,7 @@
 /*
  * ac.c -- Check access condition
  *
- * Copyright (C) 2010, 2012 Free Software Initiative of Japan
+ * Copyright (C) 2010, 2012, 2013 Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
  * This file is a part of Gnuk, a GnuPG USB Token implementation.
@@ -186,6 +186,32 @@ calc_md (int count, const uint8_t *salt, const uint8_t *pw, int pw_len,
   sha256_finish (&sha256_ctx, md);
 }
 
+
+static int
+verify_admin_00 (const uint8_t *pw, int buf_len, int pw_len_known,
+		 const uint8_t *ks)
+{
+  int pw_len;
+  int r1, r2;
+  uint8_t keystring[KEYSTRING_MD_SIZE];
+
+  pw_len = ks[0];
+  if ((pw_len_known >= 0 && pw_len_known != pw_len) || buf_len < pw_len)
+    return -1;
+
+  s2k (BY_ADMIN, pw, pw_len, keystring);
+  r1 = gpg_do_load_prvkey (GPG_KEY_FOR_SIGNING, BY_ADMIN, keystring);
+  r2 = 0;
+
+  if (r1 < 0 || r2 < 0)
+    return -1;
+  else if (r1 == 0 && r2 == 0)
+    if (ks != NULL && memcmp (ks+1, keystring, KEYSTRING_MD_SIZE) != 0)
+      return -1;
+
+  return pw_len;
+}
+
 uint8_t keystring_md_pw3[KEYSTRING_MD_SIZE];
 uint8_t admin_authorized;
 
@@ -198,22 +224,11 @@ verify_admin_0 (const uint8_t *pw, int buf_len, int pw_len_known)
   pw3_keystring = gpg_do_read_simple (NR_DO_KEYSTRING_PW3);
   if (pw3_keystring != NULL)
     {
-      int count;
-      uint8_t md[KEYSTRING_MD_SIZE];
-      const uint8_t *salt;
-
       if (gpg_pw_locked (PW_ERR_PW3))
 	return 0;
 
-      pw_len = pw3_keystring[0];
-      if ((pw_len_known >= 0 && pw_len_known != pw_len) || pw_len > buf_len)
-	goto failure;
-
-      salt = &pw3_keystring[1];
-      count = decode_iterate_count (pw3_keystring[1+8]);
-      calc_md (count, salt, pw, pw_len, md);
-
-      if (memcmp (md, &pw3_keystring[1+8+1], KEYSTRING_MD_SIZE) != 0)
+      pw_len = verify_admin_00 (pw, buf_len, pw_len_known, pw3_keystring);
+      if (pw_len < 0)
 	{
 	failure:
 	  gpg_pw_increment_err_counter (PW_ERR_PW3);
@@ -221,7 +236,7 @@ verify_admin_0 (const uint8_t *pw, int buf_len, int pw_len_known)
 	}
 
       admin_authorized = BY_ADMIN;
-    success:		       /* OK, the user is now authenticated */
+    success:		       /* OK, the admin is now authenticated.  */
       gpg_pw_reset_err_counter (PW_ERR_PW3);
       return pw_len;
     }

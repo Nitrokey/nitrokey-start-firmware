@@ -255,6 +255,7 @@ cmd_change_password (void)
   int who = p2 - 0x80;
   int who_old;
   int r;
+  int pw3_null = 0;
 
   DEBUG_INFO ("Change PW\r\n");
   DEBUG_BYTE (who);
@@ -328,9 +329,9 @@ cmd_change_password (void)
 	      newpw_len = strlen (OPENPGP_CARD_INITIAL_PW3);
 	      memcpy (newpw, OPENPGP_CARD_INITIAL_PW3, newpw_len);
 	      gpg_do_write_simple (NR_DO_KEYSTRING_PW3, NULL, 0);
+	      pw3_null = 1;
 	    }
-	  else
-	    gpg_set_pw3 (newpw, newpw_len);
+
 	  who_old = admin_authorized;
 	}
     }
@@ -352,7 +353,7 @@ cmd_change_password (void)
     }
   else if (r == 0 && who == BY_USER)	/* no prvkey */
     {
-      gpg_do_write_simple (NR_DO_KEYSTRING_PW1, new_ks0, KEYSTRING_SIZE_PW1);
+      gpg_do_write_simple (NR_DO_KEYSTRING_PW1, new_ks0, KEYSTRING_SIZE);
       ac_reset_pso_cds ();
       ac_reset_other ();
       if (admin_authorized == BY_USER)
@@ -370,9 +371,21 @@ cmd_change_password (void)
       DEBUG_INFO ("Changed length of DO_KEYSTRING_PW1.\r\n");
       GPG_SUCCESS ();
     }
-  else				/* r >= 0 && who == BY_ADMIN */
+#if 0
+  else if (r > 0 && who == BY_ADMIN)
     {
-      DEBUG_INFO ("done.\r\n");
+      if (!pw3_null)
+	gpg_do_write_simple (NR_DO_KEYSTRING_PW3, new_ks0, 1);
+      ac_reset_admin ();
+      DEBUG_INFO ("Changed length of DO_KEYSTRING_PW3.\r\n");
+      GPG_SUCCESS ();
+    }
+#endif
+  else /* r == 0 && who == BY_ADMIN */	/* no prvkey */
+    {
+      if (!pw3_null)
+	gpg_do_write_simple (NR_DO_KEYSTRING_PW3, new_ks0, KEYSTRING_SIZE);
+      DEBUG_INFO ("Changed DO_KEYSTRING_PW3.\r\n");
       ac_reset_admin ();
       GPG_SUCCESS ();
     }
@@ -462,8 +475,7 @@ cmd_reset_user_password (void)
 	  if (memcmp (ks_rc+1, old_ks, KEYSTRING_MD_SIZE) != 0)
 	    goto sec_fail;
 	  DEBUG_INFO ("done (no prvkey).\r\n");
-	  gpg_do_write_simple (NR_DO_KEYSTRING_PW1, new_ks0,
-			       KEYSTRING_SIZE_PW1);
+	  gpg_do_write_simple (NR_DO_KEYSTRING_PW1, new_ks0, KEYSTRING_SIZE);
 	  ac_reset_pso_cds ();
 	  ac_reset_other ();
 	  if (admin_authorized == BY_USER)
@@ -514,8 +526,7 @@ cmd_reset_user_password (void)
       else if (r == 0)
 	{
 	  DEBUG_INFO ("done (no privkey).\r\n");
-	  gpg_do_write_simple (NR_DO_KEYSTRING_PW1, new_ks0,
-			       KEYSTRING_SIZE_PW1);
+	  gpg_do_write_simple (NR_DO_KEYSTRING_PW1, new_ks0, KEYSTRING_SIZE);
 	  ac_reset_pso_cds ();
 	  ac_reset_other ();
 	  if (admin_authorized == BY_USER)
