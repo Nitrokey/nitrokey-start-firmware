@@ -899,6 +899,22 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
 	  ks_rc_len &= PW_LEN_MASK;
 	  gpg_do_write_simple (NR_DO_KEYSTRING_RC, &ks_rc_len, 1);
 	}
+
+      if (keystring_admin)
+	{
+	  const uint8_t *ks_admin = gpg_do_read_simple (NR_DO_KEYSTRING_PW3);
+	  uint8_t admin_pw_len;
+
+	  if (ks_admin != NULL)
+	    {
+	      admin_pw_len = ks_admin[0] & PW_LEN_MASK;
+	      gpg_do_write_simple (NR_DO_KEYSTRING_PW3, &admin_pw_len, 1);
+	    }
+	  else
+	    {
+	      DEBUG_INFO ("No admin keystring!\r\n");
+	    }
+	}
     }
 
   return 0;
@@ -1022,11 +1038,25 @@ proc_key_import (const uint8_t *data, int len)
       do_ptr[nr - NR_DO__FIRST__] = NULL;
       flash_do_release (do_data);
 
+      if (admin_authorized == BY_ADMIN && kk == GPG_KEY_FOR_SIGNING)
+	{			/* Recover admin keystring DO.  */
+	  const uint8_t *ks_pw3 = gpg_do_read_simple (NR_DO_KEYSTRING_PW3);
+
+	  if (ks_pw3 != NULL)
+	    {
+	      uint8_t ks0[KEYSTRING_MD_SIZE+1];
+
+	      ks0[0] = ks_pw3[0] | PW_LEN_KEYSTRING_BIT;
+	      memcpy (&ks0[1], keystring_md_pw3, KEYSTRING_MD_SIZE);
+	      gpg_do_write_simple (NR_DO_KEYSTRING_PW3, ks0, KEYSTRING_SIZE);
+	    }
+	}
+
       if (--num_prv_keys == 0)
 	{
 	  flash_keystore_release ();
 
-	  /* Delete PW1 and RC if any */
+	  /* Delete PW1 and RC if any.  */
 	  gpg_do_write_simple (NR_DO_KEYSTRING_PW1, NULL, 0);
 	  gpg_do_write_simple (NR_DO_KEYSTRING_RC, NULL, 0);
 
@@ -1678,8 +1708,7 @@ gpg_do_keygen (uint8_t kk_byte)
   p_q = p_q_modulus;
   modulus = p_q_modulus + KEY_CONTENT_LEN;
 
-  r = gpg_do_write_prvkey (kk, p_q, KEY_CONTENT_LEN,
-			   keystring_admin, modulus);
+  r = gpg_do_write_prvkey (kk, p_q, KEY_CONTENT_LEN, keystring_admin, modulus);
   memset (p_q_modulus, 0, KEY_CONTENT_LEN*2);
   free (p_q_modulus);
   if (r < 0)

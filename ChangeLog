@@ -1,8 +1,15 @@
 2013-10-09  Niibe Yutaka  <gniibe@fsij.org>
 
+	* src/openpgp-do.c (gpg_do_write_prvkey): Remove information (but
+	pass phrase length) for admin from keystring data object.
+	(proc_key_import): Recover admin keystring to DO when key deletion.
+
+2013-10-09  Niibe Yutaka  <gniibe@fsij.org>
+
 	* src/ac.c (verify_user_0, verify_admin_00): Handle PW_LEN_MASK.
 	* src/openpgp-do.c (proc_resetting_code, gpg_do_write_prvkey):
 	Likewise.
+
 	* src/openpgp.c (cmd_change_password, cmd_reset_user_password):
 	Handle PW_LEN_KEYSTRING_BIT.
 
