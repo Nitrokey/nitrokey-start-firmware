@@ -138,7 +138,6 @@ static const uint8_t algorithm_attr_ecdsa[] __attribute__ ((aligned (1))) = {
   0x2a, 0x86, 0x48, 0xce, 0x3d, 0x03, 0x01, 0x07 /* OID of NIST curve P-256 */
 };
 
-#define PW_LEN_MAX 127
 /*
  * Representation of PW1_LIFETIME:
  *    0: PW1_LIEFTIME_P == NULL : PW1 is valid for single PSO:CDS command
@@ -578,6 +577,7 @@ proc_resetting_code (const uint8_t *data, int len)
   else if (r == 0)
     {
       DEBUG_INFO ("done (no prvkey).\r\n");
+      new_ks0[0] |= PW_LEN_KEYSTRING_BIT;
       gpg_do_write_simple (NR_DO_KEYSTRING_RC, new_ks0, KEYSTRING_SIZE);
     }
   else
@@ -888,11 +888,17 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
   if (++num_prv_keys == NUM_ALL_PRV_KEYS) /* All keys are registered.  */
     {
       /* Remove contents of keystrings from DO, but length */
-      if (ks_pw1_len)
-	gpg_do_write_simple (NR_DO_KEYSTRING_PW1, &ks_pw1_len, 1);
+      if ((ks_pw1_len & PW_LEN_KEYSTRING_BIT))
+	{
+	  ks_pw1_len &= PW_LEN_MASK;
+	  gpg_do_write_simple (NR_DO_KEYSTRING_PW1, &ks_pw1_len, 1);
+	}
 
-      if (ks_rc_len)
-	gpg_do_write_simple (NR_DO_KEYSTRING_RC, &ks_rc_len, 1);
+      if ((ks_rc_len & PW_LEN_KEYSTRING_BIT))
+	{
+	  ks_rc_len &= PW_LEN_MASK;
+	  gpg_do_write_simple (NR_DO_KEYSTRING_RC, &ks_rc_len, 1);
+	}
     }
 
   return 0;

@@ -169,6 +169,14 @@ struct prvkey_data {
 #define BY_RESETCODE	2
 #define BY_ADMIN	3
 
+/*
+ * Maximum length of pass phrase is 127.
+ * We use the top bit (0x80) to encode if keystring is available within DO.
+ */
+#define PW_LEN_MAX            127
+#define PW_LEN_MASK          0x7f
+#define PW_LEN_KEYSTRING_BIT 0x80
+
 extern void s2k (int who, const unsigned char *input, unsigned int ilen,
 		 unsigned char output[32]);
 

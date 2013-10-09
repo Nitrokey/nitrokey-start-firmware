@@ -353,6 +353,7 @@ cmd_change_password (void)
     }
   else if (r == 0 && who == BY_USER)	/* no prvkey */
     {
+      new_ks0[0] |= PW_LEN_KEYSTRING_BIT;
       gpg_do_write_simple (NR_DO_KEYSTRING_PW1, new_ks0, KEYSTRING_SIZE);
       ac_reset_pso_cds ();
       ac_reset_other ();
@@ -384,7 +385,10 @@ cmd_change_password (void)
   else /* r == 0 && who == BY_ADMIN */	/* no prvkey */
     {
       if (!pw3_null)
-	gpg_do_write_simple (NR_DO_KEYSTRING_PW3, new_ks0, KEYSTRING_SIZE);
+	{
+	  new_ks0[0] |= PW_LEN_KEYSTRING_BIT;
+	  gpg_do_write_simple (NR_DO_KEYSTRING_PW3, new_ks0, KEYSTRING_SIZE);
+	}
       DEBUG_INFO ("Changed DO_KEYSTRING_PW3.\r\n");
       ac_reset_admin ();
       GPG_SUCCESS ();
@@ -451,7 +455,7 @@ cmd_reset_user_password (void)
 	  return;
 	}
 
-      pw_len = ks_rc[0];
+      pw_len = ks_rc[0] & PW_LEN_MASK;
       newpw = pw + pw_len;
       newpw_len = len - pw_len;
       s2k (BY_RESETCODE, pw, pw_len, old_ks);
@@ -475,6 +479,7 @@ cmd_reset_user_password (void)
 	  if (memcmp (ks_rc+1, old_ks, KEYSTRING_MD_SIZE) != 0)
 	    goto sec_fail;
 	  DEBUG_INFO ("done (no prvkey).\r\n");
+	  new_ks0[0] |= PW_LEN_KEYSTRING_BIT;
 	  gpg_do_write_simple (NR_DO_KEYSTRING_PW1, new_ks0, KEYSTRING_SIZE);
 	  ac_reset_pso_cds ();
 	  ac_reset_other ();
@@ -526,6 +531,7 @@ cmd_reset_user_password (void)
       else if (r == 0)
 	{
 	  DEBUG_INFO ("done (no privkey).\r\n");
+	  new_ks0[0] |= PW_LEN_KEYSTRING_BIT;
 	  gpg_do_write_simple (NR_DO_KEYSTRING_PW1, new_ks0, KEYSTRING_SIZE);
 	  ac_reset_pso_cds ();
 	  ac_reset_other ();

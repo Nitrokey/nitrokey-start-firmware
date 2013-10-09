@@ -80,7 +80,7 @@ verify_user_0 (uint8_t access, const uint8_t *pw, int buf_len, int pw_len_known,
 	goto success_one_step;
     }
   else
-    pw_len = ks_pw1[0];
+    pw_len = ks_pw1[0] & PW_LEN_MASK;
 
   if ((pw_len_known >= 0 && pw_len_known != pw_len)
       || buf_len < pw_len)
@@ -195,7 +195,7 @@ verify_admin_00 (const uint8_t *pw, int buf_len, int pw_len_known,
   int r1, r2;
   uint8_t keystring[KEYSTRING_MD_SIZE];
 
-  pw_len = ks[0];
+  pw_len = ks[0] & PW_LEN_MASK;
   if ((pw_len_known >= 0 && pw_len_known != pw_len) || buf_len < pw_len)
     return -1;
 

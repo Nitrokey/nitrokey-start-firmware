@@ -1,5 +1,13 @@
 2013-10-09  Niibe Yutaka  <gniibe@fsij.org>
 
+	* src/ac.c (verify_user_0, verify_admin_00): Handle PW_LEN_MASK.
+	* src/openpgp-do.c (proc_resetting_code, gpg_do_write_prvkey):
+	Likewise.
+	* src/openpgp.c (cmd_change_password, cmd_reset_user_password):
+	Handle PW_LEN_KEYSTRING_BIT.
+
+2013-10-09  Niibe Yutaka  <gniibe@fsij.org>
+
 	* src/ac.c (verify_admin_00): New.  Add authentication by loading
 	signature key.
 	(verify_admin_0): Use verify_admin_00.
