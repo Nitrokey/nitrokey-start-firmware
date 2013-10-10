@@ -748,6 +748,8 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
   uint8_t ks_pw1_len = 0;
   uint8_t ks_rc_len = 0;
   int pubkey_len = KEY_CONTENT_LEN;
+  uint8_t ks_info0[KS_META_SIZE];
+  uint8_t ks_info1[KS_META_SIZE];
 
   DEBUG_INFO ("Key import\r\n");
   DEBUG_SHORT (key_len);
@@ -855,6 +857,11 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
     {
       ks_pw1_len = ks_pw1[0];
       encrypt_dek (KS_GET_KEYSTRING (ks_pw1), pd->dek_encrypted_1);
+      if ((ks_pw1_len & PW_LEN_KEYSTRING_BIT))
+	{
+	  ks_info0[0] = ks_pw1_len & PW_LEN_MASK;
+	  memcpy (KS_GET_SALT (ks_info0), KS_GET_SALT (ks_pw1), SALT_SIZE);
+	}
     }
   else
     {
@@ -869,6 +876,11 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
     {
       ks_rc_len = ks_rc[0];
       encrypt_dek (KS_GET_KEYSTRING (ks_rc), pd->dek_encrypted_2);
+      if ((ks_rc_len & PW_LEN_KEYSTRING_BIT))
+	{
+	  ks_info1[0] = ks_rc_len & PW_LEN_MASK;
+	  memcpy (KS_GET_SALT (ks_info1), KS_GET_SALT (ks_rc), SALT_SIZE);
+	}
     }
   else
     memset (pd->dek_encrypted_2, 0, DATA_ENCRYPTION_KEY_SIZE);
@@ -888,28 +900,12 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
     return -1;
 
   if (++num_prv_keys == NUM_ALL_PRV_KEYS) /* All keys are registered.  */
-    {
-      uint8_t ks_info0[KS_META_SIZE];
-      uint8_t ks_info1[KS_META_SIZE];
-
-      /* Remove contents of keystrings from DO, but length, salt, and iter.  */
-      if ((ks_pw1_len & PW_LEN_KEYSTRING_BIT))
-	{
-	  ks_info0[0] = ks_pw1_len & PW_LEN_MASK;
-	  memcpy (KS_GET_SALT (ks_info0), KS_GET_SALT (ks_pw1), SALT_SIZE);
-	}
-
-      if ((ks_rc_len & PW_LEN_KEYSTRING_BIT))
-	{
-	  ks_info1[0] = ks_rc_len & PW_LEN_MASK;
-	  memcpy (KS_GET_SALT (ks_info1), KS_GET_SALT (ks_rc), SALT_SIZE);
-	}
-
+    { /* Remove contents of keystrings from DO, but length, salt, and iter.  */
       /*
-       * Note that gpg_do_write_simple may result garbage collection
-       * for flash ROM.  Thus, it must be two phase.
+       * Note that flash_do_write (above) or gpg_do_write_simple
+       * (below) may result garbage collection for flash ROM.  Thus,
+       * the access to ks_pw1/ks_rc must not be done here but before.
        */
-
       if ((ks_pw1_len & PW_LEN_KEYSTRING_BIT))
 	gpg_do_write_simple (NR_DO_KEYSTRING_PW1, ks_info0, KS_META_SIZE);
 

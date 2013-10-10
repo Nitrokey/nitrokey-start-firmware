@@ -9,8 +9,8 @@
 
 2013-10-10  Niibe Yutaka  <gniibe@fsij.org>
 
-	* src/openpgp-do.c (gpg_do_write_prvkey): Two phase write to
-	work with garbage collection.
+	* src/openpgp-do.c (gpg_do_write_prvkey): Access of data object
+	considering garbage collection.
 
 	* src/openpgp.c (cmd_change_password): Call gpg_do_write_simple
 	after accessing the data object (it may cause garbage collection).
