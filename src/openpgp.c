@@ -368,7 +368,6 @@ cmd_change_password (void)
   s2k (salt, salt_len, pw, pw_len, old_ks);
   s2k (new_salt, newsalt_len, newpw, newpw_len, new_ks);
   new_ks0[0] = newpw_len;
-  *KS_GET_ITER (new_ks0) = S2K_ITER;
 
   r = gpg_change_keystring (who_old, old_ks, who, new_ks);
   if (r <= -2)
@@ -512,7 +511,6 @@ cmd_reset_user_password (void)
       s2k (salt, salt_len, pw, pw_len, old_ks);
       s2k (new_salt, SALT_SIZE, newpw, newpw_len, new_ks);
       new_ks0[0] = newpw_len;
-      *KS_GET_ITER (new_ks0) = S2K_ITER;
       r = gpg_change_keystring (BY_RESETCODE, old_ks, BY_USER, new_ks);
       if (r <= -2)
 	{

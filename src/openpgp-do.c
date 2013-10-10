@@ -564,7 +564,6 @@ proc_resetting_code (const uint8_t *data, int len)
   newpw = data;
   new_ks0[0] = newpw_len;
   random_get_salt (salt);
-  new_ks0[KEYSTRING_PASSLEN_SIZE+KEYSTRING_SALT_SIZE] = S2K_ITER;
   s2k (salt, SALT_SIZE, newpw, newpw_len, new_ks);
   r = gpg_change_keystring (admin_authorized, old_ks, BY_RESETCODE, new_ks);
   if (r <= -2)
@@ -898,14 +897,12 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
 	{
 	  ks_info0[0] = ks_pw1_len & PW_LEN_MASK;
 	  memcpy (KS_GET_SALT (ks_info0), KS_GET_SALT (ks_pw1), SALT_SIZE);
-	  ks_info0[KEYSTRING_PASSLEN_SIZE+KEYSTRING_SALT_SIZE] = S2K_ITER;
 	}
 
       if ((ks_rc_len & PW_LEN_KEYSTRING_BIT))
 	{
 	  ks_info1[0] = ks_rc_len & PW_LEN_MASK;
 	  memcpy (KS_GET_SALT (ks_info1), KS_GET_SALT (ks_rc), SALT_SIZE);
-	  ks_info1[KEYSTRING_PASSLEN_SIZE+KEYSTRING_SALT_SIZE] = S2K_ITER;
 	}
 
       /*
@@ -928,7 +925,6 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
 	      ks_info0[0] = ks_admin[0] & PW_LEN_MASK;
 	      memcpy (KS_GET_SALT (ks_info0), KS_GET_SALT (ks_admin),
 		      SALT_SIZE);
-	      ks_info0[KEYSTRING_PASSLEN_SIZE+KEYSTRING_SALT_SIZE] = S2K_ITER;
 	      gpg_do_write_simple (NR_DO_KEYSTRING_PW3, ks_info0, KS_META_SIZE);
 	    }
 	  else
@@ -1069,7 +1065,6 @@ proc_key_import (const uint8_t *data, int len)
 
 	      ks0[0] = ks_pw3[0] | PW_LEN_KEYSTRING_BIT;
 	      memcpy (KS_GET_SALT (ks0), KS_GET_SALT (ks_pw3), SALT_SIZE);
-	      ks0[KEYSTRING_PASSLEN_SIZE+KEYSTRING_SALT_SIZE] = S2K_ITER;
 	      memcpy (KS_GET_KEYSTRING (ks0),
 		      keystring_md_pw3, KEYSTRING_MD_SIZE);
 	      gpg_do_write_simple (NR_DO_KEYSTRING_PW3, ks0, KEYSTRING_SIZE);

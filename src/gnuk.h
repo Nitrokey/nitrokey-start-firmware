@@ -183,21 +183,14 @@ struct prvkey_data {
 void s2k (const unsigned char *salt, size_t slen,
 	  const unsigned char *input, size_t ilen, unsigned char output[32]);
 
-#define S2K_ITER 0x60	/* 65535 */
-
 #define KEYSTRING_PASSLEN_SIZE  1
 #define KEYSTRING_SALT_SIZE     SALT_SIZE
-#define KEYSTRING_ITER_SIZE     1
 #define KEYSTRING_MD_SIZE       32
 #define KEYSTRING_SIZE        (KEYSTRING_PASSLEN_SIZE + KEYSTRING_SALT_SIZE \
-			       + KEYSTRING_ITER_SIZE + KEYSTRING_MD_SIZE)
-#define KS_META_SIZE          (KEYSTRING_PASSLEN_SIZE + KEYSTRING_SALT_SIZE \
-			       + KEYSTRING_ITER_SIZE)
+			       + KEYSTRING_MD_SIZE)
+#define KS_META_SIZE          (KEYSTRING_PASSLEN_SIZE + KEYSTRING_SALT_SIZE)
 #define KS_GET_SALT(ks)       (ks + KEYSTRING_PASSLEN_SIZE)
-#define KS_GET_ITER(ks)       (ks + KEYSTRING_PASSLEN_SIZE \
-			       + KEYSTRING_SALT_SIZE)
-#define KS_GET_KEYSTRING(ks)  (ks + KEYSTRING_PASSLEN_SIZE                  \
-                               + KEYSTRING_SALT_SIZE + KEYSTRING_ITER_SIZE)
+#define KS_GET_KEYSTRING(ks)  (ks + KS_META_SIZE)
 
 extern void gpg_do_clear_prvkey (enum kind_of_key kk);
 extern int gpg_do_load_prvkey (enum kind_of_key kk, int who, const uint8_t *keystring);

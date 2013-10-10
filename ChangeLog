@@ -1,10 +1,21 @@
 2013-10-10  Niibe Yutaka  <gniibe@fsij.org>
 
+	* src/gnuk.h (S2K_ITER): Remove.  It's determined at compile time.
+
+	* src/openpgp-do.c (proc_resetting_code, gpg_do_write_prvkey)
+	(proc_key_import): Remove "iteration" field.
+
+	* src/openpgp.c (cmd_change_password): Likewise.
+
+2013-10-10  Niibe Yutaka  <gniibe@fsij.org>
+
 	* src/openpgp-do.c (gpg_do_write_prvkey): Two phase write to
 	work with garbage collection.
 
 	* src/openpgp.c (cmd_change_password): Call gpg_do_write_simple
 	after accessing the data object (it may cause garbage collection).
+
+2013-10-10  Niibe Yutaka  <gniibe@fsij.org>
 
 	* polarssl/library/bignum.c (mpi_montred): Constant time for
 	carry propagation.  Bug fix for carry propagation.
