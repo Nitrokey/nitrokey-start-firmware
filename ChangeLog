@@ -1,3 +1,9 @@
+2013-10-10  Niibe Yutaka  <gniibe@fsij.org>
+
+	* polarssl/library/bignum.c (mpi_montred): Constant time for
+	carry propagation.  Bug fix for carry propagation.
+	(mpi_exp_mod): Bug fix.  Shrink the size of RR as same as X.
+
 2013-10-09  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/ac.c (verify_user_0, verify_admin_00, verify_admin_0): Add a

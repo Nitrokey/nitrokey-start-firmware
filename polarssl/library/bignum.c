@@ -1354,7 +1354,6 @@ static void mpi_montmul( mpi *A, const mpi *B, const mpi *N, t_uint mm, const mp
 {
     size_t i, n, m;
     t_uint u0, u1, *d, c = 0;
-    int need_subtraction;
 
     d = T->p;
     n = N->n;
@@ -1377,8 +1376,7 @@ static void mpi_montmul( mpi *A, const mpi *B, const mpi *N, t_uint mm, const mp
     d[n] = 0;
     memcpy( A->p, d, (n + 1) * ciL );
 
-    need_subtraction = (mpi_cmp_abs( A, N ) >= 0) | c; /* Use '|' to prevent timing attacks */
-    if( need_subtraction )
+    if( ((mpi_cmp_abs( A, N ) >= 0) | c) )
         mpi_sub_hlp( n, N->p, A->p );
     else
         /* prevent timing attacks */
@@ -1390,13 +1388,40 @@ static void mpi_montmul( mpi *A, const mpi *B, const mpi *N, t_uint mm, const mp
  */
 static void mpi_montred( mpi *A, const mpi *N, t_uint mm, const mpi *T )
 {
-    t_uint z = 1;
-    mpi U;
+    size_t i, j, n;
+    t_uint u0, u1, *d, c = 0;
 
-    U.n = U.s = (int) z;
-    U.p = &z;
+    d = T->p;
+    n = N->n;
+    memset( d, 0, (n + 1) * ciL );
 
-    mpi_montmul( A, &U, N, mm, T );
+    for( i = 0; i < n; i++ )
+    {
+        /*
+         * T = (T + u0 + u1*N) / 2^biL
+         */
+        u0 = A->p[i];
+        u1 = (d[0] + u0) * mm;
+
+        d[0] += u0;
+        c = (d[0] < u0);
+        for (j = 1; j < n; j++)
+	  {
+	    d[j] += c; c = ( d[j] < c );
+	  }
+
+        c = mpi_mul_hlp( n, N->p, d, u1 );
+        *d++ = u0; d[n] = c;
+    }
+
+    d[n] = 0;
+    memcpy( A->p, d, (n + 1) * ciL );
+
+    if( ((mpi_cmp_abs( A, N ) >= 0) | c) )
+        mpi_sub_hlp( n, N->p, A->p );
+    else
+        /* prevent timing attacks */
+        mpi_sub_hlp( n, A->p, T->p );
 }
 
 /*
@@ -1409,7 +1434,7 @@ int mpi_exp_mod( mpi *X, const mpi *A, const mpi *E, const mpi *N, mpi *_RR )
     size_t i, j, nblimbs;
     size_t bufsize, nbits;
     t_uint ei, mm, state;
-    mpi RR, T, W[ 2 << POLARSSL_MPI_WINDOW_SIZE ], Apos;
+    mpi RR, RR0, T, W[ 2 << POLARSSL_MPI_WINDOW_SIZE ], Apos;
     int neg;
 
     if( mpi_cmp_int( N, 0 ) < 0 || ( N->p[0] & 1 ) == 0 )
@@ -1422,7 +1447,7 @@ int mpi_exp_mod( mpi *X, const mpi *A, const mpi *E, const mpi *N, mpi *_RR )
      * Init temps and window size
      */
     mpi_montg_init( &mm, N );
-    mpi_init( &RR ); mpi_init( &T );
+    mpi_init( &RR ); mpi_init( &RR0 ); mpi_init( &T );
     memset( W, 0, sizeof( W ) );
 
     i = mpi_msb( E );
@@ -1456,9 +1481,11 @@ int mpi_exp_mod( mpi *X, const mpi *A, const mpi *E, const mpi *N, mpi *_RR )
      */
     if( _RR == NULL || _RR->p == NULL )
     {
-        MPI_CHK( mpi_lset( &RR, 1 ) );
-        MPI_CHK( mpi_shift_l( &RR, N->n * 2 * biL ) );
-        MPI_CHK( mpi_mod_mpi( &RR, &RR, N ) );
+        MPI_CHK( mpi_lset( &RR0, 1 ) );
+        MPI_CHK( mpi_shift_l( &RR0, N->n * 2 * biL ) );
+        MPI_CHK( mpi_mod_mpi( &RR0, &RR0, N ) );
+        MPI_CHK( mpi_copy( &RR, &RR0 ) ); /* Shrink to size of N.  */
+        MPI_CHK( mpi_grow( &RR, N->n + 1 ) );
 
         if( _RR != NULL )
             memcpy( _RR, &RR, sizeof( mpi ) );
@@ -1597,7 +1624,7 @@ cleanup:
     for( i = (one << (wsize - 1)); i < (one << wsize); i++ )
         mpi_free( &W[i] );
 
-    mpi_free( &W[1] ); mpi_free( &T ); mpi_free( &Apos );
+    mpi_free( &RR0 ); mpi_free( &W[1] ); mpi_free( &T ); mpi_free( &Apos );
 
     if( _RR == NULL )
         mpi_free( &RR );
@@ -1836,7 +1863,7 @@ struct jkiss_state { uint32_t x, y, z, c; };
 static struct jkiss_state jkiss_state_v;
 
 int prng_seed (int (*f_rng)(void *, unsigned char *, size_t),
-	       void *p_rng)
+               void *p_rng)
 {
   int ret;
 
@@ -1845,7 +1872,7 @@ int prng_seed (int (*f_rng)(void *, unsigned char *, size_t),
   MPI_CHK ( f_rng (p_rng, (unsigned char *)s, sizeof (struct jkiss_state)) );
   while (s->y == 0)
     MPI_CHK ( f_rng (p_rng, (unsigned char *)&s->y, sizeof (uint32_t)) );
-  s->z |= 1;			/* avoiding z=c=0 */
+  s->z |= 1;                    /* avoiding z=c=0 */
 
 cleanup:
   return ret;
@@ -1945,8 +1972,8 @@ int mpi_is_prime( mpi *X)
     MPI_CHK( mpi_exp_mod( &T, &T, &W, X, &RR ) );
     if ( mpi_cmp_int (&T, 1) != 0)
       {
-	ret = POLARSSL_ERR_MPI_NOT_ACCEPTABLE;
-	goto cleanup;
+        ret = POLARSSL_ERR_MPI_NOT_ACCEPTABLE;
+        goto cleanup;
       }
 
 
@@ -2076,7 +2103,7 @@ int mpi_gen_prime( mpi *X, size_t nbits, int dh_flag,
       B->p[0] |= 0x1;
       B->p[M_LIMBS - 1] &= 0x00007FFF;
       if (mpi_cmp_abs (B, M) >= 0)
-	continue;
+        continue;
 
       MPI_CHK ( mpi_gcd ( G, B, M ) );
     }
@@ -2094,11 +2121,11 @@ int mpi_gen_prime( mpi *X, size_t nbits, int dh_flag,
       MPI_CHK ( mpi_mul_mpi ( X, X, M ) );
       MPI_CHK ( mpi_add_abs ( X, X, B ) );
       if (X->n <= 31 || (X->p[31] & 0xc0000000) == 0)
-	continue;
+        continue;
 
       ret = mpi_is_prime ( X );
       if (ret == 0 || ret != POLARSSL_ERR_MPI_NOT_ACCEPTABLE)
-	break;
+        break;
     }
 
 cleanup:
