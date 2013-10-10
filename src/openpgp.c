@@ -355,7 +355,6 @@ cmd_change_password (void)
 	    {
 	      newpw_len = strlen (OPENPGP_CARD_INITIAL_PW3);
 	      memcpy (newpw, OPENPGP_CARD_INITIAL_PW3, newpw_len);
-	      gpg_do_write_simple (NR_DO_KEYSTRING_PW3, NULL, 0);
 	      newsalt_len = 0;
 	      pw3_null = 1;
 	    }
@@ -405,15 +404,20 @@ cmd_change_password (void)
     }
   else if (r > 0 && who == BY_ADMIN)
     {
-      if (!pw3_null)
+      if (pw3_null)
+	gpg_do_write_simple (NR_DO_KEYSTRING_PW3, NULL, 0);
+      else
 	gpg_do_write_simple (NR_DO_KEYSTRING_PW3, new_ks0, KS_META_SIZE);
+
       ac_reset_admin ();
       DEBUG_INFO ("Changed length of DO_KEYSTRING_PW3.\r\n");
       GPG_SUCCESS ();
     }
   else /* r == 0 && who == BY_ADMIN */	/* no prvkey */
     {
-      if (!pw3_null)
+      if (pw3_null)
+	gpg_do_write_simple (NR_DO_KEYSTRING_PW3, NULL, 0);
+      else
 	{
 	  new_ks0[0] |= PW_LEN_KEYSTRING_BIT;
 	  gpg_do_write_simple (NR_DO_KEYSTRING_PW3, new_ks0, KEYSTRING_SIZE);

@@ -890,26 +890,34 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
 
   if (++num_prv_keys == NUM_ALL_PRV_KEYS) /* All keys are registered.  */
     {
-      uint8_t ks_info[KS_META_SIZE];
+      uint8_t ks_info0[KS_META_SIZE];
+      uint8_t ks_info1[KS_META_SIZE];
 
       /* Remove contents of keystrings from DO, but length, salt, and iter.  */
       if ((ks_pw1_len & PW_LEN_KEYSTRING_BIT))
 	{
-	  ks_pw1_len &= PW_LEN_MASK;
-	  ks_info[0] = ks_pw1_len;
-	  memcpy (KS_GET_SALT (ks_info), KS_GET_SALT (ks_pw1), SALT_SIZE);
-	  ks_info[KEYSTRING_PASSLEN_SIZE+KEYSTRING_SALT_SIZE] = S2K_ITER;
-	  gpg_do_write_simple (NR_DO_KEYSTRING_PW1, ks_info, KS_META_SIZE);
+	  ks_info0[0] = ks_pw1_len & PW_LEN_MASK;
+	  memcpy (KS_GET_SALT (ks_info0), KS_GET_SALT (ks_pw1), SALT_SIZE);
+	  ks_info0[KEYSTRING_PASSLEN_SIZE+KEYSTRING_SALT_SIZE] = S2K_ITER;
 	}
 
       if ((ks_rc_len & PW_LEN_KEYSTRING_BIT))
 	{
-	  ks_rc_len &= PW_LEN_MASK;
-	  ks_info[0] = ks_rc_len;
-	  memcpy (KS_GET_SALT (ks_info), KS_GET_SALT (ks_rc), SALT_SIZE);
-	  ks_info[KEYSTRING_PASSLEN_SIZE+KEYSTRING_SALT_SIZE] = S2K_ITER;
-	  gpg_do_write_simple (NR_DO_KEYSTRING_RC, ks_info, KS_META_SIZE);
+	  ks_info1[0] = ks_rc_len & PW_LEN_MASK;
+	  memcpy (KS_GET_SALT (ks_info1), KS_GET_SALT (ks_rc), SALT_SIZE);
+	  ks_info1[KEYSTRING_PASSLEN_SIZE+KEYSTRING_SALT_SIZE] = S2K_ITER;
 	}
+
+      /*
+       * Note that gpg_do_write_simple may result garbage collection
+       * for flash ROM.  Thus, it must be two phase.
+       */
+
+      if ((ks_pw1_len & PW_LEN_KEYSTRING_BIT))
+	gpg_do_write_simple (NR_DO_KEYSTRING_PW1, ks_info0, KS_META_SIZE);
+
+      if ((ks_rc_len & PW_LEN_KEYSTRING_BIT))
+	gpg_do_write_simple (NR_DO_KEYSTRING_RC, ks_info1, KS_META_SIZE);
 
       if (keystring_admin)
 	{
@@ -917,10 +925,11 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
 
 	  if (ks_admin != NULL)
 	    {
-	      ks_info[0] = ks_admin[0] & PW_LEN_MASK;
-	      memcpy (KS_GET_SALT (ks_info), KS_GET_SALT (ks_admin), SALT_SIZE);
-	      ks_info[KEYSTRING_PASSLEN_SIZE+KEYSTRING_SALT_SIZE] = S2K_ITER;
-	      gpg_do_write_simple (NR_DO_KEYSTRING_PW3, ks_info, KS_META_SIZE);
+	      ks_info0[0] = ks_admin[0] & PW_LEN_MASK;
+	      memcpy (KS_GET_SALT (ks_info0), KS_GET_SALT (ks_admin),
+		      SALT_SIZE);
+	      ks_info0[KEYSTRING_PASSLEN_SIZE+KEYSTRING_SALT_SIZE] = S2K_ITER;
+	      gpg_do_write_simple (NR_DO_KEYSTRING_PW3, ks_info0, KS_META_SIZE);
 	    }
 	  else
 	    {

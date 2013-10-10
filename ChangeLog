@@ -1,5 +1,11 @@
 2013-10-10  Niibe Yutaka  <gniibe@fsij.org>
 
+	* src/openpgp-do.c (gpg_do_write_prvkey): Two phase write to
+	work with garbage collection.
+
+	* src/openpgp.c (cmd_change_password): Call gpg_do_write_simple
+	after accessing the data object (it may cause garbage collection).
+
 	* polarssl/library/bignum.c (mpi_montred): Constant time for
 	carry propagation.  Bug fix for carry propagation.
 	(mpi_exp_mod): Bug fix.  Shrink the size of RR as same as X.
