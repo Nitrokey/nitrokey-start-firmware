@@ -1,3 +1,8 @@
+2013-10-11  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/openpgp-do.c (gpg_do_write_prvkey): Delete keystring
+	information from data object of NR_DO_KEYSTRING_PW3.
+
 2013-10-10  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/gnuk.h (S2K_ITER): Remove.  It's determined at compile time.

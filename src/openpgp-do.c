@@ -899,8 +899,24 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
   if (p == NULL)
     return -1;
 
+  if (keystring_admin && kk == GPG_KEY_FOR_SIGNING)
+    {
+      const uint8_t *ks_admin = gpg_do_read_simple (NR_DO_KEYSTRING_PW3);
+
+      if (ks_admin != NULL && (ks_admin[0] & PW_LEN_KEYSTRING_BIT))
+	{
+	  ks_info0[0] = ks_admin[0] & PW_LEN_MASK;
+	  memcpy (KS_GET_SALT (ks_info0), KS_GET_SALT (ks_admin), SALT_SIZE);
+	  gpg_do_write_simple (NR_DO_KEYSTRING_PW3, ks_info0, KS_META_SIZE);
+	}
+      else
+	{
+	  DEBUG_INFO ("No admin keystring!\r\n");
+	}
+    }
+
   if (++num_prv_keys == NUM_ALL_PRV_KEYS) /* All keys are registered.  */
-    { /* Remove contents of keystrings from DO, but length, salt, and iter.  */
+    { /* Remove contents of keystrings from DO, but length and salt.  */
       /*
        * Note that flash_do_write (above) or gpg_do_write_simple
        * (below) may result garbage collection for flash ROM.  Thus,
@@ -911,23 +927,6 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
 
       if ((ks_rc_len & PW_LEN_KEYSTRING_BIT))
 	gpg_do_write_simple (NR_DO_KEYSTRING_RC, ks_info1, KS_META_SIZE);
-
-      if (keystring_admin)
-	{
-	  const uint8_t *ks_admin = gpg_do_read_simple (NR_DO_KEYSTRING_PW3);
-
-	  if (ks_admin != NULL)
-	    {
-	      ks_info0[0] = ks_admin[0] & PW_LEN_MASK;
-	      memcpy (KS_GET_SALT (ks_info0), KS_GET_SALT (ks_admin),
-		      SALT_SIZE);
-	      gpg_do_write_simple (NR_DO_KEYSTRING_PW3, ks_info0, KS_META_SIZE);
-	    }
-	  else
-	    {
-	      DEBUG_INFO ("No admin keystring!\r\n");
-	    }
-	}
     }
 
   return 0;
