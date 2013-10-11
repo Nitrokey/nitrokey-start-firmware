@@ -109,8 +109,9 @@ verify_user_0 (uint8_t access, const uint8_t *pw, int buf_len, int pw_len_known,
 
   if (r1 < 0 || r2 < 0
       || (r1 == 0 && r2 == 0 && ks_pw1 != NULL
-	  && memcmp (KS_GET_KEYSTRING (ks_pw1),
-		     keystring, KEYSTRING_MD_SIZE) != 0))
+	  && ((ks_pw1[0] & PW_LEN_KEYSTRING_BIT) == 0
+	      || memcmp (KS_GET_KEYSTRING (ks_pw1),
+			 keystring, KEYSTRING_MD_SIZE) != 0)))
     {
     failure:
       gpg_pw_increment_err_counter (PW_ERR_PW1);
@@ -182,7 +183,8 @@ verify_admin_00 (const uint8_t *pw, int buf_len, int pw_len_known,
   if (r1 < 0 || r2 < 0)
     return -1;
   else if (r1 == 0 && r2 == 0)
-    if (memcmp (KS_GET_KEYSTRING (ks), keystring, KEYSTRING_MD_SIZE) != 0)
+    if ((ks[0] & PW_LEN_KEYSTRING_BIT) == 0
+	|| memcmp (KS_GET_KEYSTRING (ks), keystring, KEYSTRING_MD_SIZE) != 0)
       return -1;
 
   return pw_len;

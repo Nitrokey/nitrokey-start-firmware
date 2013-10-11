@@ -1,7 +1,13 @@
 2013-10-11  Niibe Yutaka  <gniibe@fsij.org>
 
+	* src/ac.c (verify_user_0, verify_admin_00): Fix conditions.
+
 	* src/openpgp-do.c (gpg_do_write_prvkey): Delete keystring
 	information from data object of NR_DO_KEYSTRING_PW3.
+	Fix conditions.
+	(gpg_do_keygen): Likewise.
+
+	* src/openpgp.c (cmd_reset_user_password): Likewise.
 
 2013-10-10  Niibe Yutaka  <gniibe@fsij.org>
 

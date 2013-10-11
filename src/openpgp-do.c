@@ -853,15 +853,11 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
   memcpy (pd->iv, iv, INITIAL_VECTOR_SIZE);
   memcpy (pd->checksum_encrypted, kdi.checksum, DATA_ENCRYPTION_KEY_SIZE);
 
-  if (ks_pw1)
+  if (ks_pw1 && ((ks_pw1_len = ks_pw1[0]) & PW_LEN_KEYSTRING_BIT))
     {
-      ks_pw1_len = ks_pw1[0];
+      ks_info0[0] = ks_pw1_len & PW_LEN_MASK;
+      memcpy (KS_GET_SALT (ks_info0), KS_GET_SALT (ks_pw1), SALT_SIZE);
       encrypt_dek (KS_GET_KEYSTRING (ks_pw1), pd->dek_encrypted_1);
-      if ((ks_pw1_len & PW_LEN_KEYSTRING_BIT))
-	{
-	  ks_info0[0] = ks_pw1_len & PW_LEN_MASK;
-	  memcpy (KS_GET_SALT (ks_info0), KS_GET_SALT (ks_pw1), SALT_SIZE);
-	}
     }
   else
     {
@@ -872,15 +868,11 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
       encrypt_dek (ks, pd->dek_encrypted_1);
     }
 
-  if (ks_rc)
+  if (ks_rc && ((ks_rc_len = ks_rc[0]) & PW_LEN_KEYSTRING_BIT))
     {
-      ks_rc_len = ks_rc[0];
+      ks_info1[0] = ks_rc_len & PW_LEN_MASK;
+      memcpy (KS_GET_SALT (ks_info1), KS_GET_SALT (ks_rc), SALT_SIZE);
       encrypt_dek (KS_GET_KEYSTRING (ks_rc), pd->dek_encrypted_2);
-      if ((ks_rc_len & PW_LEN_KEYSTRING_BIT))
-	{
-	  ks_info1[0] = ks_rc_len & PW_LEN_MASK;
-	  memcpy (KS_GET_SALT (ks_info1), KS_GET_SALT (ks_rc), SALT_SIZE);
-	}
     }
   else
     memset (pd->dek_encrypted_2, 0, DATA_ENCRYPTION_KEY_SIZE);
@@ -1742,15 +1734,21 @@ gpg_do_keygen (uint8_t kk_byte)
       /* GnuPG expects it's ready for signing. */
       /* Don't call ac_reset_pso_cds here, but load the private key */
 
-      if (ks_pw1)
-	ks = KS_GET_KEYSTRING (ks_pw1);
-      else
+      if (ks_pw1 == NULL)
 	{
 	  const uint8_t * pw = (const uint8_t *)OPENPGP_CARD_INITIAL_PW1;
 
 	  s2k (NULL, 0, pw, strlen (OPENPGP_CARD_INITIAL_PW1), keystring);
 	  ks = keystring;
 	}
+      else
+	if ((ks_pw1[0] & PW_LEN_KEYSTRING_BIT) != 0)
+	  ks = KS_GET_KEYSTRING (ks_pw1);
+	else
+	  {
+	    GPG_ERROR ();
+	    return;
+	  }
 
       gpg_do_load_prvkey (GPG_KEY_FOR_SIGNING, BY_USER, ks);
     }

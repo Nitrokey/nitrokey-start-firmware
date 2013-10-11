@@ -526,7 +526,9 @@ cmd_reset_user_password (void)
 	}
       else if (r == 0)
 	{
-	  if (memcmp (KS_GET_KEYSTRING (ks_rc), old_ks, KEYSTRING_MD_SIZE) != 0)
+	  if ((ks_rc[0] & PW_LEN_KEYSTRING_BIT) == 0
+	      || memcmp (KS_GET_KEYSTRING (ks_rc),
+			 old_ks, KEYSTRING_MD_SIZE) != 0)
 	    goto sec_fail;
 	  DEBUG_INFO ("done (no prvkey).\r\n");
 	  new_ks0[0] |= PW_LEN_KEYSTRING_BIT;
