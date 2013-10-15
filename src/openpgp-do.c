@@ -578,9 +578,8 @@ proc_resetting_code (const uint8_t *data, int len)
     }
   else if (r == 0)
     {
-      DEBUG_INFO ("done (no prvkey).\r\n");
-      new_ks0[0] |= PW_LEN_KEYSTRING_BIT;
-      gpg_do_write_simple (NR_DO_KEYSTRING_RC, new_ks0, KEYSTRING_SIZE);
+      DEBUG_INFO ("error (no prvkey).\r\n");
+      return 0;
     }
   else
     {
@@ -730,6 +729,48 @@ gpg_do_load_prvkey (enum kind_of_key kk, int who, const uint8_t *keystring)
 
 static int8_t num_prv_keys;
 
+static void
+gpg_do_delete_prvkey (enum kind_of_key kk)
+{
+  uint8_t nr = get_do_ptr_nr_for_kk (kk);
+  const uint8_t *do_data = do_ptr[nr - NR_DO__FIRST__];
+
+  if (do_data == NULL)
+    return;
+
+  do_ptr[nr - NR_DO__FIRST__] = NULL;
+  flash_do_release (do_data);
+
+  if (admin_authorized == BY_ADMIN && kk == GPG_KEY_FOR_SIGNING)
+    {			/* Recover admin keystring DO.  */
+      const uint8_t *ks_pw3 = gpg_do_read_simple (NR_DO_KEYSTRING_PW3);
+
+      if (ks_pw3 != NULL)
+	{
+	  uint8_t ks0[KEYSTRING_SIZE];
+
+	  ks0[0] = ks_pw3[0] | PW_LEN_KEYSTRING_BIT;
+	  memcpy (KS_GET_SALT (ks0), KS_GET_SALT (ks_pw3), SALT_SIZE);
+	  memcpy (KS_GET_KEYSTRING (ks0), keystring_md_pw3, KEYSTRING_MD_SIZE);
+	  gpg_do_write_simple (NR_DO_KEYSTRING_PW3, ks0, KEYSTRING_SIZE);
+	}
+    }
+
+  if (--num_prv_keys == 0)
+    {
+      flash_keystore_release ();
+
+      /* Delete PW1 and RC if any.  */
+      gpg_do_write_simple (NR_DO_KEYSTRING_PW1, NULL, 0);
+      gpg_do_write_simple (NR_DO_KEYSTRING_RC, NULL, 0);
+
+      ac_reset_pso_cds ();
+      ac_reset_other ();
+      if (admin_authorized == BY_USER)
+	ac_reset_admin ();
+    }
+}
+
 static int
 gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
 		     const uint8_t *keystring_admin, const uint8_t *pubkey)
@@ -740,23 +781,17 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
   struct prvkey_data *pd;
   uint8_t *key_addr;
   const uint8_t *dek, *iv;
-  const uint8_t *do_data = do_ptr[nr - NR_DO__FIRST__];
-  const uint8_t *ks_pw1;
-  const uint8_t *ks_rc;
   struct key_data_internal kdi;
   uint8_t *pubkey_allocated_here = NULL;
-  uint8_t ks_pw1_len = 0;
-  uint8_t ks_rc_len = 0;
   int pubkey_len = KEY_CONTENT_LEN;
-  uint8_t ks_info0[KS_META_SIZE];
-  uint8_t ks_info1[KS_META_SIZE];
+  uint8_t ks[KEYSTRING_MD_SIZE];
+  enum kind_of_key kk0;
 
   DEBUG_INFO ("Key import\r\n");
   DEBUG_SHORT (key_len);
 
-  if (do_data)
-    /* No replace support, you need to remove it first.  */
-    return -1;
+  /* Delete it first, if any.  */
+  gpg_do_delete_prvkey (kk);
 
 #ifdef RSA_AUTH
   if (key_len != KEY_CONTENT_LEN)
@@ -827,8 +862,20 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
   memcpy (pd->dek_encrypted_1, dek, DATA_ENCRYPTION_KEY_SIZE);
   memcpy (pd->dek_encrypted_2, dek, DATA_ENCRYPTION_KEY_SIZE);
   memcpy (pd->dek_encrypted_3, dek, DATA_ENCRYPTION_KEY_SIZE);
-  ks_pw1 = gpg_do_read_simple (NR_DO_KEYSTRING_PW1);
-  ks_rc = gpg_do_read_simple (NR_DO_KEYSTRING_RC);
+
+  s2k (NULL, 0, (const uint8_t *)OPENPGP_CARD_INITIAL_PW1,
+       strlen (OPENPGP_CARD_INITIAL_PW1), ks);
+
+  /* Handle existing keys and keystring DOs.  */
+  gpg_do_write_simple (NR_DO_KEYSTRING_PW1, NULL, 0);
+  gpg_do_write_simple (NR_DO_KEYSTRING_RC, NULL, 0);
+  for (kk0 = 0; kk0 <= GPG_KEY_FOR_AUTHENTICATION; kk++)
+    if (kk0 != kk)
+      {
+	gpg_do_chks_prvkey (kk0, admin_authorized, keystring_md_pw3,
+			    BY_USER, ks);
+	gpg_do_chks_prvkey (kk0, BY_RESETCODE, NULL, 0, NULL);
+      }
 
   encrypt (dek, iv, (uint8_t *)&kdi, sizeof (struct key_data_internal));
 
@@ -853,29 +900,9 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
   memcpy (pd->iv, iv, INITIAL_VECTOR_SIZE);
   memcpy (pd->checksum_encrypted, kdi.checksum, DATA_ENCRYPTION_KEY_SIZE);
 
-  if (ks_pw1 && ((ks_pw1_len = ks_pw1[0]) & PW_LEN_KEYSTRING_BIT))
-    {
-      ks_info0[0] = ks_pw1_len & PW_LEN_MASK;
-      memcpy (KS_GET_SALT (ks_info0), KS_GET_SALT (ks_pw1), SALT_SIZE);
-      encrypt_dek (KS_GET_KEYSTRING (ks_pw1), pd->dek_encrypted_1);
-    }
-  else
-    {
-      uint8_t ks[KEYSTRING_MD_SIZE];
+  encrypt_dek (ks, pd->dek_encrypted_1);
 
-      s2k (NULL, 0, (const uint8_t *)OPENPGP_CARD_INITIAL_PW1,
-	   strlen (OPENPGP_CARD_INITIAL_PW1), ks);
-      encrypt_dek (ks, pd->dek_encrypted_1);
-    }
-
-  if (ks_rc && ((ks_rc_len = ks_rc[0]) & PW_LEN_KEYSTRING_BIT))
-    {
-      ks_info1[0] = ks_rc_len & PW_LEN_MASK;
-      memcpy (KS_GET_SALT (ks_info1), KS_GET_SALT (ks_rc), SALT_SIZE);
-      encrypt_dek (KS_GET_KEYSTRING (ks_rc), pd->dek_encrypted_2);
-    }
-  else
-    memset (pd->dek_encrypted_2, 0, DATA_ENCRYPTION_KEY_SIZE);
+  memset (pd->dek_encrypted_2, 0, DATA_ENCRYPTION_KEY_SIZE);
 
   if (keystring_admin)
     encrypt_dek (keystring_admin, pd->dek_encrypted_3);
@@ -894,31 +921,18 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
   if (keystring_admin && kk == GPG_KEY_FOR_SIGNING)
     {
       const uint8_t *ks_admin = gpg_do_read_simple (NR_DO_KEYSTRING_PW3);
+      uint8_t ks_info[KS_META_SIZE];
 
       if (ks_admin != NULL && (ks_admin[0] & PW_LEN_KEYSTRING_BIT))
 	{
-	  ks_info0[0] = ks_admin[0] & PW_LEN_MASK;
-	  memcpy (KS_GET_SALT (ks_info0), KS_GET_SALT (ks_admin), SALT_SIZE);
-	  gpg_do_write_simple (NR_DO_KEYSTRING_PW3, ks_info0, KS_META_SIZE);
+	  ks_info[0] = ks_admin[0] & PW_LEN_MASK;
+	  memcpy (KS_GET_SALT (ks_info), KS_GET_SALT (ks_admin), SALT_SIZE);
+	  gpg_do_write_simple (NR_DO_KEYSTRING_PW3, ks_info, KS_META_SIZE);
 	}
       else
 	{
 	  DEBUG_INFO ("No admin keystring!\r\n");
 	}
-    }
-
-  if (++num_prv_keys == NUM_ALL_PRV_KEYS) /* All keys are registered.  */
-    { /* Remove contents of keystrings from DO, but length and salt.  */
-      /*
-       * Note that flash_do_write (above) or gpg_do_write_simple
-       * (below) may result garbage collection for flash ROM.  Thus,
-       * the access to ks_pw1/ks_rc must not be done here but before.
-       */
-      if ((ks_pw1_len & PW_LEN_KEYSTRING_BIT))
-	gpg_do_write_simple (NR_DO_KEYSTRING_PW1, ks_info0, KS_META_SIZE);
-
-      if ((ks_rc_len & PW_LEN_KEYSTRING_BIT))
-	gpg_do_write_simple (NR_DO_KEYSTRING_RC, ks_info1, KS_META_SIZE);
     }
 
   return 0;
@@ -935,6 +949,7 @@ gpg_do_chks_prvkey (enum kind_of_key kk,
   struct prvkey_data *pd;
   const uint8_t *p;
   uint8_t *dek_p;
+  int update_needed = 0;
 
   if (do_data == NULL)
     return 0;			/* No private key */
@@ -944,23 +959,44 @@ gpg_do_chks_prvkey (enum kind_of_key kk,
     return -1;
 
   memcpy (pd, &do_data[1], sizeof (struct prvkey_data));
-  flash_do_release (do_data);
 
   dek_p = ((uint8_t *)pd) + 4 + INITIAL_VECTOR_SIZE
     + DATA_ENCRYPTION_KEY_SIZE * who_old;
   memcpy (dek, dek_p, DATA_ENCRYPTION_KEY_SIZE);
-  decrypt_dek (old_ks, dek);
-  encrypt_dek (new_ks, dek);
-  dek_p += DATA_ENCRYPTION_KEY_SIZE * (who_new - who_old);
-  memcpy (dek_p, dek, DATA_ENCRYPTION_KEY_SIZE);
+  if (who_new == 0)		/* Remove */
+    {
+      int i;
 
-  do_ptr[nr - NR_DO__FIRST__] = NULL;
-  p = flash_do_write (nr, (const uint8_t *)pd, sizeof (struct prvkey_data));
-  do_ptr[nr - NR_DO__FIRST__] = p;
+      for (i = 0; i < DATA_ENCRYPTION_KEY_SIZE; i++)
+	if (dek_p[i] != 0)
+	  {
+	    update_needed = 1;
+	    dek_p[i] = 0;
+	  }
+    }
+  else
+    {
+      decrypt_dek (old_ks, dek);
+      encrypt_dek (new_ks, dek);
+      dek_p += DATA_ENCRYPTION_KEY_SIZE * (who_new - who_old);
+      if (memcmp (dek_p, dek, DATA_ENCRYPTION_KEY_SIZE) != 0)
+	{
+	  memcpy (dek_p, dek, DATA_ENCRYPTION_KEY_SIZE);
+	  update_needed = 1;
+	}
+    }
+
+  if (update_needed)
+    {
+      flash_do_release (do_data);
+      do_ptr[nr - NR_DO__FIRST__] = NULL;
+      p = flash_do_write (nr, (const uint8_t *)pd, sizeof (struct prvkey_data));
+      do_ptr[nr - NR_DO__FIRST__] = p;
+    }
 
   memset (pd, 0, sizeof (struct prvkey_data));
   free (pd);
-  if (p == NULL)
+  if (update_needed && p == NULL)
     return -1;
 
   return 1;
@@ -1033,45 +1069,7 @@ proc_key_import (const uint8_t *data, int len)
       || (kk == GPG_KEY_FOR_AUTHENTICATION && len <= 12))
 #endif
     {					    /* Deletion of the key */
-      uint8_t nr = get_do_ptr_nr_for_kk (kk);
-      const uint8_t *do_data = do_ptr[nr - NR_DO__FIRST__];
-
-      if (do_data == NULL)
-	return 1;
-
-      do_ptr[nr - NR_DO__FIRST__] = NULL;
-      flash_do_release (do_data);
-
-      if (admin_authorized == BY_ADMIN && kk == GPG_KEY_FOR_SIGNING)
-	{			/* Recover admin keystring DO.  */
-	  const uint8_t *ks_pw3 = gpg_do_read_simple (NR_DO_KEYSTRING_PW3);
-
-	  if (ks_pw3 != NULL)
-	    {
-	      uint8_t ks0[KEYSTRING_SIZE];
-
-	      ks0[0] = ks_pw3[0] | PW_LEN_KEYSTRING_BIT;
-	      memcpy (KS_GET_SALT (ks0), KS_GET_SALT (ks_pw3), SALT_SIZE);
-	      memcpy (KS_GET_KEYSTRING (ks0),
-		      keystring_md_pw3, KEYSTRING_MD_SIZE);
-	      gpg_do_write_simple (NR_DO_KEYSTRING_PW3, ks0, KEYSTRING_SIZE);
-	    }
-	}
-
-      if (--num_prv_keys == 0)
-	{
-	  flash_keystore_release ();
-
-	  /* Delete PW1 and RC if any.  */
-	  gpg_do_write_simple (NR_DO_KEYSTRING_PW1, NULL, 0);
-	  gpg_do_write_simple (NR_DO_KEYSTRING_RC, NULL, 0);
-
-	  ac_reset_pso_cds ();
-	  ac_reset_other ();
-	  if (admin_authorized == BY_USER)
-	    ac_reset_admin ();
-	}
-
+      gpg_do_delete_prvkey (kk);
       return 1;
     }
 
@@ -1727,30 +1725,14 @@ gpg_do_keygen (uint8_t kk_byte)
 
   if (kk == GPG_KEY_FOR_SIGNING)
     {
-      const uint8_t *ks_pw1 = gpg_do_read_simple (NR_DO_KEYSTRING_PW1);
+      const uint8_t *pw = (const uint8_t *)OPENPGP_CARD_INITIAL_PW1;
       uint8_t keystring[KEYSTRING_MD_SIZE];
-      const uint8_t *ks;
 
       /* GnuPG expects it's ready for signing. */
       /* Don't call ac_reset_pso_cds here, but load the private key */
 
-      if (ks_pw1 == NULL)
-	{
-	  const uint8_t * pw = (const uint8_t *)OPENPGP_CARD_INITIAL_PW1;
-
-	  s2k (NULL, 0, pw, strlen (OPENPGP_CARD_INITIAL_PW1), keystring);
-	  ks = keystring;
-	}
-      else
-	if ((ks_pw1[0] & PW_LEN_KEYSTRING_BIT) != 0)
-	  ks = KS_GET_KEYSTRING (ks_pw1);
-	else
-	  {
-	    GPG_ERROR ();
-	    return;
-	  }
-
-      gpg_do_load_prvkey (GPG_KEY_FOR_SIGNING, BY_USER, ks);
+      s2k (NULL, 0, pw, strlen (OPENPGP_CARD_INITIAL_PW1), keystring);
+      gpg_do_load_prvkey (GPG_KEY_FOR_SIGNING, BY_USER, keystring);
     }
   else
     ac_reset_other ();

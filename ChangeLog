@@ -1,3 +1,17 @@
+2013-10-15  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/openpgp.c (cmd_change_password, cmd_reset_user_password): It
+	is now error to change User's pass phrase with no keys.
+
+	* src/openpgp-do.c (proc_resetting_code): Likewise for resetting
+	code.
+	(gpg_do_delete_prvkey): New.
+	(gpg_do_write_prvkey): Make sure to delete the key before writing.
+	User's pass phrase is always the one of factory setting.
+	(gpg_do_chks_prvkey): Support removing the key.
+	(proc_key_import): Use gpg_do_delete_prvkey.
+	(gpg_do_keygen): Use factory setting pass phrase.
+
 2013-10-11  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/ac.c (verify_user_0, verify_admin_00): Fix conditions.

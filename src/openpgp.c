@@ -382,14 +382,8 @@ cmd_change_password (void)
     }
   else if (r == 0 && who == BY_USER)	/* no prvkey */
     {
-      new_ks0[0] |= PW_LEN_KEYSTRING_BIT;
-      gpg_do_write_simple (NR_DO_KEYSTRING_PW1, new_ks0, KEYSTRING_SIZE);
-      ac_reset_pso_cds ();
-      ac_reset_other ();
-      if (admin_authorized == BY_USER)
-	ac_reset_admin ();
-      DEBUG_INFO ("Changed DO_KEYSTRING_PW1.\r\n");
-      GPG_SUCCESS ();
+      DEBUG_INFO ("user pass change not supported with no keys.\r\n");
+      GPG_CONDITION_NOT_SATISFIED ();
     }
   else if (r > 0 && who == BY_USER)
     {
@@ -519,27 +513,14 @@ cmd_reset_user_password (void)
 	}
       else if (r < 0)
 	{
-	sec_fail:
 	  DEBUG_INFO ("failed.\r\n");
 	  gpg_pw_increment_err_counter (PW_ERR_RC);
 	  GPG_SECURITY_FAILURE ();
 	}
       else if (r == 0)
 	{
-	  if ((ks_rc[0] & PW_LEN_KEYSTRING_BIT) == 0
-	      || memcmp (KS_GET_KEYSTRING (ks_rc),
-			 old_ks, KEYSTRING_MD_SIZE) != 0)
-	    goto sec_fail;
-	  DEBUG_INFO ("done (no prvkey).\r\n");
-	  new_ks0[0] |= PW_LEN_KEYSTRING_BIT;
-	  gpg_do_write_simple (NR_DO_KEYSTRING_PW1, new_ks0, KEYSTRING_SIZE);
-	  ac_reset_pso_cds ();
-	  ac_reset_other ();
-	  if (admin_authorized == BY_USER)
-	    ac_reset_admin ();
-	  gpg_pw_reset_err_counter (PW_ERR_RC);
-	  gpg_pw_reset_err_counter (PW_ERR_PW1);
-	  GPG_SUCCESS ();
+	  DEBUG_INFO ("user pass change not supported with no keys.\r\n");
+	  GPG_CONDITION_NOT_SATISFIED ();
 	}
       else
 	{
@@ -583,15 +564,8 @@ cmd_reset_user_password (void)
 	}
       else if (r == 0)
 	{
-	  DEBUG_INFO ("done (no privkey).\r\n");
-	  new_ks0[0] |= PW_LEN_KEYSTRING_BIT;
-	  gpg_do_write_simple (NR_DO_KEYSTRING_PW1, new_ks0, KEYSTRING_SIZE);
-	  ac_reset_pso_cds ();
-	  ac_reset_other ();
-	  if (admin_authorized == BY_USER)
-	    ac_reset_admin ();
-	  gpg_pw_reset_err_counter (PW_ERR_PW1);
-	  GPG_SUCCESS ();
+	  DEBUG_INFO ("user pass change not supported with no keys.\r\n");
+	  GPG_CONDITION_NOT_SATISFIED ();
 	}
       else
 	{
