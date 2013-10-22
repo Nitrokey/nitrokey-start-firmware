@@ -1,3 +1,7 @@
+2013-10-22  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/openpgp-do.c (gpg_do_write_prvkey): Bug fix.
+
 2013-10-15  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/openpgp.c (cmd_change_password, cmd_reset_user_password): It

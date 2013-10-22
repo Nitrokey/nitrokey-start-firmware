@@ -869,7 +869,7 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
   /* Handle existing keys and keystring DOs.  */
   gpg_do_write_simple (NR_DO_KEYSTRING_PW1, NULL, 0);
   gpg_do_write_simple (NR_DO_KEYSTRING_RC, NULL, 0);
-  for (kk0 = 0; kk0 <= GPG_KEY_FOR_AUTHENTICATION; kk++)
+  for (kk0 = 0; kk0 <= GPG_KEY_FOR_AUTHENTICATION; kk0++)
     if (kk0 != kk)
       {
 	gpg_do_chks_prvkey (kk0, admin_authorized, keystring_md_pw3,
