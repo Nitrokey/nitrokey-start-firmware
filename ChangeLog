@@ -1,5 +1,22 @@
 2013-10-23  Niibe Yutaka  <gniibe@fsij.org>
 
+	* test/features/010_setup_passphrase.feature
+	* test/features/030_key_registration.feature
+	* test/features/040_passphrase_change.feature
+	* test/features/410_setup_passphrase.feature
+	* test/features/430_key_registration.feature
+	* test/features/201_keygen.feature
+	* test/features/601_keygen.feature: Modified to support new way of
+	pass phrase reset by key import / key generation.
+
+	* test/features/201_keygen.feature
+	* test/features/601_keygen.feature
+	* test/features/202_setup_passphrase.feature
+	* test/features/602_setup_passphrase.feature: Rename to change
+	order of execution.
+
+2013-10-23  Niibe Yutaka  <gniibe@fsij.org>
+
 	* src/openpgp-do.c (gpg_do_write_prvkey): Bug fix of adding
 	num_prv_keys.
 

@@ -47,6 +47,10 @@ Feature: import keys to token
      And put the data to d0
      Then it should get success
 
+  Scenario: setup PW1 (admin-full mode)
+     Given cmd_change_reference_data with 1 and "123456another user pass phrase"
+     Then it should get success
+
   Scenario: verify PW1 (1) again
      Given cmd_verify with 1 and "another user pass phrase"
      Then it should get success

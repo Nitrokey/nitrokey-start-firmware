@@ -14,7 +14,7 @@ Feature: change pass phrase
      Given cmd_verify with 2 and "PASSPHRASE SHOULD BE LONG"
      Then it should get success
 
-  Scenario: setup reset code again (in admin-full mode)
+  Scenario: setup reset code (in admin-full mode)
      Given cmd_put_data with d3 and "example reset code 000"
      Then it should get success
 
