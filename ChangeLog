@@ -1,3 +1,16 @@
+2013-10-24  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/gnuk.ld.in (.gnuk_flash): Three pages for three keys.
+	* src/flash.c (FLASH_KEYSTORE_SIZE): Likewise.
+	(flash_keystore_release): Remove.
+	(flash_key_fill_zero_as_released)
+	(flash_check_all_other_keys_released, flash_key_release): New.
+	(flash_init, flash_key_alloc): New method to handle free space.
+	* src/openpgp-do.c (fetch_four_bytes): New.
+	(gpg_do_load_prvkey, gpg_do_delete_prvkey, gpg_do_public_key): Use
+	fetch_four_bytes.
+	(gpg_do_delete_prvkey): Call flash_key_release.
+
 2013-10-23  Niibe Yutaka  <gniibe@fsij.org>
 
 	* test/features/010_setup_passphrase.feature

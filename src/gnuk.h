@@ -111,9 +111,9 @@ extern const uint8_t *flash_init (void);
 extern void flash_do_release (const uint8_t *);
 extern const uint8_t *flash_do_write (uint8_t nr, const uint8_t *data, int len);
 extern uint8_t *flash_key_alloc (void);
+extern void flash_key_release (uint8_t *);
 extern int flash_key_write (uint8_t *key_addr, const uint8_t *key_data,
 			    const uint8_t *pubkey, int pubkey_len);
-extern void flash_keystore_release (void);
 extern void flash_set_data_pool_last (const uint8_t *p);
 extern void flash_clear_halfword (uint32_t addr);
 extern void flash_increment_counter (uint8_t counter_tag_nr);

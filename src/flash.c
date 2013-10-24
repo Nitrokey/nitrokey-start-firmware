@@ -57,19 +57,18 @@
  * _data_pool
  *	   <two pages>
  * _keystore_pool
- *         1.5-KiB Key store (512-byte (p, q and N) key-store * 3)
+ *         three flash pages for keystore (single: 512-byte (p, q and N))
  */
 #define KEY_SIZE	512	/* P, Q and N */
 
 #define FLASH_DATA_POOL_HEADER_SIZE	2
 #define FLASH_DATA_POOL_SIZE		(FLASH_PAGE_SIZE*2)
-#define FLASH_KEYSTORE_SIZE		(KEY_SIZE*3)
+#define FLASH_KEYSTORE_SIZE		(FLASH_PAGE_SIZE*3)
 
 static const uint8_t *data_pool;
 extern uint8_t _keystore_pool;
 
 static uint8_t *last_p;
-static const uint8_t *keystore;
 
 /* The first halfword is generation for the data page (little endian) */
 const uint8_t const flash_data[4] __attribute__ ((section (".gnuk_data"))) = {
@@ -82,7 +81,6 @@ extern uint8_t _data_pool;
 const uint8_t *
 flash_init (void)
 {
-  const uint8_t *p;
   uint16_t gen0, gen1;
   uint16_t *gen0_p = (uint16_t *)&_data_pool;
   uint16_t *gen1_p = (uint16_t *)(&_data_pool + FLASH_PAGE_SIZE);
@@ -98,13 +96,6 @@ flash_init (void)
     data_pool = &_data_pool + FLASH_PAGE_SIZE;
   else
     data_pool = &_data_pool;
-
-  /* Seek empty keystore */
-  p = &_keystore_pool;
-  while (*p != 0xff || *(p+1) != 0xff)
-    p += KEY_SIZE;
-
-  keystore = p;
 
   return data_pool + FLASH_DATA_POOL_HEADER_SIZE;
 }
@@ -277,16 +268,31 @@ flash_do_release (const uint8_t *do_data)
     flash_warning ("fill-zero tag_nr failure");
 }
 
+
 uint8_t *
 flash_key_alloc (void)
 {
-  uint8_t *k = (uint8_t *)keystore;
+  uint8_t *k;
+  int i; 
 
-  if ((k - &_keystore_pool) >= FLASH_KEYSTORE_SIZE)
-    return NULL;
+  /* Seek empty keystore.  */
+  k = &_keystore_pool;
+  while (k < &_keystore_pool + FLASH_KEYSTORE_SIZE)
+    {
+      const uint32_t *p = (const uint32_t *)k;
 
-  keystore += KEY_SIZE;
-  return k;
+      for (i = 0; i < KEY_SIZE/4; i++)
+	if (p[i] != 0xffffffff)
+	  break;
+
+      if (i == KEY_SIZE/4)	/* Yes, it's empty.  */
+	return k;
+
+      k += KEY_SIZE;
+    }
+
+  /* Should not happen as we have enough space, but just in case.  */
+  return NULL;
 }
 
 int
@@ -317,15 +323,43 @@ flash_key_write (uint8_t *key_addr, const uint8_t *key_data,
   return 0;
 }
 
-void
-flash_keystore_release (void)
+static int
+flash_check_all_other_keys_released (const uint8_t *key_addr)
 {
-  flash_erase_page ((uint32_t)&_keystore_pool);
-#if FLASH_KEYSTORE_SIZE > FLASH_PAGE_SIZE
-  flash_erase_page ((uint32_t)&_keystore_pool + FLASH_PAGE_SIZE);
-#endif
-  keystore = &_keystore_pool;
+  uint32_t start = (uint32_t)key_addr & ~(FLASH_PAGE_SIZE - 1);
+  const uint32_t *p = (const uint32_t *)start;
+
+  while (p < (const uint32_t *)(start + FLASH_PAGE_SIZE))
+    if (p == (const uint32_t *)key_addr)
+      p += KEY_SIZE/4;
+    else
+      if (*p)
+	return 0;
+      else
+	p++;
+
+  return 1;
 }
+
+static void
+flash_key_fill_zero_as_released (uint8_t *key_addr)
+{
+  int i;
+  uint32_t addr = (uint32_t)key_addr;
+
+  for (i = 0; i < KEY_SIZE/2; i++)
+    flash_program_halfword (addr + i*2, 0);
+}
+
+void
+flash_key_release (uint8_t *key_addr)
+{
+  if (flash_check_all_other_keys_released (key_addr))
+    flash_erase_page (((uint32_t)key_addr & ~(FLASH_PAGE_SIZE - 1)));
+  else
+    flash_key_fill_zero_as_released (key_addr);
+}
+
 
 void
 flash_clear_halfword (uint32_t addr)

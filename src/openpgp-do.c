@@ -35,6 +35,16 @@
 #include "polarssl/config.h"
 #include "polarssl/aes.h"
 
+/* Handles possible unaligned access.  */
+static uint32_t
+fetch_four_bytes (const void *addr)
+{
+  const uint8_t *p = (const uint8_t *)addr;
+
+  return p[0] | (p[1] << 8) | (p[2] << 16) | (p[3] << 24);
+}
+
+
 #define PASSWORD_ERRORS_MAX 3	/* >= errors, it will be locked */
 static const uint8_t *pw_err_counter_p[3];
 
@@ -705,7 +715,7 @@ gpg_do_load_prvkey (enum kind_of_key kk, int who, const uint8_t *keystring)
   if (do_data == NULL)
     return 0;
 
-  key_addr = *(const uint8_t **)&(do_data)[1]; /* Possible unaligned access */
+  key_addr = (const uint8_t *)fetch_four_bytes (&do_data[1]);
   memcpy (kdi.data, key_addr, KEY_CONTENT_LEN);
   iv = do_data+5;
   memcpy (kdi.checksum, iv + INITIAL_VECTOR_SIZE, DATA_ENCRYPTION_KEY_SIZE);
@@ -734,10 +744,13 @@ gpg_do_delete_prvkey (enum kind_of_key kk)
 {
   uint8_t nr = get_do_ptr_nr_for_kk (kk);
   const uint8_t *do_data = do_ptr[nr - NR_DO__FIRST__];
+  uint8_t *key_addr;
 
   if (do_data == NULL)
     return;
 
+  key_addr = (uint8_t *)fetch_four_bytes (&do_data[1]);
+  flash_key_release (key_addr);
   do_ptr[nr - NR_DO__FIRST__] = NULL;
   flash_do_release (do_data);
 
@@ -758,8 +771,6 @@ gpg_do_delete_prvkey (enum kind_of_key kk)
 
   if (--num_prv_keys == 0)
     {
-      flash_keystore_release ();
-
       /* Delete PW1 and RC if any.  */
       gpg_do_write_simple (NR_DO_KEYSTRING_PW1, NULL, 0);
       gpg_do_write_simple (NR_DO_KEYSTRING_RC, NULL, 0);
@@ -1591,7 +1602,7 @@ gpg_do_public_key (uint8_t kk_byte)
       return;
     }
 
-  key_addr = *(const uint8_t **)&do_data[1];
+  key_addr = (const uint8_t *)fetch_four_bytes (&do_data[1]);
 
   res_p = res_APDU;
 
