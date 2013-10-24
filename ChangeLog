@@ -1,5 +1,10 @@
 2013-10-24  Niibe Yutaka  <gniibe@fsij.org>
 
+	* src/Makefile.in (DEFS): Add -DCHX_PRIO_MAIN=5 for LED blink.
+	* src/main.c (PRIO_CCID): It's now 3 (was: 2).
+
+2013-10-24  Niibe Yutaka  <gniibe@fsij.org>
+
 	* src/gnuk.ld.in (.gnuk_flash): Three pages for three keys.
 	* src/flash.c (FLASH_KEYSTORE_SIZE): Likewise.
 	(flash_keystore_release): Remove.
