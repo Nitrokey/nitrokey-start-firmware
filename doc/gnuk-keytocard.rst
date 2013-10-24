@@ -3,9 +3,9 @@ Key import from PC to Gnuk Token
 ================================
 
 This document describes how I put my **keys on PC** to the Token,
-and remove keys from PC.
+and remove secret keys from PC.
 
-Note that there is **no ways** to export keys from the Token,
+Note that there is **no ways** to export keys from the Gnuk Token,
 so please be careful.
 
 
@@ -71,6 +71,8 @@ and another is the password of **Gnuk Token**.  Note that the password of
 the token and the password of the keys on PC are different things,
 although they can be same.
 
+Here, I assume that Gnuk Token's admin password of factory setting (12345678).
+
 I enter these passwords. ::
 
   You need a passphrase to unlock the secret key for
@@ -81,7 +83,7 @@ I enter these passwords. ::
   gpg: 3 Admin PIN attempts remaining before card is permanently locked
   
   Please enter the Admin PIN
-  Enter Admin PIN: <PASSWORD-GNUK>
+  Enter Admin PIN: 12345678
   
   sec  2048R/4CA7BABE  created: 2010-10-15  expires: never     
                        card-no: F517 00000001
@@ -89,7 +91,8 @@ I enter these passwords. ::
   ssb  2048R/5BB065DC  created: 2010-10-22  expires: never     
   (1)  NIIBE Yutaka <gniibe@fsij.org>
 
-The primary key is now on the Token and GnuPG says its card-no (F517 00000001) , where F517 is the vendor ID of FSIJ.
+The primary key is now on the Token and GnuPG says its card-no (F517 00000001),
+where F517 is the vendor ID of FSIJ.
 
 Secondly, I import my subkey of encryption.  I select key number '1'. ::
 
@@ -190,4 +193,5 @@ Lastly, I save changes of **keys on PC** and quit GnuPG. ::
   $ 
 
 All secret keys are imported to Gnuk Token now.
-On PC, only references (card-no) to the Token remain.
+On PC, only references (card-no) to the Token remain
+and secrets have been removed.

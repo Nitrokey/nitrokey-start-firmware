@@ -11,9 +11,13 @@ udev rules for Gnuk Token
 =========================
 
 In case of Debian, there is a file /lib/udev/rules.d/60-gnupg.rules,
-when you install "gnupg" package.  This is the place we need to change.
-We add lines for Gnuk Token to give a desktop user the permission to
-use the device.  We specify USB ID of Gnuk Token (by FSIJ)::
+when you install "gnupg" package.  This is the place we need to
+change, if your installation is older (than jessie).  Newer "gnupg"
+package (1.4.15-1 or later) has already supported Gnuk Token.
+
+If needed, please add lines for Gnuk Token to give a desktop user the
+permission to use the device.  We specify USB ID of Gnuk Token (by
+FSIJ)::
 
     --- /lib/udev/rules.d/60-gnupg.rules.orig	2012-06-24 21:51:26.000000000 +0900
     +++ /lib/udev/rules.d/60-gnupg.rules	2012-07-13 17:18:55.149587687 +0900

@@ -31,19 +31,21 @@ Target boards for running Gnuk
 ------------------------------
 
 Hardware requirement for Gnuk is the micro controller STM32F103.
-In version 1.0, Gnuk supports following boards.
+In version 1.1.x, Gnuk supports following boards.
 
 * FST-01 (Flying Stone Tiny ZERO-ONE)
 
 * Olimex STM32-H103
+
+* STM32 part of STM8S Discovery Kit
+
+Not supported yet.
 
 * CQ STARM
 
 * STBee
 
 * STBee Mini
-
-* STM32 part of STM8S Discovery Kit
 
 
 Host prerequisites for using Gnuk Token
@@ -65,5 +67,5 @@ Usages
 
 * Sign with GnuPG
 * Decrypt with GnuPG
-* Use with OpenSSH
-* Use with Firefox for X.509 client certificate authentication
+* Use with OpenSSH through gpg-agent (as ssh-agent)
+* Use with Firefox through Scute for X.509 client certificate authentication

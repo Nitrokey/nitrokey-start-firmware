@@ -14,8 +14,8 @@ I create ``.gnupg/gpg.conf`` file with the following content. ::
   use-agent
   personal-digest-preferences SHA256
   cert-digest-algo SHA256
-  default-preference-list SHA512 SHA384 SHA256 AES256 AES192 AES CAST5 ZLIB BZIP2 ZIP Uncompressed
-  
+  default-preference-list SHA512 SHA384 SHA256 SHA224 AES256 AES192 AES CAST5 ZLIB BZIP2 ZIP Uncompressed
+
   default-key 0x4ca7babe
 
 

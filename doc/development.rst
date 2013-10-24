@@ -12,7 +12,7 @@ it is possible to develop with that.  But it should be considered
 *experimental* environment, and it should not be used for usual
 purpose.  That's because it is basically impossible for DfuSe
 implementations to disable reading-out from flash ROM.  It means
-that your secret will be readily extracted by DfuSe.
+that your secrets will be readily extracted by DfuSe.
 
 For JTAG debugger, Olimex JTAG-Tiny is good and supported well.  For
 SWD debugger, ST-Link/V2 would be good, and it is supported by
@@ -22,10 +22,12 @@ tool/stlinkv2.py.
 OpenOCD
 -------
 
-For JTAG/SWD debugger, we can use OpenOCD.
+For JTAG/SWD debugger, we can use OpenOCD somehow.
 
-Note that ST-Link/V2 is *not* supported by OpenOCD 0.5.0.  It is
-supported by version 0.6 or later.
+Note that ST-Link/V2 was *not* supported by OpenOCD 0.5.0.
+
+It is supported by version 0.6 or later somehow, but still, you can't
+enable protection of flash ROM with OpenOCD using ST-Link/V2.
 
 
 GNU Toolchain
@@ -36,17 +38,8 @@ You need GNU toolchain and newlib for 'arm-none-eabi' target.
 There is "gcc-arm-embedded" project.  See:
 https://launchpad.net/gcc-arm-embedded/
 
-It is based on GCC 4.6.  You'd need "-O3 -Os" instead of "-O2" and it
-will be slightly better.
-
-Note that we need to link correct C library (for string functions).
-For this purpose, our src/Makefile.in contains following line:
-
-	MCFLAGS= -mcpu=$(MCU) -mfix-cortex-m3-ldrd
-
-This should not be needed (as -mcpu=cortex-m3 means
--mfix-cortex-m3-ldrd), but it was needed for the configuration of
-patch-gcc-config-arm-t-arm-elf.diff in summon-arm-toolchain in practice.
+It is based on GCC 4.7 (as of October, 2013).  We are using "-O3 -Os"
+for compiler option.
 
 
 Building Gnuk
@@ -68,4 +61,4 @@ Type:
 
   $ make
 
-Then, we will have "gnuk.elf".
+Then, we will have "gnuk.elf" under src/build directory.

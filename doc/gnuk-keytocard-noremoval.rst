@@ -59,6 +59,8 @@ and another is the password of **Gnuk Token**.  Note that the password of
 the token and the password of the keys on PC are different things,
 although they can be same.
 
+Here, I assume that Gnuk Token's admin password of factory setting (12345678).
+
 I enter these passwords. ::
 
   You need a passphrase to unlock the secret key for
@@ -69,7 +71,7 @@ I enter these passwords. ::
   gpg: 3 Admin PIN attempts remaining before card is permanently locked
   
   Please enter the Admin PIN
-  Enter Admin PIN: <PASSWORD-GNUK>
+  Enter Admin PIN: 12345678
   
   sec  2048R/4CA7BABE  created: 2010-10-15  expires: never     
                        card-no: F517 00000001
@@ -181,3 +183,4 @@ Lastly, I quit GnuPG.  Note that I **don't** save changes. ::
   $ 
 
 All keys are imported to Gnuk Token now.
+Still, secret keys are available on PC.

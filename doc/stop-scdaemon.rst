@@ -32,6 +32,6 @@ command.
 Let GPG-AGENT/SCDAEMON learn
 ============================
 
-To let gpg-agent/scdaemon learn, type::
+To let gpg-agent/scdaemon learn from Gnuk Token, type::
 
 	$ gpg-connect-agent learn /bye

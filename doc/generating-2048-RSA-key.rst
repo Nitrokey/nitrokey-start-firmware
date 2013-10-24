@@ -27,7 +27,7 @@ consumes more power for nomal usages.  These days, many people has
 enough computational resource, that would be true, but less is better
 for power consumption.
 
-For security, the key length is a single factor.  We had and will have
+For security, the key length is just a single factor.  We had and will have
 algorithm issues, too.  It is true that it's difficult to update
 our public keys, but this problem wouldn't be solved by just have
 longer keys.
@@ -36,6 +36,7 @@ We deliberately support only RSA 2048-bit keys for Gnuk, considering
 device computation power and host software constraints.
 
 Thus, the key size is 2048-bit in the examples below.
+
 
 Generating keys on host PC
 ==========================
@@ -95,7 +96,7 @@ Then enter user ID. ::
 
 and enter passphrase for this **key on host PC**.
 Note that this is a passphrase for the key on host PC.
-It is different thing to the password of Gnuk Token.
+It is different thing to the passphrase of Gnuk Token.
 
 We enter two same inputs two times
 (once for passphrase input, and another for confirmation). ::
@@ -289,8 +290,9 @@ Backup the private key
 ======================
 
 There are some ways to back up private key, such that backup .gnupg
-directory entirely, use of paperkey.  Here we describe backup by ASCII
-file.  ASCII file is good, because it has less risk on transfer.
+directory entirely, or use of paperkey, etc.
+Here, we describe backup by ASCII file.
+ASCII file is good, because it has less risk on transfer.
 Binary file has a risk to be modified on transfer.
 
 Note that the key on host PC is protected by passphrase (which

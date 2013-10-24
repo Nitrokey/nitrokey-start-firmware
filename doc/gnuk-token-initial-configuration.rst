@@ -2,7 +2,9 @@
 Initial Configuration of Gnuk Token
 ===================================
 
-This is optional.  You don't need to setup the serial number of Gnuk Token,
+This is optional step.
+
+You don't need to setup the serial number of Gnuk Token,
 as it comes with its default serial number based on MCU's chip ID.
 
 You can setup the serial number of Gnuk Token only once.
