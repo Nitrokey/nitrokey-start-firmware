@@ -12,6 +12,46 @@
 #include "usb_conf.h"
 #include "usb-cdc.h"
 
+
+/* HID report descriptor.  */
+#define HID_REPORT_DESC_SIZE (sizeof (hid_report_desc))
+
+static const uint8_t hid_report_desc[] = {
+  0x05, 0x01,	    /* USAGE_PAGE (Generic Desktop) */
+  0x09, 0x06,	    /* USAGE (Keyboard) */
+  0xa1, 0x01,	    /* COLLECTION (Application) */
+  0x05, 0x07,	    /*   USAGE_PAGE (Key Codes) */
+  0x19, 0xe0,	    /*   USAGE_MINIMUM (Keyboard LeftControl) */
+  0x29, 0xe7,	    /*   USAGE_MAXIMUM (Keyboard Right GUI) */
+  0x15, 0x00,	    /*   LOGICAL_MINIMUM (0) */
+  0x25, 0x01,	    /*   LOGICAL_MAXIMUM (1) */
+  0x75, 0x01,	    /*   REPORT_SIZE (1) */
+  0x95, 0x08,	    /*   REPORT_COUNT (8) */
+  0x81, 0x02,	    /*   INPUT (Data,Var,Abs); Modifier byte */
+
+  /* NumLock, CapsLock, ScrollLock, Compose, Kana */
+  0x05, 0x08,	    /*   USAGE_PAGE (LEDs) */
+  0x19, 0x01,	    /*   USAGE_MINIMUM (1) */
+  0x29, 0x05,	    /*   USAGE_MAXIMUM (5) */
+  0x95, 0x05,	    /*   REPORT_COUNT (5) */
+  0x75, 0x01,	    /*   REPORT_SIZE (1) */
+  0x91, 0x02,	    /*   OUTPUT (Data,Var,Abs); LED report */
+  0x95, 0x01,	    /*   REPORT_COUNT (1) */
+  0x75, 0x03,	    /*   REPORT_SIZE (3) */
+  0x91, 0x01,	    /*   OUTPUT (Constant); LED report padding */
+
+  0x05, 0x07,	    /*   USAGE_PAGE (Key Codes) */
+  0x19, 0x00,	    /*   USAGE_MINIMUM (Reserved (no event indicated)) */
+  0x29, 0x65,	    /*   USAGE_MAXIMUM (Keyboard Application) */
+  0x15, 0x00,	    /*   LOGICAL_MINIMUM (0) */
+  0x25, 0x65,	    /*   LOGICAL_MAXIMUM (101) */
+  0x95, 0x06,	    /*   REPORT_COUNT (1) */
+  0x75, 0x08,	    /*   REPORT_SIZE (8) */
+  0x81, 0x00,	    /*   INPUT (Data,Ary,Abs); Key arrays (1 bytes) */
+  0xc0		    /* END_COLLECTION */
+};
+
+>>>>>>> hid
 #define USB_ICC_INTERFACE_CLASS 0x0B
 #define USB_ICC_INTERFACE_SUBCLASS 0x00
 #define USB_ICC_INTERFACE_BULK_PROTOCOL 0x00
@@ -36,6 +76,9 @@ static const uint8_t gnukDeviceDescriptor[] = {
 #define ICC_TOTAL_LENGTH (9+9+54+7+7)
 #define ICC_NUM_INTERFACES 1
 
+#define HID_TOTAL_LENGTH (9+9+7)
+#define HID_NUM_INTERFACES 1
+
 #ifdef ENABLE_VIRTUAL_COM_PORT
 #define VCOM_TOTAL_LENGTH (9+5+5+4+5+7+9+7+7)
 #define VCOM_NUM_INTERFACES 2
@@ -52,8 +95,10 @@ static const uint8_t gnukDeviceDescriptor[] = {
 #define MSC_NUM_INTERFACES 0
 #endif
 
-#define W_TOTAL_LENGTH (ICC_TOTAL_LENGTH+VCOM_TOTAL_LENGTH+MSC_TOTAL_LENGTH)
-#define NUM_INTERFACES (ICC_NUM_INTERFACES+VCOM_NUM_INTERFACES+MSC_NUM_INTERFACES)
+#define W_TOTAL_LENGTH (ICC_TOTAL_LENGTH + HID_TOTAL_LENGTH     \
+			+ VCOM_TOTAL_LENGTH + MSC_TOTAL_LENGTH)
+#define NUM_INTERFACES (ICC_NUM_INTERFACES + HID_NUM_INTERFACES \
+			+ VCOM_NUM_INTERFACES + MSC_NUM_INTERFACES)
 
 
 
@@ -77,15 +122,15 @@ static const uint8_t gnukConfigDescriptor[] = {
   50,	  /* MaxPower 100 mA */
 
   /* Interface Descriptor */
-  9,			      /* bLength: Interface Descriptor size */
+  9,			         /* bLength: Interface Descriptor size */
   USB_INTERFACE_DESCRIPTOR_TYPE, /* bDescriptorType: Interface */
-  0,				 /* bInterfaceNumber: Index of this interface */
-  0,			    /* Alternate setting for this interface */
-  2,			    /* bNumEndpoints: Bulk-IN, Bulk-OUT */
+  0,			         /* bInterfaceNumber: Index of this interface */
+  0,			         /* Alternate setting for this interface */
+  2,			         /* bNumEndpoints: Bulk-IN, Bulk-OUT */
   USB_ICC_INTERFACE_CLASS,
   USB_ICC_INTERFACE_SUBCLASS,
   USB_ICC_INTERFACE_BULK_PROTOCOL,
-  0,				/* string index for interface */
+  0,				 /* string index for interface */
 
   /* ICC Descriptor */
   54,			  /* bLength: */
@@ -152,11 +197,39 @@ static const uint8_t gnukConfigDescriptor[] = {
   0x02,				/* bmAttributes: Bulk */
   USB_ICC_DATA_SIZE, 0x00,	/* wMaxPacketSize: */
   0x00,				/* bInterval */
+
+  /* Interface Descriptor */
+  9,			         /* bLength: Interface Descriptor size */
+  USB_INTERFACE_DESCRIPTOR_TYPE, /* bDescriptorType: Interface */
+  0x01,		  /* bInterfaceNumber: Number of Interface */
+  0x00,		  /* bAlternateSetting: Alternate setting */
+  0x01,		  /* bNumEndpoints: One endpoint used */
+  0x03,		  /* bInterfaceClass: HID */
+  0x00,		  /* bInterfaceSubClass: no boot */
+  0x00,		  /* bInterfaceProtocol: 0=none */
+  0x00,		  /* iInterface: no string for this interface */
+
+  9,	        /* bLength: HID Descriptor size */
+  0x21,	        /* bDescriptorType: HID */
+  0x10, 0x01,   /* bcdHID: HID Class Spec release number */
+  0x00,	        /* bCountryCode: Hardware target country */
+  0x01,         /* bNumDescriptors: Number of HID class descriptors to follow */
+  0x22,         /* bDescriptorType */
+  HID_REPORT_DESC_SIZE, 0, /* wItemLength: Total length of Report descriptor */
+
+  /*Endpoint IN7 Descriptor*/
+  7,                            /* bLength: Endpoint Descriptor size */
+  USB_ENDPOINT_DESCRIPTOR_TYPE,	/* bDescriptorType: Endpoint */
+  0x87,				/* bEndpointAddress: (IN7) */
+  0x03,				/* bmAttributes: Interrupt */
+  0x02, 0x00,			/* wMaxPacketSize: 2 */
+  0x20,				/* bInterval (32ms) */
+
 #ifdef ENABLE_VIRTUAL_COM_PORT
   /* Interface Descriptor */
   9,			      /* bLength: Interface Descriptor size */
   USB_INTERFACE_DESCRIPTOR_TYPE, /* bDescriptorType: Interface */
-  0x01,		  /* bInterfaceNumber: Number of Interface */
+  0x02,		  /* bInterfaceNumber: Number of Interface */
   0x00,		  /* bAlternateSetting: Alternate setting */
   0x01,		  /* bNumEndpoints: One endpoints used */
   0x02,		  /* bInterfaceClass: Communication Interface Class */
@@ -197,7 +270,7 @@ static const uint8_t gnukConfigDescriptor[] = {
   /*Data class interface descriptor*/
   9,			       /* bLength: Endpoint Descriptor size */
   USB_INTERFACE_DESCRIPTOR_TYPE, /* bDescriptorType: */
-  0x02,			   /* bInterfaceNumber: Number of Interface */
+  0x03,			   /* bInterfaceNumber: Number of Interface */
   0x00,			   /* bAlternateSetting: Alternate setting */
   0x02,			   /* bNumEndpoints: Two endpoints used */
   0x0A,			   /* bInterfaceClass: CDC */
@@ -224,9 +297,9 @@ static const uint8_t gnukConfigDescriptor[] = {
   9,			      /* bLength: Interface Descriptor size */
   USB_INTERFACE_DESCRIPTOR_TYPE, /* bDescriptorType: Interface */
 #ifdef ENABLE_VIRTUAL_COM_PORT
-  0x03,				/* bInterfaceNumber.                */
+  0x04,				/* bInterfaceNumber.                */
 #else
-  0x01,				/* bInterfaceNumber.                */
+  0x02,				/* bInterfaceNumber.                */
 #endif
   0x00,				/* bAlternateSetting.               */
   0x02,				/* bNumEndpoints.                   */
@@ -238,19 +311,19 @@ static const uint8_t gnukConfigDescriptor[] = {
 				   Mass Storage, MSCO chapter 3).  */
   0x00,				/* iInterface.                      */
   /* Endpoint Descriptor.*/
-  7,			       /* bLength: Endpoint Descriptor size */
-  USB_ENDPOINT_DESCRIPTOR_TYPE,	   /* bDescriptorType: Endpoint */
-  0x86,				   /* bEndpointAddress: (IN6)   */
+  7,			        /* bLength: Endpoint Descriptor size */
+  USB_ENDPOINT_DESCRIPTOR_TYPE,	/* bDescriptorType: Endpoint */
+  0x86,				/* bEndpointAddress: (IN6)   */
   0x02,				/* bmAttributes (Bulk).             */
   0x40, 0x00,			/* wMaxPacketSize.                  */
   0x00,				/* bInterval (ignored for bulk).    */
   /* Endpoint Descriptor.*/
-  7,			       /* bLength: Endpoint Descriptor size */
-  USB_ENDPOINT_DESCRIPTOR_TYPE,	   /* bDescriptorType: Endpoint */
-  0x06,				   /* bEndpointAddress: (OUT6)    */
-  0x02,			 /* bmAttributes (Bulk).             */
-  0x40, 0x00,		 /* wMaxPacketSize.                  */
-  0x00,         /* bInterval (ignored for bulk).    */
+  7,			        /* bLength: Endpoint Descriptor size */
+  USB_ENDPOINT_DESCRIPTOR_TYPE,	/* bDescriptorType: Endpoint */
+  0x06,				/* bEndpointAddress: (OUT6)    */
+  0x02,			        /* bmAttributes (Bulk).             */
+  0x40, 0x00,		        /* wMaxPacketSize.                  */
+  0x00,                         /* bInterval (ignored for bulk).    */
 #endif
 };
 
@@ -281,11 +354,13 @@ static const struct desc String_Descriptors[NUM_STRING_DESC] = {
   {sys_version, sizeof (sys_version)},
 };
 
+#define USB_DT_HID			0x21
+#define USB_DT_REPORT			0x22
+
 int
 usb_cb_get_descriptor (uint8_t rcp, uint8_t desc_type, uint8_t desc_index,
 		       uint16_t index)
 {
-  (void)index;
   if (rcp == DEVICE_RECIPIENT)
     {
       if (desc_type == DEVICE_DESCRIPTOR)
@@ -299,6 +374,32 @@ usb_cb_get_descriptor (uint8_t rcp, uint8_t desc_type, uint8_t desc_index,
 	  usb_lld_set_data_to_send (gnukConfigDescriptor,
 				    sizeof (gnukConfigDescriptor));
 	  return USB_SUCCESS;
+	}
+      else if (desc_type == STRING_DESCRIPTOR)
+	{
+	  if (desc_index < NUM_STRING_DESC)
+	    {
+	      usb_lld_set_data_to_send (String_Descriptors[desc_index].desc,
+					String_Descriptors[desc_index].size);
+	      return USB_SUCCESS;
+	    }
+	}
+    }
+  else if (rcp == INTERFACE_RECIPIENT)
+    {
+      if (index == 1)
+	{
+	  if (desc_type == USB_DT_HID)
+	    {
+	      usb_lld_set_data_to_send (gnukConfigDescriptor+ICC_TOTAL_LENGTH+9,
+					9);
+	      return USB_SUCCESS;
+	    }
+	  else if (desc_type == USB_DT_REPORT)
+	    {
+	      usb_lld_set_data_to_send (hid_report_desc, HID_REPORT_DESC_SIZE);
+	      return USB_SUCCESS;
+	    }
 	}
       else if (desc_type == STRING_DESCRIPTOR)
 	{

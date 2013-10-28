@@ -39,6 +39,8 @@
 #include "gnuk.h"
 #include "stm32f103.h"
 
+static const uint32_t zero = 0;
+
 #ifdef ENABLE_VIRTUAL_COM_PORT
 #include "usb-cdc.h"
 
@@ -116,10 +118,19 @@ vcom_port_data_setup (uint8_t req, uint8_t req_no, uint16_t value)
 #define MSC_NUM_INTERFACES 0
 #endif
 
-#define NUM_INTERFACES (1+VCOM_NUM_INTERFACES+MSC_NUM_INTERFACES)
-#define MSC_INTERFACE_NO (1+VCOM_NUM_INTERFACES)
+#define NUM_INTERFACES (2+VCOM_NUM_INTERFACES+MSC_NUM_INTERFACES)
+#define MSC_INTERFACE_NO (2+VCOM_NUM_INTERFACES)
 
 uint32_t bDeviceState = UNCONNECTED; /* USB device status */
+
+#define USB_HID_REQ_GET_REPORT   1
+#define USB_HID_REQ_GET_IDLE     2
+#define USB_HID_REQ_GET_PROTOCOL 3
+#define USB_HID_REQ_SET_REPORT   9
+#define USB_HID_REQ_SET_IDLE     10
+#define USB_HID_REQ_SET_PROTOCOL 11
+
+static uint8_t hid_idle_rate;	/* in 4ms */
 
 static void
 gnuk_setup_endpoints_for_interface (uint16_t interface, int stop)
@@ -127,23 +138,34 @@ gnuk_setup_endpoints_for_interface (uint16_t interface, int stop)
   if (interface == 0)
     {
       if (!stop)
-	usb_lld_setup_endpoint (ENDP1, EP_BULK, 0, ENDP1_RXADDR, ENDP1_TXADDR,
-				GNUK_MAX_PACKET_SIZE);
+	{
+	  usb_lld_setup_endpoint (ENDP1, EP_BULK, 0, ENDP1_RXADDR,
+				  ENDP1_TXADDR, GNUK_MAX_PACKET_SIZE);
+	  usb_lld_setup_endpoint (ENDP2, EP_INTERRUPT, 0, 0, ENDP2_TXADDR, 0);
+	}
       else
 	{
 	  usb_lld_stall_rx (ENDP1);
 	  usb_lld_stall_tx (ENDP1);
+	  usb_lld_stall_tx (ENDP2);
 	}
     }
-#ifdef ENABLE_VIRTUAL_COM_PORT
   else if (interface == 1)
+    {
+      if (!stop)
+	usb_lld_setup_endpoint (ENDP7, EP_INTERRUPT, 0, 0, ENDP7_TXADDR, 0);
+      else
+	usb_lld_stall_tx (ENDP7);
+    }
+#ifdef ENABLE_VIRTUAL_COM_PORT
+  else if (interface == 2)
     {
       if (!stop)
 	usb_lld_setup_endpoint (ENDP4, EP_INTERRUPT, 0, 0, ENDP4_TXADDR, 0);
       else
 	usb_lld_stall_tx (ENDP4);
     }
-  else if (interface == 2)
+  else if (interface == 3)
     {
       if (!stop)
 	{
@@ -312,8 +334,36 @@ usb_cb_setup (uint8_t req, uint8_t req_no,
 		return USB_UNSUPPORT;
 	    }
 	}
-#ifdef ENABLE_VIRTUAL_COM_PORT
       else if (index == 1)
+	{
+	  switch (req_no)
+	    {
+	    case USB_HID_REQ_GET_IDLE:
+	      usb_lld_set_data_to_send (&hid_idle_rate, 1);
+	      return USB_SUCCESS;
+	    case USB_HID_REQ_SET_IDLE:
+	      usb_lld_set_data_to_recv (&hid_idle_rate, 1);
+	      return USB_SUCCESS;
+
+	    case USB_HID_REQ_GET_REPORT:
+	      usb_lld_set_data_to_send (&zero, 2);
+	      return USB_SUCCESS;
+
+	    case USB_HID_REQ_SET_REPORT:
+	      /* Received LED set request!  */
+	      return USB_SUCCESS;
+
+	    case USB_HID_REQ_GET_PROTOCOL:
+	    case USB_HID_REQ_SET_PROTOCOL:
+	      /* This driver doesn't support boot protocol.  */
+	      return USB_UNSUPPORT;
+
+	    default:
+	      return USB_UNSUPPORT;
+	    }
+	}
+#ifdef ENABLE_VIRTUAL_COM_PORT
+      else if (index == 2)
 	return vcom_port_data_setup (req, req_no, value);
 #endif
 #ifdef PINPAD_DND_SUPPORT
@@ -399,8 +449,6 @@ int usb_cb_handle_event (uint8_t event_type, uint16_t value)
 
 int usb_cb_interface (uint8_t cmd, uint16_t interface, uint16_t alt)
 {
-  static uint8_t zero = 0;
-
   if (interface >= NUM_INTERFACES)
     return USB_UNSUPPORT;
 
