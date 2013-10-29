@@ -18,7 +18,7 @@
 
 static const uint8_t hid_report_desc[] = {
   0x05, 0x01,	    /* USAGE_PAGE (Generic Desktop) */
-  0x09, 0x06,	    /* USAGE (Keyboard) */
+  0x09, 0x07,	    /* USAGE (Keypad) */
   0xa1, 0x01,	    /* COLLECTION (Application) */
   0x05, 0x07,	    /*   USAGE_PAGE (Key Codes) */
   0x19, 0xe0,	    /*   USAGE_MINIMUM (Keyboard LeftControl) */
@@ -29,16 +29,16 @@ static const uint8_t hid_report_desc[] = {
   0x95, 0x08,	    /*   REPORT_COUNT (8) */
   0x81, 0x02,	    /*   INPUT (Data,Var,Abs); Modifier byte */
 
-  /* NumLock, CapsLock, ScrollLock, Compose, Kana */
+  /*
+   * NumLock, CapsLock, ScrollLock, Compose, Kana, Power, Shift,
+   * Do Not Disturb
+   */
   0x05, 0x08,	    /*   USAGE_PAGE (LEDs) */
   0x19, 0x01,	    /*   USAGE_MINIMUM (1) */
-  0x29, 0x05,	    /*   USAGE_MAXIMUM (5) */
-  0x95, 0x05,	    /*   REPORT_COUNT (5) */
+  0x29, 0x08,	    /*   USAGE_MAXIMUM (8) */
+  0x95, 0x08,	    /*   REPORT_COUNT (8) */
   0x75, 0x01,	    /*   REPORT_SIZE (1) */
   0x91, 0x02,	    /*   OUTPUT (Data,Var,Abs); LED report */
-  0x95, 0x01,	    /*   REPORT_COUNT (1) */
-  0x75, 0x03,	    /*   REPORT_SIZE (3) */
-  0x91, 0x01,	    /*   OUTPUT (Constant); LED report padding */
 
   0x05, 0x07,	    /*   USAGE_PAGE (Key Codes) */
   0x19, 0x00,	    /*   USAGE_MINIMUM (Reserved (no event indicated)) */
@@ -73,7 +73,7 @@ static const uint8_t gnukDeviceDescriptor[] = {
   0x01    /* bNumConfigurations */
 };
 
-#define ICC_TOTAL_LENGTH (9+9+54+7+7)
+#define ICC_TOTAL_LENGTH (9+9+54+7+7+7)
 #define ICC_NUM_INTERFACES 1
 
 #define HID_TOTAL_LENGTH (9+9+7)
@@ -126,7 +126,7 @@ static const uint8_t gnukConfigDescriptor[] = {
   USB_INTERFACE_DESCRIPTOR_TYPE, /* bDescriptorType: Interface */
   0,			         /* bInterfaceNumber: Index of this interface */
   0,			         /* Alternate setting for this interface */
-  2,			         /* bNumEndpoints: Bulk-IN, Bulk-OUT */
+  3,			         /* bNumEndpoints: Bulk-IN, Bulk-OUT, Intr-IN */
   USB_ICC_INTERFACE_CLASS,
   USB_ICC_INTERFACE_SUBCLASS,
   USB_ICC_INTERFACE_BULK_PROTOCOL,
@@ -197,6 +197,13 @@ static const uint8_t gnukConfigDescriptor[] = {
   0x02,				/* bmAttributes: Bulk */
   USB_ICC_DATA_SIZE, 0x00,	/* wMaxPacketSize: */
   0x00,				/* bInterval */
+  /*Endpoint IN2 Descriptor*/
+  7,			       /* bLength: Endpoint Descriptor size */
+  USB_ENDPOINT_DESCRIPTOR_TYPE,	/* bDescriptorType: Endpoint */
+  0x82,				/* bEndpointAddress: (IN2) */
+  0x03,				/* bmAttributes: Interrupt */
+  4, 0x00,			/* wMaxPacketSize: */
+  0x20,				/* bInterval (32ms) */
 
   /* Interface Descriptor */
   9,			         /* bLength: Interface Descriptor size */

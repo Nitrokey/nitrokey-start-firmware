@@ -130,7 +130,11 @@ uint32_t bDeviceState = UNCONNECTED; /* USB device status */
 #define USB_HID_REQ_SET_IDLE     10
 #define USB_HID_REQ_SET_PROTOCOL 11
 
+#define HID_LED_STATUS_NUMLOCK 0x01
+
 static uint8_t hid_idle_rate;	/* in 4ms */
+static uint8_t hid_report_saved;
+static uint16_t hid_report;
 
 static void
 gnuk_setup_endpoints_for_interface (uint16_t interface, int stop)
@@ -346,11 +350,14 @@ usb_cb_setup (uint8_t req, uint8_t req_no,
 	      return USB_SUCCESS;
 
 	    case USB_HID_REQ_GET_REPORT:
-	      usb_lld_set_data_to_send (&zero, 2);
+	      /* Request of LED status and key press */
+	      usb_lld_set_data_to_send (&hid_report, 2);
 	      return USB_SUCCESS;
 
 	    case USB_HID_REQ_SET_REPORT:
-	      /* Received LED set request!  */
+	      /* Received LED set request */
+	      if (len == 1)
+		usb_lld_set_data_to_recv (&hid_report, len);
 	      return USB_SUCCESS;
 
 	    case USB_HID_REQ_GET_PROTOCOL:
@@ -388,20 +395,34 @@ usb_cb_setup (uint8_t req, uint8_t req_no,
   return USB_UNSUPPORT;
 }
 
-void usb_cb_ctrl_write_finish (uint8_t req, uint8_t req_no, uint16_t value,
-			       uint16_t index, uint16_t len)
+
+void
+usb_cb_ctrl_write_finish (uint8_t req, uint8_t req_no, uint16_t value,
+			  uint16_t index, uint16_t len)
 {
   uint8_t type_rcp = req & (REQUEST_TYPE|RECIPIENT);
 
-  if (type_rcp == (VENDOR_REQUEST | DEVICE_RECIPIENT)
-      && USB_SETUP_SET (req) && req_no == USB_FSIJ_GNUK_EXEC && len == 0)
+  if (type_rcp == (VENDOR_REQUEST | DEVICE_RECIPIENT))
     {
-      if (icc_state_p == NULL || *icc_state_p != ICC_STATE_EXITED)
-	return;
+      if (USB_SETUP_SET (req) && req_no == USB_FSIJ_GNUK_EXEC && len == 0)
+	{
+	  if (icc_state_p == NULL || *icc_state_p != ICC_STATE_EXITED)
+	    return;
 
-      (void)value; (void)index;
-      usb_lld_prepare_shutdown (); /* No further USB communication */
-      *icc_state_p = ICC_STATE_EXEC_REQUESTED;
+	  (void)value; (void)index;
+	  usb_lld_prepare_shutdown (); /* No further USB communication */
+	  *icc_state_p = ICC_STATE_EXEC_REQUESTED;
+	}
+    }
+  else if (type_rcp == (CLASS_REQUEST | INTERFACE_RECIPIENT))
+    {
+      if (index == 1 && req_no == USB_HID_REQ_SET_REPORT)
+	{
+	  if ((hid_report ^ hid_report_saved) & HID_LED_STATUS_NUMLOCK)
+	    ccid_card_change_signal ();
+
+	  hid_report_saved = hid_report;
+	}
     }
 }
 
