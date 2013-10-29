@@ -203,7 +203,7 @@ static const uint8_t gnukConfigDescriptor[] = {
   0x82,				/* bEndpointAddress: (IN2) */
   0x03,				/* bmAttributes: Interrupt */
   4, 0x00,			/* wMaxPacketSize: */
-  0x20,				/* bInterval (32ms) */
+  0xFF,				/* bInterval (255ms) */
 
   /* Interface Descriptor */
   9,			         /* bLength: Interface Descriptor size */

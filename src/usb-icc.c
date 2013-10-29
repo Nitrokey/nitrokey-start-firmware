@@ -633,7 +633,6 @@ icc_prepare_receive (struct ccid *c)
 /*
  * Rx ready callback
  */
-
 void
 EP1_OUT_Callback (void)
 {
@@ -1297,8 +1296,16 @@ icc_handle_timeout (struct ccid *c)
   return next_state;
 }
 
-#define USB_ICC_TIMEOUT (1950*1000)
+/*
+ * Another Tx done callback
+ */
+void
+EP2_IN_Callback (void)
+{
+}
 
+
+#define USB_ICC_TIMEOUT (1950*1000)
 
 static struct ccid ccid;
 
@@ -1350,11 +1357,15 @@ ccid_thread (chopstx_t thd)
 	{
 	  if (card_change_requested)
 	    {
+	      uint8_t notify_slot_change[2] = { 0x50, 0x02 };
+
 	      led_blink (LED_TWOSHOTS);
 
 	      if (c->icc_state == ICC_STATE_NOCARD)
-		/* Inserted!  */
-		c->icc_state = ICC_STATE_START;
+		{		/* Inserted!  */
+		  c->icc_state = ICC_STATE_START;
+		  notify_slot_change[1] |= 1;
+		}
 	      else
 		{
 		  if (c->application)
@@ -1368,6 +1379,7 @@ ccid_thread (chopstx_t thd)
 		}
 
 	      card_change_requested = 0;
+	      usb_lld_write (ENDP2, notify_slot_change, 2);
 	    }
 	  else
 	    card_change_requested = 1;
