@@ -162,11 +162,8 @@ gnuk_setup_endpoints_for_interface (uint16_t interface, int stop)
   else if (interface == MSC_INTERFACE_NO)
     {
       if (!stop)
-	{
-	  usb_lld_setup_endpoint (ENDP6, EP_BULK, 0,
-				  ENDP6_RXADDR, ENDP6_TXADDR, 64);
-	  usb_lld_stall_rx (ENDP6);
-	}
+	usb_lld_setup_endpoint (ENDP6, EP_BULK, 0,
+				ENDP6_RXADDR, ENDP6_TXADDR, 64);
       else
 	{
 	  usb_lld_stall_tx (ENDP6);

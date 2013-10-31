@@ -601,7 +601,7 @@ static Thread *pin_thread;
  * The string itself is in PIN_INPUT_BUFFER.
  */
 int
-pinpad_getline (int msg_code, systime_t timeout)
+pinpad_getline (int msg_code, uint32_t timeout)
 {
   (void)msg_code;
 

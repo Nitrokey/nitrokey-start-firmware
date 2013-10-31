@@ -127,7 +127,7 @@ get_pinpad_input (int msg_code)
   int r;
 
   led_blink (LED_START_COMMAND);
-  r = pinpad_getline (msg_code, MS2ST (8000));
+  r = pinpad_getline (msg_code, 8000000);
   led_blink (LED_FINISH_COMMAND);
   return r;
 }

@@ -1,7 +1,7 @@
 /*
  * usb-msc.c -- USB Mass Storage Class protocol handling
  *
- * Copyright (C) 2011, 2012 Free Software Initiative of Japan
+ * Copyright (C) 2011, 2012, 2013 Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
  * This file is a part of Gnuk, a GnuPG USB Token implementation.
@@ -21,11 +21,36 @@
  *
  */
 
+#include <stdint.h>
+#include <string.h>
+#include <chopstx.h>
+
 #include "config.h"
-#include "ch.h"
 #include "gnuk.h"
 #include "usb_lld.h"
 #include "usb-msc.h"
+
+extern uint8_t __process5_stack_base__, __process5_stack_size__;
+const uint32_t __stackaddr_msc = (uint32_t)&__process5_stack_base__;
+const size_t __stacksize_msc = (size_t)&__process5_stack_size__;
+#define PRIO_MSC 3
+
+static chopstx_mutex_t a_pinpad_mutex;
+static chopstx_cond_t a_pinpad_cond;
+
+static chopstx_mutex_t a_msc_mutex;
+static chopstx_cond_t a_msc_cond;
+
+#define RDY_OK    0
+#define RDY_RESET 1
+static uint8_t msg;
+
+chopstx_mutex_t *pinpad_mutex = &a_pinpad_mutex;
+chopstx_cond_t *pinpad_cond = &a_pinpad_cond;
+
+static chopstx_mutex_t *msc_mutex = &a_msc_mutex;
+static chopstx_cond_t *msc_cond = &a_msc_cond;
+
 
 struct usb_endp_in {
   const uint8_t *txbuf;	     /* Pointer to the transmission buffer. */
@@ -41,8 +66,6 @@ struct usb_endp_out {
 
 static struct usb_endp_in ep6_in;
 static struct usb_endp_out ep6_out;
-
-static Thread *the_thread;
 
 #define ENDP_MAX_SIZE 64
 
@@ -61,10 +84,14 @@ static void usb_start_transmit (const uint8_t *p, size_t n)
 }
 
 /* "Data Transmitted" callback */
-void EP6_IN_Callback (void)
+void
+EP6_IN_Callback (void)
 {
-  size_t n = (size_t)usb_lld_tx_data_len (ENDP6);
+  size_t n;
 
+  chopstx_mutex_lock (msc_mutex);
+
+  n = (size_t)usb_lld_tx_data_len (ENDP6);
   ep6_in.txbuf += n;
   ep6_in.txcnt += n;
   ep6_in.txsize -= n;
@@ -76,27 +103,21 @@ void EP6_IN_Callback (void)
       else
 	n = ep6_in.txsize;
       usb_lld_write (ENDP6, (uint8_t *)ep6_in.txbuf, n);
-      return;
     }
-
-  /* Transmit has been completed, notify the waiting thread */
-  switch (msc_state)
-    {
-    case MSC_SENDING_CSW:
-    case MSC_DATA_IN:
-      if (the_thread != NULL) {
-	Thread *tp;
-	chSysLockFromIsr ();
-	tp = the_thread;
-	the_thread = NULL;
-	tp->p_u.rdymsg = RDY_OK;
-	chSchReadyI (tp);
-	chSysUnlockFromIsr ();
+  else
+    /* Transmit has been completed, notify the waiting thread */
+    switch (msc_state)
+      {
+      case MSC_SENDING_CSW:
+      case MSC_DATA_IN:
+	msg = RDY_OK;
+	chopstx_cond_signal (msc_cond);
+	break;
+      default:
+	break;
       }
-      break;
-    default:
-      break;
-    }
+
+  chopstx_mutex_unlock (msc_mutex);
 }
 
 
@@ -109,11 +130,15 @@ static void usb_start_receive (uint8_t *p, size_t n)
 }
 
 /* "Data Received" call back */
-void EP6_OUT_Callback (void)
+void
+EP6_OUT_Callback (void)
 {
-  size_t n = (size_t)usb_lld_rx_data_len (ENDP6);
+  size_t n;
   int err = 0;
 
+  chopstx_mutex_lock (msc_mutex);
+
+  n =  (size_t)usb_lld_rx_data_len (ENDP6);
   if (n > ep6_out.rxsize)
     {				/* buffer overflow */
       err = 1;
@@ -126,29 +151,22 @@ void EP6_OUT_Callback (void)
   ep6_out.rxsize -= n;
 
   if (n == ENDP_MAX_SIZE && ep6_out.rxsize != 0)
-    {				/* More data to be received */
-      usb_lld_rx_enable (ENDP6);
-      return;
-    }
-
-  /* Receiving has been completed, notify the waiting thread */
-  switch (msc_state)
-    {
-    case MSC_IDLE:
-    case MSC_DATA_OUT:
-      if (the_thread != NULL) {
-	Thread *tp;
-	chSysLockFromIsr ();
-	tp = the_thread;
-	the_thread = NULL;
-	tp->p_u.rdymsg = err? RDY_RESET : RDY_OK;
-	chSchReadyI (tp);
-	chSysUnlockFromIsr ();
+    /* More data to be received */
+    usb_lld_rx_enable (ENDP6);
+  else
+    /* Receiving has been completed, notify the waiting thread */
+    switch (msc_state)
+      {
+      case MSC_IDLE:
+      case MSC_DATA_OUT:
+	msg = err ? RDY_RESET : RDY_OK;
+	chopstx_cond_signal (msc_cond);
+	break;
+      default:
+	break;
       }
-      break;
-    default:
-      break;
-    }
+
+  chopstx_mutex_unlock (msc_mutex);
 }
 
 static const uint8_t scsi_inquiry_data_00[] = { 0, 0, 0, 0, 0 };
@@ -193,7 +211,8 @@ static uint8_t scsi_sense_data_fixed[] = {
   0x00, 0x00, 0x00,
 };
 
-static void set_scsi_sense_data(uint8_t sense_key, uint8_t asc) {
+static void set_scsi_sense_data(uint8_t sense_key, uint8_t asc)
+{
   scsi_sense_data_desc[1] = scsi_sense_data_fixed[2] = sense_key;
   scsi_sense_data_desc[2] = scsi_sense_data_fixed[12] = asc;
 }
@@ -206,7 +225,8 @@ static uint8_t keep_contingent_allegiance;
 
 uint8_t media_available;
 
-void msc_media_insert_change (int available)
+void
+msc_media_insert_change (int available)
 {
   contingent_allegiance = 1;
   media_available = available;
@@ -239,38 +259,27 @@ static struct CBW CBW;
 static struct CSW CSW;
 
 
+/* called with holding the lock.  */
 static int msc_recv_data (void)
 {
-  msg_t msg;
-
-  chSysLock ();
   msc_state = MSC_DATA_OUT;
-  the_thread = chThdSelf ();
   usb_start_receive (buf, 512);
-  chSchGoSleepS (THD_STATE_SUSPENDED);
-  msg = chThdSelf ()->p_u.rdymsg;
-  chSysUnlock ();
+  chopstx_cond_wait (msc_cond, msc_mutex);
   return 0;
 }
 
+/* called with holding the lock.  */
 static void msc_send_data (const uint8_t *p, size_t n)
 {
-  msg_t msg;
-
-  chSysLock ();
   msc_state = MSC_DATA_IN;
-  the_thread = chThdSelf ();
   usb_start_transmit (p, n);
-  chSchGoSleepS (THD_STATE_SUSPENDED);
-  msg = chThdSelf ()->p_u.rdymsg;
+  chopstx_cond_wait (msc_cond, msc_mutex);
   CSW.dCSWDataResidue -= (uint32_t)n;
-  chSysUnlock();
 }
 
+/* called with holding the lock.  */
 static void msc_send_result (const uint8_t *p, size_t n)
 {
-  msg_t msg;
-
   if (p != NULL)
     {
       if (n > CBW.dCBWDataTransferLength)
@@ -282,44 +291,32 @@ static void msc_send_result (const uint8_t *p, size_t n)
     }
 
   CSW.dCSWSignature = MSC_CSW_SIGNATURE;
-  chSysLock ();
+
   msc_state = MSC_SENDING_CSW;
-  the_thread = chThdSelf ();
   usb_start_transmit ((uint8_t *)&CSW, sizeof CSW);
-  chSchGoSleepS (THD_STATE_SUSPENDED);
-  msg = chThdSelf ()->p_u.rdymsg;
-  chSysUnlock ();
+  chopstx_cond_wait (msc_cond, msc_mutex);
 }
 
 
-
-void msc_handle_command (void)
+void
+msc_handle_command (void)
 {
   size_t n;
   uint32_t nblocks, secsize;
   uint32_t lba;
   int r;
-  msg_t msg;
 
-  chSysLock();
+  chopstx_mutex_lock (msc_mutex);
   msc_state = MSC_IDLE;
-  the_thread = chThdSelf ();
   usb_start_receive ((uint8_t *)&CBW, sizeof CBW);
-  chSchGoSleepTimeoutS (THD_STATE_SUSPENDED, MS2ST (1000));
-  msg = chThdSelf ()->p_u.rdymsg;
-  chSysUnlock ();
+  chopstx_cond_wait (msc_cond, msc_mutex);
 
   if (msg != RDY_OK)
     {
       /* Error occured, ignore the request and go into error state */
       msc_state = MSC_ERROR;
-      if (msg != RDY_TIMEOUT)
-	{
-	  chSysLock ();
-	  usb_lld_stall_rx (ENDP6);
-	  chSysUnlock ();
-	}
-      return;
+      usb_lld_stall_rx (ENDP6);
+      goto done; 
     }
 
   n = ep6_out.rxcnt;
@@ -327,10 +324,8 @@ void msc_handle_command (void)
   if ((n != sizeof (struct CBW)) || (CBW.dCBWSignature != MSC_CBW_SIGNATURE))
     {
       msc_state = MSC_ERROR;
-      chSysLock ();
       usb_lld_stall_rx (ENDP6);
-      chSysUnlock ();
-      return;
+      goto done;
     }
 
   CSW.dCSWTag = CBW.dCBWTag;
@@ -348,7 +343,7 @@ void msc_handle_command (void)
 	contingent_allegiance = 0;
 	set_scsi_sense_data (0x00, 0x00);
       }
-    return;
+    goto done;
   case SCSI_INQUIRY:
     if (CBW.CBWCB[1] & 0x01) /* EVPD */
       /* assume page 00 */
@@ -357,7 +352,7 @@ void msc_handle_command (void)
     else
       msc_send_result ((uint8_t *)&scsi_inquiry_data,
 		       sizeof scsi_inquiry_data);
-    return;
+    goto done;
   case SCSI_READ_FORMAT_CAPACITIES:
     buf[8]  = scsi_read_format_capacities (&nblocks, &secsize);
     buf[0]  = buf[1] = buf[2] = 0;
@@ -370,7 +365,7 @@ void msc_handle_command (void)
     buf[10] = (uint8_t)(secsize >> 8);
     buf[11] = (uint8_t)(secsize >> 0);
     msc_send_result (buf, 12);
-    return;
+    goto done;
   case SCSI_START_STOP_UNIT:
     if (CBW.CBWCB[4] == 0x00 /* stop */
 	|| CBW.CBWCB[4] == 0x02 /* eject */ || CBW.CBWCB[4] == 0x03 /* close */)
@@ -388,7 +383,7 @@ void msc_handle_command (void)
 	CSW.bCSWStatus = MSC_CSW_STATUS_FAILED;
 	CSW.dCSWDataResidue = 0;
 	msc_send_result (NULL, 0);
-	return;
+	goto done;
       }
     /* fall through */
   success:
@@ -398,12 +393,12 @@ void msc_handle_command (void)
     CSW.bCSWStatus = MSC_CSW_STATUS_PASSED;
     CSW.dCSWDataResidue = CBW.dCBWDataTransferLength;
     msc_send_result (NULL, 0);
-    return;
+    goto done;
   case SCSI_MODE_SENSE6:
     buf[0] = 0x03;
     buf[1] = buf[2] = buf[3] = 0;
     msc_send_result (buf, 4);
-    return;
+    goto done;
   case SCSI_READ_CAPACITY10:
     scsi_read_format_capacities (&nblocks, &secsize);
     buf[0]  = (uint8_t)((nblocks - 1) >> 24);
@@ -415,7 +410,7 @@ void msc_handle_command (void)
     buf[6] = (uint8_t)(secsize >> 8);
     buf[7] = (uint8_t)(secsize >> 0);
     msc_send_result (buf, 8);
-    return;
+    goto done;
   case SCSI_READ10:
   case SCSI_WRITE10:
     break;
@@ -425,16 +420,14 @@ void msc_handle_command (void)
 	CSW.bCSWStatus = MSC_CSW_STATUS_FAILED;
 	CSW.dCSWDataResidue = 0;
 	msc_send_result (NULL, 0);
-	return;
+	goto done;
       }
     else
       {
 	msc_state = MSC_ERROR;
-	chSysLock ();
 	usb_lld_stall_tx (ENDP6);
 	usb_lld_stall_rx (ENDP6);
-	chSysUnlock ();
-	return;
+	goto done;
       }
   }
 
@@ -501,6 +494,10 @@ void msc_handle_command (void)
 		}
 
 	      msc_recv_data ();
+	      if (msg != RDY_OK)
+		/* ignore erroneous packet, ang go next.  */
+		continue;
+
 	      if ((r = msc_scsi_write (lba, buf, 512)) == 0)
 		{
 		  if (++CBW.CBWCB[5] == 0)
@@ -526,25 +523,34 @@ void msc_handle_command (void)
 	  msc_send_result (NULL, 0);
 	}
     }
+
+ done:
+  chopstx_mutex_unlock (msc_mutex);
 }
 
-static msg_t
+
+static void *
 msc_main (void *arg)
 {
   (void)arg;
+
+  chopstx_mutex_init (msc_mutex);
+  chopstx_cond_init (msc_cond);
+
+  chopstx_mutex_init (pinpad_mutex);
+  chopstx_cond_init (pinpad_cond);
 
   /* Initially, it starts with no media */
   msc_media_insert_change (0);
   while (1)
     msc_handle_command ();
 
-  return 0;
+  return NULL;
 }
 
-static WORKING_AREA(wa_msc_thread, 128);
 
-void msc_init (void)
+void
+msc_init (void)
 {
-  chThdCreateStatic (wa_msc_thread, sizeof (wa_msc_thread),
-		     NORMALPRIO, msc_main, NULL);
+  chopstx_create (PRIO_MSC, __stackaddr_msc, __stacksize_msc, msc_main, NULL);
 }

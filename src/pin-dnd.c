@@ -1,7 +1,7 @@
 /*
  * pin-dnd.c -- PIN input support (Drag and Drop with File Manager)
  *
- * Copyright (C) 2011 Free Software Initiative of Japan
+ * Copyright (C) 2011, 2013 Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
  * This file is a part of Gnuk, a GnuPG USB Token implementation.
@@ -21,8 +21,12 @@
  *
  */
 
+#include <stdint.h>
+#include <string.h>
+#include <chopstx.h>
+#include <eventflag.h>
+
 #include "config.h"
-#include "ch.h"
 #include "board.h"
 #include "gnuk.h"
 #include "usb-msc.h"
@@ -39,7 +43,7 @@ static const struct folder folder_ini = { 0, { 1, 2, 3, 4, 5, 6, 7 } };
 uint8_t pin_input_buffer[MAX_PIN_CHARS];
 uint8_t pin_input_len;
 
-static Thread *pin_thread;
+static uint8_t msg;
 
 /*
  * Let user input PIN string.
@@ -47,9 +51,9 @@ static Thread *pin_thread;
  * The string itself is in PIN_INPUT_BUFFER.
  */
 int
-pinpad_getline (int msg_code, systime_t timeout)
+pinpad_getline (int msg_code, uint32_t timeout)
 {
-  msg_t msg;
+  uint8_t msg_received;
 
   (void)msg_code;
   (void)timeout;
@@ -65,14 +69,13 @@ pinpad_getline (int msg_code, systime_t timeout)
 
   while (1)
     {
-      chSysLock ();
-      pin_thread = chThdSelf ();
-      chSchGoSleepS (THD_STATE_SUSPENDED);
-      msg = chThdSelf ()->p_u.rdymsg;
-      chSysUnlock ();
+      chopstx_mutex_lock (pinpad_mutex);
+      chopstx_cond_wait (pinpad_cond, pinpad_mutex);
+      msg_received = msg;
+      chopstx_mutex_unlock (pinpad_mutex);
 
       led_blink (LED_ONESHOT);
-      if (msg != 0)
+      if (msg_received != 0)
 	break;
     }
 
@@ -86,21 +89,21 @@ pinpad_getline (int msg_code, systime_t timeout)
 
 static void pinpad_input (void)
 {
-  chSysLock ();
-  pin_thread->p_u.rdymsg = 0;
-  chSchReadyI (pin_thread);
-  chSysUnlock ();
+  chopstx_mutex_lock (pinpad_mutex);
+  msg = 0;
+  chopstx_cond_signal (pinpad_cond);
+  chopstx_mutex_unlock (pinpad_mutex);
 }
 
 static void pinpad_finish_entry (int cancel)
 {
-  chSysLock ();
+  chopstx_mutex_lock (pinpad_mutex);
   if (cancel)
-    pin_thread->p_u.rdymsg = 2;
+    msg = 2;
   else
-    pin_thread->p_u.rdymsg = 1;
-  chSchReadyI (pin_thread);
-  chSysUnlock ();
+    msg = 1;
+  chopstx_cond_signal (pinpad_cond);
+  chopstx_mutex_unlock (pinpad_mutex);
 }
 
 #define TOTAL_SECTOR 68

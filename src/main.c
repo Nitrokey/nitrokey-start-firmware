@@ -330,12 +330,12 @@ main (int argc, char *argv[])
   ccid_thd = chopstx_create (PRIO_CCID, __stackaddr_ccid,
 			     __stacksize_ccid, USBthread, NULL);
 
-  usb_thd = chopstx_create (PRIO_USB, __stackaddr_usb, __stacksize_usb,
-			    usb_intr, NULL);
-
 #ifdef PINPAD_DND_SUPPORT
   msc_init ();
 #endif
+
+  usb_thd = chopstx_create (PRIO_USB, __stackaddr_usb, __stacksize_usb,
+			    usb_intr, NULL);
 
   while (1)
     {

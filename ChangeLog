@@ -1,3 +1,12 @@
+2013-10-31  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/main.c (main): Call msc_init before USB interrupt thread.
+	* src/gnuk.h, src/usb-msc.h, src/usb-msc.c, src/pin-dnd.c: Port to
+	Chipstx.
+	* src/openpgp.c (get_pinpad_input): Follow the change.
+	* src/usb_ctrl.c (gnuk_setup_endpoints_for_interface): Don't stall
+	RX of ENDP6.
+
 2013-10-24  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/Makefile.in (DEFS): Add -DCHX_PRIO_MAIN=5 for LED blink.

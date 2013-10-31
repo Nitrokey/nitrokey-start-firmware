@@ -50,3 +50,5 @@ struct CSW {
 #define SCSI_ERROR_DATA_PROTECT 7
 
 extern uint8_t media_available;
+extern chopstx_mutex_t *pinpad_mutex;
+extern chopstx_cond_t *pinpad_cond;

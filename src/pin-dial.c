@@ -128,7 +128,7 @@ dial_sw_interrupt (void)
 
 
 int
-pinpad_getline (int msg_code, systime_t timeout)
+pinpad_getline (int msg_code, uint32_t timeout)
 {
   uint16_t count, count_prev;
   uint8_t input_mode;

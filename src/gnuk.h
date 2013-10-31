@@ -369,7 +369,6 @@ extern void cir_ext_enable (void);
 extern void dial_sw_disable (void);
 extern void dial_sw_enable (void);
 # elif defined(PINPAD_DND_SUPPORT)
-extern uint8_t media_available;
 extern void msc_init (void);
 extern void msc_media_insert_change (int available);
 extern int msc_scsi_write (uint32_t lba, const uint8_t *buf, size_t size);
@@ -383,7 +382,7 @@ extern void msc_scsi_stop (uint8_t code);
 extern uint8_t pin_input_buffer[MAX_PIN_CHARS];
 extern uint8_t pin_input_len;
 
-extern int pinpad_getline (int msg_code, systime_t timeout);
+extern int pinpad_getline (int msg_code, uint32_t timeout_usec);
 
 #endif
 
