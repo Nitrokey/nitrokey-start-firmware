@@ -51,7 +51,6 @@ static const uint8_t hid_report_desc[] = {
   0xc0		    /* END_COLLECTION */
 };
 
->>>>>>> hid
 #define USB_ICC_INTERFACE_CLASS 0x0B
 #define USB_ICC_INTERFACE_SUBCLASS 0x00
 #define USB_ICC_INTERFACE_BULK_PROTOCOL 0x00
