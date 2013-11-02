@@ -91,8 +91,6 @@ enum DEVICE_STATE
 extern uint32_t bDeviceState;
 extern const uint8_t usb_initial_feature;
 
-#define STM32_USB_IRQ_PRIORITY     11
-
 extern void usb_lld_init (uint8_t feature);
 
 extern void usb_lld_to_pmabuf (const void *src, uint16_t addr, size_t n);

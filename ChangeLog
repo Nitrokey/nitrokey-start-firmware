@@ -1,3 +1,9 @@
+2013-11-02  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/sys.c: Update from Chopstx.
+	* src/usb_lld.h: Remove interrupt definition.
+	* src/stm32f103.h: Add AFIO, EXTI, and TIMER constants.
+
 2013-10-31  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/main.c (main): Call msc_init before USB interrupt thread.
