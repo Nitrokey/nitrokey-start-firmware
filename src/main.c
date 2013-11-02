@@ -330,6 +330,9 @@ main (int argc, char *argv[])
   ccid_thd = chopstx_create (PRIO_CCID, __stackaddr_ccid,
 			     __stacksize_ccid, USBthread, NULL);
 
+#ifdef PINPAD_CIR_SUPPORT
+  cir_init ();
+#endif
 #ifdef PINPAD_DND_SUPPORT
   msc_init ();
 #endif

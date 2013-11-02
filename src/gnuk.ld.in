@@ -7,7 +7,9 @@ __process1_stack_size__  = 0x0140;      /* ccid */
 __process2_stack_size__  = 0x0180;      /* rng */
 __process3_stack_size__  = 0x0b00;      /* gpg */
 __process4_stack_size__  = 0x0100;      /* intr: usb */
-__process5_stack_size__  = @MSC_SIZE@;    /* msc */
+__process5_stack_size__  = @MSC_SIZE@;  /* msc */
+__process6_stack_size__  = @TIM_SIZE@;  /* intr: timer */
+__process7_stack_size__  = @EXT_SIZE@;  /* intr: ext */
 
 MEMORY
 {
@@ -112,6 +114,14 @@ SECTIONS
         . += __process5_stack_size__;
         . = ALIGN(8);
         __process5_stack_end__ = .;
+        __process6_stack_base__ = .;
+        . += __process6_stack_size__;
+        . = ALIGN(8);
+        __process6_stack_end__ = .;
+        __process7_stack_base__ = .;
+        . += __process7_stack_size__;
+        . = ALIGN(8);
+        __process7_stack_end__ = .;
         . = ALIGN(8);
     } > ram
 

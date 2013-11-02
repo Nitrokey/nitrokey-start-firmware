@@ -1,5 +1,15 @@
 2013-11-02  Niibe Yutaka  <gniibe@fsij.org>
 
+	* chopstx: Update.
+	* src/configure (TIM_SIZE, EXT_SIZE): New.
+	* src/gnuk.ld.in (__process6_stack_size__)
+	(__process7_stack_size__): New.
+	* src/main.c (main): Call cir_init.
+	* src/openpgp.c (openpgp_card_thread): Rename from GPGthread.
+	* src/usb-icc.c (icc_power_on): Follow the change.
+
+2013-11-01  Niibe Yutaka  <gniibe@fsij.org>
+
 	* src/sys.c: Update from Chopstx.
 	* src/usb_lld.h: Remove interrupt definition.
 	* src/stm32f103.h: Add AFIO, EXTI, and TIMER constants.

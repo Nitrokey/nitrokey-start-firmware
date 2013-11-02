@@ -24,7 +24,6 @@
 #include <stdint.h>
 #include <string.h>
 #include <chopstx.h>
-#include <eventflag.h>
 
 #include "config.h"
 #include "board.h"

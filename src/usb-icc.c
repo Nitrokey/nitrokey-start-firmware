@@ -742,7 +742,7 @@ static void icc_error (struct ccid *c, int offset)
   usb_lld_write (c->epi->ep_num, icc_reply, ICC_MSG_HEADER_SIZE);
 }
 
-extern void *GPGthread (void *arg);
+extern void *openpgp_card_thread (void *arg);
 
 extern uint8_t __process3_stack_base__, __process3_stack_size__;
 const uint32_t __stackaddr_gpg = (uint32_t)&__process3_stack_base__;
@@ -759,8 +759,8 @@ icc_power_on (struct ccid *c)
 
   if (c->application == 0)
     c->application = chopstx_create (PRIO_GPG, __stackaddr_gpg,
-				     __stacksize_gpg,
-				     GPGthread, (void *)&c->ccid_comm);
+				     __stacksize_gpg, openpgp_card_thread,
+				     (void *)&c->ccid_comm);
 
   p[0] = ICC_DATA_BLOCK_RET;
   p[1] = size_atr;

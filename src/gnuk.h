@@ -18,14 +18,14 @@ struct apdu {
 
 extern struct apdu apdu;
 
-#define EV_EXEC_FINISHED ((eventmask_t)2)	 /* GPG Execution finished */
+#define EV_EXEC_FINISHED        (2) /* OpenPGPcard Execution finished */
 
-/* GPG thread */
-#define EV_PINPAD_INPUT_DONE    ((eventmask_t)1)
-#define EV_EXIT                 ((eventmask_t)2)
-#define EV_CMD_AVAILABLE        ((eventmask_t)4)
-#define EV_VERIFY_CMD_AVAILABLE ((eventmask_t)8)
-#define EV_MODIFY_CMD_AVAILABLE ((eventmask_t)16)
+/* OpenPGPcard thread */
+#define EV_PINPAD_INPUT_DONE    (1)
+#define EV_EXIT                 (2)
+#define EV_CMD_AVAILABLE        (4)
+#define EV_VERIFY_CMD_AVAILABLE (8)
+#define EV_MODIFY_CMD_AVAILABLE (16)
 
 /* Maximum cmd apdu data is key import 22+4+128+128 (proc_key_import) */
 #define MAX_CMD_APDU_DATA_SIZE (22+4+128+128) /* without header */
@@ -353,18 +353,17 @@ extern void flash_do_write_internal (const uint8_t *p, int nr, const uint8_t *da
 
 extern const uint8_t gnukStringSerial[];
 
-#define LED_ONESHOT		((eventmask_t)1)
-#define LED_TWOSHOTS		((eventmask_t)2)
-#define LED_SHOW_STATUS		((eventmask_t)4)
-#define LED_START_COMMAND	((eventmask_t)8)
-#define LED_FINISH_COMMAND	((eventmask_t)16)
-#define LED_FATAL		((eventmask_t)32)
+#define LED_ONESHOT		(1)
+#define LED_TWOSHOTS		(2)
+#define LED_SHOW_STATUS		(4)
+#define LED_START_COMMAND	(8)
+#define LED_FINISH_COMMAND	(16)
+#define LED_FATAL		(32)
 extern void led_blink (int spec);
 
 #if defined(PINPAD_SUPPORT)
 # if defined(PINPAD_CIR_SUPPORT)
-extern void cir_ext_disable (void);
-extern void cir_ext_enable (void);
+extern void cir_init (void);
 # elif defined(PINPAD_DIAL_SUPPORT)
 extern void dial_sw_disable (void);
 extern void dial_sw_enable (void);
