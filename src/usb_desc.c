@@ -12,13 +12,6 @@
 #include "usb_conf.h"
 #include "usb-cdc.h"
 
-struct Descriptor
-{
-  const uint8_t *Descriptor;
-  uint16_t Descriptor_Size;
-};
-
-
 #define USB_ICC_INTERFACE_CLASS 0x0B
 #define USB_ICC_INTERFACE_SUBCLASS 0x00
 #define USB_ICC_INTERFACE_BULK_PROTOCOL 0x00
@@ -272,17 +265,13 @@ static const uint8_t gnukStringLangID[] = {
 #define USB_STRINGS_FOR_GNUK 1
 #include "usb-strings.c.inc"
 
-static const struct Descriptor Device_Descriptor = {
-  gnukDeviceDescriptor,
-  sizeof (gnukDeviceDescriptor)
+struct desc
+{
+  const uint8_t *desc;
+  uint16_t size;
 };
 
-static const struct Descriptor Config_Descriptor = {
-  gnukConfigDescriptor,
-  sizeof (gnukConfigDescriptor)
-};
-
-static const struct Descriptor String_Descriptors[NUM_STRING_DESC] = {
+static const struct desc String_Descriptors[NUM_STRING_DESC] = {
   {gnukStringLangID, sizeof (gnukStringLangID)},
   {gnukStringVendor, sizeof (gnukStringVendor)},
   {gnukStringProduct, sizeof (gnukStringProduct)},
@@ -293,30 +282,32 @@ static const struct Descriptor String_Descriptors[NUM_STRING_DESC] = {
 };
 
 int
-usb_cb_get_descriptor (uint8_t desc_type, uint16_t index, uint16_t value)
+usb_cb_get_descriptor (uint8_t rcp, uint8_t desc_type, uint8_t desc_index,
+		       uint16_t index)
 {
   (void)index;
-  if (desc_type == DEVICE_DESCRIPTOR)
+  if (rcp == DEVICE_RECIPIENT)
     {
-      usb_lld_set_data_to_send (Device_Descriptor.Descriptor,
-				Device_Descriptor.Descriptor_Size);
-      return USB_SUCCESS;
-    }
-  else if (desc_type == CONFIG_DESCRIPTOR)
-    {
-      usb_lld_set_data_to_send (Config_Descriptor.Descriptor,
-				Config_Descriptor.Descriptor_Size);
-      return USB_SUCCESS;
-    }
-  else if (desc_type == STRING_DESCRIPTOR)
-    {
-      uint8_t desc_index = value & 0xff;
-
-      if (desc_index < NUM_STRING_DESC)
+      if (desc_type == DEVICE_DESCRIPTOR)
 	{
-	  usb_lld_set_data_to_send (String_Descriptors[desc_index].Descriptor,
-			    String_Descriptors[desc_index].Descriptor_Size);
+	  usb_lld_set_data_to_send (gnukDeviceDescriptor,
+				    sizeof (gnukDeviceDescriptor));
 	  return USB_SUCCESS;
+	}
+      else if (desc_type == CONFIG_DESCRIPTOR)
+	{
+	  usb_lld_set_data_to_send (gnukConfigDescriptor,
+				    sizeof (gnukConfigDescriptor));
+	  return USB_SUCCESS;
+	}
+      else if (desc_type == STRING_DESCRIPTOR)
+	{
+	  if (desc_index < NUM_STRING_DESC)
+	    {
+	      usb_lld_set_data_to_send (String_Descriptors[desc_index].desc,
+					String_Descriptors[desc_index].size);
+	      return USB_SUCCESS;
+	    }
 	}
     }
 

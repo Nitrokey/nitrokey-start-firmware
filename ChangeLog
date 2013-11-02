@@ -1,5 +1,12 @@
 2013-11-02  Niibe Yutaka  <gniibe@fsij.org>
 
+	* src/usb_lld.h, src/usb_stm32f103.c (std_get_descriptor): Change
+	the API of usb_cb_get_descriptor.
+	* src/usb_desc.c: Follow the change.
+	* src/usb_conf.h: Modify for CCID INT and HID usage.
+
+2013-11-02  Niibe Yutaka  <gniibe@fsij.org>
+
 	* src/pin-cir.c: Port to Chopstx.
 
 	* chopstx: Update.

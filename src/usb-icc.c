@@ -307,10 +307,6 @@ static void apdu_init (struct apdu *a)
   a->res_apdu_data_len = 0;	     /* will be set by upper layer */
 }
 
-#define EV_RX_DATA_READY (eventmask_t)1  /* USB Rx data available  */
-/* EV_EXEC_FINISHED == 2 */
-#define EV_TX_FINISHED (eventmask_t)4  /* USB Tx finished  */
-
 
 static void notify_tx (struct ep_in *epi)
 {

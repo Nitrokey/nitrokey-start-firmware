@@ -18,7 +18,11 @@ struct apdu {
 
 extern struct apdu apdu;
 
-#define EV_EXEC_FINISHED        (2) /* OpenPGPcard Execution finished */
+/* CCID thread */
+#define EV_RX_DATA_READY (1) /* USB Rx data available  */
+#define EV_EXEC_FINISHED (2) /* OpenPGP Execution finished */
+#define EV_TX_FINISHED   (4) /* CCID Tx finished  */
+#define EV_CARD_CHANGE   (8)
 
 /* OpenPGPcard thread */
 #define EV_PINPAD_INPUT_DONE    (1)
@@ -42,6 +46,7 @@ extern struct apdu apdu;
 
 enum icc_state
 {
+  ICC_STATE_NOCARD,		/* No card available */
   ICC_STATE_START,		/* Initial */
   ICC_STATE_WAIT,		/* Waiting APDU */
 				/* Busy1, Busy2, Busy3, Busy5 */
