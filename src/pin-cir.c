@@ -1,7 +1,7 @@
 /*
  * pin-cir.c -- PIN input device support (Consumer Infra-Red)
  *
- * Copyright (C) 2010, 2011 Free Software Initiative of Japan
+ * Copyright (C) 2010, 2011, 2013 Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
  * This file is a part of Gnuk, a GnuPG USB Token implementation.
@@ -21,15 +21,40 @@
  *
  */
 
+#include <stdint.h>
+#include <string.h>
+#include <chopstx.h>
+
 #include "config.h"
-#include "ch.h"
-#include "hal.h"
 #include "board.h"
 #include "gnuk.h"
+#include "stm32f103.h"
 
 #ifdef DEBUG
 #define DEBUG_CIR 1
 #endif
+
+static int
+cir_ext_disable (void)
+{
+  int rcvd = (EXTI->PR & EXTI_PR) != 0;
+
+  EXTI->IMR &= ~EXTI_IMR;
+  EXTI->PR = EXTI_PR;
+  return rcvd;
+}
+
+static void
+cir_ext_enable (void)
+{
+  EXTI->PR = EXTI_PR;
+  EXTI->IMR |= EXTI_IMR;
+}
+
+
+static chopstx_t pin_thread;
+static uint32_t wait_usec;
+static uint8_t notification;
 
 uint8_t pin_input_buffer[MAX_PIN_CHARS];
 uint8_t pin_input_len;
@@ -175,6 +200,7 @@ uint8_t pin_input_len;
 static uint16_t intr_ext;
 static uint16_t intr_trg;
 static uint16_t intr_ovf;
+static uint16_t intr_err;
 
 #define MAX_CIRINPUT_BIT 512
 static uint16_t cirinput[MAX_CIRINPUT_BIT];
@@ -197,11 +223,8 @@ static uint8_t cir_data_zero;
 
 static uint8_t cir_seq;
 
-static systime_t cir_input_last;
-#define CIR_PERIOD_INHIBIT_CHATTER 200 /* mili second */
-
 static void
-cir_init (void)
+cir_ll_init (void)
 {
   cir_data = 0;
   cir_seq = 0;
@@ -478,10 +501,9 @@ hex (int x)
 }
 
 static int
-cir_getchar (systime_t timeout)
+cir_getchar (uint32_t timeout)
 {
   uint16_t cir_addr;
-  eventmask_t m;
 #if defined(DEBUG_CIR)
   uint16_t *p;
 #endif
@@ -490,12 +512,16 @@ cir_getchar (systime_t timeout)
   cirinput_p = cirinput;
 #endif
 
-  chEvtClear (ALL_EVENTS);
-  cir_init ();
+  cir_ll_init ();
 
-  m = chEvtWaitOneTimeout (ALL_EVENTS, timeout);
-  if (m == 0)
+  notification = 0;
+  wait_usec = timeout;
+  chopstx_usec_wait_var (&wait_usec);
+  if (notification == 0)
     return -1;
+
+  /* Sleep 100ms to avoid detecting chatter inputs.  */
+  chopstx_usec_wait (100 * 1000);
 
 #if defined(DEBUG_CIR)
   DEBUG_INFO ("****\r\n");
@@ -504,7 +530,9 @@ cir_getchar (systime_t timeout)
   DEBUG_SHORT (intr_ovf);
   DEBUG_INFO ("----\r\n");
   for (p = cirinput; p < cirinput_p; p++)
-    DEBUG_SHORT (*p);
+    {
+      DEBUG_SHORT (*p);
+    }
   DEBUG_INFO ("====\r\n");
 
   cirinput_p = cirinput;
@@ -512,7 +540,9 @@ cir_getchar (systime_t timeout)
   DEBUG_INFO ("**** CIR data:");
   DEBUG_WORD (cir_data);
   if (cir_seq > 48)
-    DEBUG_SHORT (cir_data_more);
+    {
+      DEBUG_SHORT (cir_data_more);
+    }
   DEBUG_BYTE (cir_seq);
 #endif
 
@@ -593,8 +623,6 @@ cir_getchar (systime_t timeout)
 #define CIR_BIT_PERIOD 1500
 #define CIR_BIT_SIRC_PERIOD_ON 1000
 
-static Thread *pin_thread;
-
 /*
  * Let user input PIN string.
  * Return length of the string.
@@ -603,12 +631,13 @@ static Thread *pin_thread;
 int
 pinpad_getline (int msg_code, uint32_t timeout)
 {
-  (void)msg_code;
+  extern chopstx_t openpgp_card_thd;
 
-  pin_thread = chThdSelf ();
+  (void)msg_code;
 
   DEBUG_INFO (">>>\r\n");
 
+  pin_thread = openpgp_card_thd;
   pin_input_len = 0;
   while (1)
     {
@@ -634,6 +663,7 @@ pinpad_getline (int msg_code, uint32_t timeout)
     }
 
   cir_ext_disable ();
+  pin_thread = NULL;
 
   return pin_input_len;
 }
@@ -643,18 +673,18 @@ pinpad_getline (int msg_code, uint32_t timeout)
  * @note   This handler will be invoked at the beginning of signal.
  *         Setup timer to measure period and duty using PWM input mode.
  */
-void
+static void
 cir_ext_interrupt (void)
 {
-  cir_ext_disable ();
+  int rcvd = cir_ext_disable ();
+
+  if (!rcvd)
+    return;
 
 #if defined(DEBUG_CIR)
   intr_ext++;
   if (cirinput_p - cirinput < MAX_CIRINPUT_BIT)
-    {
-      *cirinput_p++ = 0x0000;
-      *cirinput_p++ = (uint16_t)chTimeNow ();
-    }
+    *cirinput_p++ = 0x0000;
 #endif
 
   TIMx->EGR = TIM_EGR_UG;	/* Generate UEV to load PSC and ARR */
@@ -674,7 +704,7 @@ cir_ext_interrupt (void)
  * @brief  Interrupt handler of timer.
  * @note   Timer is PWM input mode, this handler will be invoked on each cycle
  */
-void
+static void
 cir_timer_interrupt (void)
 {
   uint16_t period, on, off;
@@ -801,11 +831,9 @@ cir_timer_interrupt (void)
       TIMx->EGR = TIM_EGR_UG;	/* Generate UEV */
       TIMx->SR &= ~TIM_SR_TIF;
     }
-  else
+  else if ((TIMx->SR & TIM_SR_UIF))
     /* overflow occurred */
     {
-      systime_t now = chTimeNow ();
-
       TIMx->SR &= ~TIM_SR_UIF;
 
       if (on > 0)
@@ -852,12 +880,7 @@ cir_timer_interrupt (void)
 	      /* Or else, it must be the stop bit, just ignore */
 	    }
 
-	  if (now - cir_input_last < CIR_PERIOD_INHIBIT_CHATTER)
-	    {
-	      cir_input_last = now;
-	      ignore_input = 1;
-	    }
-	  else if (cir_proto == CIR_PROTO_SONY)
+	  if (cir_proto == CIR_PROTO_SONY)
 	    {
 	      if (cir_seq != 1 + 12 && cir_seq != 1 + 15)
 		ignore_input = 1;
@@ -904,23 +927,125 @@ cir_timer_interrupt (void)
 
 	  if (ignore_input)
 	    /* Ignore data received and enable CIR again */
-	    cir_init ();
+	    cir_ll_init ();
 	  else
 	    {
-	      cir_input_last = now;
-	      /* Notify thread */
+	      /*
+	       * Notify the thread, when it's waiting the input.
+	       * If else, throw away the input.
+	       */
 	      if (pin_thread)
-		chEvtSignalI (pin_thread, EV_PINPAD_INPUT_DONE);
+		{
+		  notification = 1;
+		  chopstx_wakeup_usec_wait (pin_thread);
+		}
 	    }
 
 #if defined(DEBUG_CIR)
 	  if (cirinput_p - cirinput < MAX_CIRINPUT_BIT)
-	    {
-	      *cirinput_p++ = 0xffff;
-	      *cirinput_p++ = (uint16_t)chTimeNow ();
-	    }
+	    *cirinput_p++ = 0xffff;
+
 	  intr_ovf++;
 #endif
 	}
     }
+#if defined(DEBUG_CIR)
+  else
+    intr_err++;
+#endif
+}
+
+
+extern uint8_t __process6_stack_base__, __process6_stack_size__;
+const uint32_t __stackaddr_tim = (uint32_t)&__process6_stack_base__;
+const size_t __stacksize_tim = (size_t)&__process6_stack_size__;
+#define PRIO_TIM 4
+
+static void *
+tim_main (void *arg)
+{
+  chopstx_intr_t interrupt;
+
+  (void)arg;
+  chopstx_claim_irq (&interrupt, INTR_REQ_TIM);
+
+  while (1)
+    {
+      chopstx_intr_wait (&interrupt);
+      cir_timer_interrupt ();
+    }
+
+  return NULL;
+}
+
+extern uint8_t __process7_stack_base__, __process7_stack_size__;
+const uint32_t __stackaddr_ext = (uint32_t)&__process7_stack_base__;
+const size_t __stacksize_ext = (size_t)&__process7_stack_size__;
+#define PRIO_EXT 4
+
+static void *
+ext_main (void *arg)
+{
+  chopstx_intr_t interrupt;
+
+  (void)arg;
+  chopstx_claim_irq (&interrupt, INTR_REQ_EXTI);
+
+  while (1)
+    {
+      chopstx_intr_wait (&interrupt);
+      cir_ext_interrupt ();
+    }
+
+  return NULL;
+}
+
+
+void
+cir_init (void)
+{
+  /*
+   * We use XOR function for three signals: TIMx_CH1, TIMx_CH2, and TIMx_CH3.
+   *
+   * This is because we want to invert the signal (of Vout from CIR
+   * receiver module) for timer.
+   *
+   * For FST-01, TIM2_CH3 is the signal.  We set TIM2_CH1 = 1 and
+   * TIM2_CH2 = 0.
+   *
+   * For STM8S, TIM2_CH2 is the signal.  We set TIM2_CH1 = 1 and
+   * TIMx_CH3 = 0.
+   */
+
+  /* EXTIx <= Py */
+  AFIO->EXTICR[AFIO_EXTICR_INDEX] = AFIO_EXTICR1_EXTIx_Py;
+  EXTI->IMR = 0;
+  EXTI->FTSR = EXTI_FTSR_TR;
+
+  /* TIM */
+#ifdef ENABLE_RCC_APB1
+  RCC->APB1ENR |= RCC_APBnENR_TIMxEN;
+  RCC->APB1RSTR = RCC_APBnRSTR_TIMxRST;
+  RCC->APB1RSTR = 0;
+#elif ENABLE_RCC_APB2
+  RCC->APB2ENR |= RCC_APBnENR_TIMxEN;
+  RCC->APB2RSTR = RCC_APBnRSTR_TIMxRST;
+  RCC->APB2RSTR = 0;
+#endif
+
+  TIMx->CR1 = TIM_CR1_URS | TIM_CR1_ARPE;
+  TIMx->CR2 = TIM_CR2_TI1S;
+  TIMx->SMCR = TIM_SMCR_TS_0 | TIM_SMCR_TS_2 | TIM_SMCR_SMS_2;
+  TIMx->DIER = 0;		/* Disable interrupt for now */
+  TIMx->CCMR1 = TIM_CCMR1_CC1S_0 | TIM_CCMR1_IC1F_0 | TIM_CCMR1_IC1F_3
+    | TIM_CCMR1_CC2S_1 | TIM_CCMR1_IC2F_0 | TIM_CCMR1_IC2F_3;
+  TIMx->CCMR2 = 0;
+  TIMx->CCER =  TIM_CCER_CC1E | TIM_CCER_CC2E | TIM_CCER_CC2P;
+  TIMx->PSC = 72 - 1;		/* 1 MHz */
+  TIMx->ARR = 18000;		/* 18 ms */
+  /* Generate UEV to upload PSC and ARR */
+  TIMx->EGR = TIM_EGR_UG;	
+
+  chopstx_create (PRIO_TIM, __stackaddr_tim, __stacksize_tim, tim_main, NULL);
+  chopstx_create (PRIO_EXT, __stackaddr_ext, __stacksize_ext, ext_main, NULL);
 }

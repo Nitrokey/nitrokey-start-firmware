@@ -1,5 +1,7 @@
 2013-11-02  Niibe Yutaka  <gniibe@fsij.org>
 
+	* src/pin-cir.c: Port to Chopstx.
+
 	* chopstx: Update.
 	* src/configure (TIM_SIZE, EXT_SIZE): New.
 	* src/gnuk.ld.in (__process6_stack_size__)
