@@ -295,6 +295,8 @@ extern void *usb_intr (void *arg);
 static void gnuk_malloc_init (void);
 
 
+static uint32_t bDeviceState;
+
 /*
  * Entry point.
  *
