@@ -520,8 +520,8 @@ cir_getchar (uint32_t timeout)
   if (notification == 0)
     return -1;
 
-  /* Sleep 100ms to avoid detecting chatter inputs.  */
-  chopstx_usec_wait (100 * 1000);
+  /* Sleep 200ms to avoid detecting chatter inputs.  */
+  chopstx_usec_wait (200 * 1000);
 
 #if defined(DEBUG_CIR)
   DEBUG_INFO ("****\r\n");

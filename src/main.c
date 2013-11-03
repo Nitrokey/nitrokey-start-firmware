@@ -220,7 +220,7 @@ static eventmask_t display_status_code (void)
   if (icc_state == ICC_STATE_START)
     return emit_led (LED_TIMEOUT_ONE, LED_TIMEOUT_STOP);
   else
-    /* GPGthread  running */
+    /* OpenPGP card thread  running */
     {
       if ((m = emit_led ((auth_status & AC_ADMIN_AUTHORIZED)?
 			  LED_TIMEOUT_ONE : LED_TIMEOUT_ZERO,
@@ -295,7 +295,7 @@ extern void *usb_intr (void *arg);
 static void gnuk_malloc_init (void);
 
 
-static uint32_t bDeviceState;
+extern uint32_t bDeviceState;
 
 /*
  * Entry point.
