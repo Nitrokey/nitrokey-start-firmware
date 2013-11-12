@@ -1,5 +1,7 @@
 2013-11-12  Niibe Yutaka  <gniibe@fsij.org>
 
+	* chopstx: Upgrade to 0.03.
+
 	* src/usb_desc.c (usb_initial_feature): Remove.
 	(USB_SELF_POWERED): Move to ...
 	* src/usb_conf.h (USB_SELF_POWERED): ... here.
