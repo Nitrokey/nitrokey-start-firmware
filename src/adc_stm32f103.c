@@ -262,11 +262,5 @@ int adc_wait_completion (chopstx_intr_t *intr)
 	  adc_stop_conversion ();
 	  return 0;
 	}
-
-      /*
-       * Even if STM32_DMA_CR_HTIE is unset, we come here with HTIF=1,
-       * with unknown reason.  Just ignore the interrupt by HTIF to
-       * continue more data.
-       */
     }
 }

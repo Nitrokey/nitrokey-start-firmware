@@ -1,3 +1,7 @@
+2013-11-12  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/adc_stm32f103.c (adc_wait_completion): Update from NeuG 1.0.
+
 2013-11-03  Niibe Yutaka  <gniibe@fsij.org>
 
 	* regnual/regnual.c (usb_cb_get_descriptor): Update to new API.
