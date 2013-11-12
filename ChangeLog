@@ -1,5 +1,9 @@
 2013-11-03  Niibe Yutaka  <gniibe@fsij.org>
 
+	* regnual/regnual.c (usb_cb_get_descriptor): Update to new API.
+
+	* src/usb_lld.h (usb_initial_feature): Remove.
+
 	* chopstx: Update to 0.01.
 	* src/pin-cir.c: Chatter fix to 200ms.
 	* src/main.c: Fix bDeviceState.

@@ -249,9 +249,13 @@ usb_cb_setup (uint8_t req, uint8_t req_no,
 }
 
 int
-usb_cb_get_descriptor (uint8_t desc_type, uint16_t index, uint16_t value)
+usb_cb_get_descriptor (uint8_t rcp, uint8_t desc_type, uint8_t desc_index,
+		       uint16_t index)
 {
   (void)index;
+  if (rcp != DEVICE_RECIPIENT)
+    return USB_UNSUPPORT;
+
   if (desc_type == DEVICE_DESCRIPTOR)
     {
       usb_lld_set_data_to_send (regnual_device_desc,
@@ -266,7 +270,6 @@ usb_cb_get_descriptor (uint8_t desc_type, uint16_t index, uint16_t value)
     }
   else if (desc_type == STRING_DESCRIPTOR)
     {
-      uint8_t desc_index = value & 0xff;
       const uint8_t *str;
       int size;
 
