@@ -1,5 +1,13 @@
 2013-11-12  Niibe Yutaka  <gniibe@fsij.org>
 
+	* src/usb_desc.c (usb_initial_feature): Remove.
+	(USB_SELF_POWERED): Move to ...
+	* src/usb_conf.h (USB_SELF_POWERED): ... here.
+	* src/usb_ctrl.c (usb_cb_device_reset, usb_intr): Follow the
+	change.
+
+2013-11-11  Niibe Yutaka  <gniibe@fsij.org>
+
 	* src/adc_stm32f103.c (adc_wait_completion): Update from NeuG 1.0.
 
 2013-11-03  Niibe Yutaka  <gniibe@fsij.org>

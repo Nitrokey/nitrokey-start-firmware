@@ -5,6 +5,12 @@
 
 #define NUM_STRING_DESC 7
 
+#if defined(USB_SELF_POWERED)
+#define USB_INITIAL_FEATURE 0xC0   /* bmAttributes: self powered */
+#else
+#define USB_INITIAL_FEATURE 0x80   /* bmAttributes: bus powered */
+#endif
+
 /* Control pipe */
 /* EP0: 64-byte, 64-byte  */
 #define ENDP0_RXADDR        (0x40)

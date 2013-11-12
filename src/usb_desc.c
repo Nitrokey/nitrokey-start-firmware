@@ -57,14 +57,6 @@ static const uint8_t gnukDeviceDescriptor[] = {
 
 
 
-#if defined(USB_SELF_POWERED)
-#define USB_INITIAL_FEATURE 0xC0   /* bmAttributes: self powered */
-#else
-#define USB_INITIAL_FEATURE 0x80   /* bmAttributes: bus powered */
-#endif
-
-const uint8_t usb_initial_feature = USB_INITIAL_FEATURE;
-
 /* Configuation Descriptor */
 static const uint8_t gnukConfigDescriptor[] = {
   9,			   /* bLength: Configuation Descriptor size */

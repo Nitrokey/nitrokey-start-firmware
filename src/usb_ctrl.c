@@ -182,7 +182,7 @@ usb_cb_device_reset (void)
   usb_lld_set_configuration (0);
 
   /* Current Feature initialization */
-  usb_lld_set_feature (usb_initial_feature);
+  usb_lld_set_feature (USB_INITIAL_FEATURE);
 
   usb_lld_reset ();
 
@@ -434,7 +434,7 @@ usb_intr (void *arg)
   chopstx_intr_t interrupt;
 
   (void)arg;
-  usb_lld_init (usb_initial_feature);
+  usb_lld_init (USB_INITIAL_FEATURE);
   chopstx_claim_irq (&interrupt, INTR_REQ_USB);
   usb_interrupt_handler ();
 
