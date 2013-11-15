@@ -734,7 +734,7 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
   const uint8_t *ks_pw1;
   const uint8_t *ks_rc;
   struct key_data_internal kdi;
-  int modulus_allocated_here = 0;
+  uint8_t *modulus_allocated_here = NULL;
   uint8_t ks_pw1_len = 0;
   uint8_t ks_rc_len = 0;
 
@@ -754,14 +754,12 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
 
   if (modulus == NULL)
     {
-      modulus = modulus_calc (key_data, key_len);
-      if (modulus == NULL)
+      modulus_allocated_here = modulus_calc (key_data, key_len);
+      if (modulus_allocated_here == NULL)
 	{
 	  free (pd);
 	  return -1;
 	}
-
-      modulus_allocated_here = 1;
     }
 
   DEBUG_INFO ("Getting keystore address...\r\n");
@@ -770,7 +768,7 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
     {
       free (pd);
       if (modulus_allocated_here)
-	modulus_free (modulus);
+	modulus_free (modulus_allocated_here);
       return -1;
     }
 
@@ -790,13 +788,15 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
 
   encrypt (dek, iv, (uint8_t *)&kdi, sizeof (struct key_data_internal));
 
-  r = flash_key_write (key_addr, (const uint8_t *)kdi.data, modulus);
+  r = flash_key_write (key_addr, (const uint8_t *)kdi.data,
+		       modulus_allocated_here? modulus_allocated_here:modulus);
   if (modulus_allocated_here)
     modulus_free (modulus);
 
   if (r < 0)
     {
       random_bytes_free (dek);
+      memset (pd, 0, sizeof (struct prvkey_data));
       free (pd);
       return r;
     }
@@ -836,6 +836,7 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
   do_ptr[nr - NR_DO__FIRST__] = p;
 
   random_bytes_free (dek);
+  memset (pd, 0, sizeof (struct prvkey_data));
   free (pd);
   if (p == NULL)
     return -1;
@@ -887,6 +888,7 @@ gpg_do_chks_prvkey (enum kind_of_key kk,
   p = flash_do_write (nr, (const uint8_t *)pd, sizeof (struct prvkey_data));
   do_ptr[nr - NR_DO__FIRST__] = p;
 
+  memset (pd, 0, sizeof (struct prvkey_data));
   free (pd);
   if (p == NULL)
     return -1;
@@ -1543,7 +1545,7 @@ gpg_do_keygen (uint8_t kk_byte)
 {
   enum kind_of_key kk;
   const uint8_t *keystring_admin;
-  const uint8_t *p_q_modulus;
+  uint8_t *p_q_modulus;
   const uint8_t *p_q;
   const uint8_t *modulus;
   int r;
@@ -1575,7 +1577,8 @@ gpg_do_keygen (uint8_t kk_byte)
 
   r = gpg_do_write_prvkey (kk, p_q, KEY_CONTENT_LEN,
 			   keystring_admin, modulus);
-  free ((uint8_t *)p_q_modulus);
+  memset (p_q_modulus, 0, KEY_CONTENT_LEN*2);
+  free (p_q_modulus);
   if (r < 0)
     {
       GPG_ERROR ();

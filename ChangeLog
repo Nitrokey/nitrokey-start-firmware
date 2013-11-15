@@ -2,6 +2,13 @@
 
 	* src/openpgp.c (modify_binary): Allow odd size of certificate.
 
+2013-07-19  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/openpgp-do.c (gpg_do_write_prvkey, gpg_do_keygen): Fix
+	allocated memory handling.  Clean up before free.
+	* src/call-rsa.c (modulus_calc, rsa_genkey, modulus_free): Fix
+	removing const.  Clean up before free.
+
 2013-03-15  Niibe Yutaka  <gniibe@fsij.org>
 
 	* Version 1.0.4.
