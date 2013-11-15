@@ -29,6 +29,7 @@ debug=no
 pinpad=no
 certdo=no
 keygen=no
+sys1_compat=yes
 
 # Process each option
 for option; do
@@ -62,6 +63,10 @@ for option; do
     keygen=yes ;;
   --disable-keygen)
     keygen=no ;;
+  --enable-sys1-compat)
+    sys1_compat = yes ;;
+  --disable-sys1-compat)
+    sys1_compat = no ;;
   --with-dfu)
     with_dfu=yes ;;
   --without-dfu)
@@ -94,6 +99,11 @@ Configuration:
 			PIN entry support		[no]
   --enable-certdo	support CERT.3 data object	[no]
   --enable-keygen	support key generation		[no]
+  --enable-sys1-compat	enable SYS 1.0 compatibility	[yes]
+			   executable is target dependent
+  --disable-sys1-compat	disable SYS 1.0 compatibility	[no]
+			   executable is target independent
+			   but requires SYS 2.0 or newer
   --with-dfu		build image for DFU 		[<target specific>]
 EOF
   exit 0
@@ -273,10 +283,15 @@ then
   exit 1
 fi
 
-# Enable when you are sure that it's sys version 2.0.
-# Note that Gnuk 1.0 and Neug (until 0.06) uses sys version 1.0.
-# have_sys_h="-DHAVE_SYS_H"
-have_sys_h="" 
+if test "$sys1_compat" = "no"; then
+   # Disable when you are sure that it's sys version 2.0.
+   # Note that Gnuk 1.0 and Neug (until 0.06) uses sys version 1.0.
+   # Disabling the compatibility, executable will be target independent,
+   # assuming the clock initialization will be done by SYS (before entry).
+   have_sys_h="-DHAVE_SYS_H"
+else
+   have_sys_h=""
+fi
 
 sed -e "s%@HAVE_SYS_H@%$have_sys_h%" \
     -e "s%@DEBUG_MAKE_OPTION@%$DEBUG_MAKE_OPTION%" \

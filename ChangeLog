@@ -1,3 +1,7 @@
+2013-11-15  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/configure (options): Add --enable-sys1-compat.
+
 2013-11-12  Niibe Yutaka  <gniibe@fsij.org>
 
 	* chopstx: Upgrade to 0.03.
