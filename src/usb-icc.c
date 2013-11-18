@@ -1307,7 +1307,7 @@ USBthread (void *arg)
   return ccid_thread (thd);
 }
 
-static void *
+static void * __attribute__ ((noinline))
 ccid_thread (chopstx_t thd)
 {
   struct ep_in *epi = &endpoint_in;
@@ -1384,6 +1384,12 @@ ccid_thread (chopstx_t thd)
 	}
       else			/* Timeout */
 	c->icc_state = icc_handle_timeout (c);
+    }
+
+  if (c->application)
+    {
+      chopstx_join (c->application, NULL);
+      c->application = 0;
     }
 
   return NULL;

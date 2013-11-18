@@ -1,3 +1,10 @@
+2013-11-18  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/openpgp.c (card_thread): Add noinline attribute.
+
+	* src/usb-icc.c (ccid_thread): Join the OpenPGP thread.
+	Add noinline attribute.
+
 2013-11-15  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/configure (options): Add --enable-sys1-compat.

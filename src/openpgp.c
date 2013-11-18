@@ -1228,7 +1228,7 @@ openpgp_card_thread (void *arg)
 
 chopstx_t openpgp_card_thd;
 
-static void *
+static void * __attribute__ ((noinline))
 card_thread (chopstx_t thd, struct eventflag *ccid_comm)
 {
   openpgp_card_thd = thd;
