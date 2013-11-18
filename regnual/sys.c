@@ -32,15 +32,19 @@ void entry (void)
 		"subs	r1, r1, #4\n\t"
 		"bne	0b\n\t"
 		/* Relocation done. */
+		"add	r0, r3\n\t"
 		"ldr	r3, .L00\n"
 	".LPIC00:\n\t"
 		"add	r3, pc\n\t" /* R3 := @_GLOBAL_OFFSET_TABLE_ */
-		/* Clear BSS.  */
-		"mov	r0, #0\n\t"
+		/* Compute the address of BSS.  */
 		"ldr	r4, .L00+4\n\t"
 		"ldr	r1, [r3, r4]\n\t"
+		"add	r1, r0\n\t" /* relocate bss_start */
 		"ldr	r4, .L00+8\n\t"
 		"ldr	r2, [r3, r4]\n"
+		"add	r1, r0\n\t" /* relocate bss_end */
+		/* Clear BSS.  */
+		"mov	r0, #0\n\t"
 	"0:\n\t"
 		"str	r0, [r1], #4\n\t"
 		"cmp	r2, r1\n\t"

@@ -1,5 +1,10 @@
 2013-11-18  Niibe Yutaka  <gniibe@fsij.org>
 
+	* regnual/sys.c (entry): Bug fix of clearing BSS.
+
+	* src/usb_stm32f103.c: Update from NeuG.
+	(usb_handle_transfer): Add argument ISTR_VALUE.
+
 	* src/openpgp.c (card_thread): Add noinline attribute.
 
 	* src/usb-icc.c (ccid_thread): Join the OpenPGP thread.
