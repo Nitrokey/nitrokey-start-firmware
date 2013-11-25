@@ -27,6 +27,7 @@
 #include <eventflag.h>
 
 #include "config.h"
+#include "board.h"
 
 #include "sys.h"
 #include "adc.h"

@@ -168,11 +168,13 @@ if test "$with_dfu" = "yes"; then
   ORIGIN=0x08003000
   FLASH_SIZE=`expr $FLASH_SIZE - 12`
   DFU_DEFINE="#define DFU_SUPPORT 1"
+  HEXOUTPUT_MAKE_OPTION="ENABLE_OUTPUT_HEX=yes"
 else
   with_dfu=no
   echo "Configured for bare system (no-DFU)"
   ORIGIN=0x08000000
   DFU_DEFINE="#undef DFU_SUPPORT"
+  HEXOUTPUT_MAKE_OPTION=""
 fi
 
 # --enable-pinpad option
@@ -297,6 +299,7 @@ sed -e "s%@HAVE_SYS_H@%$have_sys_h%" \
     -e "s%@DEBUG_MAKE_OPTION@%$DEBUG_MAKE_OPTION%" \
     -e "s%@PINPAD_MAKE_OPTION@%$PINPAD_MAKE_OPTION%" \
     -e "s%@KEYGEN_SUPPORT@%$KEYGEN_SUPPORT%" \
+    -e "s%@HEXOUTPUT_MAKE_OPTION@%$HEXOUTPUT_MAKE_OPTION%" \
 	< Makefile.in > Makefile
 if test "$certdo" = "yes"; then
   sed -e "/^@CERTDO_SUPPORT_START@$/ d" -e "/^@CERTDO_SUPPORT_END@$/ d" \
