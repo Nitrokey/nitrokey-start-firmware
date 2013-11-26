@@ -1,5 +1,28 @@
 2013-11-26  Niibe Yutaka  <gniibe@fsij.org>
 
+	* src/usb_desc.c (hid_report_desc): New.
+	(ICC_TOTAL_LENGTH): Update.
+	(HID_TOTAL_LENGTH, HID_NUM_INTERFACES): New.
+	(W_TOTAL_LENGTH, NUM_INTERFACES): Update.
+	(gnukConfigDescriptor): Add IN2 interrupt endpoint descriptor.
+	Add HID interface descriptor.
+	(usb_cb_get_descriptor): Handle HID.
+
+	* src/usb_ctrl.c (NUM_INTERFACES, MSC_INTERFACE_NO): Add 1.
+	(USB_HID_REQ_*, HID_LED_STATUS_NUMLOCK): New.
+	(gnuk_setup_endpoints_for_interface): Add ENDP2 interrupt
+	endpoint.
+	(usb_cb_setup): Handle HID requests.
+	(usb_cb_ctrl_write_finish): Likewise.
+
+	* src/usb-icc.c (ccid_card_change_signal): New.
+	(ccid_thread): Handle card change.
+	(icc_error, icc_send_status): Handle ICC_STATE_NOCARD state.
+	(icc_handle_data): Add the case of ICC_STATE_NOCARD.
+	(EP2_IN_Callback): New.
+
+2013-11-26  Niibe Yutaka  <gniibe@fsij.org>
+
 	* src/pin-dial.c: Remove.
 	* src/configure: Remove pin-dial suppot.
 

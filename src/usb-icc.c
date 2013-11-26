@@ -722,12 +722,12 @@ static void icc_error (struct ccid *c, int offset)
   icc_reply[4] = 0x00;
   icc_reply[5] = 0x00;	/* Slot */
   icc_reply[ICC_MSG_SEQ_OFFSET] = c->icc_header.seq;
-  if (c->icc_state == ICC_STATE_START)
-    /* 1: ICC present but not activated 2: No ICC present */
-    icc_reply[ICC_MSG_STATUS_OFFSET] = 1;
+  if (c->icc_state == ICC_STATE_NOCARD)
+    icc_reply[ICC_MSG_STATUS_OFFSET] = 2; /* 2: No ICC present */
+  else if (c->icc_state == ICC_STATE_START)
+    icc_reply[ICC_MSG_STATUS_OFFSET] = 1; /* 1: ICC present but not activated */
   else
-    /* An ICC is present and active */
-    icc_reply[ICC_MSG_STATUS_OFFSET] = 0;
+    icc_reply[ICC_MSG_STATUS_OFFSET] = 0; /* An ICC is present and active */
   icc_reply[ICC_MSG_STATUS_OFFSET] |= ICC_CMD_STATUS_ERROR; /* Failed */
   icc_reply[ICC_MSG_ERROR_OFFSET] = offset;
   icc_reply[ICC_MSG_CHAIN_OFFSET] = 0x00;
@@ -793,12 +793,12 @@ icc_send_status (struct ccid *c)
   icc_reply[4] = 0x00;
   icc_reply[5] = 0x00;	/* Slot */
   icc_reply[ICC_MSG_SEQ_OFFSET] = c->icc_header.seq;
-  if (c->icc_state == ICC_STATE_START)
-    /* 1: ICC present but not activated 2: No ICC present */
-    icc_reply[ICC_MSG_STATUS_OFFSET] = 1;
+  if (c->icc_state == ICC_STATE_NOCARD)
+    icc_reply[ICC_MSG_STATUS_OFFSET] = 2; /* 2: No ICC present */
+  else if (c->icc_state == ICC_STATE_START)
+    icc_reply[ICC_MSG_STATUS_OFFSET] = 1; /* 1: ICC present but not activated */
   else
-    /* An ICC is present and active */
-    icc_reply[ICC_MSG_STATUS_OFFSET] = 0;
+    icc_reply[ICC_MSG_STATUS_OFFSET] = 0; /* An ICC is present and active */
   icc_reply[ICC_MSG_ERROR_OFFSET] = 0x00;
   icc_reply[ICC_MSG_CHAIN_OFFSET] = 0x00;
 
@@ -1075,6 +1075,15 @@ icc_handle_data (struct ccid *c)
 
   switch (c->icc_state)
     {
+    case ICC_STATE_NOCARD:
+      if (c->icc_header.msg_type == ICC_SLOT_STATUS)
+	icc_send_status (c);
+      else
+	{
+	  DEBUG_INFO ("ERR00\r\n");
+	  icc_error (c, ICC_OFFSET_CMD_NOT_SUPPORTED);
+	}
+      break;
     case ICC_STATE_START:
       if (c->icc_header.msg_type == ICC_POWER_ON)
 	{
@@ -1288,8 +1297,16 @@ icc_handle_timeout (struct ccid *c)
   return next_state;
 }
 
-#define USB_ICC_TIMEOUT (1950*1000)
+/*
+ * Another Tx done callback
+ */
+void
+EP2_IN_Callback (void)
+{
+}
 
+
+#define USB_ICC_TIMEOUT (1950*1000)
 
 static struct ccid ccid;
 
@@ -1307,6 +1324,15 @@ USBthread (void *arg)
   return ccid_thread (thd);
 }
 
+void
+ccid_card_change_signal (void)
+{
+  struct ccid *c = &ccid;
+
+  eventflag_signal (&c->ccid_comm, EV_CARD_CHANGE);
+}
+
+
 static void * __attribute__ ((noinline))
 ccid_thread (chopstx_t thd)
 {
@@ -1314,6 +1340,7 @@ ccid_thread (chopstx_t thd)
   struct ep_out *epo = &endpoint_out;
   struct ccid *c = &ccid;
   struct apdu *a = &apdu;
+  int card_change_requested = 0;
 
   epi_init (epi, ENDP1, notify_tx, c);
   epo_init (epo, ENDP1, notify_icc, c);
@@ -1327,7 +1354,38 @@ ccid_thread (chopstx_t thd)
 
       m = eventflag_wait_timeout (&c->ccid_comm, USB_ICC_TIMEOUT);
 
-      if (m == EV_RX_DATA_READY)
+      if (m == EV_CARD_CHANGE)
+	{
+	  if (card_change_requested)
+	    {
+	      uint8_t notify_slot_change[2] = { 0x50, 0x02 };
+
+	      led_blink (LED_TWOSHOTS);
+
+	      if (c->icc_state == ICC_STATE_NOCARD)
+		{		/* Inserted!  */
+		  c->icc_state = ICC_STATE_START;
+		  notify_slot_change[1] |= 1;
+		}
+	      else
+		{
+		  if (c->application)
+		    {
+		      eventflag_signal (&c->openpgp_comm, EV_EXIT);
+		      chopstx_join (c->application, NULL);
+		      c->application = 0;
+		    }
+
+		  c->icc_state = ICC_STATE_NOCARD;
+		}
+
+	      card_change_requested = 0;
+	      usb_lld_write (ENDP2, notify_slot_change, 2);
+	    }
+	  else
+	    card_change_requested = 1;
+	}
+      else if (m == EV_RX_DATA_READY)
 	c->icc_state = icc_handle_data (c);
       else if (m == EV_EXEC_FINISHED)
 	if (c->icc_state == ICC_STATE_EXECUTE)
@@ -1383,7 +1441,10 @@ ccid_thread (chopstx_t thd)
 	    icc_prepare_receive (c);
 	}
       else			/* Timeout */
-	c->icc_state = icc_handle_timeout (c);
+	{
+	  c->icc_state = icc_handle_timeout (c);
+	  card_change_requested = 0;
+	}
     }
 
   if (c->application)
