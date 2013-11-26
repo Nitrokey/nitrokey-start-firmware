@@ -1,5 +1,13 @@
 Gnuk NEWS - User visible changes
 
+* Major changes in Gnuk 1.1.0
+
+  Released 2013-12-XX, by NIIBE Yutaka
+
+** Removal of obsolete features
+pin-dial
+
+
 * Major changes in Gnuk 1.0.4
 
   Released 2013-03-15, by NIIBE Yutaka

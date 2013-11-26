@@ -95,7 +95,7 @@ Configuration:
 			   FST_01
 			   FST_01_00
   --enable-debug	debug with virtual COM port	[no]
-  --enable-pinpad={cir,dial}
+  --enable-pinpad=cir
 			PIN entry support		[no]
   --enable-certdo	support CERT.3 data object	[no]
   --enable-keygen	support key generation		[no]

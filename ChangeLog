@@ -1,3 +1,15 @@
+2013-11-26  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/pin-dial.c: Remove.
+	* src/configure: Remove pin-dial suppot.
+
+2013-11-25  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/Makefile.in (HEXOUTPUT_MAKE_OPTION): New.
+	* src/configure (HEXOUTPUT_MAKE_OPTION): New.
+	* src/main.c: Include board.h.
+	* src/stm32f103.h (EXTI0_IRQ, EXTI1_IRQ): New.
+
 2013-11-18  Niibe Yutaka  <gniibe@fsij.org>
 
 	* regnual/sys.c (entry): Bug fix of clearing BSS.

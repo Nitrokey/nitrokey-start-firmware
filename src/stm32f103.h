@@ -27,12 +27,14 @@ static struct RCC *const RCC = ((struct RCC *const)RCC_BASE);
 #define RCC_APB2ENR_TIM1EN      0x00000800
 #define RCC_APB1ENR_TIM2EN      0x00000001
 #define RCC_APB1ENR_TIM3EN      0x00000002
+#define RCC_APB1ENR_TIM4EN      0x00000004
 
 #define RCC_APB2RSTR_ADC1RST    0x00000200
 #define RCC_APB2RSTR_ADC2RST    0x00000400
 #define RCC_APB2RSTR_TIM1RST    0x00000800
 #define RCC_APB1RSTR_TIM2RST    0x00000001
 #define RCC_APB1RSTR_TIM3RST    0x00000002
+#define RCC_APB1RSTR_TIM4RST    0x00000004
 
 #define  CRC_CR_RESET                        0x00000001
 
@@ -237,8 +239,10 @@ struct TIM
 
 #define TIM2_BASE 0x40000000
 #define TIM3_BASE 0x40000400
+#define TIM4_BASE 0x40000800
 static struct TIM *const TIM2 = (struct TIM *const)TIM2_BASE;
 static struct TIM *const TIM3 = (struct TIM *const)TIM3_BASE;
+static struct TIM *const TIM4 = (struct TIM *const)TIM4_BASE;
 
 #define  TIM_CR1_CEN   	0x0001
 #define  TIM_CR1_UDIS  	0x0002
@@ -638,6 +642,7 @@ static struct EXTI *const EXTI = (struct EXTI *const)EXTI_BASE;
 #define EXTI9_5_IRQ 23
 #define TIM2_IRQ    28
 #define TIM3_IRQ    29
+#define TIM4_IRQ    30
 
 struct AFIO
 {
