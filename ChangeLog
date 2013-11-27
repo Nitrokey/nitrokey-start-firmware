@@ -1,3 +1,8 @@
+2013-11-27  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/stm32f103.h (AFIO_MAPR_SWJ_CFG_DISABLE): New.
+	* src/sys.c: Likewise.
+
 2013-11-26  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/usb_desc.c (hid_report_desc): New.
