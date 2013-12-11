@@ -42,7 +42,7 @@ void entry (void)
 		"add	r1, r0\n\t" /* relocate bss_start */
 		"ldr	r4, .L00+8\n\t"
 		"ldr	r2, [r3, r4]\n"
-		"add	r1, r0\n\t" /* relocate bss_end */
+		"add	r2, r0\n\t" /* relocate bss_end */
 		/* Clear BSS.  */
 		"mov	r0, #0\n\t"
 	"0:\n\t"

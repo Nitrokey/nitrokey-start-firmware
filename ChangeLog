@@ -1,3 +1,7 @@
+2013-12-11  Niibe Yutaka  <gniibe@fsij.org>
+
+	* regnual/sys.c (entry): Fix relocation calculation.
+
 2013-11-27  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/stm32f103.h (AFIO_MAPR_SWJ_CFG_DISABLE): New.
