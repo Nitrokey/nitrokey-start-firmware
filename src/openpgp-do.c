@@ -464,7 +464,8 @@ const uint8_t openpgpcard_aid[] = {
 static int
 do_openpgpcard_aid (uint16_t tag, int with_tag)
 {
-  uint16_t vid = (openpgpcard_aid[8] << 8) | openpgpcard_aid[9];
+  const volatile uint8_t *p = openpgpcard_aid;
+  uint16_t vid = (p[8] << 8) | p[9];
 
   if (with_tag)
     {

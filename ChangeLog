@@ -1,3 +1,8 @@
+2013-12-12  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/openpgp-do.c (do_openpgpcard_aid): Coerce to volatile to
+	force memory access at run time.
+
 2013-12-11  Niibe Yutaka  <gniibe@fsij.org>
 
 	* regnual/sys.c (entry): Fix relocation calculation.
@@ -33,7 +38,7 @@
 2013-11-26  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/pin-dial.c: Remove.
-	* src/configure: Remove pin-dial suppot.
+	* src/configure: Remove pin-dial support.
 
 2013-11-25  Niibe Yutaka  <gniibe@fsij.org>
 
