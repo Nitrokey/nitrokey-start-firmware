@@ -1,9 +1,3 @@
-************* THIS IS DEVELOPMENT BRANCH OF GNUK       *************
-************* Text written below is for release 1.0.2, *************
-************* which might not be vaild for this code   *************
-
-For those who follow Git master:
-
 We migrate from ChibiOS/RT to Chopstix.  You need:
 
     Edit .git/config to remove chibios reference
@@ -13,8 +7,8 @@ We migrate from ChibiOS/RT to Chopstix.  You need:
 
 Gnuk - An Implementation of USB Cryptographic Token for GnuPG
 
-							  Version 1.0.2
-							     2013-02-15
+							  Version 1.1.0
+							     2013-12-XX
 							   Niibe Yutaka
 				      Free Software Initiative of Japan
 
@@ -128,7 +122,7 @@ Ac: ST-Link/V2 is cheap one.  We have a tool/stlinkv2.py as flash ROM
 Release notes
 =============
 
-This is a second minor release in version 1.0 series of Gnuk.
+This is an experimental release in version 1.1 series of Gnuk.
 
 While it is daily use for a year and a half, some newly introduced
 features (including key generation and firmware upgrade) should be
@@ -151,9 +145,8 @@ Tested features are:
 	* Modify with pin pad
 	* Card holder certificate (read)
 	* Removal of keys
-	  (Overriding key import is not supported,
-	  but you can remove all keys to import again).
 	* Key generation on device side
+	* Overriding key import
 
 Original features of Gnuk, tested lightly:
 
@@ -163,15 +156,16 @@ Original features of Gnuk, tested lightly:
 
 It is known not-working well:
 
-	* For some version of kernel and libccid, --enable-debug can't
-	  work well.  Please make sure to disable DEBUG option if it
-	  doesn't work well.
+	* For some old versions of kernel and libccid, --enable-debug
+	  can't work well.  Please make sure to disable DEBUG option
+	  if it doesn't work well.
 
-It is known that the combination of libccid 1.4.1 (or newer) with
-libusb 1.0.8 (or older) has a minor problem.  It is rare but it is
-possible for USB communication to be failed, because of a bug in
-libusb implementation.  Use libusbx 1.0.9 or newer, or don't use
-PC/SC, but use internal CCID driver of GnuPG.
+        * It is known that the combination of libccid 1.4.1 (or newer)
+	  with libusb 1.0.8 (or older) has a minor problem.  It is
+	  rare but it is possible for USB communication to be failed,
+	  because of a bug in libusb implementation.  Use libusbx
+	  1.0.9 or newer, or don't use PC/SC, but use internal CCID
+	  driver of GnuPG.
 
 
 Targets
@@ -180,31 +174,20 @@ Targets
 We use Olimex STM32-H103 board and Flying Stone Tiny 01 (FST-01).  We
 also use STM32 part of STM8S Discovery Kit.
 
-With DfuSe support, CQ STARM, STBee, and STBee Mini are also our
-targets.  But those targets with DfuSe are basically not for normal
-use but for experiments, because it would be impossible for DfuSe to
+With DfuSe support, STBee is also our targets.  But this target with
+DfuSe is for experiment only, because it is impossible for DfuSe to
 disable read from flash.  For real use, please consider killing DfuSe
 and enabling read protection using JTAG debugger.
 
-I think that it could run on Olimex STM32-P103, or other boards with
-STM32F103.  Besides, we are porting it to STM32 Primer 2.
-
-For PIN-pad support, I connect a consumer IR receive module to STBee
-Mini and STM8S Discovery Kit, and use controller for TV.  PIN
-verification is supported by this configuration.  Yes, it is not
-secure at all, since it is very easy to monitor IR output of the
-controllers.  It is just an experiment.  Note that hardware needed for
-this experiment is only a consumer IR receive module which is as cheap
-as 50 JPY.
-
-Another PIN-pad support is connecting rotary encoder, push switch and
-7-segment LED display.  Both of PIN verification and PIN modification
-are supported for this circuit extension.
+For PIN-pad support, I connect a consumer IR receive module to FST-01
+and STM8S Discovery Kit, and use controller for TV.  PIN verification
+is supported by this configuration.  Yes, it is not secure at all,
+since it is very easy to monitor IR output of the controllers.  It is
+just an experiment.  Note that hardware needed for this experiment is
+only a consumer IR receive module which is as cheap as 50 JPY.
 
 Note that you need pinpad support for GnuPG to use PIN-pad enabled
-Gnuk.  The pinpad support for GnuPG is currently in the master branch
-of GnuPG git repository at git.gnupg.org, and it's under evaluation.
-When it will be considered stable, it will be put onto stable branch.
+Gnuk.  The pinpad support for GnuPG is only supported in version 2.
 
 
 Souce code
@@ -240,17 +223,14 @@ External source code
 
 Gnuk is distributed with external source code.
 
-* chibios/  -- ChibiOS/RT 2.4.3
+* chopstx/  -- Chopstx 0.04
 
-  Source code taken from: http://chibios.sourceforge.net/
+  We use Chopstx as the kernel for Gnuk.
 
-  We use ChibiOS/RT as the kernel for Gnuk.
-
-  ChibiOS/RT is distributed under GPLv3+ (with a special exception
-  for unmodified code).
+  Chopstx is distributed under GPLv3+ (with a special exception).
 
 
-* polarssl/  -- PolarSSL 1.2.6
+* polarssl/  -- PolarSSL 1.2.10
 
   Souce code taken from: http://polarssl.org/
 
@@ -275,7 +255,11 @@ Gnuk is distributed with external source code.
   modified for 2048-bit keys only Gnuk.
 
   The function mpi_mul_hlp in library/bignum.c is modified for more
-  optimization for ARM Cortex-M3.
+  optimization for ARM Cortex-M3.  Functions mpi_montred, mpi_sub_hlp,
+  mpi_sub_abs, mpi_mul_mpi, mpi_montmul, and mpi_exp are modified
+  to avoid side channel attacks.  Note that we don't use RSA-blinding
+  technique for Gnuk.  Function mpi_gen_prime and mpi_is_prime are
+  modified to use Fouque-Tibouchi method.
 
   The file library/aes.c is modified so that some constants can
   go to .sys section.
@@ -354,30 +338,9 @@ How to compile
 
 You need GNU toolchain and newlib for 'arm-none-eabi' target.
 
-See http://github.com/esden/summon-arm-toolchain/ (which includes fix
-of binutils-2.21.1) for preparation of GNU Toolchain for
-'arm-none-eabi' target.  This is for GCC 4.5.
-
-# Note that we need to link correct C library (for string functions).
-# For this purpose, Makefile.in contains following line:
-# 
-# 	MCFLAGS= -mcpu=$(MCU) -mfix-cortex-m3-ldrd
-# 
-# This should not be needed (as -mcpu=cortex-m3 means
-# -mfix-cortex-m3-ldrd), but in practice it is needed for 
-# the configuration of patch-gcc-config-arm-t-arm-elf.diff in
-# summon-arm-toolchain.
-# 
-# In ChibiOS_2.0.8/os/ports/GCC/ARM/rules.mk, it specifies
-# -mno-thumb-interwork option.  This means that you should not
-# link C library which contains ARM (not Thumb) code.
-
-Recently, there is "gcc-arm-embedded" project.  See:
+There is "gcc-arm-embedded" project.  See:
 
     https://launchpad.net/gcc-arm-embedded/
-
-It is based on GCC 4.6.   For version 4.6-2012-q2-update, you'd
-need "-O3 -Os" instead of "-O2" and it will be slightly better.
 
 
 Change directory to `src':
@@ -396,7 +359,7 @@ Type:
 
   $ make
 
-Then, we will have "gnuk.elf".
+Then, we will have "gnuk.elf" under src/build directory.
 
 
 How to install
@@ -451,7 +414,7 @@ OpenOCD 0.6.1 now supports ST-Link/V2.  We can use it:
 
   $ openocd -f interface/stlink-v2.cfg -f target/stm32f1x_stlink.cfg
 
-But it doesn't support option bytes handling yet.
+But it doesn't support option bytes handling (protection) yet.
 
 
 STM8S Discovery Kit
@@ -465,7 +428,7 @@ Initially, the flash ROM of the chip is protected.  you need to do:
 
   $ telnet localhost 4444
   > reset halt
-  > stm32x unlock 0
+  > stm32f1x unlock 0
   > reset
   > shutdown
   $ 
@@ -477,25 +440,14 @@ Then, invoke OpenOCD again and telnet to connect OpenCD and write
 image as above example of Olimex STM32-H103.
 
 
-CQ STARM
---------
-
-Put jumper for J6 to enable DfuSe.  Connecting the board, and type:
-
-  # cd ../tool
-  # ./dfuse.py ../src/gnuk.hex
-
-Then, remove the jumper and reset the board.
-
-
-STBee and STBee Mini
---------------------
+STBee
+-----
 
 Reset the board with "USER" switch pushed.  Type following to write
 to flash:
 
   # cd ../tool
-  # ./dfuse.py ../src/gnuk.hex
+  # ./dfuse.py ../src/build/gnuk.hex
 
 Then, reset the board.
 
@@ -507,7 +459,7 @@ Invoke your OpenOCD and type:
 
   $ telnet localhost 4444
   > reset halt
-  > stm32x lock 0
+  > stm32f1x lock 0
   > reset
   > shutdown
 
