@@ -29,6 +29,10 @@ CCID_CLASS = 0x0B
 CCID_SUBCLASS = 0x00
 CCID_PROTOCOL_0 = 0x00
 
+HID_CLASS = 0x03
+HID_SUBCLASS_NO_BOOT = 0x00
+HID_PROTOCOL_0 = 0x00
+
 def icc_compose(msg_type, data_len, slot, seq, param, data):
     return pack('<BiBBBH', msg_type, data_len, slot, seq, 0, param) + data
 
@@ -75,6 +79,14 @@ class gnuk_token(object):
         self.__alt = interface.alternateSetting
         self.__conf = configuration
 
+        self.__hid_intf = None
+        for intf in configuration.interfaces:
+            for alt in intf:
+                if alt.interfaceClass == HID_CLASS and \
+                        alt.interfaceSubClass == HID_SUBCLASS_NO_BOOT and \
+                        alt.interfaceProtocol == HID_PROTOCOL_0:
+                    self.__hid_intf = alt.interfaceNumber
+
         self.__bulkout = 1
         self.__bulkin  = 0x81
 
@@ -98,6 +110,8 @@ class gnuk_token(object):
 
     def stop_gnuk(self):
         self.__devhandle.releaseInterface()
+        if self.__hid_intf:
+            self.__devhandle.detachKernelDriver(self.__hid_intf)
         self.__devhandle.setConfiguration(0)
         return
 

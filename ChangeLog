@@ -1,3 +1,8 @@
+2013-12-13  Niibe Yutaka  <gniibe@fsij.org>
+
+	* tool/gnuk_token.py (gnuk_token.stop_gnuk): Detach kernel
+	driver of HID.
+
 2013-12-12  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/openpgp-do.c (do_openpgpcard_aid): Coerce to volatile to
