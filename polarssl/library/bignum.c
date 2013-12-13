@@ -1358,10 +1358,11 @@ static void mpi_montmul( mpi *A, const mpi *B, const mpi *N, t_uint mm, const mp
     d = T->p;
     n = N->n;
     m = ( B->n < n ) ? B->n : n;
-    memset( d, 0, (n + 1) * ciL );
+    memset( d, 0, n * ciL );
 
     for( i = 0; i < n; i++ )
     {
+	d[n] = c;
         /*
          * T = (T + u0*B + u1*N) / 2^biL
          */
@@ -1370,11 +1371,10 @@ static void mpi_montmul( mpi *A, const mpi *B, const mpi *N, t_uint mm, const mp
 
         mpi_mul_hlp( m, B->p, d, u0 );
         c = mpi_mul_hlp( n, N->p, d, u1 );
-        *d++ = u0; d[n] = c;
+        d++;
     }
 
-    d[n] = 0;
-    memcpy( A->p, d, (n + 1) * ciL );
+    memcpy( A->p, d, n * ciL );
 
     if( ((mpi_cmp_abs( A, N ) >= 0) | c) )
         mpi_sub_hlp( n, N->p, A->p );
@@ -1393,10 +1393,11 @@ static void mpi_montred( mpi *A, const mpi *N, t_uint mm, const mpi *T )
 
     d = T->p;
     n = N->n;
-    memset( d, 0, (n + 1) * ciL );
+    memset( d, 0, n * ciL );
 
     for( i = 0; i < n; i++ )
     {
+	d[n] = c;
         /*
          * T = (T + u0 + u1*N) / 2^biL
          */
@@ -1411,11 +1412,10 @@ static void mpi_montred( mpi *A, const mpi *N, t_uint mm, const mpi *T )
 	  }
 
         c = mpi_mul_hlp( n, N->p, d, u1 );
-        *d++ = u0; d[n] = c;
+        d++;
     }
 
-    d[n] = 0;
-    memcpy( A->p, d, (n + 1) * ciL );
+    memcpy( A->p, d, n * ciL );
 
     if( ((mpi_cmp_abs( A, N ) >= 0) | c) )
         mpi_sub_hlp( n, N->p, A->p );
@@ -1458,10 +1458,10 @@ int mpi_exp_mod( mpi *X, const mpi *A, const mpi *E, const mpi *N, mpi *_RR )
     if( wsize > POLARSSL_MPI_WINDOW_SIZE )
         wsize = POLARSSL_MPI_WINDOW_SIZE;
 
-    j = N->n + 1;
+    j = N->n;
     MPI_CHK( mpi_grow( X, j ) );
     MPI_CHK( mpi_grow( &W[1],  j ) );
-    MPI_CHK( mpi_grow( &T, j * 2 - 1 ) );
+    MPI_CHK( mpi_grow( &T, j * 2 ) );
 
     /*
      * Compensate for negative A (and correct at the end)
@@ -1485,7 +1485,7 @@ int mpi_exp_mod( mpi *X, const mpi *A, const mpi *E, const mpi *N, mpi *_RR )
         MPI_CHK( mpi_shift_l( &RR0, N->n * 2 * biL ) );
         MPI_CHK( mpi_mod_mpi( &RR0, &RR0, N ) );
         MPI_CHK( mpi_copy( &RR, &RR0 ) ); /* Shrink to size of N.  */
-        MPI_CHK( mpi_grow( &RR, N->n + 1 ) );
+        MPI_CHK( mpi_grow( &RR, N->n ) );
 
         if( _RR != NULL )
             memcpy( _RR, &RR, sizeof( mpi ) );
@@ -1515,8 +1515,8 @@ int mpi_exp_mod( mpi *X, const mpi *A, const mpi *E, const mpi *N, mpi *_RR )
          */
         j =  one << (wsize - 1);
 
-        MPI_CHK( mpi_grow( &W[j], N->n + 1 ) );
-        MPI_CHK( mpi_copy( &W[j], &W[1]    ) );
+        MPI_CHK( mpi_grow( &W[j], N->n  ) );
+        MPI_CHK( mpi_copy( &W[j], &W[1] ) );
 
         for( i = 0; i < wsize - 1; i++ )
             mpi_montmul( &W[j], &W[j], N, mm, &T );
@@ -1526,7 +1526,7 @@ int mpi_exp_mod( mpi *X, const mpi *A, const mpi *E, const mpi *N, mpi *_RR )
          */
         for( i = j + 1; i < (one << wsize); i++ )
         {
-            MPI_CHK( mpi_grow( &W[i], N->n + 1 ) );
+            MPI_CHK( mpi_grow( &W[i], N->n      ) );
             MPI_CHK( mpi_copy( &W[i], &W[i - 1] ) );
 
             mpi_montmul( &W[i], &W[1], N, mm, &T );
