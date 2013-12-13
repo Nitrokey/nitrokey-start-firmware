@@ -7,6 +7,10 @@
 
 2013-12-13  Niibe Yutaka  <gniibe@fsij.org>
 
+	* tool/upgrade_by_passwd.py (main): Support -k to specify KEYNO.
+
+2013-12-13  Niibe Yutaka  <gniibe@fsij.org>
+
 	* src/usb_ctrl.c (HID_LED_STATUS_CARDCHANGE): Rename from
 	HID_LED_STATUS_NUMLOCK.
 

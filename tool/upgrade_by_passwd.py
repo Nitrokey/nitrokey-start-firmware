@@ -32,7 +32,7 @@ BY_ADMIN = 3
 
 KEYNO_FOR_AUTH=2 
 
-def main(passwd, data_regnual, data_upgrade):
+def main(keyno, passwd, data_regnual, data_upgrade):
     l = len(data_regnual)
     if (l & 0x03) != 0:
         data_regnual = data_regnual.ljust(l + 4 - (l & 0x03), chr(0))
@@ -45,7 +45,6 @@ def main(passwd, data_regnual, data_upgrade):
 
     gnuk = get_gnuk_device()
     gnuk.cmd_verify(BY_ADMIN, passwd)
-    keyno = 0
     gnuk.cmd_write_binary(1+keyno, rsa_raw_pubkey, False)
 
     gnuk.cmd_select_openpgp()
@@ -94,10 +93,17 @@ if __name__ == '__main__':
         exit(1)
 
     passwd = DEFAULT_PW3
-    if len(sys.argv) > 1 and sys.argv[1] == '-p':
-        from getpass import getpass
-        passwd = getpass("Admin password: ")
+    keyno = 0
+    print sys.argv
+    while len(sys.argv) > 3:
+        option = sys.argv[1]
         sys.argv.pop(1)
+        if option == '-p':
+            from getpass import getpass
+            passwd = getpass("Admin password: ")
+        elif option == '-k':
+            keyno = int(sys.argv[1])
+            sys.argv.pop(1)
     filename_regnual = sys.argv[1]
     filename_upgrade = sys.argv[2]
     f = open(filename_regnual)
@@ -109,4 +115,4 @@ if __name__ == '__main__':
     f.close()
     print "%s: %d" % (filename_upgrade, len(data_upgrade))
     # First 4096-byte in data_upgrade is SYS, so, skip it.
-    main(passwd, data_regnual, data_upgrade[4096:])
+    main(keyno, passwd, data_regnual, data_upgrade[4096:])
