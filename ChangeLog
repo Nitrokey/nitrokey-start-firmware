@@ -1,5 +1,8 @@
 2013-12-13  Niibe Yutaka  <gniibe@fsij.org>
 
+	* src/usb_ctrl.c (HID_LED_STATUS_CARDCHANGE): Rename from
+	HID_LED_STATUS_NUMLOCK.
+
 	* tool/gnuk_token.py (gnuk_token.stop_gnuk): Detach kernel
 	driver of HID.
 

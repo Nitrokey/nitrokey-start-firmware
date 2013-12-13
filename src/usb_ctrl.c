@@ -128,7 +128,10 @@ uint32_t bDeviceState = UNCONNECTED; /* USB device status */
 #define USB_HID_REQ_SET_IDLE     10
 #define USB_HID_REQ_SET_PROTOCOL 11
 
-#define HID_LED_STATUS_NUMLOCK 0x01
+#ifndef HID_LED_STATUS_CARDCHANGE
+/* NumLock=1, CapsLock=2, ScrollLock=4 */
+#define HID_LED_STATUS_CARDCHANGE 0x04
+#endif
 
 static uint8_t hid_idle_rate;	/* in 4ms */
 static uint8_t hid_report_saved;
@@ -416,7 +419,7 @@ usb_cb_ctrl_write_finish (uint8_t req, uint8_t req_no, uint16_t value,
     {
       if (index == 1 && req_no == USB_HID_REQ_SET_REPORT)
 	{
-	  if ((hid_report ^ hid_report_saved) & HID_LED_STATUS_NUMLOCK)
+	  if ((hid_report ^ hid_report_saved) & HID_LED_STATUS_CARDCHANGE)
 	    ccid_card_change_signal ();
 
 	  hid_report_saved = hid_report;
