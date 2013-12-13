@@ -1,5 +1,11 @@
 2013-12-13  Niibe Yutaka  <gniibe@fsij.org>
 
+	* polarssl/library/bignum.c (mpi_exp_mod): Initialize lower
+	half of T with zero.
+	(mpi_montmul: Don't need to clear lower half of
+	T, as we keep zero.  Call mpi_sub_hlp with upper half of T.
+	(mpi_montred): Ditto.
+
 	* polarssl/library/bignum.c (mpi_montmul, mpi_montred): Minimize
 	number of limbs for T.
 	(mpi_exp_mod): Only allocate N-n * 2 for T.

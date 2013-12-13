@@ -1358,7 +1358,6 @@ static void mpi_montmul( mpi *A, const mpi *B, const mpi *N, t_uint mm, const mp
     d = T->p;
     n = N->n;
     m = ( B->n < n ) ? B->n : n;
-    memset( d, 0, n * ciL );
 
     for( i = 0; i < n; i++ )
     {
@@ -1380,7 +1379,7 @@ static void mpi_montmul( mpi *A, const mpi *B, const mpi *N, t_uint mm, const mp
         mpi_sub_hlp( n, N->p, A->p );
     else
         /* prevent timing attacks */
-        mpi_sub_hlp( n, A->p, T->p );
+        mpi_sub_hlp( n, A->p, d);
 }
 
 /*
@@ -1393,7 +1392,6 @@ static void mpi_montred( mpi *A, const mpi *N, t_uint mm, const mpi *T )
 
     d = T->p;
     n = N->n;
-    memset( d, 0, n * ciL );
 
     for( i = 0; i < n; i++ )
     {
@@ -1421,7 +1419,7 @@ static void mpi_montred( mpi *A, const mpi *N, t_uint mm, const mpi *T )
         mpi_sub_hlp( n, N->p, A->p );
     else
         /* prevent timing attacks */
-        mpi_sub_hlp( n, A->p, T->p );
+        mpi_sub_hlp( n, A->p, d);
 }
 
 /*
@@ -1462,6 +1460,7 @@ int mpi_exp_mod( mpi *X, const mpi *A, const mpi *E, const mpi *N, mpi *_RR )
     MPI_CHK( mpi_grow( X, j ) );
     MPI_CHK( mpi_grow( &W[1],  j ) );
     MPI_CHK( mpi_grow( &T, j * 2 ) );
+    memset( T.p, 0, j * ciL );	/* Clear the lower half of T.  */
 
     /*
      * Compensate for negative A (and correct at the end)
