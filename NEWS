@@ -4,8 +4,21 @@ Gnuk NEWS - User visible changes
 
   Released 2013-12-XX, by NIIBE Yutaka
 
+** Key management with overriding (Incompatible Change)
+
+** RSA key generation improvement
+
+** Security fix for RSA computation 
+
+** Upgrade of NeuG
+The true random number generator was upgraded with NeuG 1.0.
+
+** Replacement of kernel (thread library)
+Instead of ChibiOS/RT, we now use Chopstx.
+
 ** Removal of obsolete features
-pin-dial
+The feature named pin-dial, which is pin input with hardware
+enhancement (with rotary encoder) is removed.
 
 
 * Major changes in Gnuk 1.0.4

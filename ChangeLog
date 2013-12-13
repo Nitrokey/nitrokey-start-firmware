@@ -2,7 +2,7 @@
 
 	* polarssl/library/bignum.c (mpi_exp_mod): Initialize lower
 	half of T with zero.
-	(mpi_montmul: Don't need to clear lower half of
+	(mpi_montmul): Don't need to clear lower half of
 	T, as we keep zero.  Call mpi_sub_hlp with upper half of T.
 	(mpi_montred): Ditto.
 
