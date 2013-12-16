@@ -646,6 +646,39 @@ int mpi_shift_r( mpi *X, size_t count )
 /*
  * Compare unsigned values
  */
+static int mpi_cmp_abs_limbs (size_t n, const t_uint *p0, const t_uint *p1)
+{
+    size_t i, j;
+
+    p0 += n;
+    for( i = n; i > 0; i-- )
+        if( *--p0 != 0 )
+            break;
+
+    p1 += n;
+    for( j = n; j > 0; j-- )
+        if( *--p1 != 0 )
+            break;
+
+    if( i == 0 && j == 0 )
+        return( 0 );
+
+    if( i > j ) return(  1 );
+    if( j > i ) return( -1 );
+
+    for( ; i > 0; i-- )
+    {
+        if( *p0 > *p1 ) return(  1 );
+        if( *p0 < *p1 ) return( -1 );
+        p0--; p1--;
+    }
+
+    return( 0 );
+}
+
+/*
+ * Compare unsigned values
+ */
 int mpi_cmp_abs( const mpi *X, const mpi *Y )
 {
     size_t i, j;
@@ -1349,8 +1382,9 @@ static void mpi_montg_init( t_uint *mm, const mpi *N )
 
 /*
  * Montgomery multiplication: A = A * B * R^-1 mod N  (HAC 14.36)
+ * A is placed at the upper half of T.
  */
-static void mpi_montmul( mpi *A, const mpi *B, const mpi *N, t_uint mm, const mpi *T )
+static void mpi_montmul( const mpi *B, const mpi *N, t_uint mm, mpi *T )
 {
     size_t i, n, m;
     t_uint u0, u1, *d, c = 0;
@@ -1361,11 +1395,11 @@ static void mpi_montmul( mpi *A, const mpi *B, const mpi *N, t_uint mm, const mp
 
     for( i = 0; i < n; i++ )
     {
-	d[n] = c;
         /*
          * T = (T + u0*B + u1*N) / 2^biL
          */
-        u0 = A->p[i];
+        u0 = d[n];
+        d[n] = c;
         u1 = ( d[0] + u0 * B->p[0] ) * mm;
 
         mpi_mul_hlp( m, B->p, d, u0 );
@@ -1373,19 +1407,18 @@ static void mpi_montmul( mpi *A, const mpi *B, const mpi *N, t_uint mm, const mp
         d++;
     }
 
-    memcpy( A->p, d, n * ciL );
-
-    if( ((mpi_cmp_abs( A, N ) >= 0) | c) )
-        mpi_sub_hlp( n, N->p, A->p );
+    /* prevent timing attacks */
+    if( ((mpi_cmp_abs_limbs ( n, d, N->p ) >= 0) | c) )
+        mpi_sub_hlp( n, N->p, d );
     else
-        /* prevent timing attacks */
-        mpi_sub_hlp( n, A->p, d);
+        mpi_sub_hlp( n, T->p, T->p);
 }
 
 /*
  * Montgomery reduction: A = A * R^-1 mod N
+ * A is placed at the upper half of T.
  */
-static void mpi_montred( mpi *A, const mpi *N, t_uint mm, const mpi *T )
+static void mpi_montred( const mpi *N, t_uint mm, mpi *T )
 {
     size_t i, j, n;
     t_uint u0, u1, *d, c = 0;
@@ -1395,31 +1428,29 @@ static void mpi_montred( mpi *A, const mpi *N, t_uint mm, const mpi *T )
 
     for( i = 0; i < n; i++ )
     {
-	d[n] = c;
         /*
          * T = (T + u0 + u1*N) / 2^biL
          */
-        u0 = A->p[i];
+        u0 = d[n];
+        d[n] = c;
         u1 = (d[0] + u0) * mm;
 
         d[0] += u0;
         c = (d[0] < u0);
         for (j = 1; j < n; j++)
-	  {
-	    d[j] += c; c = ( d[j] < c );
-	  }
+          {
+            d[j] += c; c = ( d[j] < c );
+          }
 
         c = mpi_mul_hlp( n, N->p, d, u1 );
         d++;
     }
 
-    memcpy( A->p, d, n * ciL );
-
-    if( ((mpi_cmp_abs( A, N ) >= 0) | c) )
-        mpi_sub_hlp( n, N->p, A->p );
+    /* prevent timing attacks */
+    if( ((mpi_cmp_abs_limbs ( n, d, N->p ) >= 0) | c) )
+        mpi_sub_hlp( n, N->p, d );
     else
-        /* prevent timing attacks */
-        mpi_sub_hlp( n, A->p, d);
+        mpi_sub_hlp( n, T->p, T->p);
 }
 
 /*
@@ -1460,7 +1491,7 @@ int mpi_exp_mod( mpi *X, const mpi *A, const mpi *E, const mpi *N, mpi *_RR )
     MPI_CHK( mpi_grow( X, j ) );
     MPI_CHK( mpi_grow( &W[1],  j ) );
     MPI_CHK( mpi_grow( &T, j * 2 ) );
-    memset( T.p, 0, j * ciL );	/* Clear the lower half of T.  */
+    memset( T.p, 0, j * ciL );  /* Clear the lower half of T.  */
 
     /*
      * Compensate for negative A (and correct at the end)
@@ -1499,38 +1530,42 @@ int mpi_exp_mod( mpi *X, const mpi *A, const mpi *E, const mpi *N, mpi *_RR )
         mpi_mod_mpi( &W[1], A, N );
     else   mpi_copy( &W[1], A );
 
-    mpi_montmul( &W[1], &RR, N, mm, &T );
-
-    /*
-     * X = R^2 * R^-1 mod N = R mod N
-     */
-    MPI_CHK( mpi_copy( X, &RR ) );
-    mpi_montred( X, N, mm, &T );
+    memcpy ( T.p + N->n, W[1].p, N->n * ciL);
+    mpi_montmul( &RR, N, mm, &T );
+    memcpy ( W[1].p, T.p + N->n, N->n * ciL);
 
     if( wsize > 1 )
     {
         /*
-         * W[1 << (wsize - 1)] = W[1] ^ (wsize - 1)
+         * W[1 << (wsize - 1)] = W[1] ^ ( 2 ^ (wsize - 1) )
          */
         j =  one << (wsize - 1);
 
         MPI_CHK( mpi_grow( &W[j], N->n  ) );
-        MPI_CHK( mpi_copy( &W[j], &W[1] ) );
 
-        for( i = 0; i < wsize - 1; i++ )
-            mpi_montmul( &W[j], &W[j], N, mm, &T );
-    
+        for( i = 0; i < wsize - 1; i++ ) {
+            memcpy ( W[j].p, T.p + N->n, N->n * ciL);
+            mpi_montmul( &W[j], N, mm, &T );
+        }
+        memcpy ( W[j].p, T.p + N->n, N->n * ciL);
+
         /*
          * W[i] = W[i - 1] * W[1]
          */
         for( i = j + 1; i < (one << wsize); i++ )
         {
             MPI_CHK( mpi_grow( &W[i], N->n      ) );
-            MPI_CHK( mpi_copy( &W[i], &W[i - 1] ) );
 
-            mpi_montmul( &W[i], &W[1], N, mm, &T );
+            mpi_montmul( &W[1], N, mm, &T );
+            memcpy ( W[i].p, T.p + N->n, N->n * ciL);
         }
     }
+
+    /*
+     * X = R^2 * R^-1 mod N = R mod N
+     */
+    memcpy ( T.p + N->n, RR.p, N->n * ciL);
+    mpi_montred( N, mm, &T );
 
     nblimbs = E->n;
     bufsize = 0;
@@ -1563,7 +1598,8 @@ int mpi_exp_mod( mpi *X, const mpi *A, const mpi *E, const mpi *N, mpi *_RR )
             /*
              * out of window, square X
              */
-            mpi_montmul( X, X, N, mm, &T );
+            memcpy ( X->p, T.p + N->n, N->n * ciL);
+            mpi_montmul( X, N, mm, &T );
             continue;
         }
 
@@ -1580,13 +1616,15 @@ int mpi_exp_mod( mpi *X, const mpi *A, const mpi *E, const mpi *N, mpi *_RR )
             /*
              * X = X^wsize R^-1 mod N
              */
-            for( i = 0; i < wsize; i++ )
-                mpi_montmul( X, X, N, mm, &T );
+            for( i = 0; i < wsize; i++ ) {
+                memcpy ( X->p, T.p + N->n, N->n * ciL);
+                mpi_montmul( X, N, mm, &T );
+            }
 
             /*
              * X = X * W[wbits] R^-1 mod N
              */
-            mpi_montmul( X, &W[wbits], N, mm, &T );
+            mpi_montmul( &W[wbits], N, mm, &T );
 
             state--;
             nbits = 0;
@@ -1599,18 +1637,20 @@ int mpi_exp_mod( mpi *X, const mpi *A, const mpi *E, const mpi *N, mpi *_RR )
      */
     for( i = 0; i < nbits; i++ )
     {
-        mpi_montmul( X, X, N, mm, &T );
+        memcpy ( X->p, T.p + N->n, N->n * ciL);
+        mpi_montmul( X, N, mm, &T );
 
         wbits <<= 1;
 
         if( (wbits & (one << wsize)) != 0 )
-            mpi_montmul( X, &W[1], N, mm, &T );
+            mpi_montmul( &W[1], N, mm, &T );
     }
 
     /*
      * X = A^E * R * R^-1 mod N = A^E mod N
      */
-    mpi_montred( X, N, mm, &T );
+    mpi_montred( N, mm, &T );
+    memcpy ( X->p, T.p + N->n, N->n * ciL);
 
     if( neg )
     {

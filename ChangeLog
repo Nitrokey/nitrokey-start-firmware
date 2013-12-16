@@ -1,3 +1,10 @@
+2013-12-16  Niibe Yutaka  <gniibe@fsij.org>
+
+	* polarssl/library/bignum.c (mpi_cmp_abs_limbs): New.
+	(mpi_montmul): Change the signature and use the upper half of T.
+	(mpi_montred): Likewise.
+	(mpi_exp_mod): Use improved mpi_montmul and mpi_montred.
+
 2013-12-13  Niibe Yutaka  <gniibe@fsij.org>
 
 	* polarssl/library/bignum.c (mpi_exp_mod): Initialize lower
