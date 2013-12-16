@@ -810,7 +810,7 @@ cleanup:
 /*
  * Helper for mpi substraction
  */
-static t_uint mpi_sub_hlp( size_t n, t_uint *s, t_uint *d )
+static t_uint mpi_sub_hlp( size_t n, const t_uint *s, t_uint *d )
 {
     size_t i;
     t_uint c, z;
@@ -981,7 +981,7 @@ static
  */
 __attribute__ ((noinline))
 #endif
-t_uint mpi_mul_hlp( size_t i, t_uint *s, t_uint *d, t_uint b )
+t_uint mpi_mul_hlp( size_t i, const t_uint *s, t_uint *d, t_uint b )
 {
     t_uint c = 0, t = 0;
 

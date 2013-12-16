@@ -1,9 +1,15 @@
 2013-12-16  Niibe Yutaka  <gniibe@fsij.org>
 
+	* polarssl/include/polarssl/bn_mul.h (MULADDC_1024_CORE)
+	(MULADDC_1024_LOOP, MULADDC_HUIT, MULADDC_INIT, MULADDC_CORE)
+	(MULADDC_STOP) [__arm__]: The value of input B won't change.
+	More acculate specification for asm statement.
+
 	* polarssl/library/bignum.c (mpi_cmp_abs_limbs): New.
 	(mpi_montmul): Change the signature and use the upper half of T.
 	(mpi_montred): Likewise.
 	(mpi_exp_mod): Use improved mpi_montmul and mpi_montred.
+	(mpi_sub_hlp, mpi_mul_hlp): Add const qualifier for S.
 
 2013-12-13  Niibe Yutaka  <gniibe@fsij.org>
 
