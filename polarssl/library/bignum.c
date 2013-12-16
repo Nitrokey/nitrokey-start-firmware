@@ -1045,7 +1045,7 @@ t_uint mpi_mul_hlp( size_t i, const t_uint *s, t_uint *d, t_uint b )
 
     t++;
 
-    *d += c; c = ( *d < c ); d++;
+    *d += c; c = ( *d < c );
     return c;
 }
 
@@ -1463,7 +1463,7 @@ int mpi_exp_mod( mpi *X, const mpi *A, const mpi *E, const mpi *N, mpi *_RR )
     size_t i, j, nblimbs;
     size_t bufsize, nbits;
     t_uint ei, mm, state;
-    mpi RR, RR0, T, W[ 2 << POLARSSL_MPI_WINDOW_SIZE ], Apos;
+    mpi RR, T, W[ 2 << POLARSSL_MPI_WINDOW_SIZE ], Apos;
     int neg;
 
     if( mpi_cmp_int( N, 0 ) < 0 || ( N->p[0] & 1 ) == 0 )
@@ -1476,7 +1476,7 @@ int mpi_exp_mod( mpi *X, const mpi *A, const mpi *E, const mpi *N, mpi *_RR )
      * Init temps and window size
      */
     mpi_montg_init( &mm, N );
-    mpi_init( &RR ); mpi_init( &RR0 ); mpi_init( &T );
+    mpi_init( &RR ); mpi_init( &T );
     memset( W, 0, sizeof( W ) );
 
     i = mpi_msb( E );
@@ -1488,10 +1488,9 @@ int mpi_exp_mod( mpi *X, const mpi *A, const mpi *E, const mpi *N, mpi *_RR )
         wsize = POLARSSL_MPI_WINDOW_SIZE;
 
     j = N->n;
-    MPI_CHK( mpi_grow( X, j ) );
-    MPI_CHK( mpi_grow( &W[1],  j ) );
-    MPI_CHK( mpi_grow( &T, j * 2 ) );
-    memset( T.p, 0, j * ciL );  /* Clear the lower half of T.  */
+    MPI_CHK( mpi_grow( X, N->n ) );
+    MPI_CHK( mpi_grow( &W[1],  N->n ) );
+    MPI_CHK( mpi_grow( &T, N->n * 2 ) ); /* T = 0 here.  */
 
     /*
      * Compensate for negative A (and correct at the end)
@@ -1511,14 +1510,14 @@ int mpi_exp_mod( mpi *X, const mpi *A, const mpi *E, const mpi *N, mpi *_RR )
      */
     if( _RR == NULL || _RR->p == NULL )
     {
-        MPI_CHK( mpi_lset( &RR0, 1 ) );
-        MPI_CHK( mpi_shift_l( &RR0, N->n * 2 * biL ) );
-        MPI_CHK( mpi_mod_mpi( &RR0, &RR0, N ) );
-        MPI_CHK( mpi_copy( &RR, &RR0 ) ); /* Shrink to size of N.  */
-        MPI_CHK( mpi_grow( &RR, N->n ) );
+        /* T->p is all zero here. */
+        mpi_sub_hlp( N->n, N->p, T.p + N->n);
+        MPI_CHK( mpi_mod_mpi( &RR, &T, N ) );
 
         if( _RR != NULL )
             memcpy( _RR, &RR, sizeof( mpi ) );
+
+        /* The condition of "the lower half of T is all zero" is kept. */
     }
     else
         memcpy( &RR, _RR, sizeof( mpi ) );
@@ -1663,7 +1662,7 @@ cleanup:
     for( i = (one << (wsize - 1)); i < (one << wsize); i++ )
         mpi_free( &W[i] );
 
-    mpi_free( &RR0 ); mpi_free( &W[1] ); mpi_free( &T ); mpi_free( &Apos );
+    mpi_free( &W[1] ); mpi_free( &T ); mpi_free( &Apos );
 
     if( _RR == NULL )
         mpi_free( &RR );
