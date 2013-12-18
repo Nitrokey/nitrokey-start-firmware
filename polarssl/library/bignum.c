@@ -1050,6 +1050,70 @@ t_uint mpi_mul_hlp( size_t i, const t_uint *s, t_uint *d, t_uint b )
 }
 
 /*
+ * Help function of square: X = A * A  (HAC 14.16)
+ * A is stored at the upper half of X.
+ * Note that there was an error in the 1st printing of HAC.
+ * Still, 5th printing has an error at step 2.3.
+ *   The step 2.3 should be w[i+t] += c and handle overflow to w[i+t+1].
+ *
+ * N is the size (the number of limbs) of A.
+ * D is a pointer to the limb of X.
+ */
+static void
+mpi_sqr_hlp (size_t n, t_uint *d)
+{
+  size_t i;
+  t_uint c = 0;
+
+  for (i = 0; i < n; i++)
+    {
+      t_uint *wij = &d[i*2];
+      t_uint *xj = &d[i+n];
+      t_uint u, x_i;
+
+      x_i = *xj;
+      *xj++ = c;
+      asm ("mov    r8, #0\n\t"
+	   /* R8 := 0, the constant ZERO from here.  */
+	   "ldr    r9, [%[wij]]\n\t"          /* R9 := w_i_i; */
+	   "umull  r11, r12, %[x_i], %[x_i]\n\t"
+	   "adds   r9, r9, r11\n\t"
+	   "adc    %[u], r8, r12\n\t"
+	   "str    r9, [%[wij]], #4\n\t"
+	   "mov    %[c], r8\n\t"
+	   /* (C,U,R9) := w_i_i + x_i*x_i; w_i_i := R9; */
+	   "cmp    %[xj], %[xj_max]\n\t"
+	   "bcs    1f\n"
+   "0:\n\t"
+	   /* (C,U,R9) := (C,U) + w_i_j + 2*x_i*x_j; */
+	   "ldr    r9, [%[wij]]\n\t"
+           "adds   r9, r9, %[u]\n\t"
+           "adc    %[u], %[c], r8\n\t"
+	   "ldr    r10, [%[xj]], #4\n\t"
+	   "umull  r11, r12, %[x_i], r10\n\t"
+           "adds   r9, r9, r11\n\t"
+           "adcs   %[u], %[u], r12\n\t"
+	   "adc    %[c], r8, r8\n\t"
+           "adds   r9, r9, r11\n\t"
+           "adcs   %[u], %[u], r12\n\t"
+	   "adc    %[c], %[c], r8\n\t"
+	   "str    r9, [%[wij]], #4\n\t"
+	   /**/
+	   "cmp    %[xj], %[xj_max]\n\t"
+	   "bcc    0b\n"
+   "1:\n\t"
+	   "ldr    r9, [%[wij]]\n\t"
+           "adds   %[u], %[u], r9\n\t"
+	   "adc    %[c], %[c], r8\n\t"
+	   "str    %[u], [%[wij]]"
+	   : [c] "=&r" (c), [u] "=&r" (u), [wij] "=r" (wij), [xj] "=r" (xj)
+	   : [x_i] "r" (x_i), [xj_max] "r" (&d[n*2]),
+	     "[wij]" (wij), "[xj]" (xj)
+	   : "r8", "r9", "r10", "r11", "r12", "memory", "cc" );
+    }
+}
+
+/*
  * Baseline multiplication: X = A * B  (HAC 14.12)
  */
 int mpi_mul_mpi( mpi *X, const mpi *A, const mpi *B )
@@ -1453,6 +1517,43 @@ static void mpi_montred( const mpi *N, t_uint mm, mpi *T )
         mpi_sub_hlp( n, T->p, T->p);
 }
 
+static void mpi_montsqr( mpi *X, const mpi *N, t_uint mm, mpi *T )
+{
+#if 1
+    size_t n;
+    t_uint c = 0, *d;
+
+    d = T->p;
+    n = N->n;
+    mpi_sqr_hlp (n, d);
+
+    while (d < T->p + n)
+    {
+        t_uint u, *d1;
+
+        u = *d * mm;
+	c = mpi_mul_hlp( n, N->p, d, u );
+	d1 = d + n + 1;
+        while (d1 < T->p + n*2)
+          {
+            *d1 += c; c = ( *d1 < c );
+	    d1++;
+          }
+
+        d++;
+    }
+
+    /* prevent timing attacks */
+    if( ((mpi_cmp_abs_limbs ( n, d, N->p ) >= 0) | c) )
+        mpi_sub_hlp( n, N->p, d );
+    else
+        mpi_sub_hlp( n, T->p, T->p);
+#else
+    memcpy ( X->p, T->p + N->n, N->n * ciL);
+    mpi_montmul( X, N, mm, T );
+#endif
+}
+
 /*
  * Sliding-window exponentiation: X = A^E mod N  (HAC 14.85)
  */
@@ -1542,10 +1643,8 @@ int mpi_exp_mod( mpi *X, const mpi *A, const mpi *E, const mpi *N, mpi *_RR )
 
         MPI_CHK( mpi_grow( &W[j], N->n  ) );
 
-        for( i = 0; i < wsize - 1; i++ ) {
-            memcpy ( W[j].p, T.p + N->n, N->n * ciL);
-            mpi_montmul( &W[j], N, mm, &T );
-        }
+        for( i = 0; i < wsize - 1; i++ )
+	    mpi_montsqr( X, N, mm, &T );
         memcpy ( W[j].p, T.p + N->n, N->n * ciL);
 
         /*
@@ -1597,8 +1696,7 @@ int mpi_exp_mod( mpi *X, const mpi *A, const mpi *E, const mpi *N, mpi *_RR )
             /*
              * out of window, square X
              */
-            memcpy ( X->p, T.p + N->n, N->n * ciL);
-            mpi_montmul( X, N, mm, &T );
+	    mpi_montsqr( X, N, mm, &T );
             continue;
         }
 
@@ -1615,10 +1713,8 @@ int mpi_exp_mod( mpi *X, const mpi *A, const mpi *E, const mpi *N, mpi *_RR )
             /*
              * X = X^wsize R^-1 mod N
              */
-            for( i = 0; i < wsize; i++ ) {
-                memcpy ( X->p, T.p + N->n, N->n * ciL);
-                mpi_montmul( X, N, mm, &T );
-            }
+            for( i = 0; i < wsize; i++ )
+	        mpi_montsqr( X, N, mm, &T );
 
             /*
              * X = X * W[wbits] R^-1 mod N
@@ -1636,8 +1732,7 @@ int mpi_exp_mod( mpi *X, const mpi *A, const mpi *E, const mpi *N, mpi *_RR )
      */
     for( i = 0; i < nbits; i++ )
     {
-        memcpy ( X->p, T.p + N->n, N->n * ciL);
-        mpi_montmul( X, N, mm, &T );
+        mpi_montsqr( X, N, mm, &T );
 
         wbits <<= 1;
 
