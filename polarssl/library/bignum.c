@@ -1453,6 +1453,10 @@ static void mpi_montred( const mpi *N, t_uint mm, mpi *T )
         mpi_sub_hlp( n, T->p, T->p);
 }
 
+/*
+ * Montgomery square: A = A * A * R^-1 mod N
+ * A is placed at the upper half of T.
+ */
 static void mpi_montsqr( const mpi *N, t_uint mm, mpi *T )
 {
   size_t n, i;
@@ -1473,10 +1477,10 @@ static void mpi_montsqr( const mpi *N, t_uint mm, mpi *T )
            /* (C,U,R9) := w_i_i + x_i*x_i; w_i_i := R9; */
            "ldr    r9, [%[wij]]\n\t"          /* R9 := w_i_i; */
            "umull  r11, r12, %[x_i], %[x_i]\n\t"
+           "mov    %[c], r8\n\t"
            "adds   r9, r9, r11\n\t"
            "adc    %[u], r8, r12\n\t"
            "str    r9, [%[wij]], #4\n\t"
-           "mov    %[c], r8\n\t"
            /**/
            "subs   r9, %[xj_max], %[xj]\n\t"
            "bls    1f\n\t"
@@ -1484,28 +1488,28 @@ static void mpi_montsqr( const mpi *N, t_uint mm, mpi *T )
            "tst    r9, #4\n\t"
            "beq    0f\n\t"
            /* (C,U,R9) := (C,U) + w_i_j + 2*x_i*x_j; */
+           "ldr    r10, [%[xj]], #4\n\t"
            "ldr    r9, [%[wij]]\n\t"
+           "umull  r11, r12, %[x_i], r10\n\t"
            "adds   r9, r9, %[u]\n\t"
            "adc    %[u], %[c], r8\n\t"
-           "ldr    r10, [%[xj]], #4\n\t"
-           "umull  r11, r12, %[x_i], r10\n\t"
            "adds   r9, r9, r11\n\t"
            "adcs   %[u], %[u], r12\n\t"
            "adc    %[c], r8, r8\n\t"
            "adds   r9, r9, r11\n\t"
            "adcs   %[u], %[u], r12\n\t"
            "adc    %[c], %[c], r8\n\t"
-           "str    r9, [%[wij]], #4\n"
+           "str    r9, [%[wij]], #4\n\t"
            /**/
            "subs   r9, %[xj_max], %[xj]\n\t"
-           "bls    1f\n\t"
+           "bls    1f\n"
    "0:\n\t"
            "ldmia  %[xj]!, { r6, r7 }\n\t"
            "ldmia  %[wij], { r9, r10 }\n\t"
            /* (C,U,R9) := (C,U) + w_i_j + 2*x_i*x_j; */
+           "umull  r11, r12, %[x_i], r6\n\t"
            "adds   r9, r9, %[u]\n\t"
            "adc    %[u], %[c], r8\n\t"
-           "umull  r11, r12, %[x_i], r6\n\t"
            "adds   r9, r9, r11\n\t"
            "adcs   %[u], %[u], r12\n\t"
            "adc    %[c], r8, r8\n\t"
@@ -1513,9 +1517,9 @@ static void mpi_montsqr( const mpi *N, t_uint mm, mpi *T )
            "adcs   %[u], %[u], r12\n\t"
            "adc    %[c], %[c], r8\n\t"
            /* (C,U,R10) := (C,U) + w_i_j + 2*x_i*x_j; */
+           "umull  r11, r12, %[x_i], r7\n\t"
            "adds   r10, r10, %[u]\n\t"
            "adc    %[u], %[c], r8\n\t"
-           "umull  r11, r12, %[x_i], r7\n\t"
            "adds   r10, r10, r11\n\t"
            "adcs   %[u], %[u], r12\n\t"
            "adc    %[c], r8, r8\n\t"
@@ -1523,7 +1527,7 @@ static void mpi_montsqr( const mpi *N, t_uint mm, mpi *T )
            "adcs   %[u], %[u], r12\n\t"
            "adc    %[c], %[c], r8\n\t"
            /**/
-           "stmia  %[wij]!, { r9, r10 } \n\t"
+           "stmia  %[wij]!, { r9, r10 }\n\t"
            /**/
            "cmp    %[xj], %[xj_max]\n\t"
            "bcc    0b\n"
