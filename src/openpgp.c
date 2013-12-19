@@ -422,7 +422,14 @@ cmd_change_password (void)
 }
 
 
-#define S2KCOUNT 65535
+#ifndef S2KCOUNT
+/*
+ * OpenPGP uses the value 65535 for the key on disk.
+ * Given the condition that the access to flash ROM is harder than disk,
+ * that is, the threat model is different, we chose the default value 192.
+ */
+#define S2KCOUNT 192
+#endif
 void
 s2k (const unsigned char *salt, size_t slen,
      const unsigned char *input, size_t ilen, unsigned char output[32])

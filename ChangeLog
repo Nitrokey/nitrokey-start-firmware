@@ -1,5 +1,10 @@
 2013-12-19  Niibe Yutaka  <gniibe@fsij.org>
 
+	* src/openpgp.c (S2KCOUNT): It's now 192, as the threat model
+	of Gnuk Token is different.
+
+2013-12-19  Niibe Yutaka  <gniibe@fsij.org>
+
 	* polarssl/library/bignum.c (mpi_montsqr): New.
 	(mpi_exp_mod): Use mpi_montsqr.
 
