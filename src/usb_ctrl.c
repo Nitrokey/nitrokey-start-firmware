@@ -133,9 +133,11 @@ uint32_t bDeviceState = UNCONNECTED; /* USB device status */
 #define HID_LED_STATUS_CARDCHANGE 0x04
 #endif
 
+#ifdef HID_CARD_CHANGE_SUPPORT
 static uint8_t hid_idle_rate;	/* in 4ms */
 static uint8_t hid_report_saved;
 static uint16_t hid_report;
+#endif
 
 static void
 gnuk_setup_endpoints_for_interface (uint16_t interface, int stop)
@@ -155,6 +157,7 @@ gnuk_setup_endpoints_for_interface (uint16_t interface, int stop)
 	  usb_lld_stall_tx (ENDP2);
 	}
     }
+#ifdef HID_CARD_CHANGE_SUPPORT
   else if (interface == 1)
     {
       if (!stop)
@@ -162,6 +165,7 @@ gnuk_setup_endpoints_for_interface (uint16_t interface, int stop)
       else
 	usb_lld_stall_tx (ENDP7);
     }
+#endif
 #ifdef ENABLE_VIRTUAL_COM_PORT
   else if (interface == 2)
     {
@@ -339,6 +343,7 @@ usb_cb_setup (uint8_t req, uint8_t req_no,
 		return USB_UNSUPPORT;
 	    }
 	}
+#ifdef HID_CARD_CHANGE_SUPPORT
       else if (index == 1)
 	{
 	  switch (req_no)
@@ -370,6 +375,7 @@ usb_cb_setup (uint8_t req, uint8_t req_no,
 	      return USB_UNSUPPORT;
 	    }
 	}
+#endif
 #ifdef ENABLE_VIRTUAL_COM_PORT
       else if (index == 2)
 	return vcom_port_data_setup (req, req_no, value);
@@ -415,6 +421,7 @@ usb_cb_ctrl_write_finish (uint8_t req, uint8_t req_no, uint16_t value,
 	  *icc_state_p = ICC_STATE_EXEC_REQUESTED;
 	}
     }
+#ifdef HID_CARD_CHANGE_SUPPORT
   else if (type_rcp == (CLASS_REQUEST | INTERFACE_RECIPIENT))
     {
       if (index == 1 && req_no == USB_HID_REQ_SET_REPORT)
@@ -425,6 +432,7 @@ usb_cb_ctrl_write_finish (uint8_t req, uint8_t req_no, uint16_t value,
 	  hid_report_saved = hid_report;
 	}
     }
+#endif
 }
 
 

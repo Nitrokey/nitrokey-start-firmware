@@ -30,6 +30,7 @@ pinpad=no
 certdo=no
 keygen=no
 sys1_compat=yes
+hid_card_change=no
 
 # Process each option
 for option; do
@@ -67,6 +68,10 @@ for option; do
     sys1_compat = yes ;;
   --disable-sys1-compat)
     sys1_compat = no ;;
+  --enable-hid-card-change)
+    hid_card_change = yes ;;
+  --disable-hid-card-change)
+    hid_card_change = no ;;
   --with-dfu)
     with_dfu=yes ;;
   --without-dfu)
@@ -217,6 +222,15 @@ else
   echo "Key generation on device is NOT supported"
 fi
 
+# --enable-hid-card-change option
+if test "$hid_card_change" = "yes"; then
+  HID_CARD_CHANGE_DEFINE="#define HID_CARD_CHANGE_SUPPORT 1"
+  echo "Card insert/removal by HID device is supported"
+else
+  HID_CARD_CHANGE_DEFINE="#undef HID_CARD_CHANGE_SUPPORT"
+  echo "Card insert/removal by HID device is NOT supported"
+fi
+
 if test -d ../.git; then
   REVISION=`git describe --dirty="-modified"` 
 else
@@ -323,6 +337,7 @@ sed -e "s/@DEBUG_DEFINE@/$DEBUG_DEFINE/" \
     -e "s/@PINPAD_DEFINE@/$PINPAD_DEFINE/" \
     -e "s/@PINPAD_MORE_DEFINE@/$PINPAD_MORE_DEFINE/" \
     -e "s/@CERTDO_DEFINE@/$CERTDO_DEFINE/" \
+    -e "s/@HID_CARD_CHANGE_DEFINE@/$HID_CARD_CHANGE_DEFINE/" \
     -e "s/@SERIALNO_STR_LEN@/$SERIALNO_STR_LEN_DEFINE/" \
 	< config.h.in > config.h
 exit 0

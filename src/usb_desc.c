@@ -13,6 +13,7 @@
 #include "usb-cdc.h"
 
 
+#ifdef HID_CARD_CHANGE_SUPPORT
 /* HID report descriptor.  */
 #define HID_REPORT_DESC_SIZE (sizeof (hid_report_desc))
 
@@ -50,6 +51,7 @@ static const uint8_t hid_report_desc[] = {
   0x81, 0x00,	    /*   INPUT (Data,Ary,Abs); Key arrays (1 bytes) */
   0xc0		    /* END_COLLECTION */
 };
+#endif
 
 #define USB_ICC_INTERFACE_CLASS 0x0B
 #define USB_ICC_INTERFACE_SUBCLASS 0x00
@@ -75,14 +77,19 @@ static const uint8_t gnukDeviceDescriptor[] = {
 #define ICC_TOTAL_LENGTH (9+9+54+7+7+7)
 #define ICC_NUM_INTERFACES 1
 
+#ifdef HID_CARD_CHANGE_SUPPORT
 #define HID_TOTAL_LENGTH (9+9+7)
 #define HID_NUM_INTERFACES 1
+#else
+#define HID_TOTAL_LENGTH   0
+#define HID_NUM_INTERFACES 0
+#endif
 
 #ifdef ENABLE_VIRTUAL_COM_PORT
 #define VCOM_TOTAL_LENGTH (9+5+5+4+5+7+9+7+7)
 #define VCOM_NUM_INTERFACES 2
 #else
-#define VCOM_TOTAL_LENGTH 0
+#define VCOM_TOTAL_LENGTH   0
 #define VCOM_NUM_INTERFACES 0
 #endif
 
@@ -90,7 +97,7 @@ static const uint8_t gnukDeviceDescriptor[] = {
 #define MSC_TOTAL_LENGTH (9+7+7)
 #define MSC_NUM_INTERFACES 1
 #else
-#define MSC_TOTAL_LENGTH 0
+#define MSC_TOTAL_LENGTH   0
 #define MSC_NUM_INTERFACES 0
 #endif
 
@@ -196,6 +203,7 @@ static const uint8_t gnukConfigDescriptor[] = {
   4, 0x00,			/* wMaxPacketSize: */
   0xFF,				/* bInterval (255ms) */
 
+#ifdef HID_CARD_CHANGE_SUPPORT
   /* Interface Descriptor */
   9,			         /* bLength: Interface Descriptor size */
   USB_INTERFACE_DESCRIPTOR_TYPE, /* bDescriptorType: Interface */
@@ -222,6 +230,7 @@ static const uint8_t gnukConfigDescriptor[] = {
   0x03,				/* bmAttributes: Interrupt */
   0x02, 0x00,			/* wMaxPacketSize: 2 */
   0x20,				/* bInterval (32ms) */
+#endif
 
 #ifdef ENABLE_VIRTUAL_COM_PORT
   /* Interface Descriptor */
@@ -385,6 +394,7 @@ usb_cb_get_descriptor (uint8_t rcp, uint8_t desc_type, uint8_t desc_index,
     }
   else if (rcp == INTERFACE_RECIPIENT)
     {
+#ifdef HID_CARD_CHANGE_SUPPORT
       if (index == 1)
 	{
 	  if (desc_type == USB_DT_HID)
@@ -399,7 +409,11 @@ usb_cb_get_descriptor (uint8_t rcp, uint8_t desc_type, uint8_t desc_index,
 	      return USB_SUCCESS;
 	    }
 	}
-      else if (desc_type == STRING_DESCRIPTOR)
+      else
+#else
+      (void)index;
+#endif
+      if (desc_type == STRING_DESCRIPTOR)
 	{
 	  if (desc_index < NUM_STRING_DESC)
 	    {

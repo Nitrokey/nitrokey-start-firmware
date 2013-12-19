@@ -1,5 +1,15 @@
 2013-12-19  Niibe Yutaka  <gniibe@fsij.org>
 
+	* src/configure (--enable-hid-card-change): New (experimental).
+	* src/config.h.in (HID_CARD_CHANGE_DEFINE): New.
+	* src/usb_ctrl.c (gnuk_setup_endpoints_for_interface)
+	(usb_cb_setup, usb_cb_ctrl_write_finish): Conditionalize
+	HID_CARD_CHANGE_SUPPORT.
+	* src/usb_desc.c (gnukDeviceDescriptor, usb_cb_get_descriptor):
+	Likewise.
+
+2013-12-19  Niibe Yutaka  <gniibe@fsij.org>
+
 	* src/openpgp.c (S2KCOUNT): It's now 192, as the threat model
 	of Gnuk Token is different.
 
