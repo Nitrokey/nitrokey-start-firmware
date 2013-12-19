@@ -1,3 +1,13 @@
+2013-12-19  Niibe Yutaka  <gniibe@fsij.org>
+
+	* polarssl/library/bignum.c (mpi_montsqr): New.
+	(mpi_exp_mod): Use mpi_montsqr.
+
+	Note that this change introduces a vulnerability by the
+	Yarom/Falkner flush+reload cache side-channel attack.  When this
+	code is used on general purpose computer where we can observe
+	which code is executed (sqr or mul), it's not safe.
+
 2013-12-16  Niibe Yutaka  <gniibe@fsij.org>
 
 	* polarssl/include/polarssl/bn_mul.h (MULADDC_1024_CORE)
