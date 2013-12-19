@@ -1478,9 +1478,11 @@ static void mpi_montsqr( const mpi *N, t_uint mm, mpi *T )
            "str    r9, [%[wij]], #4\n\t"
            "mov    %[c], r8\n\t"
            /**/
-           "cmp    %[xj], %[xj_max]\n\t"
-           "bcs    1f\n"
-   "0:\n\t"
+           "subs   r9, %[xj_max], %[xj]\n\t"
+           "bls    1f\n\t"
+           /**/
+           "tst    r9, #4\n\t"
+           "beq    0f\n\t"
            /* (C,U,R9) := (C,U) + w_i_j + 2*x_i*x_j; */
            "ldr    r9, [%[wij]]\n\t"
            "adds   r9, r9, %[u]\n\t"
@@ -1495,6 +1497,34 @@ static void mpi_montsqr( const mpi *N, t_uint mm, mpi *T )
            "adc    %[c], %[c], r8\n\t"
            "str    r9, [%[wij]], #4\n"
            /**/
+           "subs   r9, %[xj_max], %[xj]\n\t"
+           "bls    1f\n\t"
+   "0:\n\t"
+           "ldmia  %[xj]!, { r6, r7 }\n\t"
+           "ldmia  %[wij], { r9, r10 }\n\t"
+           /* (C,U,R9) := (C,U) + w_i_j + 2*x_i*x_j; */
+           "adds   r9, r9, %[u]\n\t"
+           "adc    %[u], %[c], r8\n\t"
+           "umull  r11, r12, %[x_i], r6\n\t"
+           "adds   r9, r9, r11\n\t"
+           "adcs   %[u], %[u], r12\n\t"
+           "adc    %[c], r8, r8\n\t"
+           "adds   r9, r9, r11\n\t"
+           "adcs   %[u], %[u], r12\n\t"
+           "adc    %[c], %[c], r8\n\t"
+           /* (C,U,R10) := (C,U) + w_i_j + 2*x_i*x_j; */
+           "adds   r10, r10, %[u]\n\t"
+           "adc    %[u], %[c], r8\n\t"
+           "umull  r11, r12, %[x_i], r7\n\t"
+           "adds   r10, r10, r11\n\t"
+           "adcs   %[u], %[u], r12\n\t"
+           "adc    %[c], r8, r8\n\t"
+           "adds   r10, r10, r11\n\t"
+           "adcs   %[u], %[u], r12\n\t"
+           "adc    %[c], %[c], r8\n\t"
+           /**/
+           "stmia  %[wij]!, { r9, r10 } \n\t"
+           /**/
            "cmp    %[xj], %[xj_max]\n\t"
            "bcc    0b\n"
    "1:\n\t"
@@ -1505,7 +1535,7 @@ static void mpi_montsqr( const mpi *N, t_uint mm, mpi *T )
            : [c] "=&r" (c), [u] "=&r" (u), [wij] "=r" (wij), [xj] "=r" (xj)
            : [x_i] "r" (x_i), [xj_max] "r" (&d[n*2]),
              "[wij]" (wij), "[xj]" (xj)
-           : "r8", "r9", "r10", "r11", "r12", "memory", "cc" );
+           : "r6", "r7", "r8", "r9", "r10", "r11", "r12", "memory", "cc" );
 
         u = d[i] * mm;
         c += mpi_mul_hlp( n, N->p, &d[i], u );
