@@ -1476,8 +1476,8 @@ static void mpi_montsqr( const mpi *N, t_uint mm, mpi *T )
       asm ("mov    r8, #0\n\t"  /* R8 := 0, the constant ZERO from here.  */
            /* (C,U,R9) := w_i_i + x_i*x_i; w_i_i := R9; */
            "ldr    r9, [%[wij]]\n\t"          /* R9 := w_i_i; */
-           "umull  r11, r12, %[x_i], %[x_i]\n\t"
            "mov    %[c], r8\n\t"
+           "umull  r11, r12, %[x_i], %[x_i]\n\t"
            "adds   r9, r9, r11\n\t"
            "adc    %[u], r8, r12\n\t"
            "str    r9, [%[wij]], #4\n\t"
@@ -1490,9 +1490,9 @@ static void mpi_montsqr( const mpi *N, t_uint mm, mpi *T )
            /* (C,U,R9) := (C,U) + w_i_j + 2*x_i*x_j; */
            "ldr    r10, [%[xj]], #4\n\t"
            "ldr    r9, [%[wij]]\n\t"
-           "umull  r11, r12, %[x_i], r10\n\t"
            "adds   r9, r9, %[u]\n\t"
            "adc    %[u], %[c], r8\n\t"
+           "umull  r11, r12, %[x_i], r10\n\t"
            "adds   r9, r9, r11\n\t"
            "adcs   %[u], %[u], r12\n\t"
            "adc    %[c], r8, r8\n\t"
@@ -1517,9 +1517,9 @@ static void mpi_montsqr( const mpi *N, t_uint mm, mpi *T )
            "adcs   %[u], %[u], r12\n\t"
            "adc    %[c], %[c], r8\n\t"
            /* (C,U,R10) := (C,U) + w_i_j + 2*x_i*x_j; */
-           "umull  r11, r12, %[x_i], r7\n\t"
            "adds   r10, r10, %[u]\n\t"
            "adc    %[u], %[c], r8\n\t"
+           "umull  r11, r12, %[x_i], r7\n\t"
            "adds   r10, r10, r11\n\t"
            "adcs   %[u], %[u], r12\n\t"
            "adc    %[c], r8, r8\n\t"

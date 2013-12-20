@@ -18,6 +18,15 @@ I create ``.gnupg/gpg.conf`` file with the following content. ::
 
   default-key 0x4ca7babe
 
+In addition to the ``use-agent`` option, set preferences on algorithms, and specify my default key.
+
+The ``use-agent`` option is for GnuPG 1.4.x and it means using gpg-agent if available.
+If no option, GnuPG 1.4.x directly connects to Gnuk Token by itself, instead of through scdaemon.  When GnuPG 1.4.x tries to access Gnuk Token and scdaemon is running, there are conflicts.
+
+We recommend to specify the ``use-agent`` option for GnuPG 1.4.x to access Gnuk Token through gpg-agent and scdaemon.
+
+For GnuPG 2.0.x, gpg-agent is always used, so there is no need to specify the ``use-agent`` option, but having this option is no harm, anyway.
+
 
 Let gpg-agent manage SSH key
 ============================

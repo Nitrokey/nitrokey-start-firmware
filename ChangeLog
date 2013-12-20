@@ -2,6 +2,7 @@
 
 	* polarssl/include/polarssl/bn_mul.h (MULADDC_1024_CORE)
 	(MULADDC_CORE): Reorder instructions for more speed up.
+	* polarssl/library/bignum.c (mpi_montsqr): Likewise.
 
 2013-12-19  Niibe Yutaka  <gniibe@fsij.org>
 

@@ -1,10 +1,3 @@
-We migrate from ChibiOS/RT to Chopstix.  You need:
-
-    Edit .git/config to remove chibios reference
-    git rm --cached chibios
-
-
-
 Gnuk - An Implementation of USB Cryptographic Token for GnuPG
 
 							  Version 1.1.0
@@ -58,19 +51,18 @@ Q3: What's your recommendation for target board?
 A3: Orthodox choice is Olimex STM32-H103.
     If you have skill of electronics and like DIY, STM32 part of STM8S
     Discovery Kit might be the best choice.
-    FST-01 (Flying Stone Tiny 01) will be soon available for sale,
-    and it will be the best choice, hopefully.
+    FST-01 (Flying Stone Tiny 01) is available for sale, and it is a
+    kind of the best choice, hopefully.
 
 Q4: What's version of GnuPG are you using?
-A4: In Debian GNU/Linux system, I use gnupg 1.4.11-3 and gnupg-agent
-    2.0.18-2.  With older versions, you can only sign with SHA1.
-    See: http://www.fsij.org/gnuk/gnupg2-fixes-needed
+A4: In Debian GNU/Linux system, I use gnupg 1.4.12-7 and gnupg-agent
+    2.0.20-1.
 
 Q5: What's version of pcscd and libccid are you using?
-A5: In Debian GNU/Linux system, I use pcscd 1.5.5-4 and libccid 1.3.11-2,
-    which is in squeeze.  Note that you need to edit /etc/libccid_Info.plist
-    when using libccid (< 1.4.1).
-    Note that pcscd and libccid are optional, you can use Gnuk without them.
+A5: I don't use them, pcscd and libccid are optional, you can use Gnuk
+    without them.
+    I tested pcscd 1.5.5-4 and libccid 1.3.11-2 which were in Debian
+    squeeze.
 
 Q6: What kinds of hardware is required for development?
 A6: You need a target board plus a JTAG/SWD debugger.  If you just
@@ -89,10 +81,8 @@ A8: STM8S Discovery Kit costs 750 JPY (< $10 USD) only.  You can build
 Q9: I got an error like "gpg: selecting openpgp failed: ec=6.108", what's up?
 
 A9: GnuPG's SCDaemon has problems for handling insertion/removal of
-    card/reader (problems are fixed in trunk, and backported to 2.0
-    branch, it will be 2.0.20).  When your newly inserted token is not
-    found by GnuPG, try killing scdaemon and let it to be invoked
-    again.  I do:
+    card/reader.  When your newly inserted token is not found by
+    GnuPG, try killing scdaemon and let it to be invoked again.  I do:
 
 	 $ gpg-connect-agent "SCD KILLSCD" "SCD BYE" /bye
 
@@ -156,10 +146,6 @@ Original features of Gnuk, tested lightly:
 
 It is known not-working well:
 
-	* For some old versions of kernel and libccid, --enable-debug
-	  can't work well.  Please make sure to disable DEBUG option
-	  if it doesn't work well.
-
         * It is known that the combination of libccid 1.4.1 (or newer)
 	  with libusb 1.0.8 (or older) has a minor problem.  It is
 	  rare but it is possible for USB communication to be failed,
@@ -187,7 +173,7 @@ just an experiment.  Note that hardware needed for this experiment is
 only a consumer IR receive module which is as cheap as 50 JPY.
 
 Note that you need pinpad support for GnuPG to use PIN-pad enabled
-Gnuk.  The pinpad support for GnuPG is only supported in version 2.
+Gnuk.  The pinpad support for GnuPG is only available in version 2.
 
 
 Souce code
@@ -212,10 +198,9 @@ Please read relevant licenses for external source code as well.
 
 The author(s) of Gnuk expect users of Gnuk will be able to access the
 source code of Gnuk, so that users can study the code and can modify
-if needed.  This doesn't mean person who has a USB Token by Gnuk
-should be able to access everything on the Token, regardless of its
-protections.  Private keys, and other information should be protected
-properly.
+if needed.  This doesn't mean person who has a Gnuk Token should be
+able to access everything on the Token, regardless of its protections.
+Private keys, and other information should be protected properly.
 
 
 External source code
@@ -256,10 +241,11 @@ Gnuk is distributed with external source code.
 
   The function mpi_mul_hlp in library/bignum.c is modified for more
   optimization for ARM Cortex-M3.  Functions mpi_montred, mpi_sub_hlp,
-  mpi_sub_abs, mpi_mul_mpi, mpi_montmul, and mpi_exp are modified
+  mpi_sub_abs, mpi_mul_mpi, mpi_montmul, and mpi_exp_mod are modified
   to avoid side channel attacks.  Note that we don't use RSA-blinding
   technique for Gnuk.  Function mpi_gen_prime and mpi_is_prime are
-  modified to use Fouque-Tibouchi method.
+  modified to use Fouque-Tibouchi method.  Function mpi_exp_mod is
+  modified to use new function mpi_montsqr for speed up.
 
   The file library/aes.c is modified so that some constants can
   go to .sys section.
@@ -325,12 +311,6 @@ Host Requirements
 For GNU/Linux, PC/SC service is an option, you can use GnuPG's
 internal CCID driver instead.  If you chose using PC/SC service,
 libccid version >= 1.3.11 is recommended for GNU/Linux.
-
-I think that it should not be requirment but the kernel version of my use is:
-Linux version 2.6.32-5-686 (Debian 2.6.32-18) (ben@decadent.org.uk) (gcc version 4.3.5 (Debian 4.3.5-2) ) #1 SMP Sat Jul 24 02:27:10 UTC 2010
-
-Linux 2.6.30 is known *NOT* working well with DEBUG option.
-Linux 2.6.24 is known working well with DEBUG option.
 
 
 How to compile
@@ -523,42 +503,6 @@ virtual COM port by:
 and you will see debug output of Gnuk.
 
 
-Libccid fix needed
-------------------
-
-For libccid (< 1.4.1), we need following change:
-
---- /etc/libccid_Info.plist.dpkg-dist	2009-07-29 06:50:20.000000000 +0900
-+++ /etc/libccid_Info.plist	2010-09-05 09:09:49.000000000 +0900
-@@ -104,6 +104,7 @@
- 
- 	<key>ifdVendorID</key>
- 	<array>
-+		<string>0x234B</string>
- 		<string>0x08E6</string>
- 		<string>0x08E6</string>
- 		<string>0x08E6</string>
-@@ -237,6 +238,7 @@
- 
- 	<key>ifdProductID</key>
- 	<array>
-+		<string>0x0000</string>
- 		<string>0x2202</string>
- 		<string>0x3437</string>
- 		<string>0x3438</string>
-@@ -370,6 +372,7 @@
- 
- 	<key>ifdFriendlyName</key>
- 	<array>
-+		<string>FSIJ USB Token</string>
- 		<string>Gemplus Gem e-Seal Pro</string>
- 		<string>Gemplus GemPC Twin</string>
- 		<string>Gemplus GemPC Key</string>
-------------------
-
-This entry has been added into libccid 1.4.1 already ([r5425]).
-
-
 Testing Gnuk
 ------------
 
@@ -567,16 +511,15 @@ Type following command to see Gnuk runs:
   $ gpg --card-status
 
 
-Besides, there is a functinality test under test/ directory.  See
+Besides, there is a functionality test under test/ directory.  See
 test/README.
 
 
-Personalize the Token and import keys
--------------------------------------
+Personalize the Token, import keys, and change the password
+-----------------------------------------------------------
 
 You can personalize the token, putting your information like: Name,
-Login name, Sex, Languages, URL, etc., and password.  To do so, GnuPG
-command is:
+Login name, Sex, Languages, URL.  To do so, GnuPG command is:
 
   $ gpg --card-edit
 
@@ -590,40 +533,7 @@ RSA), you can import them.
 Gnuk supports key generation, but this feature is young and should be
 considered experimental.
 
-For detail, please see doc/note/DEMO and doc/note/DEMO-2.
-
-Note that it make sense to preserve your keys on your computer so that
-you can import the keys (again) to (possibly another) Gnuk Token.  In
-this case, you can use GnuPG's option to specify the home directory by
---homedir.
-
-After creating keys on your computer by:
-
-  $ gpg --gen-key
-  ...
-
-Copy directory which contains your secret keys to new directory named
-<gpgdir-with-your-secret-keys>:
-
-  $ cp -pa $HOME/.gnupg <gpgdir-with-your-secret-keys>
-
-Then, import keys by:
-
-  $ gpg --edit-key <YOUR-KEYID>
-
-While your $HOME/.gnupg now doesn't have your secret keys after
-import, <gpgdir-with-your-secret-keys> still has them.  You can again
-import them by:
-
-  $ gpg --homedir=<gpgdir-with-your-secret-keys> --edit-key <YOUR-KEYID>
-
-Note that you *should not* save changes this time to preserve keys
-on your computer.  The session goes like this:
-
-  gpg> quit
-  Save changes? (y/N) n
-  Quit without saving? (y/N) y
-
+For detail, please see documentation under doc/.
 
 
 How to debug
@@ -658,18 +568,16 @@ See doc/note/firmware-update.
 Git Repositories
 ================
 
+Please use: http://gitorious.org/gnuk
+
+It's also available at: www.gniibe.org
 You can browse at: http://www.gniibe.org/gitweb?p=gnuk.git;a=summary
 
-You can get it by:
+We migrated from ChibiOS/RT to Chopstix.  If you have old code of
+ChibiOS/RT, you need:
 
-  $ git clone git://www.gniibe.org/gnuk.git/
-
-or
-
-  $ git clone http://www.gniibe.org/git/gnuk.git/
-
-
-Copy is available at: http://gitorious.org/gnuk
+    Edit .git/config to remove chibios reference
+    git rm --cached chibios
 
 
 Information on the Web
