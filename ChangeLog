@@ -1,3 +1,8 @@
+2013-12-20  Niibe Yutaka  <gniibe@fsij.org>
+
+	* polarssl/include/polarssl/bn_mul.h (MULADDC_1024_CORE)
+	(MULADDC_CORE): Reorder instructions for more speed up.
+
 2013-12-19  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/configure (--enable-hid-card-change): New (experimental).

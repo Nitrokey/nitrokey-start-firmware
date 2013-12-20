@@ -498,16 +498,16 @@
 #define MULADDC_1024_CORE                        \
        "ldmia  %0!, { r5, r6, r7 }  \n\t"        \
        "ldmia  %1, { r8, r9, r10 }  \n\t"        \
-       "umull  r11, r12, %4, r5     \n\t"        \
-       "adcs   r11, r11, %2         \n\t"        \
+       "adcs   r8, r8, %2           \n\t"        \
+       "umull  r11, r12, r5, %4     \n\t"        \
        "adc    %2, r12, #0          \n\t"        \
        "adds   r8, r8, r11          \n\t"        \
-       "umull  r11, r12, %4, r6     \n\t"        \
-       "adcs   r11, r11, %2         \n\t"        \
+       "adcs   r9, r9, %2           \n\t"        \
+       "umull  r11, r12, r6, %4     \n\t"        \
        "adc    %2, r12, #0          \n\t"        \
        "adds   r9, r9, r11          \n\t"        \
-       "umull  r11, r12, %4, r7     \n\t"        \
-       "adcs   r11, r11, %2         \n\t"        \
+       "adcs   r10, r10, %2         \n\t"        \
+       "umull  r11, r12, r7, %4     \n\t"        \
        "adc    %2, r12, #0          \n\t"        \
        "adds   r10, r10, r11        \n\t"        \
        "stmia  %1!, { r8, r9, r10 } \n\t"
@@ -518,16 +518,16 @@
 "1:	sub    %3, %3, #32          \n\t"        \
        "ldmia  %0!, { r5, r6, r7 }  \n\t"        \
        "ldmia  %1, { r8, r9, r10 }  \n\t"        \
+       "adds   r8, r8, %2           \n\t"        \
        "umull  r11, r12, %4, r5     \n\t"        \
-       "adds   r11, r11, %2         \n\t"        \
        "adc    %2, r12, #0          \n\t"        \
        "adds   r8, r8, r11          \n\t"        \
+       "adcs   r9, r9, %2           \n\t"        \
        "umull  r11, r12, %4, r6     \n\t"        \
-       "adcs   r11, r11, %2         \n\t"        \
        "adc    %2, r12, #0          \n\t"        \
        "adds   r9, r9, r11          \n\t"        \
+       "adcs   r10, r10, %2         \n\t"        \
        "umull  r11, r12, %4, r7     \n\t"        \
-       "adcs   r11, r11, %2         \n\t"        \
        "adc    %2, r12, #0          \n\t"        \
        "adds   r10, r10, r11        \n\t"        \
        "stmia  %1!, { r8, r9, r10 } \n\t"        \
@@ -538,12 +538,12 @@
        MULADDC_1024_CORE                         \
        "ldmia  %0!, { r5, r6 }      \n\t"        \
        "ldmia  %1, { r8, r9 }       \n\t"        \
+       "adcs   r8, r8, %2           \n\t"        \
        "umull  r11, r12, %4, r5     \n\t"        \
-       "adcs   r11, r11, %2         \n\t"        \
        "adc    %2, r12, #0          \n\t"        \
        "adds   r8, r8, r11          \n\t"        \
+       "adcs   r9, r9, %2           \n\t"        \
        "umull  r11, r12, %4, r6     \n\t"        \
-       "adcs   r11, r11, %2         \n\t"        \
        "adc    %2, r12, #0          \n\t"        \
        "adds   r9, r9, r11          \n\t"        \
        "stmia  %1!, { r8, r9 }      \n\t"        \
@@ -608,8 +608,8 @@
 #define MULADDC_CORE                                   \
                   "ldr    r5, [%1]        \n\t"        \
                   "ldr    r4, [%0], #4    \n\t"        \
+                  "adcs   r5, r5, %2      \n\t"        \
                   "umull  r6, r7, %3, r4  \n\t"        \
-                  "adcs   r6, r6, %2      \n\t"        \
                   "adc    %2, r7, #0      \n\t"        \
                   "adds   r5, r5, r6      \n\t"        \
                   "str    r5, [%1], #4    \n\t"
