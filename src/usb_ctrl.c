@@ -241,9 +241,10 @@ static const uint8_t lun_table[] = { 0, 0, 0, 0, };
 
 static const uint8_t *const mem_info[] = { &_regnual_start,  __heap_end__, };
 
-#define USB_FSIJ_GNUK_MEMINFO  0
-#define USB_FSIJ_GNUK_DOWNLOAD 1
-#define USB_FSIJ_GNUK_EXEC     2
+#define USB_FSIJ_GNUK_MEMINFO     0
+#define USB_FSIJ_GNUK_DOWNLOAD    1
+#define USB_FSIJ_GNUK_EXEC        2
+#define USB_FSIJ_GNUK_CARD_CHANGE 3
 
 static uint32_t rbit (uint32_t v)
 {
@@ -314,6 +315,14 @@ usb_cb_setup (uint8_t req, uint8_t req_no,
 		return USB_UNSUPPORT;
 
 	      return download_check_crc32 ((uint32_t *)addr);
+	    }
+	  else if (req_no == USB_FSIJ_GNUK_CARD_CHANGE && len == 0)
+	    {
+	      if (value != 0 && value != 1 && value != 2)
+		return USB_UNSUPPORT;
+
+	      ccid_card_change_signal (value);
+	      return USB_SUCCESS;
 	    }
 	}
     }
@@ -427,7 +436,7 @@ usb_cb_ctrl_write_finish (uint8_t req, uint8_t req_no, uint16_t value,
       if (index == 1 && req_no == USB_HID_REQ_SET_REPORT)
 	{
 	  if ((hid_report ^ hid_report_saved) & HID_LED_STATUS_CARDCHANGE)
-	    ccid_card_change_signal ();
+	    ccid_card_change_signal (CARD_CHANGE_TOGGLE);
 
 	  hid_report_saved = hid_report;
 	}

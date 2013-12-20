@@ -1325,11 +1325,14 @@ USBthread (void *arg)
 }
 
 void
-ccid_card_change_signal (void)
+ccid_card_change_signal (int how)
 {
   struct ccid *c = &ccid;
 
-  eventflag_signal (&c->ccid_comm, EV_CARD_CHANGE);
+  if (how == CARD_CHANGE_TOGGLE
+      || (c->icc_state == ICC_STATE_NOCARD && how == CARD_CHANGE_INSERT)
+      || (c->icc_state != ICC_STATE_NOCARD && how == CARD_CHANGE_REMOVE))
+    eventflag_signal (&c->ccid_comm, EV_CARD_CHANGE);
 }
 
 

@@ -17,7 +17,11 @@ struct apdu {
 };
 
 extern struct apdu apdu;
-void ccid_card_change_signal (void);
+
+#define CARD_CHANGE_INSERT 0
+#define CARD_CHANGE_REMOVE 1
+#define CARD_CHANGE_TOGGLE 2
+void ccid_card_change_signal (int how);
 
 /* CCID thread */
 #define EV_RX_DATA_READY (1) /* USB Rx data available  */

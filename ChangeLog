@@ -1,5 +1,11 @@
 2013-12-20  Niibe Yutaka  <gniibe@fsij.org>
 
+	* src/usb_ctrl.c (USB_FSIJ_GNUK_CARD_CHANGE): New.
+	(usb_cb_setup): Support USB_FSIJ_GNUK_CARD_CHANGE.
+	* src/usb-icc.c (ccid_card_change_signal): New argument HOW.
+
+2013-12-20  Niibe Yutaka  <gniibe@fsij.org>
+
 	* polarssl/include/polarssl/bn_mul.h (MULADDC_1024_CORE)
 	(MULADDC_CORE): Reorder instructions for more speed up.
 	* polarssl/library/bignum.c (mpi_montsqr): Likewise.
