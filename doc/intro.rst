@@ -39,13 +39,7 @@ In version 1.1.x, Gnuk supports following boards.
 
 * STM32 part of STM8S Discovery Kit
 
-Not supported yet.
-
-* CQ STARM
-
 * STBee
-
-* STBee Mini
 
 
 Host prerequisites for using Gnuk Token
@@ -59,7 +53,7 @@ Host prerequisites for using Gnuk Token
 
 * SSH: openssh
 
-* Web: scute, firefox
+* [optional] Web: scute, firefox
 
 
 Usages

@@ -1,9 +1,19 @@
 Gnuk - An Implementation of USB Cryptographic Token for GnuPG
 
 							  Version 1.1.0
-							     2013-12-XX
+							     2013-12-20
 							   Niibe Yutaka
 				      Free Software Initiative of Japan
+
+Warning
+=======
+
+This is an experimental release of Gnuk 1.1.0, which has incompatible
+changes to Gnuk 1.0.x.  Specifically, it now supports overriding key
+import, but importing keys (or generating keys) results password
+reset.  Please update your documentation for Gnuk Token, so that the
+instruction of importing keys won't cause any confusion.
+
 
 What's Gnuk?
 ============
@@ -533,7 +543,8 @@ RSA), you can import them.
 Gnuk supports key generation, but this feature is young and should be
 considered experimental.
 
-For detail, please see documentation under doc/.
+For detail, please see documentation under doc/.  You can see the HTML
+version at: http://www.fsij.org/doc-gnuk/
 
 
 How to debug

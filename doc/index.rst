@@ -15,6 +15,7 @@ Contents:
    :maxdepth: 2
 
    intro.rst
+   gpg-settings.rst
    stop-scdaemon.rst
    udev-rules.rst
    gnuk-token-initial-configuration.rst
@@ -24,7 +25,6 @@ Contents:
    gnuk-keytocard-noremoval.rst
    gnuk-passphrase-setting.rst
    using-gnuk-token-with-another-computer.rst
-   gpg-settings.rst
    gnome3-gpg-settings.rst
    development.rst
 

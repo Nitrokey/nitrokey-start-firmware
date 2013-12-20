@@ -2,16 +2,29 @@ Gnuk NEWS - User visible changes
 
 * Major changes in Gnuk 1.1.0
 
-  Released 2013-12-XX, by NIIBE Yutaka
+  Released 2013-12-20, by NIIBE Yutaka
 
-** Key management with overriding (Incompatible Change)
+** Overriding key import / generation (Incompatible Change)
+Gnuk supports overriding key import or key generation even if keys are
+already installed.  Note that it will result password reset of user.
 
 ** RSA key generation improvement
+Prime number generation is done by Fouque-Tibouchi method.
 
 ** Security fix for RSA computation 
+PolarSSL had a vulnerability against timing attack.  For detail,
+please see:
+
+  http://www.gniibe.org/memo/development/gnuk/polarssl/polarssl-rsa-blinding
+
+** Improved RSA routine
+RSA computation has been improved using MPI square routine.  Note that
+you should not adopt this modification for general purpose computer,
+as this change is weak against the Yarom/Falkner flush+reload cache
+side-channel attack.
 
 ** Upgrade of NeuG
-The true random number generator was upgraded with NeuG 1.0.
+The true random number generator was upgraded to the one of NeuG 1.0.
 
 ** Replacement of kernel (thread library)
 Instead of ChibiOS/RT, we now use Chopstx.

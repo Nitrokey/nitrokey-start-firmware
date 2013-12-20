@@ -48,6 +48,7 @@ files.  If not, please let the daemon reload rules::
 udev rules for ST-Link/V2
 =========================
 
+For development of Gnuk, we use ST-Link/V2 as JTAG/SWD debugger.
 We need to have a udev rule for ST-Link/V2.  It's like::
 
     ACTION=="add", SUBSYSTEM=="usb", ATTR{idVendor}=="0483", ATTR{idProduct}=="3748", GROUP="tape", MODE="664", SYMLINK+="stlink"

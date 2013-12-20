@@ -1,5 +1,7 @@
 2013-12-20  Niibe Yutaka  <gniibe@fsij.org>
 
+	* Version 1.1.0.
+
 	* src/usb_ctrl.c (USB_FSIJ_GNUK_CARD_CHANGE): New.
 	(usb_cb_setup): Support USB_FSIJ_GNUK_CARD_CHANGE.
 	* src/usb-icc.c (ccid_card_change_signal): New argument HOW.
