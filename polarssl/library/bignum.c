@@ -1386,12 +1386,11 @@ static void mpi_montg_init( t_uint *mm, const mpi *N )
  */
 static void mpi_montmul( const mpi *B, const mpi *N, t_uint mm, mpi *T )
 {
-    size_t i, n, m;
+    size_t i, n;
     t_uint u0, u1, *d, c = 0;
 
     d = T->p;
     n = N->n;
-    m = ( B->n < n ) ? B->n : n;
 
     for( i = 0; i < n; i++ )
     {
@@ -1402,7 +1401,7 @@ static void mpi_montmul( const mpi *B, const mpi *N, t_uint mm, mpi *T )
         d[n] = c;
         u1 = ( d[0] + u0 * B->p[0] ) * mm;
 
-        mpi_mul_hlp( m, B->p, d, u0 );
+        mpi_mul_hlp( n, B->p, d, u0 );
         c = mpi_mul_hlp( n, N->p, d, u1 );
         d++;
     }

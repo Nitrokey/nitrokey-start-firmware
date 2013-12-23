@@ -1,3 +1,8 @@
+2013-12-23  Niibe Yutaka  <gniibe@fsij.org>
+
+	* polarssl/library/bignum.c (mpi_montmul): Computation
+	time should not depends on input.
+
 2013-12-20  Niibe Yutaka  <gniibe@fsij.org>
 
 	* Version 1.1.0.
