@@ -1384,12 +1384,11 @@ static void mpi_montg_init( t_uint *mm, const mpi *N )
  * Montgomery multiplication: A = A * B * R^-1 mod N  (HAC 14.36)
  * A is placed at the upper half of D.
  */
-static void mpi_montmul( const t_uint *bp, const mpi *N, t_uint mm, t_uint *d )
+static void mpi_montmul( size_t n, const t_uint *np, t_uint mm, t_uint *d,
+                         const t_uint *bp )
 {
-    size_t i, n;
+    size_t i;
     t_uint u0, u1, c = 0;
-
-    n = N->n;
 
     for( i = 0; i < n; i++ )
     {
@@ -1401,13 +1400,13 @@ static void mpi_montmul( const t_uint *bp, const mpi *N, t_uint mm, t_uint *d )
         u1 = ( d[0] + u0 * bp[0] ) * mm;
 
         mpi_mul_hlp( n, bp, d, u0 );
-        c = mpi_mul_hlp( n, N->p, d, u1 );
+        c = mpi_mul_hlp( n, np, d, u1 );
         d++;
     }
 
     /* prevent timing attacks */
-    if( ((mpi_cmp_abs_limbs ( n, d, N->p ) >= 0) | c) )
-        mpi_sub_hlp( n, N->p, d );
+    if( ((mpi_cmp_abs_limbs ( n, d, np ) >= 0) | c) )
+        mpi_sub_hlp( n, np, d );
     else
         mpi_sub_hlp( n, d - n, d - n);
 }
@@ -1416,12 +1415,10 @@ static void mpi_montmul( const t_uint *bp, const mpi *N, t_uint mm, t_uint *d )
  * Montgomery reduction: A = A * R^-1 mod N
  * A is placed at the upper half of D.
  */
-static void mpi_montred( const mpi *N, t_uint mm, t_uint *d )
+static void mpi_montred( size_t n, const t_uint *np, t_uint mm, t_uint *d )
 {
-    size_t i, j, n;
+    size_t i, j;
     t_uint u0, u1, c = 0;
-
-    n = N->n;
 
     for( i = 0; i < n; i++ )
     {
@@ -1439,13 +1436,13 @@ static void mpi_montred( const mpi *N, t_uint mm, t_uint *d )
             d[j] += c; c = ( d[j] < c );
           }
 
-        c = mpi_mul_hlp( n, N->p, d, u1 );
+        c = mpi_mul_hlp( n, np, d, u1 );
         d++;
     }
 
     /* prevent timing attacks */
-    if( ((mpi_cmp_abs_limbs ( n, d, N->p ) >= 0) | c) )
-        mpi_sub_hlp( n, N->p, d );
+    if( ((mpi_cmp_abs_limbs ( n, d, np ) >= 0) | c) )
+        mpi_sub_hlp( n, np, d );
     else
         mpi_sub_hlp( n, d - n, d - n);
 }
@@ -1454,12 +1451,10 @@ static void mpi_montred( const mpi *N, t_uint mm, t_uint *d )
  * Montgomery square: A = A * A * R^-1 mod N
  * A is placed at the upper half of D.
  */
-static void mpi_montsqr( const mpi *N, t_uint mm, t_uint *d )
+static void mpi_montsqr( size_t n, const t_uint *np, t_uint mm, t_uint *d )
 {
-  size_t n, i;
+  size_t i;
   t_uint c = 0;
-
-  n = N->n;
 
   for (i = 0; i < n; i++)
     {
@@ -1538,14 +1533,14 @@ static void mpi_montsqr( const mpi *N, t_uint mm, t_uint *d )
            : "r6", "r7", "r8", "r9", "r10", "r11", "r12", "memory", "cc" );
 
         u = d[i] * mm;
-        c += mpi_mul_hlp( n, N->p, &d[i], u );
+        c += mpi_mul_hlp( n, np, &d[i], u );
     }
 
   d += n;
 
   /* prevent timing attacks */
-  if( ((mpi_cmp_abs_limbs ( n, d, N->p ) >= 0) | c) )
-      mpi_sub_hlp( n, N->p, d );
+  if( ((mpi_cmp_abs_limbs ( n, d, np ) >= 0) | c) )
+      mpi_sub_hlp( n, np, d );
   else
       mpi_sub_hlp( n, d - n, d - n);
 }
@@ -1618,7 +1613,7 @@ int mpi_exp_mod( mpi *X, const mpi *A, const mpi *E, const mpi *N, mpi *_RR )
         memcpy (d + N->n, A->p, A->n * ciL);
     }
 
-    mpi_montmul( RR.p, N, mm, d );
+    mpi_montmul( N->n, N->p, mm, d, RR.p );
     memcpy (w1, d + N->n, N->n * ciL);
 
     {
@@ -1626,7 +1621,7 @@ int mpi_exp_mod( mpi *X, const mpi *A, const mpi *E, const mpi *N, mpi *_RR )
          * W[1 << (wsize - 1)] = W[1] ^ ( 2 ^ (wsize - 1) )
          */
         for( i = 0; i < wsize - 1; i++ )
-            mpi_montsqr( N, mm, d );
+            mpi_montsqr( N->n, N->p, mm, d );
         memcpy (wn[0], d + N->n, N->n * ciL);
 
         /*
@@ -1634,7 +1629,7 @@ int mpi_exp_mod( mpi *X, const mpi *A, const mpi *E, const mpi *N, mpi *_RR )
          */
         for( i = 1; i < (one << (wsize - 1)); i++ )
         {
-            mpi_montmul( w1, N, mm, d );
+            mpi_montmul( N->n, N->p, mm, d, w1 );
             memcpy (wn[i], d + N->n, N->n * ciL);
         }
     }
@@ -1643,7 +1638,7 @@ int mpi_exp_mod( mpi *X, const mpi *A, const mpi *E, const mpi *N, mpi *_RR )
      * X = R^2 * R^-1 mod N = R mod N
      */
     memcpy (d + N->n, RR.p, N->n * ciL);
-    mpi_montred( N, mm, d );
+    mpi_montred( N->n, N->p, mm, d );
 
     nblimbs = E->n;
     bufsize = 0;
@@ -1676,7 +1671,7 @@ int mpi_exp_mod( mpi *X, const mpi *A, const mpi *E, const mpi *N, mpi *_RR )
             /*
              * out of window, square X
              */
-            mpi_montsqr( N, mm, d );
+             mpi_montsqr( N->n, N->p, mm, d );
             continue;
         }
 
@@ -1694,12 +1689,12 @@ int mpi_exp_mod( mpi *X, const mpi *A, const mpi *E, const mpi *N, mpi *_RR )
              * X = X^wsize R^-1 mod N
              */
             for( i = 0; i < wsize; i++ )
-                mpi_montsqr( N, mm, d );
+                mpi_montsqr( N->n, N->p, mm, d );
 
             /*
              * X = X * W[wbits] R^-1 mod N
              */
-            mpi_montmul( wn[wbits - (one << (wsize - 1))], N, mm, d );
+            mpi_montmul( N->n, N->p, mm, d, wn[wbits - (one << (wsize - 1))]);
 
             state--;
             nbits = 0;
@@ -1712,18 +1707,18 @@ int mpi_exp_mod( mpi *X, const mpi *A, const mpi *E, const mpi *N, mpi *_RR )
      */
     for( i = 0; i < nbits; i++ )
     {
-        mpi_montsqr( N, mm, d );
+        mpi_montsqr( N->n, N->p, mm, d );
 
         wbits <<= 1;
 
         if( (wbits & (one << wsize)) != 0 )
-            mpi_montmul( w1, N, mm, d );
+            mpi_montmul( N->n, N->p, mm, d, w1);
     }
 
     /*
      * X = A^E * R * R^-1 mod N = A^E mod N
      */
-    mpi_montred( N, mm, d );
+    mpi_montred( N->n, N->p, mm, d );
     memcpy (X->p, d + N->n, N->n * ciL);
 
 cleanup:
