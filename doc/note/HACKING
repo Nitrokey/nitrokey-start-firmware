@@ -5,7 +5,7 @@ It is important to collect enough entropy.  Perhaps, it would
 be possible to get entropy from USB traffic (of other devices).
 
 
-* RSA
+* [Mostly DONE] RSA
 
 It would be good not to use malloc.
 

@@ -2,6 +2,11 @@
 
 	* polarssl/library/bignum.c (mpi_montmul): Computation
 	time should not depends on input.
+	(mpi_montmul, mpi_montred, mpi_montsqr): Change the API.
+	(mpi_exp_mod): Follow the change of the API.  Allocate memory on
+	stack instead of malloc.
+
+	* src/gnuk.ld.in (__process3_stack_size__): Increase stack size.
 
 2013-12-20  Niibe Yutaka  <gniibe@fsij.org>
 
