@@ -581,10 +581,19 @@ Git Repositories
 
 Please use: http://gitorious.org/gnuk
 
+You can get it by:
+ 
+    $ git clone git://gitorious.org/gnuk/gnuk.git
+
 It's also available at: www.gniibe.org
 You can browse at: http://www.gniibe.org/gitweb?p=gnuk.git;a=summary
 
-We migrated from ChibiOS/RT to Chopstix.  If you have old code of
+I put Chopstx as a submodule of Git.  Please do this:
+
+  $ git submodule init
+  $ git submodule update
+
+We have migrated from ChibiOS/RT to Chopstx.  If you have old code of
 ChibiOS/RT, you need:
 
     Edit .git/config to remove chibios reference
