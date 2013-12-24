@@ -1471,7 +1471,7 @@ static void mpi_montsqr( size_t n, const t_uint *np, t_uint mm, t_uint *d )
            "umull  r6, r11, %[x_i], %[x_i]\n\t"
            "adds   r5, r5, r6\n\t"
            "adc    r4, r8, r11\n\t"
-           "subs   r11, %[xj], %[x_max1]\n\t" /* could use "CMP" but slower */
+           "cmp    %[xj], %[x_max1]\n\t"
            "str    r5, [%[wij]], #4\n\t"
            "beq    1f\n\t"
            "bhi    0f\n"
