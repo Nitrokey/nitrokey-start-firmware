@@ -1454,86 +1454,80 @@ static void mpi_montred( size_t n, const t_uint *np, t_uint mm, t_uint *d )
 static void mpi_montsqr( size_t n, const t_uint *np, t_uint mm, t_uint *d )
 {
   size_t i;
-  t_uint c = 0;
+  register t_uint c = 0;
 
   for (i = 0; i < n; i++)
     {
       t_uint *wij = &d[i*2];
       t_uint *xj = &d[i+n];
-      t_uint u, x_i;
+      t_uint x_i;
 
       x_i = *xj;
       *xj++ = c;
       asm ("mov    r8, #0\n\t"  /* R8 := 0, the constant ZERO from here.  */
-           /* (C,U,R9) := w_i_i + x_i*x_i; w_i_i := R9; */
-           "ldr    r9, [%[wij]]\n\t"          /* R9 := w_i_i; */
+           /* (C,R4,R5) := w_i_i + x_i*x_i; w_i_i := R5; */
+           "ldr    r5, [%[wij]]\n\t"          /* R5 := w_i_i; */
            "mov    %[c], r8\n\t"
-           "umull  r11, r12, %[x_i], %[x_i]\n\t"
-           "adds   r9, r9, r11\n\t"
-           "adc    %[u], r8, r12\n\t"
-           "str    r9, [%[wij]], #4\n\t"
-           /**/
-           "subs   r9, %[xj_max], %[xj]\n\t"
-           "bls    1f\n\t"
-           /**/
-           "tst    r9, #4\n\t"
-           "beq    0f\n\t"
-           /* (C,U,R9) := (C,U) + w_i_j + 2*x_i*x_j; */
-           "ldr    r10, [%[xj]], #4\n\t"
-           "ldr    r9, [%[wij]]\n\t"
-           "adds   r9, r9, %[u]\n\t"
-           "adc    %[u], %[c], r8\n\t"
-           "umull  r11, r12, %[x_i], r10\n\t"
-           "adds   r9, r9, r11\n\t"
-           "adcs   %[u], %[u], r12\n\t"
+           "umull  r6, r11, %[x_i], %[x_i]\n\t"
+           "adds   r5, r5, r6\n\t"
+           "adc    r4, r8, r11\n\t"
+           "subs   r11, %[xj], %[x_max1]\n\t" /* could use "CMP" but slower */
+           "str    r5, [%[wij]], #4\n\t"
+           "beq    1f\n\t"
+           "bhi    0f\n"
+   "2:\n\t"
+           "ldmia  %[xj]!, { r9, r10 }\n\t"
+           "ldmia  %[wij], { r5, r7 }\n\t"
+           /* (C,R4,R5) := (C,R4) + w_i_j + 2*x_i*x_j; */
+           "umull  r6, r11, %[x_i], r9\n\t"
+           "adds   r5, r5, r4\n\t"
+           "adc    r4, %[c], r8\n\t"
+           "adds   r5, r5, r6\n\t"
+           "adcs   r4, r4, r11\n\t"
            "adc    %[c], r8, r8\n\t"
-           "adds   r9, r9, r11\n\t"
-           "adcs   %[u], %[u], r12\n\t"
+           "adds   r5, r5, r6\n\t"
+           "adcs   r4, r4, r11\n\t"
            "adc    %[c], %[c], r8\n\t"
-           "str    r9, [%[wij]], #4\n\t"
-           /**/
-           "subs   r9, %[xj_max], %[xj]\n\t"
-           "bls    1f\n"
-   "0:\n\t"
-           "ldmia  %[xj]!, { r6, r7 }\n\t"
-           "ldmia  %[wij], { r9, r10 }\n\t"
-           /* (C,U,R9) := (C,U) + w_i_j + 2*x_i*x_j; */
-           "umull  r11, r12, %[x_i], r6\n\t"
-           "adds   r9, r9, %[u]\n\t"
-           "adc    %[u], %[c], r8\n\t"
-           "adds   r9, r9, r11\n\t"
-           "adcs   %[u], %[u], r12\n\t"
+           /* (C,R4,R7) := (C,R4) + w_i_j + 2*x_i*x_j; */
+           "adds   r7, r7, r4\n\t"
+           "adc    r4, %[c], r8\n\t"
+           "umull  r6, r11, %[x_i], r10\n\t"
+           "adds   r7, r7, r6\n\t"
+           "adcs   r4, r4, r11\n\t"
            "adc    %[c], r8, r8\n\t"
-           "adds   r9, r9, r11\n\t"
-           "adcs   %[u], %[u], r12\n\t"
-           "adc    %[c], %[c], r8\n\t"
-           /* (C,U,R10) := (C,U) + w_i_j + 2*x_i*x_j; */
-           "adds   r10, r10, %[u]\n\t"
-           "adc    %[u], %[c], r8\n\t"
-           "umull  r11, r12, %[x_i], r7\n\t"
-           "adds   r10, r10, r11\n\t"
-           "adcs   %[u], %[u], r12\n\t"
-           "adc    %[c], r8, r8\n\t"
-           "adds   r10, r10, r11\n\t"
-           "adcs   %[u], %[u], r12\n\t"
+           "adds   r7, r7, r6\n\t"
+           "adcs   r4, r4, r11\n\t"
            "adc    %[c], %[c], r8\n\t"
            /**/
-           "stmia  %[wij]!, { r9, r10 }\n\t"
-           /**/
-           "cmp    %[xj], %[xj_max]\n\t"
-           "bcc    0b\n"
+           "cmp    %[xj], %[x_max1]\n\t"
+           "stmia  %[wij]!, { r5, r7 }\n\t"
+           "bcc    2b\n\t"
+           "bne    0f\n"
    "1:\n\t"
-           "ldr    r9, [%[wij]]\n\t"
-           "adds   %[u], %[u], r9\n\t"
+           /* (C,R4,R5) := (C,R4) + w_i_j + 2*x_i*x_j; */
+           "ldr    r7, [%[xj]], #4\n\t"
+           "ldr    r5, [%[wij]]\n\t"
+           "adds   r5, r5, r4\n\t"
+           "adc    r4, %[c], r8\n\t"
+           "umull  r6, r11, %[x_i], r7\n\t"
+           "adds   r5, r5, r6\n\t"
+           "adcs   r4, r4, r11\n\t"
+           "adc    %[c], r8, r8\n\t"
+           "adds   r5, r5, r6\n\t"
+           "adcs   r4, r4, r11\n\t"
            "adc    %[c], %[c], r8\n\t"
-           "str    %[u], [%[wij]]"
-           : [c] "=&r" (c), [u] "=&r" (u), [wij] "=r" (wij), [xj] "=r" (xj)
-           : [x_i] "r" (x_i), [xj_max] "r" (&d[n*2]),
+           "str    r5, [%[wij]], #4\n"
+   "0:\n\t"
+           "ldr    r5, [%[wij]]\n\t"
+           "adds   r4, r4, r5\n\t"
+           "adc    %[c], %[c], r8\n\t"
+           "str    r4, [%[wij]]"
+           : [c] "=&r" (c), [wij] "=r" (wij), [xj] "=r" (xj)
+           : [x_i] "r" (x_i), [x_max1] "r" (&d[n*2-1]),
              "[wij]" (wij), "[xj]" (xj)
-           : "r6", "r7", "r8", "r9", "r10", "r11", "r12", "memory", "cc" );
+           : "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "memory", "cc" );
 
-        u = d[i] * mm;
-        c += mpi_mul_hlp( n, np, &d[i], u );
+        c += mpi_mul_hlp( n, np, &d[i], d[i] * mm );
     }
 
   d += n;

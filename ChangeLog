@@ -1,3 +1,11 @@
+2013-12-24  Niibe Yutaka  <gniibe@fsij.org>
+
+	* polarssl/include/polarssl/bn_mul.h (MULADDC_1024_CORE)
+	(MULADDC_1024_LOOP): Use younger number registers more for shorter
+	instructions and better performance.
+	* polarssl/library/bignum.c (mpi_montsqr): Likewise.  Change loop
+	structure and conditional branch for better performance.
+
 2013-12-23  Niibe Yutaka  <gniibe@fsij.org>
 
 	* polarssl/library/bignum.c (mpi_montmul): Computation
