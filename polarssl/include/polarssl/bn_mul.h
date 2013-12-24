@@ -496,40 +496,40 @@
 
 #if defined(__arm__)
 #define MULADDC_1024_CORE                        \
-       "ldmia  %0!, { r8, r9, r10 } \n\t"        \
+       "ldmia  %0!, { r8, r9, r12 } \n\t"        \
        "ldmia  %1, { r5, r6, r7 }   \n\t"        \
        "adcs   r5, r5, %2           \n\t"        \
-       "umull  r4, r12, r8, %4     \n\t"        \
-       "adc    %2, r12, #0          \n\t"        \
-       "adds   r5, r5, r4          \n\t"        \
+       "umull  r4, r8, r8, %4       \n\t"        \
+       "adc    %2, r8, #0           \n\t"        \
+       "adds   r5, r5, r4           \n\t"        \
        "adcs   r6, r6, %2           \n\t"        \
-       "umull  r4, r12, r9, %4     \n\t"        \
-       "adc    %2, r12, #0          \n\t"        \
-       "adds   r6, r6, r4          \n\t"        \
+       "umull  r4, r8, r9, %4       \n\t"        \
+       "adc    %2, r8, #0           \n\t"        \
+       "adds   r6, r6, r4           \n\t"        \
        "adcs   r7, r7, %2           \n\t"        \
-       "umull  r4, r12, r10, %4    \n\t"        \
-       "adc    %2, r12, #0          \n\t"        \
-       "adds   r7, r7, r4          \n\t"        \
+       "umull  r4, r8, r12, %4      \n\t"        \
+       "adc    %2, r8, #0           \n\t"        \
+       "adds   r7, r7, r4           \n\t"        \
        "stmia  %1!, { r5, r6, r7 }  \n\t"
 
 #define MULADDC_1024_LOOP                        \
   asm( "tst    %3, #0xfe0           \n\t"        \
        "beq    0f                   \n"          \
 "1:	sub    %3, %3, #32          \n\t"        \
-       "ldmia  %0!, { r8, r9, r10 } \n\t"        \
+       "ldmia  %0!, { r8, r9, r12 } \n\t"        \
        "ldmia  %1, { r5, r6, r7 }   \n\t"        \
        "adds   r5, r5, %2           \n\t"        \
-       "umull  r4, r12, %4, r8     \n\t"        \
-       "adc    %2, r12, #0          \n\t"        \
-       "adds   r5, r5, r4          \n\t"        \
+       "umull  r4, r8, %4, r8       \n\t"        \
+       "adc    %2, r8, #0           \n\t"        \
+       "adds   r5, r5, r4           \n\t"        \
        "adcs   r6, r6, %2           \n\t"        \
-       "umull  r4, r12, %4, r9     \n\t"        \
-       "adc    %2, r12, #0          \n\t"        \
-       "adds   r6, r6, r4          \n\t"        \
+       "umull  r4, r8, %4, r9       \n\t"        \
+       "adc    %2, r8, #0           \n\t"        \
+       "adds   r6, r6, r4           \n\t"        \
        "adcs   r7, r7, %2           \n\t"        \
-       "umull  r4, r12, %4, r10    \n\t"        \
-       "adc    %2, r12, #0          \n\t"        \
-       "adds   r7, r7, r4          \n\t"        \
+       "umull  r4, r8, %4, r12      \n\t"        \
+       "adc    %2, r8, #0           \n\t"        \
+       "adds   r7, r7, r4           \n\t"        \
        "stmia  %1!, { r5, r6, r7 }  \n\t"        \
        MULADDC_1024_CORE MULADDC_1024_CORE       \
        MULADDC_1024_CORE MULADDC_1024_CORE       \
@@ -539,13 +539,13 @@
        "ldmia  %0!, { r8, r9 }      \n\t"        \
        "ldmia  %1, { r5, r6 }       \n\t"        \
        "adcs   r5, r5, %2           \n\t"        \
-       "umull  r4, r12, %4, r8     \n\t"        \
-       "adc    %2, r12, #0          \n\t"        \
-       "adds   r5, r5, r4          \n\t"        \
+       "umull  r4, r8, %4, r8       \n\t"        \
+       "adc    %2, r8, #0           \n\t"        \
+       "adds   r5, r5, r4           \n\t"        \
        "adcs   r6, r6, %2           \n\t"        \
-       "umull  r4, r12, %4, r9     \n\t"        \
-       "adc    %2, r12, #0          \n\t"        \
-       "adds   r6, r6, r4          \n\t"        \
+       "umull  r4, r8, %4, r9       \n\t"        \
+       "adc    %2, r8, #0           \n\t"        \
+       "adds   r6, r6, r4           \n\t"        \
        "stmia  %1!, { r5, r6 }      \n\t"        \
        "adc    %2, %2, #0           \n\t"        \
        "tst    %3, #0xfe0           \n\t"        \
@@ -553,7 +553,7 @@
 "0:"                                             \
        : "=r" (s), "=r" (d), "=r" (c), "=r" (i)       \
        : "r" (b), "0" (s), "1" (d), "2" (c), "3" (i)  \
-       : "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r12", "memory", "cc" );
+       : "r4", "r5", "r6", "r7", "r8", "r9", "r12", "memory", "cc" );
 
 /* Just for reference (dead code) */
 #define MULADDC_HUIT                                   \
