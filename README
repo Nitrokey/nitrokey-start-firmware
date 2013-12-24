@@ -1,18 +1,18 @@
 Gnuk - An Implementation of USB Cryptographic Token for GnuPG
 
-							  Version 1.1.0
-							     2013-12-20
+							  Version 1.1.1
+							     2013-12-25
 							   Niibe Yutaka
 				      Free Software Initiative of Japan
 
 Warning
 =======
 
-This is an experimental release of Gnuk 1.1.0, which has incompatible
-changes to Gnuk 1.0.x.  Specifically, it now supports overriding key
-import, but importing keys (or generating keys) results password
-reset.  Please update your documentation for Gnuk Token, so that the
-instruction of importing keys won't cause any confusion.
+This is another experimental release of Gnuk 1.1.1, which has
+incompatible changes to Gnuk 1.0.x.  Specifically, it now supports
+overriding key import, but importing keys (or generating keys) results
+password reset.  Please update your documentation for Gnuk Token, so
+that the instruction of importing keys won't cause any confusion.
 
 
 What's Gnuk?
@@ -122,9 +122,9 @@ Ac: ST-Link/V2 is cheap one.  We have a tool/stlinkv2.py as flash ROM
 Release notes
 =============
 
-This is an experimental release in version 1.1 series of Gnuk.
+This is another experimental release in version 1.1 series of Gnuk.
 
-While it is daily use for a year and a half, some newly introduced
+While it is daily use for more than two years, some newly introduced
 features (including key generation and firmware upgrade) should be
 considered experimental.
 

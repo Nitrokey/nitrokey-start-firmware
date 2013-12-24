@@ -94,7 +94,6 @@ if __name__ == '__main__':
 
     passwd = DEFAULT_PW3
     keyno = 0
-    print sys.argv
     while len(sys.argv) > 3:
         option = sys.argv[1]
         sys.argv.pop(1)

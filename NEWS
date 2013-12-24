@@ -1,5 +1,14 @@
 Gnuk NEWS - User visible changes
 
+* Major changes in Gnuk 1.1.1
+
+  Released 2013-12-25, by NIIBE Yutaka
+
+** Improved RSA routine
+Working memory for RSA computation is taken from stack (mostly),
+instead of malloc.
+
+
 * Major changes in Gnuk 1.1.0
 
   Released 2013-12-20, by NIIBE Yutaka
