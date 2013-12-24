@@ -1464,39 +1464,39 @@ static void mpi_montsqr( size_t n, const t_uint *np, t_uint mm, t_uint *d )
 
       x_i = *xj;
       *xj++ = c;
-      asm ("mov    r8, #0\n\t"  /* R8 := 0, the constant ZERO from here.  */
-           /* (C,R4,R5) := w_i_i + x_i*x_i; w_i_i := R5; */
+      asm (/* (C,R4,R5) := w_i_i + x_i*x_i; w_i_i := R5; */
            "ldr    r5, [%[wij]]\n\t"          /* R5 := w_i_i; */
-           "mov    %[c], r8\n\t"
-           "umull  r6, r11, %[x_i], %[x_i]\n\t"
+           "mov    %[c], #0\n\t"
+           "umull  r6, r12, %[x_i], %[x_i]\n\t"
            "adds   r5, r5, r6\n\t"
-           "adc    r4, r8, r11\n\t"
+           "adc    r4, r12, #0\n\t"
            "str    r5, [%[wij]], #4\n\t"
            "cmp    %[xj], %[x_max1]\n\t"
-           "beq    1f\n\t"
            "bhi    0f\n"
+           "mov    r8, %[c]\n\t"  /* R8 := 0, the constant ZERO from here.  */
+           "beq    1f\n\t"
    "2:\n\t"
            "ldmia  %[xj]!, { r9, r10 }\n\t"
            "ldmia  %[wij], { r5, r7 }\n\t"
            /* (C,R4,R5) := (C,R4) + w_i_j + 2*x_i*x_j; */
-           "umull  r6, r11, %[x_i], r9\n\t"
+           "umull  r6, r12, %[x_i], r9\n\t"
            "adds   r5, r5, r4\n\t"
            "adc    r4, %[c], r8\n\t"
            "adds   r5, r5, r6\n\t"
-           "adcs   r4, r4, r11\n\t"
+           "adcs   r4, r4, r12\n\t"
            "adc    %[c], r8, r8\n\t"
            "adds   r5, r5, r6\n\t"
-           "adcs   r4, r4, r11\n\t"
+           "adcs   r4, r4, r12\n\t"
            "adc    %[c], %[c], r8\n\t"
            /* (C,R4,R7) := (C,R4) + w_i_j + 2*x_i*x_j; */
            "adds   r7, r7, r4\n\t"
            "adc    r4, %[c], r8\n\t"
-           "umull  r6, r11, %[x_i], r10\n\t"
+           "umull  r6, r12, %[x_i], r10\n\t"
            "adds   r7, r7, r6\n\t"
-           "adcs   r4, r4, r11\n\t"
+           "adcs   r4, r4, r12\n\t"
            "adc    %[c], r8, r8\n\t"
            "adds   r7, r7, r6\n\t"
-           "adcs   r4, r4, r11\n\t"
+           "adcs   r4, r4, r12\n\t"
            "adc    %[c], %[c], r8\n\t"
            /**/
            "stmia  %[wij]!, { r5, r7 }\n\t"
@@ -1509,23 +1509,23 @@ static void mpi_montsqr( size_t n, const t_uint *np, t_uint mm, t_uint *d )
            "ldr    r7, [%[xj]], #4\n\t"
            "adds   r5, r5, r4\n\t"
            "adc    r4, %[c], r8\n\t"
-           "umull  r6, r11, %[x_i], r7\n\t"
+           "umull  r6, r12, %[x_i], r7\n\t"
            "adds   r5, r5, r6\n\t"
-           "adcs   r4, r4, r11\n\t"
+           "adcs   r4, r4, r12\n\t"
            "adc    %[c], r8, r8\n\t"
            "adds   r5, r5, r6\n\t"
-           "adcs   r4, r4, r11\n\t"
+           "adcs   r4, r4, r12\n\t"
            "adc    %[c], %[c], r8\n\t"
            "str    r5, [%[wij]], #4\n"
    "0:\n\t"
            "ldr    r5, [%[wij]]\n\t"
            "adds   r4, r4, r5\n\t"
-           "adc    %[c], %[c], r8\n\t"
+           "adc    %[c], %[c], #0\n\t"
            "str    r4, [%[wij]]"
            : [c] "=&r" (c), [wij] "=r" (wij), [xj] "=r" (xj)
            : [x_i] "r" (x_i), [x_max1] "r" (&d[n*2-1]),
              "[wij]" (wij), "[xj]" (xj)
-           : "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "memory", "cc" );
+           : "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r12", "memory", "cc");
 
         c += mpi_mul_hlp( n, np, &d[i], d[i] * mm );
     }
