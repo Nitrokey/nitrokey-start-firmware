@@ -51,7 +51,7 @@ Host prerequisites for using Gnuk Token
 
 * [Optional] PC/SC lite (pcscd, libccid)
 
-* SSH: openssh
+* [Optional] SSH: openssh
 
 * [optional] Web: scute, firefox
 

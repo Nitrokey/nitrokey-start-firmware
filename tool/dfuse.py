@@ -111,7 +111,7 @@ class DFU_STM32(object):
         self.__devhandle = device.open()
         self.__devhandle.setConfiguration(configuration)
         self.__devhandle.claimInterface(interface)
-        self.__devhandle.setAltInterface(interface)
+        self.__devhandle.setAltInterface(0)
 
         self.__intf = interface.interfaceNumber
         self.__alt = interface.alternateSetting

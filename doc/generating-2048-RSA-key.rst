@@ -121,7 +121,7 @@ Then, GnuPG generate keys.  It takes some time.  ::
   Not enough random bytes available.  Please do some other work to give
   the OS a chance to collect more entropy! (Need 15 more bytes)
   ...+++++
-  gpg: key 28C0CD7C marked as ultimately trusted
+  gpg: key 4CA7BABE marked as ultimately trusted
   public and secret key created and signed.
   
   gpg: checking the trustdb

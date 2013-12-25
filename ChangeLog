@@ -1,3 +1,11 @@
+2013-12-25  Niibe Yutaka  <gniibe@fsij.org>
+
+	* tool/gnuk_token.py (gnuk_token.__init__, regnual.__init__): Fix
+	the argument of setAltInterface.
+	* tool/gnuk_upgrade.py: Likewise.
+	* tool/dfuse.py (DFU_STM32.__init__): Likewise.
+	* tool/stlinkv2.py (stlinkv2.__init__): Likewise.
+
 2013-12-24  Niibe Yutaka  <gniibe@fsij.org>
 
 	* polarssl/include/polarssl/bn_mul.h (MULADDC_1024_CORE)

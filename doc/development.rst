@@ -38,7 +38,7 @@ You need GNU toolchain and newlib for 'arm-none-eabi' target.
 There is "gcc-arm-embedded" project.  See:
 https://launchpad.net/gcc-arm-embedded/
 
-It is based on GCC 4.7 (as of October, 2013).  We are using "-O3 -Os"
+It is based on GCC 4.8 (as of December, 2013).  We are using "-O3 -Os"
 for compiler option.
 
 

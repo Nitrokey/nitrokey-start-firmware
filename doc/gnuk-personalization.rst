@@ -9,11 +9,10 @@ Personalize your Gnuk Token
 Invoke GnuPG with the option ``--card-edit``.  ::
 
   $ gpg --card-edit
-  gpg: detected reader `FSIJ Gnuk (0.12-34006E06) 00 00'
-  Application ID ...: D276000124010200F517000000010000
+  Application ID ...: D276000124010200FFFE330069060000
   Version ..........: 2.0
-  Manufacturer .....: FSIJ
-  Serial number ....: 00000001
+  Manufacturer .....: unmanaged S/N range
+  Serial number ....: 33006906
   Name of cardholder: [not set]
   Language prefs ...: [not set]
   Sex ..............: unspecified
@@ -28,8 +27,10 @@ Invoke GnuPG with the option ``--card-edit``.  ::
   Encryption key....: [none]
   Authentication key: [none]
   General key info..: [none]
+  
+  gpg/card> 
 
-It shows the status of the card (as same as the output of ``gpg --card-status``).  It shows token's name and its USB serial string (0.12-34006E06) from PC/SC-lite.
+It shows the status of the card (as same as the output of ``gpg --card-status``).
 
 Then, GnuPG enters its own command interaction mode.  The prompt is ``gpg/card>``.
 

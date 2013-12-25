@@ -56,7 +56,6 @@ and type ``1`` to say it's signature key. ::
 
   gpg> keytocard
   Really move the primary key? (y/N) y
-  gpg: detected reader `FSIJ Gnuk (0.12-38FF6A06) 00 00'
   Signature key ....: [none]
   Encryption key....: [none]
   Authentication key: [none]

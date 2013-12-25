@@ -59,7 +59,7 @@ class regnual(object):
         except:
             pass
         self.__devhandle.claimInterface(intf)
-        self.__devhandle.setAltInterface(intf)
+        self.__devhandle.setAltInterface(0)
 
     def mem_info(self):
         mem = self.__devhandle.controlMsg(requestType = 0xc0, request = 0,
@@ -172,7 +172,7 @@ class gnuk_token(object):
         except:
             pass
         self.__devhandle.claimInterface(interface)
-        self.__devhandle.setAltInterface(interface)
+        self.__devhandle.setAltInterface(0)
 
         self.__intf = interface.interfaceNumber
         self.__alt = interface.alternateSetting

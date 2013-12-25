@@ -218,7 +218,7 @@ External source code
 
 Gnuk is distributed with external source code.
 
-* chopstx/  -- Chopstx 0.04
+* chopstx/  -- Chopstx 0.03 (+ STBee support)
 
   We use Chopstx as the kernel for Gnuk.
 

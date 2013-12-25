@@ -146,7 +146,7 @@ class stlinkv2(object):
         except:
             pass
         self.__devhandle.claimInterface(intf)
-        # self.__devhandle.setAltInterface(intf)  # This is not good for libusb-win32
+        # self.__devhandle.setAltInterface(0)  # This was not good for libusb-win32 with wrong arg intf, new correct value 0 would be OK
 
     def shutdown(self):
         self.__devhandle.releaseInterface()

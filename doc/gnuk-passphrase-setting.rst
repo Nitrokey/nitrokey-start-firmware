@@ -28,27 +28,38 @@ Set up PW1, PW3 and reset code
 Invoke GnuPG with the option ``--card-edit``.  ::
 
   $ gpg --card-edit
-  gpg: detected reader `FSIJ Gnuk (0.12-34006E06) 00 00'
   Application ID ...: D276000124010200F517000000010000
   Version ..........: 2.0
   Manufacturer .....: FSIJ
   Serial number ....: 00000001
-  Name of cardholder: [not set]
-  Language prefs ...: [not set]
-  Sex ..............: unspecified
-  URL of public key : [not set]
-  Login data .......: [not set]
-  Signature PIN ....: forced
+  Name of cardholder: Yutaka Niibe
+  Language prefs ...: ja
+  Sex ..............: male
+  URL of public key : http://www.gniibe.org/gniibe.asc
+  Login data .......: gniibe
+  Signature PIN ....: not forced
   Key attributes ...: 2048R 2048R 2048R
   Max. PIN lengths .: 127 127 127
   PIN retry counter : 3 3 3
   Signature counter : 0
-  Signature key ....: [none]
-  Encryption key....: [none]
-  Authentication key: [none]
-  General key info..: [none]
+  Signature key ....: 1241 24BD 3B48 62AF 7A0A  42F1 00B4 5EBD 4CA7 BABE
+        created ....: 2010-10-15 06:46:33
+  Encryption key....: 42E1 E805 4E6F 1F30 26F2  DC79 79A7 9093 0842 39CF
+        created ....: 2010-10-15 06:46:33
+  Authentication key: B4D9 7142 C42D 6802 F5F7  4E70 9C33 B6BA 5BB0 65DC
+        created ....: 2010-10-22 06:06:36
+  General key info..: 
+  pub  2048R/4CA7BABE 2010-10-15 NIIBE Yutaka <gniibe@fsij.org>
+  sec>  2048R/4CA7BABE  created: 2010-10-15  expires: never     
+                        card-no: F517 00000001
+  ssb>  2048R/084239CF  created: 2010-10-15  expires: never     
+                        card-no: F517 00000001
+  ssb>  2048R/5BB065DC  created: 2010-10-22  expires: never     
+                        card-no: F517 00000001
 
-It shows the status of the card (as same as the output of ``gpg --card-status``).  It shows token's name and its USB serial string (0.12-34006E06) from PC/SC-lite.
+  gpg/card> 
+
+It shows the status of the card (as same as the output of ``gpg --card-status``).
 
 Then, GnuPG enters its own command interaction mode.  The prompt is ``gpg/card>``.
 
@@ -83,8 +94,13 @@ please change admin-password at first.
 Then, the token works as same as OpenPGPcard specification
 with regards to PW1 and PW3.)
 
-Lastly, I setup reset code.  This is optional. ::
+Lastly, I setup reset code, entering admin mode.
+Having reset code, you can unblock PIN when the token will be blocked
+(by wrong attempt to entering PIN).  This is optional step. ::
 
+  gpg/card> admin
+  Admin commands are allowed
+  
   gpg/card> passwd
   gpg: OpenPGP card no. D276000124010200F517000000010000 detected
   

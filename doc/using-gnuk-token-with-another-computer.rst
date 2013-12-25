@@ -18,7 +18,6 @@ key reference (to the token) in ``.gnupg``.
 To do that, invoke GnuPG with ``--card-edit`` option. ::
 
   $ gpg --card-edit
-  gpg: detected reader `FSIJ Gnuk (0.12-37006A06) 00 00'
   Application ID ...: D276000124010200F517000000010000
   Version ..........: 2.0
   Manufacturer .....: FSIJ
