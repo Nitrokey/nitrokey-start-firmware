@@ -1,5 +1,7 @@
 2013-12-25  Niibe Yutaka  <gniibe@fsij.org>
 
+	* VERSION: 1.1.1.
+
 	* tool/gnuk_token.py (gnuk_token.__init__, regnual.__init__): Fix
 	the argument of setAltInterface.
 	* tool/gnuk_upgrade.py: Likewise.
