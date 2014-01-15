@@ -1,3 +1,8 @@
+2014-01-15  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/bn.c (bn256_is_zero, bn256_is_ge, bn256_cmp): Computation
+	should be constant time.
+
 2013-12-25  Niibe Yutaka  <gniibe@fsij.org>
 
 	* VERSION: 1.1.1.

@@ -1,7 +1,7 @@
 /*
  * bn.c -- 256-bit (and 512-bit) bignum calculation
  *
- * Copyright (C) 2011, 2013 Free Software Initiative of Japan
+ * Copyright (C) 2011, 2013, 2014 Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
  * This file is a part of Gnuk, a GnuPG USB Token implementation.
@@ -278,12 +278,12 @@ int
 bn256_is_zero (const bn256 *X)
 {
   int i;
+  int r = 1;
 
   for (i = 0; i < BN256_WORDS; i++)
-    if (X->words[i] != 0)
-      return 0;
+    r &=  (X->words[i] == 0);
 
-  return 1;
+  return r;
 }
 
 int
@@ -295,30 +295,24 @@ bn256_is_even (const bn256 *X)
 int
 bn256_is_ge (const bn256 *A, const bn256 *B)
 {
-  int i;
+  uint32_t borrow;
+  bn256 tmp[1];
 
-  for (i = BN256_WORDS - 1; i >= 0; i--)
-    if (A->words[i] > B->words[i])
-      return 1;
-    else if (A->words[i] < B->words[i])
-      return 0;
-
-  return 1;
+  borrow = bn256_sub (tmp, A, B);
+  return borrow == 0;
 }
 
 
 int
 bn256_cmp (const bn256 *A, const bn256 *B)
 {
-  int i;
+  uint32_t borrow;
+  int is_zero;
+  bn256 tmp[1];
 
-  for (i = BN256_WORDS - 1; i >= 0; i--)
-    if (A->words[i] > B->words[i])
-      return 1;
-    else if (A->words[i] < B->words[i])
-      return -1;
-
-  return 0;
+  borrow = bn256_sub (tmp, A, B);
+  is_zero = bn256_is_zero (tmp);
+  return is_zero ? 0 : (borrow ? -1 : 1);
 }
 
 
