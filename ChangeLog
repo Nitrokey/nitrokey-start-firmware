@@ -1,3 +1,7 @@
+2014-01-20  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/fe25519.h, src/fe25519.c: New.
+
 2014-01-15  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/bn.c (bn256_is_zero, bn256_is_ge, bn256_cmp): Computation
