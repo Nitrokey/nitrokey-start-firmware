@@ -116,11 +116,15 @@ mod_reduce (bn256 *X, const bn512 *A, const bn256 *B, const bn256 *MU_lower)
   q_big->word[8] -= tmp->word[8];
 
   carry = q_big->word[8];
-  while (carry)
-    {
-      borrow_next = bn256_sub (X, X, B);
-      carry -= borrow_next;
-    }
+  if (carry)
+    carry -= bn256_sub (X, X, B);
+  else
+    bn256_sub (q, X, B);
+
+  if (carry)
+    carry -= bn256_sub (X, X, B);
+  else
+    bn256_sub (q, X, B);
 
   borrow = bn256_sub (q, X, B);
   if (borrow)
