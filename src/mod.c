@@ -105,8 +105,7 @@ mod_reduce (bn256 *X, const bn512 *A, const bn256 *B, const bn256 *MU_lower)
   q_big->word[0] = A->word[0];
 
   bn256_mul (tmp, q, B);
-  if (carry)
-    tmp->word[8] += B->word[0];
+  tmp->word[8] += carry * B->word[0];
   tmp->word[15] = tmp->word[14] = tmp->word[13] = tmp->word[12]
     = tmp->word[11] = tmp->word[10] = tmp->word[9] = 0;
 
@@ -123,8 +122,11 @@ mod_reduce (bn256 *X, const bn512 *A, const bn256 *B, const bn256 *MU_lower)
       carry -= borrow_next;
     }
 
-  if (bn256_is_ge (X, B))
-    bn256_sub (X, X, B);
+  borrow = bn256_sub (q, X, B);
+  if (borrow)
+    memcpy (q, X, sizeof (bn256));
+  else
+    memcpy (X, q, sizeof (bn256));
 }
 
 /**
