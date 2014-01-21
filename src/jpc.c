@@ -113,12 +113,11 @@ jpc_add_ac_signed (jpc *X, const jpc *A, const ac *B, int minus)
   else
     modp256_mul (b, b, B->y);
 
-  if (bn256_cmp (A->x, a) == 0)
-    if (bn256_cmp (A->y, b) == 0)
-      {
-	jpc_double (X, A);
-	return;
-      }
+  if (bn256_cmp (A->x, a) == 0 && bn256_cmp (A->y, b) == 0)
+    {
+      jpc_double (X, A);
+      return;
+    }
 
   modp256_sub (c, a, A->x);
   modp256_sub (d, b, A->y);
