@@ -1,7 +1,7 @@
 /*
  * modp256.c -- modulo P256 arithmetic
  *
- * Copyright (C) 2011, 2013 Free Software Initiative of Japan
+ * Copyright (C) 2011, 2013, 2014 Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
  * This file is a part of Gnuk, a GnuPG USB Token implementation.
@@ -52,11 +52,14 @@ const bn256 p256 = { {0xffffffff, 0xffffffff, 0xffffffff, 0x00000000,
 void
 modp256_add (bn256 *X, const bn256 *A, const bn256 *B)
 {
-  int carry;
+  uint32_t carry;
+  bn256 tmp[1];
 
   carry = bn256_add (X, A, B);
   if (carry)
     bn256_sub (X, X, P256);
+  else
+    bn256_sub (tmp, X, P256);
 }
 
 /**
@@ -65,11 +68,14 @@ modp256_add (bn256 *X, const bn256 *A, const bn256 *B)
 void
 modp256_sub (bn256 *X, const bn256 *A, const bn256 *B)
 {
-  int borrow;
+  uint32_t borrow;
+  bn256 tmp[1];
 
   borrow = bn256_sub (X, A, B);
   if (borrow)
     bn256_add (X, X, P256);
+  else
+    bn256_add (tmp, X, P256);
 }
 
 /**
@@ -79,6 +85,7 @@ void
 modp256_reduce (bn256 *X, const bn512 *A)
 {
   bn256 tmp[1];
+  uint32_t borrow;
 
 #define S1 X
 #define S2 tmp
@@ -181,8 +188,11 @@ modp256_reduce (bn256 *X, const bn512 *A)
   /* X -= S9 */
   modp256_sub (X, X, S9);
 
-  if (bn256_is_ge (X, P256))
-    bn256_sub (X, X, P256);
+  borrow = bn256_sub (tmp, X, P256);
+  if (borrow)
+    memcpy (tmp, X, sizeof (bn256));
+  else
+    memcpy (X, tmp, sizeof (bn256));
 }
 
 /**
@@ -218,8 +228,10 @@ modp256_sqr (bn256 *X, const bn256 *A)
 int
 modp256_inv (bn256 *C, const bn256 *a)
 {
-  bn256 u[1], v[1];
+  bn256 u[1], v[1], tmp[1];
   bn256 A[1] = { { { 1, 0, 0, 0, 0, 0, 0, 0 } } };
+  uint32_t carry;
+#define borrow carry
 
   if (bn256_is_zero (a))
     return -1;
@@ -234,30 +246,30 @@ modp256_inv (bn256 *C, const bn256 *a)
 	{
 	  bn256_shift (u, u, -1);
 	  if (bn256_is_even (A))
-	    bn256_shift (A, A, -1);
-	  else
 	    {
-	      int carry = bn256_add (A, A, P256);
-
-	      bn256_shift (A, A, -1);
-	      if (carry)
-		A->word[7] |= 0x80000000;
+	      bn256_add (tmp, A, P256);
+	      carry = 0;
 	    }
+	  else
+	    carry = bn256_add (A, A, P256);
+
+	  bn256_shift (A, A, -1);
+	  A->word[7] |= carry * 0x80000000;
 	}
 
       while (bn256_is_even (v))
 	{
 	  bn256_shift (v, v, -1);
 	  if (bn256_is_even (C))
-	    bn256_shift (C, C, -1);
-	  else
 	    {
-	      int carry = bn256_add (C, C, P256);
-
-	      bn256_shift (C, C, -1);
-	      if (carry)
-		C->word[7] |= 0x80000000;
+	      bn256_add (tmp, C, P256);
+	      carry = 0;
 	    }
+	  else
+	    carry = bn256_add (C, C, P256);
+
+	  bn256_shift (C, C, -1);
+	  C->word[7] |= carry * 0x80000000;
 	}
 
       if (bn256_is_ge (u, v))
@@ -283,6 +295,7 @@ void
 modp256_shift (bn256 *X, const bn256 *A, int shift)
 {
   uint32_t carry;
+#define borrow carry
   bn256 tmp[1];
 
   carry = bn256_shift (X, A, shift);
@@ -300,6 +313,9 @@ modp256_shift (bn256 *X, const bn256 *A, int shift)
   tmp->word[3] = carry;
   modp256_sub (X, X, tmp);
 
-  if (bn256_is_ge (X, P256))
-    bn256_sub (X, X, P256);
+  borrow = bn256_sub (tmp, X, P256);
+  if (borrow)
+    memcpy (tmp, X, sizeof (bn256));
+  else
+    memcpy (X, tmp, sizeof (bn256));
 }

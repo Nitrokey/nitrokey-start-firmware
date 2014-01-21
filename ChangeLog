@@ -1,5 +1,12 @@
 2014-01-21  Niibe Yutaka  <gniibe@fsij.org>
 
+	* src/modp256.c (modp256_add, modp256_sub, modp256_reduce)
+	(modp256_shift): Fix for constant time.
+	(modp256_inv): Likewise (not fully constant time, yet).
+
+	* src/mod.c (mod_reduce): Fix for constant time.
+	(mod_inv): Likewise (not fully constant time, yet).
+
 	* src/bn.h (bn256, bn512): words -> word.
 	* src/ec_p256.h (naf4_257): Likewise.
 
