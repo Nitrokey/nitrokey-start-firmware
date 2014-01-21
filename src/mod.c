@@ -1,7 +1,7 @@
 /*
  * mod.c -- modulo arithmetic
  *
- * Copyright (C) 2011 Free Software Initiative of Japan
+ * Copyright (C) 2011, 2014 Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
  * This file is a part of Gnuk, a GnuPG USB Token implementation.
@@ -140,8 +140,10 @@ mod_reduce (bn256 *X, const bn512 *A, const bn256 *B, const bn256 *MU_lower)
 void
 mod_inv (bn256 *C, const bn256 *X, const bn256 *N)
 {
-  bn256 u[1], v[1];
+  bn256 u[1], v[1], tmp[1];
   bn256 A[1] = { { { 1, 0, 0, 0, 0, 0, 0, 0 } } };
+  uint32_t carry;
+#define borrow carry
 
   memset (C, 0, sizeof (bn256));
   memcpy (u, X, sizeof (bn256));
@@ -153,49 +155,49 @@ mod_inv (bn256 *C, const bn256 *X, const bn256 *N)
 	{
 	  bn256_shift (u, u, -1);
 	  if (bn256_is_even (A))
-	    bn256_shift (A, A, -1);
-	  else
 	    {
-	      int carry = bn256_add (A, A, N);
-
-	      bn256_shift (A, A, -1);
-	      if (carry)
-		A->word[7] |= 0x80000000;
+	      bn256_add (tmp, A, N);
+	      carry = 0;
 	    }
+	  else
+	    carry = bn256_add (A, A, N);
+
+	  bn256_shift (A, A, -1);
+	  A->word[7] |= carry * 0x80000000;
 	}
 
       while (bn256_is_even (v))
 	{
 	  bn256_shift (v, v, -1);
 	  if (bn256_is_even (C))
-	    bn256_shift (C, C, -1);
-	  else
 	    {
-	      int carry = bn256_add (C, C, N);
-
-	      bn256_shift (C, C, -1);
-	      if (carry)
-		C->word[7] |= 0x80000000;
+	      bn256_add (tmp, C, N);
+	      carry = 0;
 	    }
+	  else
+	    carry = bn256_add (C, C, N);
+
+	  bn256_shift (C, C, -1);
+	  C->word[7] |= carry * 0x80000000;
 	}
 
       if (bn256_is_ge (u, v))
 	{
-	  int borrow;
-
 	  bn256_sub (u, u, v);
-	  borrow = bn256_sub (A, A, C);
+	  borrow = bn256_sub (tmp, A, C);
 	  if (borrow)
-	    bn256_add (A, A, N);
+	    memcpy (tmp, A, sizeof (bn256));
+	  else
+	    memcpy (A, tmp, sizeof (bn256));
 	}
       else
 	{
-	  int borrow;
-
 	  bn256_sub (v, v, u);
-	  borrow = bn256_sub (C, C, A);
+	  borrow = bn256_sub (tmp, C, A);
 	  if (borrow)
-	    bn256_add (C, C, N);
+	    memcpy (tmp, C, sizeof (bn256));
+	  else
+	    memcpy (C, tmp, sizeof (bn256));
 	}
     }
 }
