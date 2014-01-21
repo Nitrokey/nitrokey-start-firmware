@@ -184,20 +184,20 @@ mod_inv (bn256 *C, const bn256 *X, const bn256 *N)
       if (bn256_is_ge (u, v))
 	{
 	  bn256_sub (u, u, v);
-	  borrow = bn256_sub (tmp, A, C);
+	  borrow = bn256_sub (A, A, C);
 	  if (borrow)
-	    memcpy (tmp, A, sizeof (bn256));
+	    bn256_add (A, A, N);
 	  else
-	    memcpy (A, tmp, sizeof (bn256));
+	    bn256_add (tmp, A, N);
 	}
       else
 	{
 	  bn256_sub (v, v, u);
-	  borrow = bn256_sub (tmp, C, A);
+	  borrow = bn256_sub (C, C, A);
 	  if (borrow)
-	    memcpy (tmp, C, sizeof (bn256));
+	    bn256_add (C, C, N);
 	  else
-	    memcpy (C, tmp, sizeof (bn256));
+	    bn256_add (tmp, C, N);
 	}
     }
 }
