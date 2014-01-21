@@ -259,14 +259,14 @@ compute_kG (ac *X, const bn256 *K)
       if (!q_is_infinite)
 	jpc_double (Q, Q);
 
-      k_i = (((K->words[6] >> i) & 1) << 3)
-	| (((K->words[4] >> i) & 1) << 2)
-	| (((K->words[2] >> i) & 1) << 1)
-	| ((K->words[0] >> i) & 1);
-      k_i_e = (((K->words[7] >> i) & 1) << 3)
-	| (((K->words[5] >> i) & 1) << 2)
-	| (((K->words[3] >> i) & 1) << 1)
-	| ((K->words[1] >> i) & 1);
+      k_i = (((K->word[6] >> i) & 1) << 3)
+	| (((K->word[4] >> i) & 1) << 2)
+	| (((K->word[2] >> i) & 1) << 1)
+	| ((K->word[0] >> i) & 1);
+      k_i_e = (((K->word[7] >> i) & 1) << 3)
+	| (((K->word[5] >> i) & 1) << 2)
+	| (((K->word[3] >> i) & 1) << 1)
+	| ((K->word[1] >> i) & 1);
 
       if (k_i)
 	{
@@ -274,10 +274,10 @@ compute_kG (ac *X, const bn256 *K)
 	    {
 	      memcpy (Q->x, (&precomputed_KG[k_i - 1])->x, sizeof (bn256));
 	      memcpy (Q->y, (&precomputed_KG[k_i - 1])->y, sizeof (bn256));
-	      Q->z->words[0] = 1;
-	      Q->z->words[1] = Q->z->words[2] = Q->z->words[3]
-		= Q->z->words[4] = Q->z->words[5] = Q->z->words[6]
-		= Q->z->words[7] = 0;
+	      Q->z->word[0] = 1;
+	      Q->z->word[1] = Q->z->word[2] = Q->z->word[3]
+		= Q->z->word[4] = Q->z->word[5] = Q->z->word[6]
+		= Q->z->word[7] = 0;
 	      q_is_infinite = 0;
 	    }
 	  else
@@ -290,7 +290,7 @@ compute_kG (ac *X, const bn256 *K)
 	      memcpy (Q->x, (&precomputed_2E_KG[k_i_e - 1])->x, sizeof (bn256));
 	      memcpy (Q->y, (&precomputed_2E_KG[k_i_e - 1])->y, sizeof (bn256));
 	      memset (Q->z, 0, sizeof (bn256));
-	      Q->z->words[0] = 1;
+	      Q->z->word[0] = 1;
 	      q_is_infinite = 0;
 	    }
 	  else
@@ -320,8 +320,8 @@ naf4_257_set (naf4_257 *NAF_K, int i, int ki)
     NAF_K->last_nibble = ki;
   else
     {
-      NAF_K->words[i/8] &= ~(0x0f << ((i & 0x07)*4));
-      NAF_K->words[i/8] |= (ki << ((i & 0x07)*4));
+      NAF_K->word[i/8] &= ~(0x0f << ((i & 0x07)*4));
+      NAF_K->word[i/8] |= (ki << ((i & 0x07)*4));
     }
 }
 
@@ -334,7 +334,7 @@ naf4_257_get (const naf4_257 *NAF_K, int i)
     ki = NAF_K->last_nibble;
   else
     {
-      ki = NAF_K->words[i/8] >> ((i & 0x07)*4);
+      ki = NAF_K->word[i/8] >> ((i & 0x07)*4);
       ki &= 0x0f;
     }
 
@@ -361,7 +361,7 @@ compute_naf4_257 (naf4_257 *NAF_K, const bn256 *K)
 	naf4_257_set (NAF_K, i, 0);
       else
 	{
-	  int ki = (K_tmp->words[0]) & 0x0f;
+	  int ki = (K_tmp->word[0]) & 0x0f;
 
 	  if ((ki & 0x08))
 	    {
@@ -369,7 +369,7 @@ compute_naf4_257 (naf4_257 *NAF_K, const bn256 *K)
 	      ki = ki - 16;
 	    }
 	  else
-	    K_tmp->words[0] &= 0xfffffff0;
+	    K_tmp->word[0] &= 0xfffffff0;
 
 	  naf4_257_set (NAF_K, i, ki);
 	}
@@ -377,7 +377,7 @@ compute_naf4_257 (naf4_257 *NAF_K, const bn256 *K)
       bn256_shift (K_tmp, K_tmp, -1);
       if (carry)
 	{
-	  K_tmp->words[7] |= 0x80000000;
+	  K_tmp->word[7] |= 0x80000000;
 	  carry = 0;
 	}
       i++;
@@ -451,7 +451,7 @@ compute_kP (ac *X, const naf4_257 *NAF_K, const ac *P)
     memcpy (Q->x, P->x, sizeof (bn256));
     memcpy (Q->y, P->y, sizeof (bn256));
     memset (Q->z, 0, sizeof (bn256));
-    Q->z->words[0] = 1;
+    Q->z->word[0] = 1;
 
     jpc_double (Q, Q);
     jpc_add_ac (Q1, Q, P);
@@ -465,7 +465,7 @@ compute_kP (ac *X, const naf4_257 *NAF_K, const ac *P)
     memcpy (Q->x, P3->x, sizeof (bn256));
     memcpy (Q->y, P3->y, sizeof (bn256));
     memset (Q->z, 0, sizeof (bn256));
-    Q->z->words[0] = 1;
+    Q->z->word[0] = 1;
     jpc_double (Q, Q);
     jpc_add_ac (Q1, Q, P);
     if (jpc_to_ac (P7, Q1) < 0)	/* Never occurs, except coding errors.  */
@@ -490,7 +490,7 @@ compute_kP (ac *X, const naf4_257 *NAF_K, const ac *P)
 	      else
 		memcpy (Q->y, p_Pi[NAF_K_INDEX(k_i)]->y, sizeof (bn256));
 	      memset (Q->z, 0, sizeof (bn256));
-	      Q->z->words[0] = 1;
+	      Q->z->word[0] = 1;
 	      q_is_infinite = 0;
 	    }
 	  else

@@ -96,7 +96,7 @@ jpc_add_ac_signed (jpc *X, const jpc *A, const ac *B, int minus)
       else
 	memcpy (X->y, B->y, sizeof (bn256));
       memset (X->z, 0, sizeof (bn256));
-      X->z->words[0] = 1;
+      X->z->word[0] = 1;
       return;
     }
 

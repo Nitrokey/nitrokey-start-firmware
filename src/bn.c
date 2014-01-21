@@ -34,9 +34,9 @@ bn256_add (bn256 *X, const bn256 *A, const bn256 *B)
   uint32_t *px;
   const uint32_t *pa, *pb;
 
-  px = X->words;
-  pa = A->words;
-  pb = B->words;
+  px = X->word;
+  pa = A->word;
+  pb = B->word;
 
   for (i = 0; i < BN256_WORDS; i++)
     {
@@ -60,9 +60,9 @@ bn256_sub (bn256 *X, const bn256 *A, const bn256 *B)
   uint32_t *px;
   const uint32_t *pa, *pb;
 
-  px = X->words;
-  pa = A->words;
-  pb = B->words;
+  px = X->word;
+  pa = A->word;
+  pb = B->word;
 
   for (i = 0; i < BN256_WORDS; i++)
     {
@@ -87,8 +87,8 @@ bn256_add_uint (bn256 *X, const bn256 *A, uint32_t w)
   uint32_t *px;
   const uint32_t *pa;
 
-  px = X->words;
-  pa = A->words;
+  px = X->word;
+  pa = A->word;
 
   for (i = 0; i < BN256_WORDS; i++)
     {
@@ -115,8 +115,8 @@ bn256_sub_uint (bn256 *X, const bn256 *A, uint32_t w)
   uint32_t *px;
   const uint32_t *pa;
 
-  px = X->words;
-  pa = A->words;
+  px = X->word;
+  pa = A->word;
 
   for (i = 0; i < BN256_WORDS; i++)
     {
@@ -167,7 +167,7 @@ bn256_mul (bn512 *X, const bn256 *A, const bn256 *B)
 
 	  j = k - i;
 
-	  uv = ((uint64_t )A->words[i])*((uint64_t )B->words[j]);
+	  uv = ((uint64_t )A->word[i])*((uint64_t )B->word[j]);
 	  v = uv;
 	  u = (uv >> 32);
 	  r0 += v;
@@ -179,13 +179,13 @@ bn256_mul (bn512 *X, const bn256 *A, const bn256 *B)
 	  r2 += carry;
 	}
 
-      X->words[k] = r0;
+      X->word[k] = r0;
       r0 = r1;
       r1 = r2;
       r2 = 0;
     }
 
-  X->words[k] = r0;
+  X->word[k] = r0;
 }
 
 void
@@ -217,7 +217,7 @@ bn256_sqr (bn512 *X, const bn256 *A)
 
 	  j = k - i;
 
-	  uv = ((uint64_t )A->words[i])*((uint64_t )A->words[j]);
+	  uv = ((uint64_t )A->word[i])*((uint64_t )A->word[j]);
 	  if (i < j)
 	    {
 	      if ((uv >> 63) != 0)
@@ -235,13 +235,13 @@ bn256_sqr (bn512 *X, const bn256 *A)
 	  r2 += carry;
 	}
 
-      X->words[k] = r0;
+      X->word[k] = r0;
       r0 = r1;
       r1 = r2;
       r2 = 0;
     }
 
-  X->words[k] = r0;
+  X->word[k] = r0;
 }
 
 uint32_t
@@ -254,8 +254,8 @@ bn256_shift (bn256 *X, const bn256 *A, int shift)
     {
       for (i = 0; i < BN256_WORDS; i++)
 	{
-	  next_carry = A->words[i] >> (32 - shift);
-	  X->words[i] = (A->words[i] << shift) | carry;
+	  next_carry = A->word[i] >> (32 - shift);
+	  X->word[i] = (A->word[i] << shift) | carry;
 	  carry = next_carry;
 	}
     }
@@ -265,8 +265,8 @@ bn256_shift (bn256 *X, const bn256 *A, int shift)
 
       for (i = BN256_WORDS - 1; i >= 0; i--)
 	{
-	  next_carry = A->words[i] & ((1 << shift) - 1);
-	  X->words[i] = (A->words[i] >> shift) | (carry << (32 - shift));
+	  next_carry = A->word[i] & ((1 << shift) - 1);
+	  X->word[i] = (A->word[i] >> shift) | (carry << (32 - shift));
 	  carry = next_carry;
 	}
     }
@@ -281,7 +281,7 @@ bn256_is_zero (const bn256 *X)
   int r = 1;
 
   for (i = 0; i < BN256_WORDS; i++)
-    r &=  (X->words[i] == 0);
+    r &=  (X->word[i] == 0);
 
   return r;
 }
@@ -289,7 +289,7 @@ bn256_is_zero (const bn256 *X)
 int
 bn256_is_even (const bn256 *X)
 {
-  return !(X->words[0] & 1);
+  return !(X->word[0] & 1);
 }
 
 int
@@ -321,14 +321,14 @@ bn256_random (bn256 *X)
 {
   const uint8_t *rand = random_bytes_get ();
 
-  X->words[7] = ((uint32_t *)rand)[7];
-  X->words[6] = ((uint32_t *)rand)[6];
-  X->words[5] = ((uint32_t *)rand)[5];
-  X->words[4] = ((uint32_t *)rand)[4];
-  X->words[3] = ((uint32_t *)rand)[3];
-  X->words[2] = ((uint32_t *)rand)[2];
-  X->words[1] = ((uint32_t *)rand)[1];
-  X->words[0] = ((uint32_t *)rand)[0];
+  X->word[7] = ((uint32_t *)rand)[7];
+  X->word[6] = ((uint32_t *)rand)[6];
+  X->word[5] = ((uint32_t *)rand)[5];
+  X->word[4] = ((uint32_t *)rand)[4];
+  X->word[3] = ((uint32_t *)rand)[3];
+  X->word[2] = ((uint32_t *)rand)[2];
+  X->word[1] = ((uint32_t *)rand)[1];
+  X->word[0] = ((uint32_t *)rand)[0];
 
   random_bytes_free (rand);
 }

@@ -1,3 +1,8 @@
+2014-01-21  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/bn.h (bn256, bn512): words -> word.
+	* src/ec_p256.h (naf4_257): Likewise.
+
 2014-01-20  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/fe25519.h, src/fe25519.c: New.

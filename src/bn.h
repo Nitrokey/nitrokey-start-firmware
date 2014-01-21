@@ -1,11 +1,11 @@
 #define BN256_WORDS 8
 typedef struct bn256 {
-  uint32_t words[ BN256_WORDS ]; /* Little endian */
+  uint32_t word[ BN256_WORDS ]; /* Little endian */
 } bn256;
 
 #define BN512_WORDS 16
 typedef struct bn512 {
-  uint32_t words[ BN512_WORDS ]; /* Little endian */
+  uint32_t word[ BN512_WORDS ]; /* Little endian */
 } bn512;
 
 uint32_t bn256_add (bn256 *X, const bn256 *A, const bn256 *B);

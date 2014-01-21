@@ -1,6 +1,6 @@
 /* Non-adjacent form */
 typedef struct naf4_257 {
-  uint32_t words[ BN256_WORDS*4 ]; /* Little endian */
+  uint32_t word[ BN256_WORDS*4 ]; /* Little endian */
   uint8_t last_nibble;		   /* most significant nibble */
 } naf4_257;
 

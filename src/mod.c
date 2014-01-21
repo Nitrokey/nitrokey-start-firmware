@@ -39,84 +39,84 @@ mod_reduce (bn256 *X, const bn512 *A, const bn256 *B, const bn256 *MU_lower)
   uint32_t borrow_next;
 
   memset (q, 0, sizeof (bn256));
-  q->words[0] = A->words[15];
+  q->word[0] = A->word[15];
   bn256_mul (tmp, q, MU_lower);
-  tmp->words[8] += A->words[15];
-  carry = (tmp->words[8] < A->words[15]);
-  tmp->words[9] += carry;
+  tmp->word[8] += A->word[15];
+  carry = (tmp->word[8] < A->word[15]);
+  tmp->word[9] += carry;
 
-  q->words[7] = A->words[14];
-  q->words[6] = A->words[13];
-  q->words[5] = A->words[12];
-  q->words[4] = A->words[11];
-  q->words[3] = A->words[10];
-  q->words[2] = A->words[9];
-  q->words[1] = A->words[8];
-  q->words[0] = A->words[7];
+  q->word[7] = A->word[14];
+  q->word[6] = A->word[13];
+  q->word[5] = A->word[12];
+  q->word[4] = A->word[11];
+  q->word[3] = A->word[10];
+  q->word[2] = A->word[9];
+  q->word[1] = A->word[8];
+  q->word[0] = A->word[7];
   bn256_mul (q_big, q, MU_lower);
-  bn256_add ((bn256 *)&q_big->words[8], (bn256 *)&q_big->words[8], q);
+  bn256_add ((bn256 *)&q_big->word[8], (bn256 *)&q_big->word[8], q);
 
-  q->words[0] = q_big->words[9] + tmp->words[1];
-  carry = (q->words[0] < tmp->words[1]);
+  q->word[0] = q_big->word[9] + tmp->word[1];
+  carry = (q->word[0] < tmp->word[1]);
 
-  q->words[1] = q_big->words[10] + carry;
-  carry = (q->words[1] < carry);
-  q->words[1] += tmp->words[2];
-  carry += (q->words[1] < tmp->words[2]);
+  q->word[1] = q_big->word[10] + carry;
+  carry = (q->word[1] < carry);
+  q->word[1] += tmp->word[2];
+  carry += (q->word[1] < tmp->word[2]);
 
-  q->words[2] = q_big->words[11] + carry;
-  carry = (q->words[2] < carry);
-  q->words[2] += tmp->words[3];
-  carry += (q->words[2] < tmp->words[3]);
+  q->word[2] = q_big->word[11] + carry;
+  carry = (q->word[2] < carry);
+  q->word[2] += tmp->word[3];
+  carry += (q->word[2] < tmp->word[3]);
 
-  q->words[3] = q_big->words[12] + carry;
-  carry = (q->words[3] < carry);
-  q->words[3] += tmp->words[4];
-  carry += (q->words[3] < tmp->words[4]);
+  q->word[3] = q_big->word[12] + carry;
+  carry = (q->word[3] < carry);
+  q->word[3] += tmp->word[4];
+  carry += (q->word[3] < tmp->word[4]);
 
-  q->words[4] = q_big->words[13] + carry;
-  carry = (q->words[4] < carry);
-  q->words[4] += tmp->words[5];
-  carry += (q->words[4] < tmp->words[5]);
+  q->word[4] = q_big->word[13] + carry;
+  carry = (q->word[4] < carry);
+  q->word[4] += tmp->word[5];
+  carry += (q->word[4] < tmp->word[5]);
 
-  q->words[5] = q_big->words[14] + carry;
-  carry = (q->words[5] < carry);
-  q->words[5] += tmp->words[6];
-  carry += (q->words[5] < tmp->words[6]);
+  q->word[5] = q_big->word[14] + carry;
+  carry = (q->word[5] < carry);
+  q->word[5] += tmp->word[6];
+  carry += (q->word[5] < tmp->word[6]);
 
-  q->words[6] = q_big->words[15] + carry;
-  carry = (q->words[6] < carry);
-  q->words[6] += tmp->words[7];
-  carry += (q->words[6] < tmp->words[7]);
+  q->word[6] = q_big->word[15] + carry;
+  carry = (q->word[6] < carry);
+  q->word[6] += tmp->word[7];
+  carry += (q->word[6] < tmp->word[7]);
 
-  q->words[7] = carry;
-  q->words[7] += tmp->words[8];
-  carry = (q->words[7] < tmp->words[8]);
+  q->word[7] = carry;
+  q->word[7] += tmp->word[8];
+  carry = (q->word[7] < tmp->word[8]);
 
   memset (q_big, 0, sizeof (bn512));
-  q_big->words[8] = A->words[8];
-  q_big->words[7] = A->words[7];
-  q_big->words[6] = A->words[6];
-  q_big->words[5] = A->words[5];
-  q_big->words[4] = A->words[4];
-  q_big->words[3] = A->words[3];
-  q_big->words[2] = A->words[2];
-  q_big->words[1] = A->words[1];
-  q_big->words[0] = A->words[0];
+  q_big->word[8] = A->word[8];
+  q_big->word[7] = A->word[7];
+  q_big->word[6] = A->word[6];
+  q_big->word[5] = A->word[5];
+  q_big->word[4] = A->word[4];
+  q_big->word[3] = A->word[3];
+  q_big->word[2] = A->word[2];
+  q_big->word[1] = A->word[1];
+  q_big->word[0] = A->word[0];
 
   bn256_mul (tmp, q, B);
   if (carry)
-    tmp->words[8] += B->words[0];
-  tmp->words[15] = tmp->words[14] = tmp->words[13] = tmp->words[12]
-    = tmp->words[11] = tmp->words[10] = tmp->words[9] = 0;
+    tmp->word[8] += B->word[0];
+  tmp->word[15] = tmp->word[14] = tmp->word[13] = tmp->word[12]
+    = tmp->word[11] = tmp->word[10] = tmp->word[9] = 0;
 
-  borrow = bn256_sub (X, (bn256 *)&q_big->words[0], (bn256 *)&tmp->words[0]);
-  borrow_next = (q_big->words[8] < borrow);
-  q_big->words[8] -= borrow;
-  borrow_next += (q_big->words[8] < tmp->words[8]);
-  q_big->words[8] -= tmp->words[8];
+  borrow = bn256_sub (X, (bn256 *)&q_big->word[0], (bn256 *)&tmp->word[0]);
+  borrow_next = (q_big->word[8] < borrow);
+  q_big->word[8] -= borrow;
+  borrow_next += (q_big->word[8] < tmp->word[8]);
+  q_big->word[8] -= tmp->word[8];
 
-  carry = q_big->words[8];
+  carry = q_big->word[8];
   while (carry)
     {
       borrow_next = bn256_sub (X, X, B);
@@ -154,7 +154,7 @@ mod_inv (bn256 *C, const bn256 *X, const bn256 *N)
 
 	      bn256_shift (A, A, -1);
 	      if (carry)
-		A->words[7] |= 0x80000000;
+		A->word[7] |= 0x80000000;
 	    }
 	}
 
@@ -169,7 +169,7 @@ mod_inv (bn256 *C, const bn256 *X, const bn256 *N)
 
 	      bn256_shift (C, C, -1);
 	      if (carry)
-		C->words[7] |= 0x80000000;
+		C->word[7] |= 0x80000000;
 	    }
 	}
 

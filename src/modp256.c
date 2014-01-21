@@ -90,94 +90,94 @@ modp256_reduce (bn256 *X, const bn512 *A)
 #define S8 tmp
 #define S9 tmp
 
-  S1->words[7] = A->words[7];
-  S1->words[6] = A->words[6];
-  S1->words[5] = A->words[5];
-  S1->words[4] = A->words[4];
-  S1->words[3] = A->words[3];
-  S1->words[2] = A->words[2];
-  S1->words[1] = A->words[1];
-  S1->words[0] = A->words[0];
+  S1->word[7] = A->word[7];
+  S1->word[6] = A->word[6];
+  S1->word[5] = A->word[5];
+  S1->word[4] = A->word[4];
+  S1->word[3] = A->word[3];
+  S1->word[2] = A->word[2];
+  S1->word[1] = A->word[1];
+  S1->word[0] = A->word[0];
   /* X = S1 */
 
-  S2->words[7] = A->words[15];
-  S2->words[6] = A->words[14];
-  S2->words[5] = A->words[13];
-  S2->words[4] = A->words[12];
-  S2->words[3] = A->words[11];
-  S2->words[2] = S2->words[1] = S2->words[0] = 0;
+  S2->word[7] = A->word[15];
+  S2->word[6] = A->word[14];
+  S2->word[5] = A->word[13];
+  S2->word[4] = A->word[12];
+  S2->word[3] = A->word[11];
+  S2->word[2] = S2->word[1] = S2->word[0] = 0;
   /* X += 2 * S2 */
   modp256_add (X, X, S2);
   modp256_add (X, X, S2);
 
-  S3->words[7] = 0;
-  S3->words[6] = A->words[15];
-  S3->words[5] = A->words[14];
-  S3->words[4] = A->words[13];
-  S3->words[3] = A->words[12];
-  S3->words[2] = S3->words[1] = S3->words[0] = 0;
+  S3->word[7] = 0;
+  S3->word[6] = A->word[15];
+  S3->word[5] = A->word[14];
+  S3->word[4] = A->word[13];
+  S3->word[3] = A->word[12];
+  S3->word[2] = S3->word[1] = S3->word[0] = 0;
   /* X += 2 * S3 */
   modp256_add (X, X, S3);
   modp256_add (X, X, S3);
 
-  S4->words[7] = A->words[15];
-  S4->words[6] = A->words[14];
-  S4->words[5] = S4->words[4] = S4->words[3] = 0;
-  S4->words[2] = A->words[10];
-  S4->words[1] = A->words[9];
-  S4->words[0] = A->words[8];
+  S4->word[7] = A->word[15];
+  S4->word[6] = A->word[14];
+  S4->word[5] = S4->word[4] = S4->word[3] = 0;
+  S4->word[2] = A->word[10];
+  S4->word[1] = A->word[9];
+  S4->word[0] = A->word[8];
   /* X += S4 */
   modp256_add (X, X, S4);
 
-  S5->words[7] = A->words[8];
-  S5->words[6] = A->words[13];
-  S5->words[5] = A->words[15];
-  S5->words[4] = A->words[14];
-  S5->words[3] = A->words[13];
-  S5->words[2] = A->words[11];
-  S5->words[1] = A->words[10];
-  S5->words[0] = A->words[9];
+  S5->word[7] = A->word[8];
+  S5->word[6] = A->word[13];
+  S5->word[5] = A->word[15];
+  S5->word[4] = A->word[14];
+  S5->word[3] = A->word[13];
+  S5->word[2] = A->word[11];
+  S5->word[1] = A->word[10];
+  S5->word[0] = A->word[9];
   /* X += S5 */
   modp256_add (X, X, S5);
 
-  S6->words[7] = A->words[10];
-  S6->words[6] = A->words[8];
-  S6->words[5] = S6->words[4] = S6->words[3] = 0;
-  S6->words[2] = A->words[13];
-  S6->words[1] = A->words[12];
-  S6->words[0] = A->words[11];
+  S6->word[7] = A->word[10];
+  S6->word[6] = A->word[8];
+  S6->word[5] = S6->word[4] = S6->word[3] = 0;
+  S6->word[2] = A->word[13];
+  S6->word[1] = A->word[12];
+  S6->word[0] = A->word[11];
   /* X -= S6 */
   modp256_sub (X, X, S6);
 
-  S7->words[7] = A->words[11];
-  S7->words[6] = A->words[9];
-  S7->words[5] = S7->words[4] = 0;
-  S7->words[3] = A->words[15];
-  S7->words[2] = A->words[14];
-  S7->words[1] = A->words[13];
-  S7->words[0] = A->words[12];
+  S7->word[7] = A->word[11];
+  S7->word[6] = A->word[9];
+  S7->word[5] = S7->word[4] = 0;
+  S7->word[3] = A->word[15];
+  S7->word[2] = A->word[14];
+  S7->word[1] = A->word[13];
+  S7->word[0] = A->word[12];
   /* X -= S7 */
   modp256_sub (X, X, S7);
 
-  S8->words[7] = A->words[12];
-  S8->words[6] = 0;
-  S8->words[5] = A->words[10];
-  S8->words[4] = A->words[9];
-  S8->words[3] = A->words[8];
-  S8->words[2] = A->words[15];
-  S8->words[1] = A->words[14];
-  S8->words[0] = A->words[13];
+  S8->word[7] = A->word[12];
+  S8->word[6] = 0;
+  S8->word[5] = A->word[10];
+  S8->word[4] = A->word[9];
+  S8->word[3] = A->word[8];
+  S8->word[2] = A->word[15];
+  S8->word[1] = A->word[14];
+  S8->word[0] = A->word[13];
   /* X -= S8 */
   modp256_sub (X, X, S8);
 
-  S9->words[7] = A->words[13];
-  S9->words[6] = 0;
-  S9->words[5] = A->words[11];
-  S9->words[4] = A->words[10];
-  S9->words[3] = A->words[9];
-  S9->words[2] = 0;
-  S9->words[1] = A->words[15];
-  S9->words[0] = A->words[14];
+  S9->word[7] = A->word[13];
+  S9->word[6] = 0;
+  S9->word[5] = A->word[11];
+  S9->word[4] = A->word[10];
+  S9->word[3] = A->word[9];
+  S9->word[2] = 0;
+  S9->word[1] = A->word[15];
+  S9->word[0] = A->word[14];
   /* X -= S9 */
   modp256_sub (X, X, S9);
 
@@ -241,7 +241,7 @@ modp256_inv (bn256 *C, const bn256 *a)
 
 	      bn256_shift (A, A, -1);
 	      if (carry)
-		A->words[7] |= 0x80000000;
+		A->word[7] |= 0x80000000;
 	    }
 	}
 
@@ -256,7 +256,7 @@ modp256_inv (bn256 *C, const bn256 *a)
 
 	      bn256_shift (C, C, -1);
 	      if (carry)
-		C->words[7] |= 0x80000000;
+		C->word[7] |= 0x80000000;
 	    }
 	}
 
@@ -290,14 +290,14 @@ modp256_shift (bn256 *X, const bn256 *A, int shift)
     return;
 
   memset (tmp, 0, sizeof (bn256));
-  tmp->words[7] = carry;
-  tmp->words[0] = carry;
+  tmp->word[7] = carry;
+  tmp->word[0] = carry;
   modp256_add (X, X, tmp);
 
-  tmp->words[7] = 0;
-  tmp->words[0] = 0;
-  tmp->words[6] = carry;
-  tmp->words[3] = carry;
+  tmp->word[7] = 0;
+  tmp->word[0] = 0;
+  tmp->word[6] = carry;
+  tmp->word[3] = carry;
   modp256_sub (X, X, tmp);
 
   if (bn256_is_ge (X, P256))
