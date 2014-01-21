@@ -88,7 +88,7 @@ jpc_add_ac_signed (jpc *X, const jpc *A, const ac *B, int minus)
 #define y3_tmp c
 #define y1_c_cube a
 
-  if (A->z == 0)		/* A is infinite */
+  if (bn256_is_zero (A->z))		/* A is infinite */
     {
       memcpy (X->x, B->x, sizeof (bn256));
       if (minus)

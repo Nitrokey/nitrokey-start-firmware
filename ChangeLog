@@ -1,5 +1,7 @@
 2014-01-21  Niibe Yutaka  <gniibe@fsij.org>
 
+	* src/jpc.c (jpc_add_ac_signed): Bug fix for A check.
+
 	* src/ec_p256.c (ecdsa): Fix for constant time.
 
 	* src/modp256.c (modp256_add, modp256_sub, modp256_reduce)
