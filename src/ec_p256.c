@@ -406,8 +406,8 @@ point_is_on_the_curve (const ac *P)
   modp256_sqr (t, P->y);
   if (bn256_cmp (s, t) == 0)
     return 0;
-
-  return -1;
+  else
+    return -1;
 }
 
 /**
@@ -531,7 +531,7 @@ ecdsa (bn256 *r, bn256 *s, const bn256 *z, const bn256 *d)
   bn512 tmp[1];
   bn256 k_inv[1];
   uint32_t carry;
-
+#define borrow carry
 #define tmp_k k_inv
 
   do
@@ -545,10 +545,11 @@ ecdsa (bn256 *r, bn256 *s, const bn256 *z, const bn256 *d)
 	    continue;
 	  bn256_add_uint (k, k, 1);
 	  compute_kG (KG, k);
-	  if (bn256_is_ge (KG->x, N))
-	    bn256_sub (r, KG->x, N);
-	  else
+	  borrow = bn256_sub (r, KG->x, N);
+	  if (borrow)
 	    memcpy (r, KG->x, sizeof (bn256));
+	  else
+	    memcpy (KG->x, r, sizeof (bn256));
 	}
       while (bn256_is_zero (r));
 
@@ -558,6 +559,8 @@ ecdsa (bn256 *r, bn256 *s, const bn256 *z, const bn256 *d)
       carry = bn256_add (s, s, z);
       if (carry)
 	bn256_sub (s, s, N);
+      else
+	bn256_sub (tmp, s, N);
       bn256_mul (tmp, s, k_inv);
       mod_reduce (s, tmp, N, MU_lower);
     }

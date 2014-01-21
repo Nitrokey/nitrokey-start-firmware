@@ -1,5 +1,7 @@
 2014-01-21  Niibe Yutaka  <gniibe@fsij.org>
 
+	* src/ec_p256.c (ecdsa): Fix for constant time.
+
 	* src/modp256.c (modp256_add, modp256_sub, modp256_reduce)
 	(modp256_shift): Fix for constant time.
 	(modp256_inv): Likewise (not fully constant time, yet).
