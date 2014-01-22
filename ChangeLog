@@ -1,5 +1,7 @@
 2014-01-22  Niibe Yutaka  <gniibe@fsij.org>
 
+	* src/modp256.c (modp256_inv): Fix for constant time.
+
 	* src/bn.c (bn256_sqr): Fix for constant time.
 
 	* src/mod.c (mod_inv): Fix for constant time.
