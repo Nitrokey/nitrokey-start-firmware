@@ -535,7 +535,7 @@ ecdsa (bn256 *r, bn256 *s, const bn256 *z, const bn256 *d)
       if (carry)
 	bn256_sub (s, s, N);
       else
-	bn256_sub (tmp, s, N);
+	bn256_sub ((bn256 *)tmp, s, N);
       bn256_mul (tmp, s, k_inv);
       mod_reduce (s, tmp, N, MU_lower);
     }
