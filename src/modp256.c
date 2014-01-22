@@ -248,7 +248,7 @@ modp256_inv (bn256 *C, const bn256 *a)
 
       switch (c)
 	{
-	case 0:
+	case 3:
 	  bn256_shift (u, u, -1);
 	  if (bn256_is_even (A))
 	    {
@@ -359,7 +359,7 @@ modp256_inv (bn256 *C, const bn256 *a)
 	    }
 	  break;
 
-	case 3:
+	case 0:
 	  bn256_shift (tmp, tmp, -1);
 	  if (bn256_is_even (tmp))
 	    {
