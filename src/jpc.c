@@ -37,8 +37,12 @@ void
 jpc_double (jpc *X, const jpc *A)
 {
   bn256 a[1], b[1], c[1], tmp0[1];
-  bn256 *d = X->x;
+  bn256 *d;
 
+  if (bn256_is_zero (A->z))		/* A is infinite */
+    return;
+
+  d = X->x;
   modp256_sqr (a, A->y);
   memcpy (b, a, sizeof (bn256));
   modp256_mul (a, a, A->x);

@@ -1,3 +1,9 @@
+2014-01-22  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/ec_p256.c (compute_kG): Simplify.
+
+	* src/jpc.c (jpc_double): Support calling with A = infinity.
+
 2014-01-21  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/jpc.c (jpc_add_ac_signed): Bug fix for A check.

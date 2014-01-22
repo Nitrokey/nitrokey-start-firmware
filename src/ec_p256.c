@@ -249,15 +249,14 @@ int
 compute_kG (ac *X, const bn256 *K)
 {
   int i;
-  int q_is_infinite = 1;
   jpc Q[1];
 
+  memset (Q->z, 0, sizeof (bn256)); /* infinity */
   for (i = 31; i >= 0; i--)
     {
       int k_i, k_i_e;
 
-      if (!q_is_infinite)
-	jpc_double (Q, Q);
+      jpc_double (Q, Q);
 
       k_i = (((K->word[6] >> i) & 1) << 3)
 	| (((K->word[4] >> i) & 1) << 2)
@@ -269,33 +268,9 @@ compute_kG (ac *X, const bn256 *K)
 	| ((K->word[1] >> i) & 1);
 
       if (k_i)
-	{
-	  if (q_is_infinite)
-	    {
-	      memcpy (Q->x, (&precomputed_KG[k_i - 1])->x, sizeof (bn256));
-	      memcpy (Q->y, (&precomputed_KG[k_i - 1])->y, sizeof (bn256));
-	      Q->z->word[0] = 1;
-	      Q->z->word[1] = Q->z->word[2] = Q->z->word[3]
-		= Q->z->word[4] = Q->z->word[5] = Q->z->word[6]
-		= Q->z->word[7] = 0;
-	      q_is_infinite = 0;
-	    }
-	  else
-	    jpc_add_ac (Q, Q, &precomputed_KG[k_i - 1]);
-	}
+	jpc_add_ac (Q, Q, &precomputed_KG[k_i - 1]);
       if (k_i_e)
-	{
-	  if (q_is_infinite)
-	    {
-	      memcpy (Q->x, (&precomputed_2E_KG[k_i_e - 1])->x, sizeof (bn256));
-	      memcpy (Q->y, (&precomputed_2E_KG[k_i_e - 1])->y, sizeof (bn256));
-	      memset (Q->z, 0, sizeof (bn256));
-	      Q->z->word[0] = 1;
-	      q_is_infinite = 0;
-	    }
-	  else
-	    jpc_add_ac (Q, Q, &precomputed_2E_KG[k_i_e - 1]);
-	}
+	jpc_add_ac (Q, Q, &precomputed_2E_KG[k_i_e - 1]);
     }
 
   return jpc_to_ac (X, Q);
