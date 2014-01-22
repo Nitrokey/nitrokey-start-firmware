@@ -131,6 +131,7 @@ mod_reduce (bn256 *X, const bn512 *A, const bn256 *B, const bn256 *MU_lower)
     memcpy (q, X, sizeof (bn256));
   else
     memcpy (X, q, sizeof (bn256));
+#undef borrow
 }
 
 /**
@@ -339,4 +340,5 @@ mod_inv (bn256 *C, const bn256 *X, const bn256 *N)
 	  break;
 	}
     }
+#undef borrow
 }

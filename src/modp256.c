@@ -432,4 +432,5 @@ modp256_shift (bn256 *X, const bn256 *A, int shift)
     memcpy (tmp, X, sizeof (bn256));
   else
     memcpy (X, tmp, sizeof (bn256));
+#undef borrow
 }
