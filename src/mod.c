@@ -137,6 +137,8 @@ mod_reduce (bn256 *X, const bn512 *A, const bn256 *B, const bn256 *MU_lower)
  * @brief C = X^(-1) mod N
  * 
  */
+#define MAX_N_BITS 256
+
 void
 mod_inv (bn256 *C, const bn256 *X, const bn256 *N)
 {
@@ -144,15 +146,19 @@ mod_inv (bn256 *C, const bn256 *X, const bn256 *N)
   bn256 A[1] = { { { 1, 0, 0, 0, 0, 0, 0, 0 } } };
   uint32_t carry;
 #define borrow carry
+  int n = MAX_N_BITS * 3;
 
   memset (C, 0, sizeof (bn256));
   memcpy (u, X, sizeof (bn256));
   memcpy (v, N, sizeof (bn256));
 
-  while (!bn256_is_zero (u))
+  while (n--)
     {
-      while (bn256_is_even (u))
+      int c = (bn256_is_even (u) << 1) + bn256_is_even (v);
+
+      switch (c)
 	{
+	case 0:
 	  bn256_shift (u, u, -1);
 	  if (bn256_is_even (A))
 	    {
@@ -164,10 +170,7 @@ mod_inv (bn256 *C, const bn256 *X, const bn256 *N)
 
 	  bn256_shift (A, A, -1);
 	  A->word[7] |= carry * 0x80000000;
-	}
 
-      while (bn256_is_even (v))
-	{
 	  bn256_shift (v, v, -1);
 	  if (bn256_is_even (C))
 	    {
@@ -179,25 +182,161 @@ mod_inv (bn256 *C, const bn256 *X, const bn256 *N)
 
 	  bn256_shift (C, C, -1);
 	  C->word[7] |= carry * 0x80000000;
-	}
 
-      if (bn256_is_ge (u, v))
-	{
-	  bn256_sub (u, u, v);
-	  borrow = bn256_sub (A, A, C);
-	  if (borrow)
-	    bn256_add (A, A, N);
+	  if (bn256_is_ge (tmp, tmp))
+	    {
+	      bn256_sub (tmp, tmp, tmp);
+	      borrow = bn256_sub (tmp, tmp, tmp);
+	      if (borrow)
+		bn256_add (tmp, tmp, tmp);
+	      else
+		bn256_add (tmp, A, N);
+	    }
 	  else
-	    bn256_add (tmp, A, N);
-	}
-      else
-	{
-	  bn256_sub (v, v, u);
-	  borrow = bn256_sub (C, C, A);
-	  if (borrow)
-	    bn256_add (C, C, N);
+	    {
+	      bn256_sub (tmp, tmp, tmp);
+	      borrow = bn256_sub (tmp, tmp, tmp);
+	      if (borrow)
+		bn256_add (tmp, tmp, tmp);
+	      else
+		bn256_add (tmp, tmp, N);
+	    }
+	  break;
+
+	case 1:
+	  bn256_shift (tmp, tmp, -1);
+	  if (bn256_is_even (tmp))
+	    {
+	      bn256_add (tmp, tmp, N);
+	      carry = 0;
+	    }
 	  else
-	    bn256_add (tmp, C, N);
+	    carry = bn256_add (tmp, tmp, N);
+
+	  bn256_shift (tmp, tmp, -1);
+	  tmp->word[7] |= carry * 0x80000000;
+
+	  bn256_shift (v, v, -1);
+	  if (bn256_is_even (C))
+	    {
+	      bn256_add (tmp, C, N);
+	      carry = 0;
+	    }
+	  else
+	    carry = bn256_add (C, C, N);
+
+	  bn256_shift (C, C, -1);
+	  C->word[7] |= carry * 0x80000000;
+
+	  if (bn256_is_ge (tmp, tmp))
+	    {
+	      bn256_sub (tmp, tmp, tmp);
+	      borrow = bn256_sub (tmp, tmp, tmp);
+	      if (borrow)
+		bn256_add (tmp, tmp, tmp);
+	      else
+		bn256_add (tmp, A, N);
+	    }
+	  else
+	    {
+	      bn256_sub (tmp, tmp, tmp);
+	      borrow = bn256_sub (tmp, tmp, tmp);
+	      if (borrow)
+		bn256_add (tmp, tmp, tmp);
+	      else
+		bn256_add (tmp, tmp, N);
+	    }
+	  break;
+
+	case 2:
+	  bn256_shift (u, u, -1);
+	  if (bn256_is_even (A))
+	    {
+	      bn256_add (tmp, A, N);
+	      carry = 0;
+	    }
+	  else
+	    carry = bn256_add (A, A, N);
+
+	  bn256_shift (A, A, -1);
+	  A->word[7] |= carry * 0x80000000;
+
+	  bn256_shift (tmp, tmp, -1);
+	  if (bn256_is_even (tmp))
+	    {
+	      bn256_add (tmp, tmp, N);
+	      carry = 0;
+	    }
+	  else
+	    carry = bn256_add (tmp, tmp, N);
+
+	  bn256_shift (tmp, tmp, -1);
+	  tmp->word[7] |= carry * 0x80000000;
+
+	  if (bn256_is_ge (tmp, tmp))
+	    {
+	      bn256_sub (tmp, tmp, tmp);
+	      borrow = bn256_sub (tmp, tmp, tmp);
+	      if (borrow)
+		bn256_add (tmp, tmp, tmp);
+	      else
+		bn256_add (tmp, A, N);
+	    }
+	  else
+	    {
+	      bn256_sub (tmp, tmp, tmp);
+	      borrow = bn256_sub (tmp, tmp, tmp);
+	      if (borrow)
+		bn256_add (tmp, tmp, tmp);
+	      else
+		bn256_add (tmp, tmp, N);
+	    }
+	  break;
+
+	case 3:
+	  bn256_shift (tmp, tmp, -1);
+	  if (bn256_is_even (tmp))
+	    {
+	      bn256_add (tmp, tmp, N);
+	      carry = 0;
+	    }
+	  else
+	    carry = bn256_add (tmp, tmp, N);
+
+	  bn256_shift (tmp, tmp, -1);
+	  tmp->word[7] |= carry * 0x80000000;
+
+	  bn256_shift (tmp, tmp, -1);
+	  if (bn256_is_even (tmp))
+	    {
+	      bn256_add (tmp, tmp, N);
+	      carry = 0;
+	    }
+	  else
+	    carry = bn256_add (tmp, tmp, N);
+
+	  bn256_shift (tmp, tmp, -1);
+	  tmp->word[7] |= carry * 0x80000000;
+
+	  if (bn256_is_ge (u, v))
+	    {
+	      bn256_sub (u, u, v);
+	      borrow = bn256_sub (A, A, C);
+	      if (borrow)
+		bn256_add (A, A, N);
+	      else
+		bn256_add (tmp, A, N);
+	    }
+	  else
+	    {
+	      bn256_sub (v, v, u);
+	      borrow = bn256_sub (C, C, A);
+	      if (borrow)
+		bn256_add (C, C, N);
+	      else
+		bn256_add (tmp, C, N);
+	    }
+	  break;
 	}
     }
 }

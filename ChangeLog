@@ -1,5 +1,7 @@
 2014-01-22  Niibe Yutaka  <gniibe@fsij.org>
 
+	* src/mod.c (mod_inv): FIx for constant time.
+
 	* src/ec_p256.c (compute_kG): Simplify.
 
 	* src/jpc.c (jpc_double): Support calling with A = infinity.
