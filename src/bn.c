@@ -220,8 +220,7 @@ bn256_sqr (bn512 *X, const bn256 *A)
 	  uv = ((uint64_t )A->word[i])*((uint64_t )A->word[j]);
 	  if (i < j)
 	    {
-	      if ((uv >> 63) != 0)
-		r2++;
+	      r2 += ((uv >> 63) != 0);
 	      uv <<= 1;
 	    }
 	  v = uv;
