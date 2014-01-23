@@ -1,5 +1,7 @@
 2014-01-23  Niibe Yutaka  <gniibe@fsij.org>
 
+	* src/jpc.c (jpc_add_ac_signed): Fix for constant time.
+
 	* src/ec_p256.c (ecdsa): Bug fix for k selection.
 
 2014-01-22  Niibe Yutaka  <gniibe@fsij.org>

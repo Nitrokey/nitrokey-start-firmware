@@ -81,7 +81,7 @@ jpc_double (jpc *X, const jpc *A)
 void
 jpc_add_ac_signed (jpc *X, const jpc *A, const ac *B, int minus)
 {
-  bn256 a[1], b[1], c[1], d[1];
+  bn256 a[1], b[1], c[1], d[1], tmp[1];
 #define minus_B_y c
 #define c_sqr a
 #define c_cube b
@@ -96,9 +96,15 @@ jpc_add_ac_signed (jpc *X, const jpc *A, const ac *B, int minus)
     {
       memcpy (X->x, B->x, sizeof (bn256));
       if (minus)
-	bn256_sub (X->y, P256, B->y);
+	{
+	  memcpy (tmp, B->y, sizeof (bn256));
+	  bn256_sub (X->y, P256, B->y);
+	}
       else
-	memcpy (X->y, B->y, sizeof (bn256));
+	{
+	  memcpy (X->y, B->y, sizeof (bn256));
+	  bn256_sub (tmp, P256, B->y);
+	}
       memset (X->z, 0, sizeof (bn256));
       X->z->word[0] = 1;
       return;
@@ -115,7 +121,10 @@ jpc_add_ac_signed (jpc *X, const jpc *A, const ac *B, int minus)
       modp256_mul (b, b, minus_B_y);
     }
   else
-    modp256_mul (b, b, B->y);
+    {
+      bn256_sub (tmp, P256, B->y);
+      modp256_mul (b, b, B->y);
+    }
 
   if (bn256_cmp (A->x, a) == 0 && bn256_cmp (A->y, b) == 0)
     {
