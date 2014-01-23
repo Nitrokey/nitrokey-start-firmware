@@ -1,3 +1,7 @@
+2014-01-23  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/ec_p256.c (ecdsa): Bug fix for k selection.
+
 2014-01-22  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/modp256.c (modp256_inv): Fix for constant time.

@@ -514,11 +514,11 @@ ecdsa (bn256 *r, bn256 *s, const bn256 *z, const bn256 *d)
       do
 	{
 	  bn256_random (k);
-	  if (bn256_sub (tmp_k, k, N) == 0)	/* > N, it's too big.  */
+	  if (bn256_add_uint (k, k, 1))
 	    continue;
-	  if (bn256_add_uint (tmp_k, tmp_k, 2)) /* > N - 2, still big.  */
+	  if (bn256_sub (tmp_k, k, N) == 0)	/* >= N, it's too big.  */
 	    continue;
-	  bn256_add_uint (k, k, 1);
+	  /* 1 <= k <= N - 1 */
 	  compute_kG (KG, k);
 	  borrow = bn256_sub (r, KG->x, N);
 	  if (borrow)
