@@ -1,4 +1,4 @@
-/*
+/*                                                    -*- coding: utf-8 -*-
  * ec_p256.c - Elliptic curve over GF(p256)
  *
  * Copyright (C) 2011, 2013 Free Software Initiative of Japan
@@ -32,6 +32,10 @@
  *     Cryptographer's Track at RSA
  *     Pages 250-265, Springer-Verlag London, UK, 2001
  *     ISBN:3-540-41898-9
+ *
+ * [3] Mustapha Hedabou, Pierre Pinel, Lucien Bénéteau, 
+ *     A comb method to render ECC resistant against Side Channel Attacks,
+ *     2004
  */
 
 #include <stdint.h>
@@ -41,22 +45,6 @@
 #include "jpc-ac.h"
 #include "mod.h"
 #include "ec_p256.h"
-
-#if TEST
-/*
- * Generator of Elliptic curve over GF(p256)
- */
-const bn256 Gx[1] = {
-  {{  0xd898c296, 0xf4a13945, 0x2deb33a0, 0x77037d81,
-      0x63a440f2, 0xf8bce6e5, 0xe12c4247, 0x6b17d1f2  }}
-};
-
-const bn256 Gy[1] = {
-  {{  0x37bf51f5, 0xcbb64068, 0x6b315ece, 0x2bce3357,
-      0x7c0f9e16, 0x8ee7eb4a, 0xfe1a7f9b, 0x4fe342e2  }}
-};
-#endif
-
 
 /*
  * a = -3 mod p256
@@ -237,6 +225,36 @@ static const ac precomputed_2E_KG[15] = {
   }
 };
 
+
+#if TEST
+/*
+ * Generator of Elliptic curve over GF(p256)
+ */
+const bn256 *Gx = precomputed_KG[0].x;
+const bn256 *Gy = precomputed_KG[0].y;
+#endif
+
+
+static int
+get_v_k_i (const bn256 *K, int i)
+{
+  uint32_t w0, w1, w2, w3;
+
+  if (i < 32)
+    {
+      w3 = K->word[6]; w2 = K->word[4]; w1 = K->word[2]; w0 = K->word[0];
+    }
+  else
+    {
+      w3 = K->word[7]; w2 = K->word[5]; w1 = K->word[3]; w0 = K->word[1];
+      i -= 32;
+    }
+
+  w3 >>= i;  w2 >>= i;  w1 >>= i;  w0 >>= i;
+  return ((w3 & 1) << 3) | ((w2 & 1) << 2) | ((w1 & 1) << 1) | (w0 & 1);
+}
+
+
 /**
  * @brief	X  = k * G
  *
@@ -246,32 +264,46 @@ static const ac precomputed_2E_KG[15] = {
  * Return 0 on success.
  */
 int
-compute_kG (ac *X, const bn256 *K)
+compute_kG (ac *X, const bn256 *orig_K)
 {
+  uint8_t ki_si[64]; /* Lower 4-bit for ki which is v_k_i -1, msb is
+			for si (encoded as: 0 means 1, 1 means -1).  */
+  bn256 K[1];
+  jpc Q[1], tmp[1], *dst;
   int i;
-  jpc Q[1];
+  int v_k_i_prev;
+  uint32_t k_is_even = bn256_is_even (orig_K);
+
+  bn256_sub_uint (K, orig_K, k_is_even);
+  /* It keeps the condition: 1 <= K <= N - 2, and K is odd.  */
+
+  /* Fill ki_si.  */
+  v_k_i_prev = get_v_k_i (K, 0);
+  ki_si[0] = v_k_i_prev - 1;
+  for (i = 1; i < 64; i++)
+    {
+      int v_k_i, is_zero;
+
+      v_k_i = get_v_k_i (K, i);
+      is_zero = (v_k_i == 0);
+      ki_si[i-1] = (v_k_i_prev - 1) | (is_zero << 7);
+      v_k_i_prev = (is_zero ? v_k_i_prev : v_k_i);
+    }
+  ki_si[63] = v_k_i_prev - 1;
 
   memset (Q->z, 0, sizeof (bn256)); /* infinity */
   for (i = 31; i >= 0; i--)
     {
-      int k_i, k_i_e;
-
       jpc_double (Q, Q);
 
-      k_i = (((K->word[6] >> i) & 1) << 3)
-	| (((K->word[4] >> i) & 1) << 2)
-	| (((K->word[2] >> i) & 1) << 1)
-	| ((K->word[0] >> i) & 1);
-      k_i_e = (((K->word[7] >> i) & 1) << 3)
-	| (((K->word[5] >> i) & 1) << 2)
-	| (((K->word[3] >> i) & 1) << 1)
-	| ((K->word[1] >> i) & 1);
-
-      if (k_i)
-	jpc_add_ac (Q, Q, &precomputed_KG[k_i - 1]);
-      if (k_i_e)
-	jpc_add_ac (Q, Q, &precomputed_2E_KG[k_i_e - 1]);
+      jpc_add_ac_signed (Q, Q, &precomputed_KG[ki_si[i]&0x0f],
+			 ki_si[i] >> 7);
+      jpc_add_ac_signed (Q, Q, &precomputed_2E_KG[ki_si[i+32]&0x0f],
+			 ki_si[i+32] >> 7);
     }
+
+  dst = k_is_even ? Q : tmp;
+  jpc_add_ac (dst, Q, &precomputed_KG[0]);
 
   return jpc_to_ac (X, Q);
 }

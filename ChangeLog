@@ -1,3 +1,8 @@
+2014-01-24  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/ec_p256.c (get_v_k_i): New.
+	(compute_kG): Fix for constant time.
+
 2014-01-23  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/jpc.c (jpc_add_ac_signed): Fix for constant time.
