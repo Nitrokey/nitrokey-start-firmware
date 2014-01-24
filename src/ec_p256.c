@@ -1,7 +1,7 @@
 /*                                                    -*- coding: utf-8 -*-
  * ec_p256.c - Elliptic curve over GF(p256)
  *
- * Copyright (C) 2011, 2013 Free Software Initiative of Japan
+ * Copyright (C) 2011, 2013, 2014 Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
  * This file is a part of Gnuk, a GnuPG USB Token implementation.
@@ -479,30 +479,16 @@ compute_kP (ac *X, const naf4_257 *NAF_K, const ac *P)
       return -1;
   }
 
+  memset (Q->z, 0, sizeof (bn256)); /* infinity */
   for (i = 256; i >= 0; i--)
     {
       int k_i;
 
-      if (!q_is_infinite)
-	jpc_double (Q, Q);
+      jpc_double (Q, Q);
 
       k_i = naf4_257_get (NAF_K, i);
       if (k_i)
-	{
-	  if (q_is_infinite)
-	    {
-	      memcpy (Q->x, p_Pi[NAF_K_INDEX(k_i)]->x, sizeof (bn256));
-	      if (NAF_K_SIGN (k_i))
-		bn256_sub (Q->y, P256, p_Pi[NAF_K_INDEX(k_i)]->y);
-	      else
-		memcpy (Q->y, p_Pi[NAF_K_INDEX(k_i)]->y, sizeof (bn256));
-	      memset (Q->z, 0, sizeof (bn256));
-	      Q->z->word[0] = 1;
-	      q_is_infinite = 0;
-	    }
-	  else
-	    jpc_add_ac_signed (Q, Q, p_Pi[NAF_K_INDEX(k_i)], NAF_K_SIGN (k_i));
-	}
+	jpc_add_ac_signed (Q, Q, p_Pi[NAF_K_INDEX(k_i)], NAF_K_SIGN (k_i));
     }
 
   return jpc_to_ac (X, Q);

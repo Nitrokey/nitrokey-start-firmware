@@ -2,6 +2,7 @@
 
 	* src/ec_p256.c (get_v_k_i): New.
 	(compute_kG): Fix for constant time.
+	(compute_kP): Simplify.
 
 2014-01-23  Niibe Yutaka  <gniibe@fsij.org>
 
