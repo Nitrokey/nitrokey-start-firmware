@@ -1,6 +1,12 @@
+2014-01-27  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/ec_p256.c (get_vk_kP): New.
+	(naf4_257_set, naf4_257_get, compute_naf4_257):	Remove.
+	(compute_kP): Change the argument, fixing for constant time.
+
 2014-01-24  Niibe Yutaka  <gniibe@fsij.org>
 
-	* src/ec_p256.c (get_v_k_i): New.
+	* src/ec_p256.c (get_vk): New.
 	(compute_kG): Fix for constant time.
 	(compute_kP): Simplify.
 

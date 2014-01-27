@@ -236,7 +236,7 @@ const bn256 *Gy = precomputed_KG[0].y;
 
 
 static int
-get_vk_i (const bn256 *K, int i)
+get_vk (const bn256 *K, int i)
 {
   uint32_t w0, w1, w2, w3;
 
@@ -271,25 +271,24 @@ compute_kG (ac *X, const bn256 *K)
   bn256 K_dash[1];
   jpc Q[1], tmp[1], *dst;
   int i;
-  int vk_i_prev;
+  int vk;
   uint32_t k_is_even = bn256_is_even (K);
 
   bn256_sub_uint (K_dash, K, k_is_even);
-  /* It keeps the condition: 1 <= K <= N - 2, and K is odd.  */
+  /* It keeps the condition: 1 <= K' <= N - 2, and K' is odd.  */
 
   /* Fill index.  */
-  vk_i_prev = get_vk_i (K_dash, 0);
-  index[0] = vk_i_prev - 1;
+  vk = get_vk (K_dash, 0);
   for (i = 1; i < 64; i++)
     {
-      int vk_i, is_zero;
+      int vk_next, is_zero;
 
-      vk_i = get_vk_i (K_dash, i);
-      is_zero = (vk_i == 0);
-      index[i-1] = (vk_i_prev - 1) | (is_zero << 7);
-      vk_i_prev = (is_zero ? vk_i_prev : vk_i);
+      vk_next = get_vk (K_dash, i);
+      is_zero = (vk_next == 0);
+      index[i-1] = (vk - 1) | (is_zero << 7);
+      vk = (is_zero ? vk : vk_next);
     }
-  index[63] = vk_i_prev - 1;
+  index[63] = vk - 1;
 
   memset (Q->z, 0, sizeof (bn256)); /* infinity */
   for (i = 31; i >= 0; i--)
@@ -309,85 +308,6 @@ compute_kG (ac *X, const bn256 *K)
 }
 
 
-#define NAF_K_SIGN(k)	(k&8)
-#define NAF_K_INDEX(k)	((k&7)-1)
-
-static void
-naf4_257_set (naf4_257 *NAF_K, int i, int ki)
-{
-  if (ki != 0)
-    {
-      if (ki > 0)
-	ki = (ki+1)/2;
-      else
-	ki = (1-ki)/2 | 8;
-    }
-
-  if (i == 256)
-    NAF_K->last_nibble = ki;
-  else
-    {
-      NAF_K->word[i/8] &= ~(0x0f << ((i & 0x07)*4));
-      NAF_K->word[i/8] |= (ki << ((i & 0x07)*4));
-    }
-}
-
-static int
-naf4_257_get (const naf4_257 *NAF_K, int i)
-{
-  int ki;
-
-  if (i == 256)
-    ki = NAF_K->last_nibble;
-  else
-    {
-      ki = NAF_K->word[i/8] >> ((i & 0x07)*4);
-      ki &= 0x0f;
-    }
-
-  return ki;
-}
-
-
-/*
- * convert 256-bit bignum into non-adjacent form (NAF)
- */
-void
-compute_naf4_257 (naf4_257 *NAF_K, const bn256 *K)
-{
-  int i = 0;
-  bn256 K_tmp[1];
-
-  memcpy (K_tmp, K, sizeof (bn256));
-  memset (NAF_K, 0, sizeof (naf4_257));
-
-  while (!bn256_is_zero (K_tmp))
-    {
-      uint32_t carry = 0;
-
-      if (bn256_is_even (K_tmp))
-	naf4_257_set (NAF_K, i, 0);
-      else
-	{
-	  int ki = (K_tmp->word[0]) & 0x0f;
-
-	  if ((ki & 0x08))
-	    {
-	      carry = bn256_add_uint (K_tmp, K_tmp, 16 - ki);
-	      ki = ki - 16;
-	    }
-	  else
-	    K_tmp->word[0] &= 0xfffffff0;
-
-	  naf4_257_set (NAF_K, i, ki);
-	}
-
-      bn256_shift (K_tmp, K_tmp, -1);
-      if (carry)
-	K_tmp->word[7] |= 0x80000000;
-      i++;
-    }
-}
 
 /**
  * check if P is on the curve.
@@ -415,10 +335,52 @@ point_is_on_the_curve (const ac *P)
     return -1;
 }
 
+/*
+ * N: order of G
+ */
+static const bn256 N[1] = {
+  {{ 0xfc632551, 0xf3b9cac2, 0xa7179e84, 0xbce6faad,
+     0xffffffff, 0xffffffff, 0x00000000, 0xffffffff }}
+};
+
+
+static int
+get_vk_kP (const bn256 *K, int i)
+{
+  uint32_t w;
+  uint8_t blk = i/32;
+  uint8_t pos = i%32;
+  uint8_t col = 3*(pos % 11) + (pos >= 11) + (pos >= 22);
+  uint8_t word_index = (blk * 3) + (pos / 11);
+
+  w = ((K->word[word_index] >> col) & 7);
+  if (pos == 10 || pos == 21)
+    {
+      uint8_t mask;
+      uint8_t shift;
+
+      word_index++;
+      if (pos == 10)
+	{
+	  shift = 2;
+	  mask = 4;
+	}
+      else
+	{
+	  shift = 1;
+	  mask = 6;
+	}
+
+      w |= ((K->word[word_index] << shift) & mask);
+    }
+
+  return w;
+}
+
 /**
  * @brief	X  = k * P
  *
- * @param NAF_K	NAF representation of k
+ * @param K	scalar k
  * @param P	P in affine coordiate
  *
  * Return -1 on error.
@@ -434,17 +396,26 @@ point_is_on_the_curve (const ac *P)
  * represented by affine coordinate.
  */
 int
-compute_kP (ac *X, const naf4_257 *NAF_K, const ac *P)
+compute_kP (ac *X, const bn256 *K, const ac *P)
 {
+  uint8_t index[86]; /* Lower 2-bit for index absolute value, msb is
+			for sign (encoded as: 0 means 1, 1 means -1).  */
+  bn256 K_dash[1];
+  uint32_t k_is_even = bn256_is_even (K);
+  jpc Q[1], tmp[1], *dst;
   int i;
-  jpc Q[1];
+  int vk;
   ac P3[1], P5[1], P7[1];
   const ac *p_Pi[4];
-  uint8_t index[64]; /* Lower 4-bit for index absolute value, msb is
-			for sign (encoded as: 0 means 1, 1 means -1).  */
 
   if (point_is_on_the_curve (P) < 0)
     return -1;
+
+  if (bn256_sub (K_dash, K, N) == 0)	/* >= N, it's too big.  */
+    return -1;
+
+  bn256_sub_uint (K_dash, K, k_is_even);
+  /* It keeps the condition: 1 <= K' <= N - 2, and K' is odd.  */
 
   p_Pi[0] = P;
   p_Pi[1] = P3;
@@ -478,29 +449,32 @@ compute_kP (ac *X, const naf4_257 *NAF_K, const ac *P)
       return -1;
   }
 
-  memset (Q->z, 0, sizeof (bn256)); /* infinity */
-  for (i = 256; i >= 0; i--)
+  /* Fill index.  */
+  vk = get_vk_kP (K_dash, 0);
+  for (i = 1; i < 85; i++)
     {
-      int k_i;
+      int vk_next, is_even;
 
-      jpc_double (Q, Q);
-
-      k_i = naf4_257_get (NAF_K, i);
-      if (k_i)
-	jpc_add_ac_signed (Q, Q, p_Pi[NAF_K_INDEX(k_i)], NAF_K_SIGN (k_i));
+      vk_next = get_vk_kP (K_dash, i);
+      is_even = ((vk_next & 1) == 0);
+      index[i-1] = (is_even << 7) | ((is_even?7-vk:vk-1) >> 1);
+      vk = vk_next + is_even;
     }
+  index[85] = ((vk - 1) >> 1);
+
+  memset (Q->z, 0, sizeof (bn256)); /* infinity */
+  for (i = 85; i >= 0; i--)
+    {
+      jpc_double (Q, Q); jpc_double (Q, Q); jpc_double (Q, Q);
+      jpc_add_ac_signed (Q, Q, p_Pi[index[i]&0x03], index[i] >> 7);
+    }
+
+  dst = k_is_even ? Q : tmp;
+  jpc_add_ac (dst, Q, &precomputed_KG[0]);
 
   return jpc_to_ac (X, Q);
 }
 
-
-/*
- * N: order of G
- */
-static const bn256 N[1] = {
-  {{ 0xfc632551, 0xf3b9cac2, 0xa7179e84, 0xbce6faad,
-     0xffffffff, 0xffffffff, 0x00000000, 0xffffffff }}
-};
 
 /*
  * MU = 2^512 / N
@@ -557,4 +531,7 @@ ecdsa (bn256 *r, bn256 *s, const bn256 *z, const bn256 *d)
       mod_reduce (s, tmp, N, MU_lower);
     }
   while (bn256_is_zero (s));
+
+#undef tmp_k
+#undef borrow
 }
