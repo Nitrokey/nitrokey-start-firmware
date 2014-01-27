@@ -236,7 +236,7 @@ const bn256 *Gy = precomputed_KG[0].y;
 
 
 static int
-get_v_k_i (const bn256 *K, int i)
+get_vk_i (const bn256 *K, int i)
 {
   uint32_t w0, w1, w2, w3;
 
@@ -264,42 +264,42 @@ get_v_k_i (const bn256 *K, int i)
  * Return 0 on success.
  */
 int
-compute_kG (ac *X, const bn256 *orig_K)
+compute_kG (ac *X, const bn256 *K)
 {
-  uint8_t ki_si[64]; /* Lower 4-bit for ki which is v_k_i -1, msb is
-			for si (encoded as: 0 means 1, 1 means -1).  */
-  bn256 K[1];
+  uint8_t index[64]; /* Lower 4-bit for index absolute value, msb is
+			for sign (encoded as: 0 means 1, 1 means -1).  */
+  bn256 K_dash[1];
   jpc Q[1], tmp[1], *dst;
   int i;
-  int v_k_i_prev;
-  uint32_t k_is_even = bn256_is_even (orig_K);
+  int vk_i_prev;
+  uint32_t k_is_even = bn256_is_even (K);
 
-  bn256_sub_uint (K, orig_K, k_is_even);
+  bn256_sub_uint (K_dash, K, k_is_even);
   /* It keeps the condition: 1 <= K <= N - 2, and K is odd.  */
 
-  /* Fill ki_si.  */
-  v_k_i_prev = get_v_k_i (K, 0);
-  ki_si[0] = v_k_i_prev - 1;
+  /* Fill index.  */
+  vk_i_prev = get_vk_i (K_dash, 0);
+  index[0] = vk_i_prev - 1;
   for (i = 1; i < 64; i++)
     {
-      int v_k_i, is_zero;
+      int vk_i, is_zero;
 
-      v_k_i = get_v_k_i (K, i);
-      is_zero = (v_k_i == 0);
-      ki_si[i-1] = (v_k_i_prev - 1) | (is_zero << 7);
-      v_k_i_prev = (is_zero ? v_k_i_prev : v_k_i);
+      vk_i = get_vk_i (K_dash, i);
+      is_zero = (vk_i == 0);
+      index[i-1] = (vk_i_prev - 1) | (is_zero << 7);
+      vk_i_prev = (is_zero ? vk_i_prev : vk_i);
     }
-  ki_si[63] = v_k_i_prev - 1;
+  index[63] = vk_i_prev - 1;
 
   memset (Q->z, 0, sizeof (bn256)); /* infinity */
   for (i = 31; i >= 0; i--)
     {
       jpc_double (Q, Q);
 
-      jpc_add_ac_signed (Q, Q, &precomputed_KG[ki_si[i]&0x0f],
-			 ki_si[i] >> 7);
-      jpc_add_ac_signed (Q, Q, &precomputed_2E_KG[ki_si[i+32]&0x0f],
-			 ki_si[i+32] >> 7);
+      jpc_add_ac_signed (Q, Q, &precomputed_KG[index[i]&0x0f],
+			 index[i] >> 7);
+      jpc_add_ac_signed (Q, Q, &precomputed_2E_KG[index[i+32]&0x0f],
+			 index[i+32] >> 7);
     }
 
   dst = k_is_even ? Q : tmp;
@@ -439,7 +439,6 @@ int
 compute_kP (ac *X, const naf4_257 *NAF_K, const ac *P)
 {
   int i;
-  int q_is_infinite = 1;
   jpc Q[1];
   ac P3[1], P5[1], P7[1];
   const ac *p_Pi[4];
