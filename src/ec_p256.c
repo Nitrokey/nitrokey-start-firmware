@@ -357,13 +357,14 @@ compute_naf4_257 (naf4_257 *NAF_K, const bn256 *K)
 {
   int i = 0;
   bn256 K_tmp[1];
-  uint32_t carry = 0;
 
   memcpy (K_tmp, K, sizeof (bn256));
   memset (NAF_K, 0, sizeof (naf4_257));
 
   while (!bn256_is_zero (K_tmp))
     {
+      uint32_t carry = 0;
+
       if (bn256_is_even (K_tmp))
 	naf4_257_set (NAF_K, i, 0);
       else
@@ -383,10 +384,7 @@ compute_naf4_257 (naf4_257 *NAF_K, const bn256 *K)
 
       bn256_shift (K_tmp, K_tmp, -1);
       if (carry)
-	{
-	  K_tmp->word[7] |= 0x80000000;
-	  carry = 0;
-	}
+	K_tmp->word[7] |= 0x80000000;
       i++;
     }
 }
@@ -442,6 +440,8 @@ compute_kP (ac *X, const naf4_257 *NAF_K, const ac *P)
   jpc Q[1];
   ac P3[1], P5[1], P7[1];
   const ac *p_Pi[4];
+  uint8_t index[64]; /* Lower 4-bit for index absolute value, msb is
+			for sign (encoded as: 0 means 1, 1 means -1).  */
 
   if (point_is_on_the_curve (P) < 0)
     return -1;
