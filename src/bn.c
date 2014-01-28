@@ -22,7 +22,7 @@
  */
 
 #include <stdint.h>
-#include <stdlib.h>
+#include <string.h>
 #include "random.h"
 #include "bn.h"
 
@@ -138,9 +138,28 @@ bn256_sub_uint (bn256 *X, const bn256 *A, uint32_t w)
   return borrow;
 }
 
+#define ASM_IMPLEMENTATION 1
 void
 bn256_mul (bn512 *X, const bn256 *A, const bn256 *B)
 {
+#if ASM_IMPLEMENTATION
+#include "muladd_256.h"
+  const uint32_t *s;
+  uint32_t *d;
+  uint32_t w;
+  uint32_t c;
+
+  memset (X->word, 0, sizeof (uint32_t)*BN256_WORDS*2);
+
+  s = A->word;  d = &X->word[0];  w = B->word[0];  MULADD_256 (s, d, w, c);
+  s = A->word;  d = &X->word[1];  w = B->word[1];  MULADD_256 (s, d, w, c);
+  s = A->word;  d = &X->word[2];  w = B->word[2];  MULADD_256 (s, d, w, c);
+  s = A->word;  d = &X->word[3];  w = B->word[3];  MULADD_256 (s, d, w, c);
+  s = A->word;  d = &X->word[4];  w = B->word[4];  MULADD_256 (s, d, w, c);
+  s = A->word;  d = &X->word[5];  w = B->word[5];  MULADD_256 (s, d, w, c);
+  s = A->word;  d = &X->word[6];  w = B->word[6];  MULADD_256 (s, d, w, c);
+  s = A->word;  d = &X->word[7];  w = B->word[7];  MULADD_256 (s, d, w, c);
+#else
   int i, j, k;
   int i_beg, i_end;
   uint32_t r0, r1, r2;
@@ -186,11 +205,89 @@ bn256_mul (bn512 *X, const bn256 *A, const bn256 *B)
     }
 
   X->word[k] = r0;
+#endif
 }
 
 void
 bn256_sqr (bn512 *X, const bn256 *A)
 {
+#if ASM_IMPLEMENTATION
+  int i;
+
+  memset (X->word, 0, sizeof (bn512));
+  for (i = 0; i < BN256_WORDS; i++)
+    {
+      uint32_t *wij = &X->word[i*2];
+      const uint32_t *xj = &A->word[i];
+      uint32_t x_i = *xj++;
+      uint32_t c;
+
+      asm (/* (C,R4,R5) := w_i_i + x_i*x_i; w_i_i := R5; */
+           "mov    %[c], #0\n\t"
+           "ldr    r5, [%[wij]]\n\t"          /* R5 := w_i_i; */
+           "mov    r4, %[c]\n\t"
+           "umlal  r5, r4, %[x_i], %[x_i]\n\t"
+           "str    r5, [%[wij]], #4\n\t"
+           "cmp    %[xj], %[x_max1]\n\t"
+           "bhi    0f\n\t"
+           "mov    r9, %[c]\n\t"  /* R9 := 0, the constant ZERO from here.  */
+           "beq    1f\n"
+   "2:\n\t"
+           "ldmia  %[xj]!, { r7, r8 }\n\t"
+           "ldmia  %[wij], { r5, r6 }\n\t"
+           /* (C,R4,R5) := (C,R4) + w_i_j + 2*x_i*x_j; */
+           "umull  r7, r12, %[x_i], r7\n\t"
+           "adds   r5, r5, r4\n\t"
+           "adc    r4, %[c], r9\n\t"
+           "adds   r5, r5, r7\n\t"
+           "adcs   r4, r4, r12\n\t"
+           "adc    %[c], r9, r9\n\t"
+           "adds   r5, r5, r7\n\t"
+           "adcs   r4, r4, r12\n\t"
+           "adc    %[c], %[c], r9\n\t"
+           /* (C,R4,R6) := (C,R4) + w_i_j + 2*x_i*x_j; */
+           "adds   r6, r6, r4\n\t"
+           "adc    r4, %[c], r9\n\t"
+           "umull  r7, r12, %[x_i], r8\n\t"
+           "adds   r6, r6, r7\n\t"
+           "adcs   r4, r4, r12\n\t"
+           "adc    %[c], r9, r9\n\t"
+           "adds   r6, r6, r7\n\t"
+           "adcs   r4, r4, r12\n\t"
+           "adc    %[c], %[c], r9\n\t"
+           /**/
+           "stmia  %[wij]!, { r5, r6 }\n\t"
+           "cmp    %[xj], %[x_max1]\n\t"
+           "bcc    2b\n\t"
+           "bne    0f\n"
+   "1:\n\t"
+           /* (C,R4,R5) := (C,R4) + w_i_j + 2*x_i*x_j; */
+           "ldr    r5, [%[wij]]\n\t"
+           "ldr    r6, [%[xj]], #4\n\t"
+           "adds   r5, r5, r4\n\t"
+           "adc    r4, %[c], r9\n\t"
+           "umull  r7, r12, %[x_i], r6\n\t"
+           "adds   r5, r5, r7\n\t"
+           "adcs   r4, r4, r12\n\t"
+           "adc    %[c], r9, r9\n\t"
+           "adds   r5, r5, r7\n\t"
+           "adcs   r4, r4, r12\n\t"
+           "adc    %[c], %[c], r9\n\t"
+           "str    r5, [%[wij]], #4\n"
+   "0:\n\t"
+           "ldr    r5, [%[wij]]\n\t"
+           "adds   r4, r4, r5\n\t"
+           "adc    %[c], %[c], #0\n\t"
+           "str    r4, [%[wij]], #4"
+           : [c] "=&r" (c), [wij] "=r" (wij), [xj] "=r" (xj)
+           : [x_i] "r" (x_i), [x_max1] "r" (&A->word[BN256_WORDS-1]),
+             "[wij]" (wij), "[xj]" (xj)
+           : "r4", "r5", "r6", "r7", "r8", "r9", "r12", "memory", "cc");
+
+      if (i < BN256_WORDS - 1)
+	*wij = c;
+    }
+#else
   int i, j, k;
   int i_beg, i_end;
   uint32_t r0, r1, r2;
@@ -241,6 +338,7 @@ bn256_sqr (bn512 *X, const bn256 *A)
     }
 
   X->word[k] = r0;
+#endif
 }
 
 uint32_t

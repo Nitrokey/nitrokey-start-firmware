@@ -1,5 +1,8 @@
 2014-01-28  Niibe Yutaka  <gniibe@fsij.org>
 
+	* src/muladd_256.h: New.
+	* src/bn.c (bn256_mul, bn256_sqr): Assembler implementation.
+
 	* src/ec_p256.c (get_vk_kP): Bug fix.
 	(compute_kP): Bug fix for index table.
 
