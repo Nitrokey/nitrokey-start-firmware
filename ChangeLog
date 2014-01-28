@@ -1,3 +1,8 @@
+2014-01-28  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/ec_p256.c (get_vk_kP): Bug fix.
+	(compute_kP): Bug fix for index table.
+
 2014-01-27  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/ec_p256.c (get_vk_kP): New.

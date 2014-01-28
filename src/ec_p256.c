@@ -230,8 +230,7 @@ static const ac precomputed_2E_KG[15] = {
 /*
  * Generator of Elliptic curve over GF(p256)
  */
-const bn256 *Gx = precomputed_KG[0].x;
-const bn256 *Gy = precomputed_KG[0].y;
+const ac *G = &precomputed_KG[0];
 #endif
 
 
@@ -354,7 +353,7 @@ get_vk_kP (const bn256 *K, int i)
   uint8_t word_index = (blk * 3) + (pos / 11);
 
   w = ((K->word[word_index] >> col) & 7);
-  if (pos == 10 || pos == 21)
+  if (word_index < 7 && (pos == 10 || pos == 21))
     {
       uint8_t mask;
       uint8_t shift;
@@ -451,7 +450,7 @@ compute_kP (ac *X, const bn256 *K, const ac *P)
 
   /* Fill index.  */
   vk = get_vk_kP (K_dash, 0);
-  for (i = 1; i < 85; i++)
+  for (i = 1; i < 86; i++)
     {
       int vk_next, is_even;
 
