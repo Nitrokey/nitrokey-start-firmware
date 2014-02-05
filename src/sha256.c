@@ -52,13 +52,17 @@
 
 #define SHA256_MASK (SHA256_BLOCK_SIZE - 1)
 
-static void memcpy_bswap32 (void *dst, const uint32_t *p, int n)
+static void memcpy_output_bswap32 (unsigned char *dst, const uint32_t *p)
 {
-  uint32_t *q = (uint32_t *)dst;
+  int i;
+  uint32_t q;
 
-  n >>= 2;
-  while (n--)
-    q[n] = __builtin_bswap32 (p[n]); /* bswap32 is GCC extention */
+  for (i = 0; i < 32; i++)
+    {
+      if ((i & 3) == 0)
+	q[i] = __builtin_bswap32 (p[i >> 2]); /* bswap32 is GCC extention */
+      dst[i] = q >> ((i & 3) * 8);
+    }
 }
 
 #define rotr32(x,n)   (((x) >> n) | ((x) << (32 - n)))
@@ -193,7 +197,7 @@ sha256_finish (sha256_context *ctx, unsigned char output[32])
   ctx->wbuf[15] = __builtin_bswap32 (ctx->total[0] << 3);
   sha256_process (ctx);
 
-  memcpy_bswap32 (output, ctx->state, SHA256_DIGEST_SIZE);
+  memcpy_output_bswap32 (output, ctx->state);
   memset (ctx, 0, sizeof (sha256_context));
 }
 

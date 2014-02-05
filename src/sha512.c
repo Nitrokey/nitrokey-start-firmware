@@ -37,7 +37,7 @@
 
 #define SHA512_MASK (SHA512_BLOCK_SIZE - 1)
 
-static void memcpy_bswap64 (unsigned char dst[64], const uint64_t *p)
+static void memcpy_output_bswap64 (unsigned char dst[64], const uint64_t *p)
 {
   int i;
   uint64_t q;
@@ -187,7 +187,7 @@ sha512_finish (sha512_context *ctx, unsigned char output[64])
   ctx->wbuf[15] = __builtin_bswap64 (ctx->total[0] << 3);
   sha512_process (ctx);
 
-  memcpy_bswap64 (output, ctx->state);
+  memcpy_output_bswap64 (output, ctx->state);
   memset (ctx, 0, sizeof (sha512_context));
 }
 
