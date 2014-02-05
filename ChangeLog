@@ -1,5 +1,7 @@
 2014-02-05  NIIBE Yutaka  <gniibe@fsij.org>
 
+	* src/sha512.h, src/sha512.c: New.
+
 	* src/sha256.c (initial_state): Don't export, it's internal.
 
 2014-01-28  Niibe Yutaka  <gniibe@fsij.org>
