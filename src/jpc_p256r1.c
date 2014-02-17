@@ -1,5 +1,5 @@
 /*
- * jpc.c -- arithmetic on Jacobian projective coordinates and Affin coordinates
+ * jpc_p256r1.c -- arithmetic on Jacobian projective coordinates for p256r1.
  *
  * Copyright (C) 2011, 2013 Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
@@ -24,8 +24,8 @@
 #include <stdint.h>
 #include <string.h>
 #include "bn.h"
-#include "modp256.h"
-#include "jpc-ac.h"
+#include "modp256r1.h"
+#include "jpc-ac_p256r1.h"
 
 /**
  * @brief	X = 2 * A
@@ -34,7 +34,7 @@
  * @param A	JPC
  */
 void
-jpc_double (jpc *X, const jpc *A)
+jpc_double_p256r1 (jpc *X, const jpc *A)
 {
   bn256 a[1], b[1], c[1], tmp0[1];
   bn256 *d;
@@ -43,31 +43,31 @@ jpc_double (jpc *X, const jpc *A)
     return;
 
   d = X->x;
-  modp256_sqr (a, A->y);
+  modp256r1_sqr (a, A->y);
   memcpy (b, a, sizeof (bn256));
-  modp256_mul (a, a, A->x);
-  modp256_shift (a, a, 2);
+  modp256r1_mul (a, a, A->x);
+  modp256r1_shift (a, a, 2);
 
-  modp256_sqr (b, b);
-  modp256_shift (b, b, 3);
+  modp256r1_sqr (b, b);
+  modp256r1_shift (b, b, 3);
 
-  modp256_sqr (tmp0, A->z);
-  modp256_sub (c, A->x, tmp0);
-  modp256_add (tmp0, tmp0, A->x);
-  modp256_mul (tmp0, tmp0, c);
-  modp256_shift (c, tmp0, 1);
-  modp256_add (c, c, tmp0);
+  modp256r1_sqr (tmp0, A->z);
+  modp256r1_sub (c, A->x, tmp0);
+  modp256r1_add (tmp0, tmp0, A->x);
+  modp256r1_mul (tmp0, tmp0, c);
+  modp256r1_shift (c, tmp0, 1);
+  modp256r1_add (c, c, tmp0);
 
-  modp256_sqr (d, c);
-  modp256_shift (tmp0, a, 1);
-  modp256_sub (d, d, tmp0);
+  modp256r1_sqr (d, c);
+  modp256r1_shift (tmp0, a, 1);
+  modp256r1_sub (d, d, tmp0);
 
-  modp256_mul (X->z, A->y, A->z);
-  modp256_shift (X->z, X->z, 1);
+  modp256r1_mul (X->z, A->y, A->z);
+  modp256r1_shift (X->z, X->z, 1);
 
-  modp256_sub (tmp0, a, d);
-  modp256_mul (tmp0, c, tmp0);
-  modp256_sub (X->y, tmp0, b);
+  modp256r1_sub (tmp0, a, d);
+  modp256r1_mul (tmp0, c, tmp0);
+  modp256r1_sub (X->y, tmp0, b);
 }
 
 /**
@@ -79,7 +79,7 @@ jpc_double (jpc *X, const jpc *A)
  * @param MINUS if 1 subtraction, addition otherwise.
  */
 void
-jpc_add_ac_signed (jpc *X, const jpc *A, const ac *B, int minus)
+jpc_add_ac_signed_p256r1 (jpc *X, const jpc *A, const ac *B, int minus)
 {
   bn256 a[1], b[1], c[1], d[1], tmp[1];
 #define minus_B_y c
@@ -110,20 +110,20 @@ jpc_add_ac_signed (jpc *X, const jpc *A, const ac *B, int minus)
       return;
     }
 
-  modp256_sqr (a, A->z);
+  modp256r1_sqr (a, A->z);
   memcpy (b, a, sizeof (bn256));
-  modp256_mul (a, a, B->x);
+  modp256r1_mul (a, a, B->x);
 
-  modp256_mul (b, b, A->z);
+  modp256r1_mul (b, b, A->z);
   if (minus)
     {
       bn256_sub (minus_B_y, P256, B->y);
-      modp256_mul (b, b, minus_B_y);
+      modp256r1_mul (b, b, minus_B_y);
     }
   else
     {
       bn256_sub (tmp, P256, B->y);
-      modp256_mul (b, b, B->y);
+      modp256r1_mul (b, b, B->y);
     }
 
   if (bn256_cmp (A->x, a) == 0 && bn256_cmp (A->y, b) == 0)
@@ -132,26 +132,26 @@ jpc_add_ac_signed (jpc *X, const jpc *A, const ac *B, int minus)
       return;
     }
 
-  modp256_sub (c, a, A->x);
-  modp256_sub (d, b, A->y);
+  modp256r1_sub (c, a, A->x);
+  modp256r1_sub (d, b, A->y);
 
-  modp256_mul (X->z, A->z, c);
+  modp256r1_mul (X->z, A->z, c);
 
-  modp256_sqr (c_sqr, c);
-  modp256_mul (c_cube, c_sqr, c);
+  modp256r1_sqr (c_sqr, c);
+  modp256r1_mul (c_cube, c_sqr, c);
 
-  modp256_mul (x1_c_sqr, A->x, c_sqr);
+  modp256r1_mul (x1_c_sqr, A->x, c_sqr);
 
-  modp256_sqr (X->x, d);
+  modp256r1_sqr (X->x, d);
   memcpy (x1_c_sqr_copy, x1_c_sqr, sizeof (bn256));
-  modp256_shift (x1_c_sqr_2, x1_c_sqr, 1);
-  modp256_add (c_cube_plus_x1_c_sqr_2, x1_c_sqr_2, c_cube);
-  modp256_sub (X->x, X->x, c_cube_plus_x1_c_sqr_2);
+  modp256r1_shift (x1_c_sqr_2, x1_c_sqr, 1);
+  modp256r1_add (c_cube_plus_x1_c_sqr_2, x1_c_sqr_2, c_cube);
+  modp256r1_sub (X->x, X->x, c_cube_plus_x1_c_sqr_2);
 
-  modp256_sub (y3_tmp, x1_c_sqr_copy, X->x);
-  modp256_mul (y3_tmp, y3_tmp, d);
-  modp256_mul (y1_c_cube, A->y, c_cube);
-  modp256_sub (X->y, y3_tmp, y1_c_cube);
+  modp256r1_sub (y3_tmp, x1_c_sqr_copy, X->x);
+  modp256r1_mul (y3_tmp, y3_tmp, d);
+  modp256r1_mul (y1_c_cube, A->y, c_cube);
+  modp256r1_sub (X->y, y3_tmp, y1_c_cube);
 }
 
 /**
@@ -162,9 +162,9 @@ jpc_add_ac_signed (jpc *X, const jpc *A, const ac *B, int minus)
  * @param B	AC
  */
 void
-jpc_add_ac (jpc *X, const jpc *A, const ac *B)
+jpc_add_ac_p256r1 (jpc *X, const jpc *A, const ac *B)
 {
-  jpc_add_ac_signed (X, A, B, 0);
+  jpc_add_ac_signed_p256r1 (X, A, B, 0);
 }
 
 /**
@@ -177,17 +177,17 @@ jpc_add_ac (jpc *X, const jpc *A, const ac *B)
  * Return 0 on success.
  */
 int
-jpc_to_ac (ac *X, const jpc *A)
+jpc_to_ac_p256r1 (ac *X, const jpc *A)
 {
   bn256 z_inv[1], z_inv_sqr[1];
 
-  if (modp256_inv (z_inv, A->z) < 0)
+  if (modp256r1_inv (z_inv, A->z) < 0)
     return -1;
 
-  modp256_sqr (z_inv_sqr, z_inv);
-  modp256_mul (z_inv, z_inv, z_inv_sqr);
+  modp256r1_sqr (z_inv_sqr, z_inv);
+  modp256r1_mul (z_inv, z_inv, z_inv_sqr);
 
-  modp256_mul (X->x, A->x, z_inv_sqr);
-  modp256_mul (X->y, A->y, z_inv);
+  modp256r1_mul (X->x, A->x, z_inv_sqr);
+  modp256r1_mul (X->y, A->y, z_inv);
   return 0;
 }

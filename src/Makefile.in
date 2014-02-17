@@ -12,7 +12,7 @@ CSRC = main.c usb_stm32f103.c adc_stm32f103.c \
 	usb_desc.c usb_ctrl.c \
 	call-rsa.c \
 	usb-icc.c openpgp.c ac.c openpgp-do.c flash.c \
-	bn.c modp256.c jpc.c mod.c ec_p256.c call-ec_p256.c \
+	bn.c modp256r1.c jpc_p256r1.c mod.c ec_p256r1.c call-ec_p256r1.c \
 	random.c neug.c sha256.c sys.c
 
 INCDIR =

@@ -1,5 +1,5 @@
 /*                                                    -*- coding: utf-8 -*-
- * ec_p256.c - Elliptic curve over GF(p256)
+ * ec_p256r1.c - Elliptic curve over GF(p256r1)
  *
  * Copyright (C) 2011, 2013, 2014 Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
@@ -41,10 +41,10 @@
 #include <stdint.h>
 #include <string.h>
 #include "bn.h"
-#include "modp256.h"
-#include "jpc-ac.h"
+#include "modp256r1.h"
+#include "jpc-ac_p256r1.h"
 #include "mod.h"
-#include "ec_p256.h"
+#include "ec_p256r1.h"
 
 /*
  * a = -3 mod p256
@@ -263,7 +263,7 @@ get_vk (const bn256 *K, int i)
  * Return 0 on success.
  */
 int
-compute_kG (ac *X, const bn256 *K)
+compute_kG_p256r1 (ac *X, const bn256 *K)
 {
   uint8_t index[64]; /* Lower 4-bit for index absolute value, msb is
 			for sign (encoded as: 0 means 1, 1 means -1).  */
@@ -292,18 +292,18 @@ compute_kG (ac *X, const bn256 *K)
   memset (Q->z, 0, sizeof (bn256)); /* infinity */
   for (i = 31; i >= 0; i--)
     {
-      jpc_double (Q, Q);
+      jpc_double_p256r1 (Q, Q);
 
-      jpc_add_ac_signed (Q, Q, &precomputed_KG[index[i]&0x0f],
-			 index[i] >> 7);
-      jpc_add_ac_signed (Q, Q, &precomputed_2E_KG[index[i+32]&0x0f],
-			 index[i+32] >> 7);
+      jpc_add_ac_signed_p256r1 (Q, Q, &precomputed_KG[index[i]&0x0f],
+				index[i] >> 7);
+      jpc_add_ac_signed_p256r1 (Q, Q, &precomputed_2E_KG[index[i+32]&0x0f],
+				index[i+32] >> 7);
     }
 
   dst = k_is_even ? Q : tmp;
-  jpc_add_ac (dst, Q, &precomputed_KG[0]);
+  jpc_add_ac_p256r1 (dst, Q, &precomputed_KG[0]);
 
-  return jpc_to_ac (X, Q);
+  return jpc_to_ac_p256r1 (X, Q);
 }
 
 
@@ -320,14 +320,14 @@ point_is_on_the_curve (const ac *P)
   bn256 s[1], t[1];
 
   /* Elliptic curve: y^2 = x^3 + a*x + b */
-  modp256_sqr (s, P->x);
-  modp256_mul (s, s, P->x);
+  modp256r1_sqr (s, P->x);
+  modp256r1_mul (s, s, P->x);
 
-  modp256_mul (t, coefficient_a, P->x);
-  modp256_add (s, s, t);
-  modp256_add (s, s, coefficient_b);
+  modp256r1_mul (t, coefficient_a, P->x);
+  modp256r1_add (s, s, t);
+  modp256r1_add (s, s, coefficient_b);
 
-  modp256_sqr (t, P->y);
+  modp256r1_sqr (t, P->y);
   if (bn256_cmp (s, t) == 0)
     return 0;
   else
@@ -395,7 +395,7 @@ get_vk_kP (const bn256 *K, int i)
  * represented by affine coordinate.
  */
 int
-compute_kP (ac *X, const bn256 *K, const ac *P)
+compute_kP_p256r1 (ac *X, const bn256 *K, const ac *P)
 {
   uint8_t index[86]; /* Lower 2-bit for index absolute value, msb is
 			for sign (encoded as: 0 means 1, 1 means -1).  */
@@ -489,7 +489,7 @@ static const bn256 MU_lower[1] = {
  * @brief Compute signature (r,s) of hash string z with secret key d
  */
 void
-ecdsa (bn256 *r, bn256 *s, const bn256 *z, const bn256 *d)
+ecdsa_p256r1 (bn256 *r, bn256 *s, const bn256 *z, const bn256 *d)
 {
   bn256 k[1];
   ac KG[1];
@@ -509,7 +509,7 @@ ecdsa (bn256 *r, bn256 *s, const bn256 *z, const bn256 *d)
 	  if (bn256_sub (tmp_k, k, N) == 0)	/* >= N, it's too big.  */
 	    continue;
 	  /* 1 <= k <= N - 1 */
-	  compute_kG (KG, k);
+	  compute_kG_p256r1 (KG, k);
 	  borrow = bn256_sub (r, KG->x, N);
 	  if (borrow)
 	    memcpy (r, KG->x, sizeof (bn256));

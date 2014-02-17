@@ -1,5 +1,5 @@
 /*
- * modp256.c -- modulo P256 arithmetic
+ * modp256r1.c -- modulo arithmetic for p256r1
  *
  * Copyright (C) 2011, 2013, 2014 Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
@@ -28,7 +28,7 @@
 #include <string.h>
 
 #include "bn.h"
-#include "modp256.h"
+#include "modp256r1.h"
 
 /*
 256      224      192      160      128       96       64       32        0
@@ -50,7 +50,7 @@ const bn256 p256 = { {0xffffffff, 0xffffffff, 0xffffffff, 0x00000000,
  * @brief  X = (A + B) mod p256
  */
 void
-modp256_add (bn256 *X, const bn256 *A, const bn256 *B)
+modp256r1_add (bn256 *X, const bn256 *A, const bn256 *B)
 {
   uint32_t carry;
   bn256 tmp[1];
@@ -66,7 +66,7 @@ modp256_add (bn256 *X, const bn256 *A, const bn256 *B)
  * @brief  X = (A - B) mod p256
  */
 void
-modp256_sub (bn256 *X, const bn256 *A, const bn256 *B)
+modp256r1_sub (bn256 *X, const bn256 *A, const bn256 *B)
 {
   uint32_t borrow;
   bn256 tmp[1];
@@ -82,7 +82,7 @@ modp256_sub (bn256 *X, const bn256 *A, const bn256 *B)
  * @brief  X = A mod p256
  */
 void
-modp256_reduce (bn256 *X, const bn512 *A)
+modp256r1_reduce (bn256 *X, const bn512 *A)
 {
   bn256 tmp[1];
   uint32_t borrow;
@@ -114,8 +114,8 @@ modp256_reduce (bn256 *X, const bn512 *A)
   S2->word[3] = A->word[11];
   S2->word[2] = S2->word[1] = S2->word[0] = 0;
   /* X += 2 * S2 */
-  modp256_add (X, X, S2);
-  modp256_add (X, X, S2);
+  modp256r1_add (X, X, S2);
+  modp256r1_add (X, X, S2);
 
   S3->word[7] = 0;
   S3->word[6] = A->word[15];
@@ -124,8 +124,8 @@ modp256_reduce (bn256 *X, const bn512 *A)
   S3->word[3] = A->word[12];
   S3->word[2] = S3->word[1] = S3->word[0] = 0;
   /* X += 2 * S3 */
-  modp256_add (X, X, S3);
-  modp256_add (X, X, S3);
+  modp256r1_add (X, X, S3);
+  modp256r1_add (X, X, S3);
 
   S4->word[7] = A->word[15];
   S4->word[6] = A->word[14];
@@ -134,7 +134,7 @@ modp256_reduce (bn256 *X, const bn512 *A)
   S4->word[1] = A->word[9];
   S4->word[0] = A->word[8];
   /* X += S4 */
-  modp256_add (X, X, S4);
+  modp256r1_add (X, X, S4);
 
   S5->word[7] = A->word[8];
   S5->word[6] = A->word[13];
@@ -145,7 +145,7 @@ modp256_reduce (bn256 *X, const bn512 *A)
   S5->word[1] = A->word[10];
   S5->word[0] = A->word[9];
   /* X += S5 */
-  modp256_add (X, X, S5);
+  modp256r1_add (X, X, S5);
 
   S6->word[7] = A->word[10];
   S6->word[6] = A->word[8];
@@ -154,7 +154,7 @@ modp256_reduce (bn256 *X, const bn512 *A)
   S6->word[1] = A->word[12];
   S6->word[0] = A->word[11];
   /* X -= S6 */
-  modp256_sub (X, X, S6);
+  modp256r1_sub (X, X, S6);
 
   S7->word[7] = A->word[11];
   S7->word[6] = A->word[9];
@@ -164,7 +164,7 @@ modp256_reduce (bn256 *X, const bn512 *A)
   S7->word[1] = A->word[13];
   S7->word[0] = A->word[12];
   /* X -= S7 */
-  modp256_sub (X, X, S7);
+  modp256r1_sub (X, X, S7);
 
   S8->word[7] = A->word[12];
   S8->word[6] = 0;
@@ -175,7 +175,7 @@ modp256_reduce (bn256 *X, const bn512 *A)
   S8->word[1] = A->word[14];
   S8->word[0] = A->word[13];
   /* X -= S8 */
-  modp256_sub (X, X, S8);
+  modp256r1_sub (X, X, S8);
 
   S9->word[7] = A->word[13];
   S9->word[6] = 0;
@@ -186,7 +186,7 @@ modp256_reduce (bn256 *X, const bn512 *A)
   S9->word[1] = A->word[15];
   S9->word[0] = A->word[14];
   /* X -= S9 */
-  modp256_sub (X, X, S9);
+  modp256r1_sub (X, X, S9);
 
   borrow = bn256_sub (tmp, X, P256);
   if (borrow)
@@ -199,24 +199,24 @@ modp256_reduce (bn256 *X, const bn512 *A)
  * @brief  X = (A * B) mod p256
  */
 void
-modp256_mul (bn256 *X, const bn256 *A, const bn256 *B)
+modp256r1_mul (bn256 *X, const bn256 *A, const bn256 *B)
 {
   bn512 AB[1];
 
   bn256_mul (AB, A, B);
-  modp256_reduce (X, AB);
+  modp256r1_reduce (X, AB);
 }
 
 /**
  * @brief  X = A * A mod p256
  */
 void
-modp256_sqr (bn256 *X, const bn256 *A)
+modp256r1_sqr (bn256 *X, const bn256 *A)
 {
   bn512 AA[1];
 
   bn256_sqr (AA, A);
-  modp256_reduce (X, AA);
+  modp256r1_reduce (X, AA);
 }
 
 /**
@@ -228,7 +228,7 @@ modp256_sqr (bn256 *X, const bn256 *A)
 #define MAX_N_BITS 256
 
 int
-modp256_inv (bn256 *C, const bn256 *a)
+modp256r1_inv (bn256 *C, const bn256 *a)
 {
   bn256 u[1], v[1], tmp[1];
   bn256 A[1] = { { { 1, 0, 0, 0, 0, 0, 0, 0 } } };
@@ -276,12 +276,12 @@ modp256_inv (bn256 *C, const bn256 *a)
 	  if (bn256_is_ge (tmp, tmp))
 	    {
 	      bn256_sub (tmp, tmp, tmp);
-	      modp256_sub (tmp, tmp, tmp);
+	      modp256r1_sub (tmp, tmp, tmp);
 	    }
 	  else
 	    {
 	      bn256_sub (tmp, tmp, tmp);
-	      modp256_sub (tmp, tmp, A);
+	      modp256r1_sub (tmp, tmp, A);
 	    }
 	  break;
 
@@ -313,12 +313,12 @@ modp256_inv (bn256 *C, const bn256 *a)
 	  if (bn256_is_ge (tmp, tmp))
 	    {
 	      bn256_sub (tmp, tmp, tmp);
-	      modp256_sub (tmp, tmp, tmp);
+	      modp256r1_sub (tmp, tmp, tmp);
 	    }
 	  else
 	    {
 	      bn256_sub (tmp, tmp, tmp);
-	      modp256_sub (tmp, tmp, A);
+	      modp256r1_sub (tmp, tmp, A);
 	    }
 	  break;
 
@@ -350,12 +350,12 @@ modp256_inv (bn256 *C, const bn256 *a)
 	  if (bn256_is_ge (tmp, tmp))
 	    {
 	      bn256_sub (tmp, tmp, tmp);
-	      modp256_sub (tmp, tmp, tmp);
+	      modp256r1_sub (tmp, tmp, tmp);
 	    }
 	  else
 	    {
 	      bn256_sub (tmp, tmp, tmp);
-	      modp256_sub (tmp, tmp, A);
+	      modp256r1_sub (tmp, tmp, A);
 	    }
 	  break;
 
@@ -387,12 +387,12 @@ modp256_inv (bn256 *C, const bn256 *a)
 	  if (bn256_is_ge (u, v))
 	    {
 	      bn256_sub (u, u, v);
-	      modp256_sub (A, A, C);
+	      modp256r1_sub (A, A, C);
 	    }
 	  else
 	    {
 	      bn256_sub (v, v, u);
-	      modp256_sub (C, C, A);
+	      modp256r1_sub (C, C, A);
 	    }
 	  break;
 	}
@@ -406,7 +406,7 @@ modp256_inv (bn256 *C, const bn256 *a)
  * @note   shift <= 32
  */
 void
-modp256_shift (bn256 *X, const bn256 *A, int shift)
+modp256r1_shift (bn256 *X, const bn256 *A, int shift)
 {
   uint32_t carry;
 #define borrow carry
@@ -419,13 +419,13 @@ modp256_shift (bn256 *X, const bn256 *A, int shift)
   memset (tmp, 0, sizeof (bn256));
   tmp->word[7] = carry;
   tmp->word[0] = carry;
-  modp256_add (X, X, tmp);
+  modp256r1_add (X, X, tmp);
 
   tmp->word[7] = 0;
   tmp->word[0] = 0;
   tmp->word[6] = carry;
   tmp->word[3] = carry;
-  modp256_sub (X, X, tmp);
+  modp256r1_sub (X, X, tmp);
 
   borrow = bn256_sub (tmp, X, P256);
   if (borrow)

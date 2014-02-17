@@ -1,3 +1,25 @@
+2014-02-17  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/Makefile.in (CSRC): Follow the changes of filenames.
+
+	* src/modp256r1.c (modp256r1_add, modp256r1_sub, S3)
+	(modp256r1_mul, modp256r1_sqr, modp256r1_inv, modp256r1_shift):
+	Use new function names.
+	* src/jpc_p256r1.c (jpc_double_p256r1, jpc_add_ac_signed_p256r1)
+	(jpc_to_ac_p256r1): Likewise.
+	* src/ec_p256r1.c (point_is_on_the_curve)
+	(compute_kG_p256r1, compute_kP_p256r1): Likewise.
+	* src/call-ec_p256r1.c (ecdsa_sign): Likewise.
+
+	* src/modp256r1.h: Rename from modp256.h.
+	* src/jpc-ac_p256r1.h: Rename from jpc-ac.h.
+	* src/ec_p256r1.h: Rename from ec_p256.h.
+
+	* src/modp256r1.c: Rename from modp256.c.
+	* src/jpc_p256r1.c: Rename from jpc.c.
+	* src/ec_p256r1.c: Rename from ec_p256.c.
+	* src/call-ec_p256r1.c: Rename from call-ec_p256.c.
+
 2014-02-05  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* src/sha512.h, src/sha512.c: New.
