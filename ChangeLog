@@ -1,5 +1,7 @@
 2014-02-18  Niibe Yutaka  <gniibe@fsij.org>
 
+	* src/sha256.c (memcpy_output_bswap32): Bug fix.
+
 	* src/modp256k1.h, src/modp256k1.c: New.
 
 2014-02-17  Niibe Yutaka  <gniibe@fsij.org>

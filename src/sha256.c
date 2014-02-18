@@ -55,12 +55,12 @@
 static void memcpy_output_bswap32 (unsigned char *dst, const uint32_t *p)
 {
   int i;
-  uint32_t q;
+  uint32_t q = 0;
 
   for (i = 0; i < 32; i++)
     {
       if ((i & 3) == 0)
-	q[i] = __builtin_bswap32 (p[i >> 2]); /* bswap32 is GCC extention */
+	q = __builtin_bswap32 (p[i >> 2]); /* bswap32 is GCC extention */
       dst[i] = q >> ((i & 3) * 8);
     }
 }
