@@ -193,6 +193,16 @@ modp256r1_reduce (bn256 *X, const bn512 *A)
     memcpy (tmp, X, sizeof (bn256));
   else
     memcpy (X, tmp, sizeof (bn256));
+
+#undef S1
+#undef S2
+#undef S3
+#undef S4
+#undef S5
+#undef S6
+#undef S7
+#undef S8
+#undef S9
 }
 
 /**

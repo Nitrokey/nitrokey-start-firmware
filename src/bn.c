@@ -138,7 +138,9 @@ bn256_sub_uint (bn256 *X, const bn256 *A, uint32_t w)
   return borrow;
 }
 
+#ifndef BN256_C_IMPLEMENTATION
 #define ASM_IMPLEMENTATION 1
+#endif
 void
 bn256_mul (bn512 *X, const bn256 *A, const bn256 *B)
 {
@@ -413,6 +415,7 @@ bn256_cmp (const bn256 *A, const bn256 *B)
 }
 
 
+#ifndef BN256_NO_RANDOM
 void
 bn256_random (bn256 *X)
 {
@@ -429,3 +432,4 @@ bn256_random (bn256 *X)
 
   random_bytes_free (rand);
 }
+#endif
