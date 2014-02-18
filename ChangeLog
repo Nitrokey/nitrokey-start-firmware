@@ -1,5 +1,9 @@
 2014-02-18  Niibe Yutaka  <gniibe@fsij.org>
 
+	* src/jpc_p256k1.c: New.  Use jpc.c.
+	* src/jpc_p256r1.c: Use jpc.c.
+	* src/jpc.c: New.
+
 	* src/sha256.c (memcpy_output_bswap32): Bug fix.
 
 	* src/modp256k1.h, src/modp256k1.c: New.

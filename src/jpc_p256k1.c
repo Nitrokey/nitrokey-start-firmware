@@ -1,5 +1,5 @@
 /*
- * jpc_p256r1.c -- arithmetic on Jacobian projective coordinates for p256r1.
+ * jpc_p256k1.c -- arithmetic on Jacobian projective coordinates for p256k1.
  *
  * Copyright (C) 2014 Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
@@ -24,10 +24,10 @@
 #include <stdint.h>
 #include <string.h>
 #include "bn.h"
-#include "modp256r1.h"
-#include "jpc-ac_p256r1.h"
+#include "modp256k1.h"
+#include "jpc-ac_p256k1.h"
 
-#define FIELD p256r1
-#define CONST_P256 P256R1
+#define FIELD p256k1
+#define CONST_P256 P256K1
 
 #include "jpc.c"
