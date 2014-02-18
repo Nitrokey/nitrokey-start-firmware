@@ -40,7 +40,7 @@
 static void memcpy_output_bswap64 (unsigned char dst[64], const uint64_t *p)
 {
   int i;
-  uint64_t q;
+  uint64_t q = 0;
 
   for (i = 0; i < 64; i++)
     {
