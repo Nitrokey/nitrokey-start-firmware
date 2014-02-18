@@ -43,11 +43,11 @@
 2^256 - 2^224 + 2^192 + 2^96 - 1
   0 ffffffff 00000001 00000000 00000000 00000000 ffffffff ffffffff ffffffff
 */
-const bn256 p256 = { {0xffffffff, 0xffffffff, 0xffffffff, 0x00000000,
-		      0x00000000, 0x00000000, 0x00000001, 0xffffffff} };
+const bn256 p256r1 = { {0xffffffff, 0xffffffff, 0xffffffff, 0x00000000,
+			0x00000000, 0x00000000, 0x00000001, 0xffffffff} };
 
 /**
- * @brief  X = (A + B) mod p256
+ * @brief  X = (A + B) mod p256r1
  */
 void
 modp256r1_add (bn256 *X, const bn256 *A, const bn256 *B)
@@ -57,13 +57,13 @@ modp256r1_add (bn256 *X, const bn256 *A, const bn256 *B)
 
   carry = bn256_add (X, A, B);
   if (carry)
-    bn256_sub (X, X, P256);
+    bn256_sub (X, X, P256R1);
   else
-    bn256_sub (tmp, X, P256);
+    bn256_sub (tmp, X, P256R1);
 }
 
 /**
- * @brief  X = (A - B) mod p256
+ * @brief  X = (A - B) mod p256r1
  */
 void
 modp256r1_sub (bn256 *X, const bn256 *A, const bn256 *B)
@@ -73,13 +73,13 @@ modp256r1_sub (bn256 *X, const bn256 *A, const bn256 *B)
 
   borrow = bn256_sub (X, A, B);
   if (borrow)
-    bn256_add (X, X, P256);
+    bn256_add (X, X, P256R1);
   else
-    bn256_add (tmp, X, P256);
+    bn256_add (tmp, X, P256R1);
 }
 
 /**
- * @brief  X = A mod p256
+ * @brief  X = A mod p256r1
  */
 void
 modp256r1_reduce (bn256 *X, const bn512 *A)
@@ -188,7 +188,7 @@ modp256r1_reduce (bn256 *X, const bn512 *A)
   /* X -= S9 */
   modp256r1_sub (X, X, S9);
 
-  borrow = bn256_sub (tmp, X, P256);
+  borrow = bn256_sub (tmp, X, P256R1);
   if (borrow)
     memcpy (tmp, X, sizeof (bn256));
   else
@@ -196,7 +196,7 @@ modp256r1_reduce (bn256 *X, const bn512 *A)
 }
 
 /**
- * @brief  X = (A * B) mod p256
+ * @brief  X = (A * B) mod p256r1
  */
 void
 modp256r1_mul (bn256 *X, const bn256 *A, const bn256 *B)
@@ -208,7 +208,7 @@ modp256r1_mul (bn256 *X, const bn256 *A, const bn256 *B)
 }
 
 /**
- * @brief  X = A * A mod p256
+ * @brief  X = A * A mod p256r1
  */
 void
 modp256r1_sqr (bn256 *X, const bn256 *A)
@@ -220,7 +220,7 @@ modp256r1_sqr (bn256 *X, const bn256 *A)
 }
 
 /**
- * @brief  C = (1 / a)  mod p256
+ * @brief  C = (1 / a)  mod p256r1
  *
  * Return -1 on error.
  * Return 0 on success.
@@ -240,7 +240,7 @@ modp256r1_inv (bn256 *C, const bn256 *a)
 
   memset (C, 0, sizeof (bn256));
   memcpy (u, a, sizeof (bn256));
-  memcpy (v, P256, sizeof (bn256));
+  memcpy (v, P256R1, sizeof (bn256));
 
   while (n--)
     {
@@ -252,11 +252,11 @@ modp256r1_inv (bn256 *C, const bn256 *a)
 	  bn256_shift (u, u, -1);
 	  if (bn256_is_even (A))
 	    {
-	      bn256_add (tmp, A, P256);
+	      bn256_add (tmp, A, P256R1);
 	      carry = 0;
 	    }
 	  else
-	    carry = bn256_add (A, A, P256);
+	    carry = bn256_add (A, A, P256R1);
 
 	  bn256_shift (A, A, -1);
 	  A->word[7] |= carry * 0x80000000;
@@ -264,11 +264,11 @@ modp256r1_inv (bn256 *C, const bn256 *a)
 	  bn256_shift (v, v, -1);
 	  if (bn256_is_even (C))
 	    {
-	      bn256_add (tmp, C, P256);
+	      bn256_add (tmp, C, P256R1);
 	      carry = 0;
 	    }
 	  else
-	    carry = bn256_add (C, C, P256);
+	    carry = bn256_add (C, C, P256R1);
 
 	  bn256_shift (C, C, -1);
 	  C->word[7] |= carry * 0x80000000;
@@ -289,11 +289,11 @@ modp256r1_inv (bn256 *C, const bn256 *a)
 	  bn256_shift (tmp, tmp, -1);
 	  if (bn256_is_even (tmp))
 	    {
-	      bn256_add (tmp, tmp, P256);
+	      bn256_add (tmp, tmp, P256R1);
 	      carry = 0;
 	    }
 	  else
-	    carry = bn256_add (tmp, tmp, P256);
+	    carry = bn256_add (tmp, tmp, P256R1);
 
 	  bn256_shift (tmp, tmp, -1);
 	  tmp->word[7] |= carry * 0x80000000;
@@ -301,11 +301,11 @@ modp256r1_inv (bn256 *C, const bn256 *a)
 	  bn256_shift (v, v, -1);
 	  if (bn256_is_even (C))
 	    {
-	      bn256_add (tmp, C, P256);
+	      bn256_add (tmp, C, P256R1);
 	      carry = 0;
 	    }
 	  else
-	    carry = bn256_add (C, C, P256);
+	    carry = bn256_add (C, C, P256R1);
 
 	  bn256_shift (C, C, -1);
 	  C->word[7] |= carry * 0x80000000;
@@ -326,11 +326,11 @@ modp256r1_inv (bn256 *C, const bn256 *a)
 	  bn256_shift (u, u, -1);
 	  if (bn256_is_even (A))
 	    {
-	      bn256_add (tmp, A, P256);
+	      bn256_add (tmp, A, P256R1);
 	      carry = 0;
 	    }
 	  else
-	    carry = bn256_add (A, A, P256);
+	    carry = bn256_add (A, A, P256R1);
 
 	  bn256_shift (A, A, -1);
 	  A->word[7] |= carry * 0x80000000;
@@ -338,11 +338,11 @@ modp256r1_inv (bn256 *C, const bn256 *a)
 	  bn256_shift (tmp, tmp, -1);
 	  if (bn256_is_even (tmp))
 	    {
-	      bn256_add (tmp, tmp, P256);
+	      bn256_add (tmp, tmp, P256R1);
 	      carry = 0;
 	    }
 	  else
-	    carry = bn256_add (tmp, tmp, P256);
+	    carry = bn256_add (tmp, tmp, P256R1);
 
 	  bn256_shift (tmp, tmp, -1);
 	  tmp->word[7] |= carry * 0x80000000;
@@ -363,11 +363,11 @@ modp256r1_inv (bn256 *C, const bn256 *a)
 	  bn256_shift (tmp, tmp, -1);
 	  if (bn256_is_even (tmp))
 	    {
-	      bn256_add (tmp, tmp, P256);
+	      bn256_add (tmp, tmp, P256R1);
 	      carry = 0;
 	    }
 	  else
-	    carry = bn256_add (tmp, tmp, P256);
+	    carry = bn256_add (tmp, tmp, P256R1);
 
 	  bn256_shift (tmp, tmp, -1);
 	  tmp->word[7] |= carry * 0x80000000;
@@ -375,11 +375,11 @@ modp256r1_inv (bn256 *C, const bn256 *a)
 	  bn256_shift (tmp, tmp, -1);
 	  if (bn256_is_even (tmp))
 	    {
-	      bn256_add (tmp, tmp, P256);
+	      bn256_add (tmp, tmp, P256R1);
 	      carry = 0;
 	    }
 	  else
-	    carry = bn256_add (tmp, tmp, P256);
+	    carry = bn256_add (tmp, tmp, P256R1);
 
 	  bn256_shift (tmp, tmp, -1);
 	  tmp->word[7] |= carry * 0x80000000;
@@ -402,7 +402,7 @@ modp256r1_inv (bn256 *C, const bn256 *a)
 }
 
 /**
- * @brief  X = (A << shift) mod p256
+ * @brief  X = (A << shift) mod p256r1
  * @note   shift <= 32
  */
 void
@@ -427,7 +427,7 @@ modp256r1_shift (bn256 *X, const bn256 *A, int shift)
   tmp->word[3] = carry;
   modp256r1_sub (X, X, tmp);
 
-  borrow = bn256_sub (tmp, X, P256);
+  borrow = bn256_sub (tmp, X, P256R1);
   if (borrow)
     memcpy (tmp, X, sizeof (bn256));
   else

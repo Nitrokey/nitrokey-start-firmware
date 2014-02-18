@@ -98,12 +98,12 @@ jpc_add_ac_signed_p256r1 (jpc *X, const jpc *A, const ac *B, int minus)
       if (minus)
 	{
 	  memcpy (tmp, B->y, sizeof (bn256));
-	  bn256_sub (X->y, P256, B->y);
+	  bn256_sub (X->y, P256R1, B->y);
 	}
       else
 	{
 	  memcpy (X->y, B->y, sizeof (bn256));
-	  bn256_sub (tmp, P256, B->y);
+	  bn256_sub (tmp, P256R1, B->y);
 	}
       memset (X->z, 0, sizeof (bn256));
       X->z->word[0] = 1;
@@ -117,12 +117,12 @@ jpc_add_ac_signed_p256r1 (jpc *X, const jpc *A, const ac *B, int minus)
   modp256r1_mul (b, b, A->z);
   if (minus)
     {
-      bn256_sub (minus_B_y, P256, B->y);
+      bn256_sub (minus_B_y, P256R1, B->y);
       modp256r1_mul (b, b, minus_B_y);
     }
   else
     {
-      bn256_sub (tmp, P256, B->y);
+      bn256_sub (tmp, P256R1, B->y);
       modp256r1_mul (b, b, B->y);
     }
 

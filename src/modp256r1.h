@@ -1,5 +1,5 @@
-extern const bn256 p256;
-#define P256 (&p256)
+extern const bn256 p256r1;
+#define P256R1 (&p256r1)
 
 void modp256r1_add (bn256 *X, const bn256 *A, const bn256 *B);
 void modp256r1_sub (bn256 *X, const bn256 *A, const bn256 *B);
