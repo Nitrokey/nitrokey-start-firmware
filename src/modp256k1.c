@@ -94,9 +94,9 @@ modp256k1_reduce (bn256 *X, const bn512 *A)
   uint32_t carry;
 #define borrow carry
   uint32_t s0, s1;
-#define s00 tmp->[0]
-#define s01 tmp->[1]
-#define s02 tmp->[2]
+#define s00 tmp->word[0]
+#define s01 tmp->word[1]
+#define s02 tmp->word[2]
 
 #define W0 X
 #define W1 tmp
