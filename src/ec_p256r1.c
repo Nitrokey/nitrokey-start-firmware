@@ -429,22 +429,22 @@ compute_kP_p256r1 (ac *X, const bn256 *K, const ac *P)
     memset (Q->z, 0, sizeof (bn256));
     Q->z->word[0] = 1;
 
-    jpc_double (Q, Q);
-    jpc_add_ac (Q1, Q, P);
-    if (jpc_to_ac (P3, Q1) < 0)	/* Never occurs, except coding errors.  */
+    jpc_double_p256r1 (Q, Q);
+    jpc_add_ac_p256r1 (Q1, Q, P);
+    if (jpc_to_ac_p256r1 (P3, Q1) < 0) /* Never occurs, except coding errors.  */
       return -1;
-    jpc_double (Q, Q);
-    jpc_add_ac (Q1, Q, P);
-    if (jpc_to_ac (P5, Q1) < 0)	/* Never occurs, except coding errors.  */
+    jpc_double_p256r1 (Q, Q);
+    jpc_add_ac_p256r1 (Q1, Q, P);
+    if (jpc_to_ac_p256r1 (P5, Q1) < 0) /* Never occurs, except coding errors.  */
       return -1;
 
     memcpy (Q->x, P3->x, sizeof (bn256));
     memcpy (Q->y, P3->y, sizeof (bn256));
     memset (Q->z, 0, sizeof (bn256));
     Q->z->word[0] = 1;
-    jpc_double (Q, Q);
-    jpc_add_ac (Q1, Q, P);
-    if (jpc_to_ac (P7, Q1) < 0)	/* Never occurs, except coding errors.  */
+    jpc_double_p256r1 (Q, Q);
+    jpc_add_ac_p256r1 (Q1, Q, P);
+    if (jpc_to_ac_p256r1 (P7, Q1) < 0) /* Never occurs, except coding errors.  */
       return -1;
   }
 
@@ -464,14 +464,16 @@ compute_kP_p256r1 (ac *X, const bn256 *K, const ac *P)
   memset (Q->z, 0, sizeof (bn256)); /* infinity */
   for (i = 85; i >= 0; i--)
     {
-      jpc_double (Q, Q); jpc_double (Q, Q); jpc_double (Q, Q);
-      jpc_add_ac_signed (Q, Q, p_Pi[index[i]&0x03], index[i] >> 7);
+      jpc_double_p256r1 (Q, Q);
+      jpc_double_p256r1 (Q, Q);
+      jpc_double_p256r1 (Q, Q);
+      jpc_add_ac_signed_p256r1 (Q, Q, p_Pi[index[i]&0x03], index[i] >> 7);
     }
 
   dst = k_is_even ? Q : tmp;
-  jpc_add_ac (dst, Q, &precomputed_KG[0]);
+  jpc_add_ac_p256r1 (dst, Q, &precomputed_KG[0]);
 
-  return jpc_to_ac (X, Q);
+  return jpc_to_ac_p256r1 (X, Q);
 }
 
 
