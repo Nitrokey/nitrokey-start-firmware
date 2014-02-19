@@ -1,3 +1,12 @@
+2014-02-19  Niibe Yutaka  <gniibe@fsij.org>
+
+	* tool/calc_precompute_table_ecc.py: New.
+
+	* src/ec_p256k1.c: New.  Use ecc.c.
+	* src/ec_p256k1.h: New.
+	* src/ec_p256r1.c: Use ecc.c.
+	* src/ecc.c: New.
+
 2014-02-18  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/jpc_p256k1.c: New.  Use jpc.c.
