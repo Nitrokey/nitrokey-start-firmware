@@ -1,5 +1,15 @@
 2014-02-20  Niibe Yutaka  <gniibe@fsij.org>
 
+	* src/Makefile.in (CSRC): Add files of p256k1.
+
+	* src/openpgp.c (cmd_pso): Support p256k1 for signature.
+
+	* src/openpgp-do.c (algorithm_attr_p256k1): New.
+	(gpg_do_write_prvkey): Support p256k1 for signature.
+	(proc_key_import, gpg_do_table, gpg_do_public_key): Likewise.
+
+	* src/Makefile.in (DEFS): Add -DRSA_SIG.
+
 	* src/openpgp-do.c (gpg_do_write_prvkey): Use _p256r1.
 	* src/openpgp.c (cmd_internal_authenticate): Likewise.
 

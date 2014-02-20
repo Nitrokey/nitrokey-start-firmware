@@ -1,7 +1,7 @@
 /*
  * openpgp.c -- OpenPGP card protocol support
  *
- * Copyright (C) 2010, 2011, 2012, 2013
+ * Copyright (C) 2010, 2011, 2012, 2013, 2014
  *               Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
@@ -805,6 +805,9 @@ cmd_get_data (void)
   gpg_do_get_data (tag, 0);
 }
 
+#define ECDSA_HASH_LEN 32
+#define ECDSA_SIGNATURE_LENGTH 64
+
 static void
 cmd_pso (void)
 {
@@ -824,6 +827,7 @@ cmd_pso (void)
 	  return;
 	}
 
+#ifdef RSA_SIG
       /* Check size of digestInfo */
       if (len != 34		/* MD5 */
 	  && len != 35		/* SHA1 / RIPEMD-160 */
@@ -852,6 +856,30 @@ cmd_pso (void)
 	    /* Success */
 	    gpg_increment_digital_signature_counter ();
 	}
+#else
+      /* ECDSA with p256k1 for signature */
+      if (len != ECDSA_HASH_LEN)
+	{
+	  DEBUG_INFO (" wrong length: ");
+	  GPG_CONDITION_NOT_SATISFIED ();
+	}
+      else
+	{
+	  DEBUG_SHORT (len);
+
+	  res_APDU_size = ECDSA_SIGNATURE_LENGTH;
+	  r = ecdsa_sign_p256k1 (apdu.cmd_apdu_data, res_APDU,
+				 kd[GPG_KEY_FOR_SIGNING].data);
+	  if (r < 0)
+	    {
+	      ac_reset_pso_cds ();
+	      GPG_ERROR ();
+	    }
+	  else
+	    /* Success */
+	    gpg_increment_digital_signature_counter ();
+	}
+#endif
     }
   else if (P1 (apdu) == 0x80 && P2 (apdu) == 0x86)
     {
@@ -935,9 +963,6 @@ cmd_internal_authenticate (void)
   DEBUG_INFO ("INTERNAL AUTHENTICATE done.\r\n");
 }
 #else
-#define ECDSA_P256_HASH_LEN 32
-#define ECDSA_SIGNATURE_LENGTH 64
-
 static void
 cmd_internal_authenticate (void)
 {
@@ -957,7 +982,7 @@ cmd_internal_authenticate (void)
 	  return;
 	}
 
-      if (len != ECDSA_P256_HASH_LEN)
+      if (len != ECDSA_HASH_LEN)
 	{
 	  DEBUG_INFO ("wrong hash length.");
 	  GPG_CONDITION_NOT_SATISFIED ();
@@ -966,7 +991,7 @@ cmd_internal_authenticate (void)
 
       res_APDU_size = ECDSA_SIGNATURE_LENGTH;
       r = ecdsa_sign_p256r1 (apdu.cmd_apdu_data, res_APDU,
-			     kd[GPG_KEY_FOR_AUTHENTICATION]->data);
+			     kd[GPG_KEY_FOR_AUTHENTICATION].data);
       if (r < 0)
 	GPG_ERROR ();
     }

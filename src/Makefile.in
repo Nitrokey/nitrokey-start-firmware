@@ -12,7 +12,9 @@ CSRC = main.c usb_stm32f103.c adc_stm32f103.c \
 	usb_desc.c usb_ctrl.c \
 	call-rsa.c \
 	usb-icc.c openpgp.c ac.c openpgp-do.c flash.c \
-	bn.c modp256r1.c jpc_p256r1.c mod.c ec_p256r1.c call-ec_p256r1.c \
+	bn.c mod.c \
+	modp256r1.c jpc_p256r1.c ec_p256r1.c call-ec_p256r1.c \
+	modp256k1.c jpc_p256k1.c ec_p256k1.c call-ec_p256k1.c \
 	random.c neug.c sha256.c sys.c
 
 INCDIR =
@@ -52,7 +54,7 @@ OBJCOPY   = $(CROSS)objcopy
 MCU   = cortex-m3
 CWARN = -Wall -Wextra -Wstrict-prototypes
 # DEFS: Add  
-DEFS  = -DCHX_PRIO_MAIN=5 -DRSA_AUTH @KEYGEN_SUPPORT@ @HAVE_SYS_H@
+DEFS  = -DCHX_PRIO_MAIN=5 -DRSA_AUTH -DRSA_SIG @KEYGEN_SUPPORT@ @HAVE_SYS_H@
 OPT   = -O3 -Os -g
 LIBS  =
 

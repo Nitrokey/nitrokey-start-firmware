@@ -1,7 +1,7 @@
 /*
  * openpgp-do.c -- OpenPGP card Data Objects (DO) handling
  *
- * Copyright (C) 2010, 2011, 2012, 2013 
+ * Copyright (C) 2010, 2011, 2012, 2013, 2014
  *               Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
@@ -146,6 +146,12 @@ static const uint8_t algorithm_attr_p256r1[] __attribute__ ((aligned (1))) = {
   9,
   0x13, /* ECDSA */
   0x2a, 0x86, 0x48, 0xce, 0x3d, 0x03, 0x01, 0x07 /* OID of NIST curve P-256 */
+};
+
+static const uint8_t algorithm_attr_p256k1[] __attribute__ ((aligned (1))) = {
+  6,
+  0x13, /* ECDSA */
+  0x2b, 0x81, 0x04, 0x00, 0x0a /* OID of curve secp256k1 */
 };
 
 /*
@@ -805,10 +811,21 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
   /* Delete it first, if any.  */
   gpg_do_delete_prvkey (kk);
 
-#ifdef RSA_AUTH
+#if defined(RSA_AUTH) && defined(RSA_SIG)
   if (key_len != KEY_CONTENT_LEN)
      return -1;
-#else /* ECDSA for authentication */
+#elif defined(RSA_AUTH) && !defined(RSA_SIG)
+  /* ECDSA with p256k1 for signature */
+  if (kk != GPG_KEY_FOR_SIGNING && key_len != KEY_CONTENT_LEN)
+    return -1;
+  if (kk == GPG_KEY_FOR_SIGNING)
+    {
+      pubkey_len = key_len * 2;
+      if (key_len != 32)
+	return -1;
+    }
+#elif !defined(RSA_AUTH) && defined(RSA_SIG)
+  /* ECDSA with p256r1 for authentication */
   if (kk != GPG_KEY_FOR_AUTHENTICATION && key_len != KEY_CONTENT_LEN)
     return -1;
   if (kk == GPG_KEY_FOR_AUTHENTICATION)
@@ -817,6 +834,8 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
       if (key_len != 32)
 	return -1;
     }
+#else
+#error "not supported."
 #endif
 
   pd = (struct prvkey_data *)malloc (sizeof (struct prvkey_data));
@@ -825,13 +844,22 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
 
   if (pubkey == NULL)
     {
-#ifdef RSA_AUTH
+#if defined(RSA_AUTH) && defined(RSA_SIG)
       pubkey_allocated_here = modulus_calc (key_data, key_len);
-#else /* ECDSA for authentication */
+#elif defined(RSA_AUTH) && !defined(RSA_SIG)
+      /* ECDSA with p256k1 for signature */
+      if (kk == GPG_KEY_FOR_SIGNING)
+	pubkey_allocated_here = ecdsa_compute_public_p256k1 (key_data);
+      else
+	pubkey_allocated_here = modulus_calc (key_data, key_len);
+#elif !defined(RSA_AUTH) && defined(RSA_SIG)
+      /* ECDSA with p256r1 for authentication */
       if (kk == GPG_KEY_FOR_AUTHENTICATION)
 	pubkey_allocated_here = ecdsa_compute_public_p256r1 (key_data);
       else
 	pubkey_allocated_here = modulus_calc (key_data, key_len);
+#else
+#error "not supported."
 #endif
       if (pubkey_allocated_here == NULL)
 	{
@@ -858,9 +886,19 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
   DEBUG_INFO ("key_addr: ");
   DEBUG_WORD ((uint32_t)key_addr);
 
-#ifdef RSA_AUTH
+#if defined(RSA_AUTH) && defined(RSA_SIG)
   memcpy (kdi.data, key_data, KEY_CONTENT_LEN);
-#else /* ECDSA for authentication */
+#elif defined(RSA_AUTH) && !defined(RSA_SIG)
+  /* ECDSA with p256k1 for signature */
+  if (kk == GPG_KEY_FOR_SIGNING)
+    {
+      memcpy (kdi.data, key_data, key_len);
+      memset ((uint8_t *)kdi.data + key_len, 0, KEY_CONTENT_LEN - key_len);
+    }
+  else
+    memcpy (kdi.data, key_data, KEY_CONTENT_LEN);
+#elif !defined(RSA_AUTH) && defined(RSA_SIG)
+ /* ECDSA with p256r1 for authentication */
   if (kk == GPG_KEY_FOR_AUTHENTICATION)
     {
       memcpy (kdi.data, key_data, key_len);
@@ -868,6 +906,8 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
     }
   else
     memcpy (kdi.data, key_data, KEY_CONTENT_LEN);
+#else
+#error "not supported."
 #endif
   compute_key_data_checksum (&kdi, 0);
 
@@ -1076,20 +1116,38 @@ proc_key_import (const uint8_t *data, int len)
       ac_reset_other ();
     }
 
-#ifdef RSA_AUTH
+#if defined(RSA_AUTH) && defined(RSA_SIG)
   if (len <= 22)
-#else /* ECDSA for authentication */
+#elif defined(RSA_AUTH) && !defined(RSA_SIG)
+  /* ECDSA with p256k1 for signature */
+  if ((kk != GPG_KEY_FOR_SIGNING && len <= 22)
+      || (kk == GPG_KEY_FOR_SIGNING && len <= 12))
+#elif !defined(RSA_AUTH) && defined(RSA_SIG)
+  /* ECDSA with p256r1 for authentication */
   if ((kk != GPG_KEY_FOR_AUTHENTICATION && len <= 22)
       || (kk == GPG_KEY_FOR_AUTHENTICATION && len <= 12))
+#else
+#error "not supported."
 #endif
     {					    /* Deletion of the key */
       gpg_do_delete_prvkey (kk);
       return 1;
     }
 
-#ifdef RSA_AUTH
+#if defined(RSA_AUTH) && defined(RSA_SIG)
   r = gpg_do_write_prvkey (kk, &data[26], len - 26, keystring_admin, NULL);
-#else /* ECDSA for authentication */
+#elif defined(RSA_AUTH) && !defined(RSA_SIG)
+  /* ECDSA with p256k1 for signature */
+  if (kk != GPG_KEY_FOR_SIGNING)
+    {			   /* RSA */
+      /* It should starts with 00 01 00 01 (E) */
+      /* Skip E, 4-byte */
+      r = gpg_do_write_prvkey (kk, &data[26], len - 26, keystring_admin, NULL);
+    }
+  else
+    r = gpg_do_write_prvkey (kk, &data[12], len - 12, keystring_admin, NULL);
+#elif !defined(RSA_AUTH) && defined(RSA_SIG)
+  /* ECDSA with p256r1 for authentication */
   if (kk != GPG_KEY_FOR_AUTHENTICATION)
     {			   /* RSA */
       /* It should starts with 00 01 00 01 (E) */
@@ -1098,6 +1156,8 @@ proc_key_import (const uint8_t *data, int len)
     }
   else
     r = gpg_do_write_prvkey (kk, &data[12], len - 12, keystring_admin, NULL);
+#else
+#error "not supported."
 #endif
 
   if (r < 0)
@@ -1161,7 +1221,11 @@ gpg_do_table[] = {
     rw_pw_status },
   /* Fixed data */
   { GPG_DO_EXTCAP, DO_FIXED, AC_ALWAYS, AC_NEVER, extended_capabilities },
+#ifdef RSA_SIG
   { GPG_DO_ALG_SIG, DO_FIXED, AC_ALWAYS, AC_NEVER, algorithm_attr_rsa },
+#else
+  { GPG_DO_ALG_SIG, DO_FIXED, AC_ALWAYS, AC_NEVER, algorithm_attr_p256k1 },
+#endif
   { GPG_DO_ALG_DEC, DO_FIXED, AC_ALWAYS, AC_NEVER, algorithm_attr_rsa },
 #ifdef RSA_AUTH
   { GPG_DO_ALG_AUT, DO_FIXED, AC_ALWAYS, AC_NEVER, algorithm_attr_rsa },
@@ -1610,16 +1674,34 @@ gpg_do_public_key (uint8_t kk_byte)
   /* TAG */
   *res_p++ = 0x7f; *res_p++ = 0x49;
 
-#ifndef RSA_AUTH /* ECDSA for authentication */
+#if defined(RSA_AUTH) && defined(RSA_SIG)
+  if (0)
+#elif defined(RSA_AUTH) && !defined(RSA_SIG)
+  /* ECDSA with p256k1 for signature */
+  if (kk_byte == 0xb6)
+#elif !defined(RSA_AUTH) && defined(RSA_SIG)
+  /* ECDSA with p256r1 for authentication */
   if (kk_byte == 0xa4)
+#else
+#error "not supported."
+#endif
     {				/* ECDSA */
+      const uint8_t *algorithm_attr;
+      int aa_len;
+
+      if (kk_byte == 0xb6)
+	algorithm_attr = algorithm_attr_p256k1;
+      else
+	algorithm_attr = algorithm_attr_p256r1;
+      aa_len = algorithm_attr[0] - 1;
+
       /* LEN */
-      *res_p++ = 2 + 8 + 2 + 1 + 64;
+      *res_p++ = 2 + aa_len + 2 + 1 + 64;
       {
-	/*TAG*/          /* LEN = 8 */
-	*res_p++ = 0x06; *res_p++ = 0x08;
-	memcpy (res_p, algorithm_attr_p256r1+2, 8);
-	res_p += 8;
+	/*TAG*/          /* LEN = AA_LEN */
+	*res_p++ = 0x06; *res_p++ = aa_len;
+	memcpy (res_p, algorithm_attr+2, aa_len);
+	res_p += aa_len;
 
 	/*TAG*/          /* LEN = 1+64 */
 	*res_p++ = 0x86; *res_p++ = 0x41;
@@ -1630,7 +1712,6 @@ gpg_do_public_key (uint8_t kk_byte)
       }
     }
   else
-#endif
     {				/* RSA */
       /* LEN = 9+256 */
       *res_p++ = 0x82; *res_p++ = 0x01; *res_p++ = 0x09;
