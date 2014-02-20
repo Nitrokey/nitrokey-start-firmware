@@ -1,3 +1,10 @@
+2014-02-20  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/call-ec_p256k1.c: New.  Use call-ec.c.
+	* src/call-ec_p256r1.c: Use call-ec.c.
+	* src/call-ec.c: New.
+	(ecdsa_sign): Change the signature.
+
 2014-02-19  Niibe Yutaka  <gniibe@fsij.org>
 
 	* tool/calc_precompute_table_ecc.py: New.
