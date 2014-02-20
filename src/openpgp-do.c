@@ -142,7 +142,7 @@ static const uint8_t algorithm_attr_rsa[] __attribute__ ((aligned (1))) = {
   0x00		      /* 0: p&q , 3: CRT with N (not yet supported) */
 };
 
-static const uint8_t algorithm_attr_ecdsa[] __attribute__ ((aligned (1))) = {
+static const uint8_t algorithm_attr_p256r1[] __attribute__ ((aligned (1))) = {
   9,
   0x13, /* ECDSA */
   0x2a, 0x86, 0x48, 0xce, 0x3d, 0x03, 0x01, 0x07 /* OID of NIST curve P-256 */
@@ -829,7 +829,7 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
       pubkey_allocated_here = modulus_calc (key_data, key_len);
 #else /* ECDSA for authentication */
       if (kk == GPG_KEY_FOR_AUTHENTICATION)
-	pubkey_allocated_here = ecdsa_compute_public (key_data);
+	pubkey_allocated_here = ecdsa_compute_public_p256r1 (key_data);
       else
 	pubkey_allocated_here = modulus_calc (key_data, key_len);
 #endif
@@ -1166,7 +1166,7 @@ gpg_do_table[] = {
 #ifdef RSA_AUTH
   { GPG_DO_ALG_AUT, DO_FIXED, AC_ALWAYS, AC_NEVER, algorithm_attr_rsa },
 #else
-  { GPG_DO_ALG_AUT, DO_FIXED, AC_ALWAYS, AC_NEVER, algorithm_attr_ecdsa },
+  { GPG_DO_ALG_AUT, DO_FIXED, AC_ALWAYS, AC_NEVER, algorithm_attr_p256r1 },
 #endif
   /* Compound data: Read access only */
   { GPG_DO_CH_DATA, DO_CMP_READ, AC_ALWAYS, AC_NEVER, cmp_ch_data },
@@ -1618,7 +1618,7 @@ gpg_do_public_key (uint8_t kk_byte)
       {
 	/*TAG*/          /* LEN = 8 */
 	*res_p++ = 0x06; *res_p++ = 0x08;
-	memcpy (res_p, algorithm_attr_ecdsa+2, 8);
+	memcpy (res_p, algorithm_attr_p256r1+2, 8);
 	res_p += 8;
 
 	/*TAG*/          /* LEN = 1+64 */

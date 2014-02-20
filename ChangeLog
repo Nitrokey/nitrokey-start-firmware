@@ -1,5 +1,8 @@
 2014-02-20  Niibe Yutaka  <gniibe@fsij.org>
 
+	* src/openpgp-do.c (gpg_do_write_prvkey): Use _p256r1.
+	* src/openpgp.c (cmd_internal_authenticate): Likewise.
+
 	* src/call-ec_p256k1.c: New.  Use call-ec.c.
 	* src/call-ec_p256r1.c: Use call-ec.c.
 	* src/call-ec.c: New.

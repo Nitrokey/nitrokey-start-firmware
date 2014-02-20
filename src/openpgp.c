@@ -965,8 +965,8 @@ cmd_internal_authenticate (void)
 	}
 
       res_APDU_size = ECDSA_SIGNATURE_LENGTH;
-      r = ecdsa_sign (apdu.cmd_apdu_data, res_APDU,
-		      kd[GPG_KEY_FOR_AUTHENTICATION]->data);
+      r = ecdsa_sign_p256r1 (apdu.cmd_apdu_data, res_APDU,
+			     kd[GPG_KEY_FOR_AUTHENTICATION]->data);
       if (r < 0)
 	GPG_ERROR ();
     }
