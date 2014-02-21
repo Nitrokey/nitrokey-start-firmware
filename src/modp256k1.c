@@ -463,7 +463,6 @@ void
 modp256k1_shift (bn256 *X, const bn256 *A, int shift)
 {
   uint32_t carry;
-#define borrow carry
   bn256 tmp[1];
 
   carry = bn256_shift (X, A, shift);
@@ -471,20 +470,16 @@ modp256k1_shift (bn256 *X, const bn256 *A, int shift)
     return;
 
   memset (tmp, 0, sizeof (bn256));
-  tmp->word[7] = carry;
-  tmp->word[0] = carry;
+  tmp->word[0] = carry + (carry << 9);
+  tmp->word[1] = carry + (tmp->word[0] < (carry << 9)) + (carry >> 23);
+  tmp->word[0] = tmp->word[0] + (carry << 8);
+  tmp->word[1] = tmp->word[1] + (tmp->word[0] < (carry << 8)) + (carry >> 24);
+  tmp->word[0] = tmp->word[0] + (carry << 7);
+  tmp->word[1] = tmp->word[1] + (tmp->word[0] < (carry << 7)) + (carry >> 25);
+  tmp->word[0] = tmp->word[0] + (carry << 6);
+  tmp->word[1] = tmp->word[1] + (tmp->word[0] < (carry << 6)) + (carry >> 26);
+  tmp->word[0] = tmp->word[0] + (carry << 4);
+  tmp->word[1] = tmp->word[1] + (tmp->word[0] < (carry << 4)) + (carry >> 28);
+
   modp256k1_add (X, X, tmp);
-
-  tmp->word[7] = 0;
-  tmp->word[0] = 0;
-  tmp->word[6] = carry;
-  tmp->word[3] = carry;
-  modp256k1_sub (X, X, tmp);
-
-  borrow = bn256_sub (tmp, X, P256K1);
-  if (borrow)
-    memcpy (tmp, X, sizeof (bn256));
-  else
-    memcpy (X, tmp, sizeof (bn256));
-#undef borrow
 }

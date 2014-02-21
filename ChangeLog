@@ -1,3 +1,7 @@
+2014-02-21  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/modp256k1.c (modp256k1_shift): Bug fix.
+
 2014-02-20  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/Makefile.in (CSRC): Add files of p256k1.
