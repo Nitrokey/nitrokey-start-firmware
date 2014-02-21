@@ -140,11 +140,10 @@ FUNC(compute_kG) (ac *X, const bn256 *K)
   for (i = 31; i >= 0; i--)
     {
       FUNC(jpc_double) (Q, Q);
-
-      FUNC(jpc_add_ac_signed) (Q, Q, &precomputed_KG[index[i]&0x0f],
-			       index[i] >> 7);
       FUNC(jpc_add_ac_signed) (Q, Q, &precomputed_2E_KG[index[i+32]&0x0f],
 			       index[i+32] >> 7);
+      FUNC(jpc_add_ac_signed) (Q, Q, &precomputed_KG[index[i]&0x0f],
+			       index[i] >> 7);
     }
 
   dst = k_is_even ? Q : tmp;
@@ -170,8 +169,10 @@ point_is_on_the_curve (const ac *P)
   MFNC(sqr) (s, P->x);
   MFNC(mul) (s, s, P->x);
 
+#ifdef COEFFICIENT_A_IS_ZERO
   MFNC(mul) (t, coefficient_a, P->x);
   MFNC(add) (s, s, t);
+#endif
   MFNC(add) (s, s, coefficient_b);
 
   MFNC(sqr) (t, P->y);

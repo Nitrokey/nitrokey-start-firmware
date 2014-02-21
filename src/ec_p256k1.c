@@ -30,6 +30,7 @@
 #include "ec_p256k1.h"
 
 #define FIELD p256k1
+#define COEFFICIENT_A_IS_ZERO    1
 
 /*
  * a = 0, b = 7

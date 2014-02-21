@@ -29,5 +29,6 @@
 
 #define FIELD p256r1
 #define CONST_P256 P256R1
+#define COEFFICIENT_A_IS_MINUS_3 1
 
 #include "jpc.c"

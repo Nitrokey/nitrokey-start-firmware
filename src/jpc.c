@@ -47,12 +47,20 @@ FUNC(jpc_double) (jpc *X, const jpc *A)
   MFNC(sqr) (b, b);
   MFNC(shift) (b, b, 3);
 
+#if defined(COEFFICIENT_A_IS_MINUS_3)
   MFNC(sqr) (tmp0, A->z);
   MFNC(sub) (c, A->x, tmp0);
   MFNC(add) (tmp0, tmp0, A->x);
   MFNC(mul) (tmp0, tmp0, c);
   MFNC(shift) (c, tmp0, 1);
   MFNC(add) (c, c, tmp0);
+#elif defined (COEFFICIENT_A_IS_ZERO)
+  MFNC(sqr) (tmp0, A->x);
+  MFNC(shift) (c, tmp0, 1);
+  MFNC(add) (c, c, tmp0);
+#else
+#error "not supported."
+#endif
 
   MFNC(sqr) (d, c);
   MFNC(shift) (tmp0, a, 1);

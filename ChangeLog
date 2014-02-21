@@ -1,5 +1,15 @@
 2014-02-21  Niibe Yutaka  <gniibe@fsij.org>
 
+	* src/ecc.c (compute_kG): Compute higer index at first.
+	(point_is_on_the_curve): Don't use coefficient_a if it's zero.
+
+	* src/jpc.c (jpc_double): Care coefficient A.
+
+	* src/ec_p256r1.c (COEFFICIENT_A_IS_MINUS_3): New.
+	* src/ec_p256k1.c (COEFFICIENT_A_IS_ZERO): New.
+	* src/jpc_p256r1.c (COEFFICIENT_A_IS_MINUS_3): Likewise.
+	* src/jpc_p256k1.c (COEFFICIENT_A_IS_MINUS_3): Likewise.
+
 	* src/modp256k1.c (modp256k1_shift): Bug fix.
 
 2014-02-20  Niibe Yutaka  <gniibe@fsij.org>

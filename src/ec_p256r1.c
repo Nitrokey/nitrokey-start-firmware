@@ -30,6 +30,7 @@
 #include "ec_p256r1.h"
 
 #define FIELD p256r1
+#define COEFFICIENT_A_IS_MINUS_3 1
 
 /*
  * a = -3 mod p256r1
