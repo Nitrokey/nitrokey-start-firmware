@@ -1,3 +1,8 @@
+2014-02-25  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/configure [certdo] (gnuk.ld): Add TIM_SIZE and EXT_SIZE.
+	Thanks to Vasily Evseenko for the bug report.
+
 2014-02-21  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/ecc.c (compute_kG): Compute higer index at first.

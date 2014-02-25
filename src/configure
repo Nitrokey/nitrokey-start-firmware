@@ -321,6 +321,8 @@ if test "$certdo" = "yes"; then
       -e "s/@MEMORY_SIZE@/$MEMORY_SIZE/" \
       -e "s/@FLASH_PAGE_SIZE@/$FLASH_PAGE_SIZE/" \
       -e "s/@MSC_SIZE@/$MSC_SIZE/" \
+      -e "s/@TIM_SIZE@/$TIM_SIZE/" \
+      -e "s/@EXT_SIZE@/$EXT_SIZE/" \
 	< gnuk.ld.in > gnuk.ld
 else
   sed -e "/^@CERTDO_SUPPORT_START@$/,/^@CERTDO_SUPPORT_END@$/ d" \
