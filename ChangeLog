@@ -1,5 +1,7 @@
 2014-02-25  Niibe Yutaka  <gniibe@fsij.org>
 
+	* src/openpgp-do.c (gpg_do_public_key): Don't put OID.
+
 	* src/configure [certdo] (gnuk.ld): Add TIM_SIZE and EXT_SIZE.
 	Thanks to Vasily Evseenko for the bug report.
 

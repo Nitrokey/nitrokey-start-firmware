@@ -1061,9 +1061,9 @@ gpg_do_chks_prvkey (enum kind_of_key kk,
  * 4d, xx, xx, xx:    Extended Header List
  *   b6 00 (SIG) / b8 00 (DEC) / a4 00 (AUT)
  *   7f48, xx: cardholder private key template
- *       91 xx: length of E
- *       92 xx xx: length of P
- *       93 xx xx: length of Q
+ *       91 L<E>: L<E>:  91=tag of E, L<E>: length of E
+ *       92 Lh<P> Ll<P>: 92=tag of P, L<P>: length of P
+ *       93 Lh<Q> Ll<Q>: 93=tag of Q, L<Q>: length of Q
  *   5f48, xx xx xx: cardholder private key
  * <E: 4-byte>, <P: 128-byte>, <Q: 128-byte>
  *
@@ -1071,9 +1071,9 @@ gpg_do_chks_prvkey (enum kind_of_key kk,
  * 4d, xx:    Extended Header List
  *   a4 00 (AUT)
  *   7f48, xx: cardholder private key template
- *       91 xx: length of d
+ *       9x LEN: 9x=tag of private key d,  LEN=length of d
  *   5f48, xx : cardholder private key
- * <d>
+ * <d> (in the format of: 04 || X || Y )
  */
 static int
 proc_key_import (const uint8_t *data, int len)
@@ -1686,27 +1686,13 @@ gpg_do_public_key (uint8_t kk_byte)
 #error "not supported."
 #endif
     {				/* ECDSA */
-      const uint8_t *algorithm_attr;
-      int aa_len;
-
-      if (kk_byte == 0xb6)
-	algorithm_attr = algorithm_attr_p256k1;
-      else
-	algorithm_attr = algorithm_attr_p256r1;
-      aa_len = algorithm_attr[0] - 1;
-
       /* LEN */
-      *res_p++ = 2 + aa_len + 2 + 1 + 64;
+      *res_p++ = 2 + 1 + 64;
       {
-	/*TAG*/          /* LEN = AA_LEN */
-	*res_p++ = 0x06; *res_p++ = aa_len;
-	memcpy (res_p, algorithm_attr+2, aa_len);
-	res_p += aa_len;
-
 	/*TAG*/          /* LEN = 1+64 */
 	*res_p++ = 0x86; *res_p++ = 0x41;
 	*res_p++ = 0x04; 	/* No compression of EC point.  */
-	/* 64-byte binary (big endian) */
+	/* 64-byte binary (big endian): X || Y */
 	memcpy (res_p, key_addr + KEY_CONTENT_LEN, 64);
 	res_p += 64;
       }
