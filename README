@@ -1,18 +1,21 @@
 Gnuk - An Implementation of USB Cryptographic Token for GnuPG
 
-							  Version 1.1.1
-							     2013-12-25
+							  Version 1.1.2
+							     2014-03-07
 							   Niibe Yutaka
 				      Free Software Initiative of Japan
 
 Warning
 =======
 
-This is another experimental release of Gnuk 1.1.1, which has
+This is another experimental release of Gnuk, version 1.1.2, which has
 incompatible changes to Gnuk 1.0.x.  Specifically, it now supports
 overriding key import, but importing keys (or generating keys) results
 password reset.  Please update your documentation for Gnuk Token, so
-that the instruction of importing keys won't cause any confusion.
+that the instruction of importing keys won't cause any confusion.  It
+has support of ECDSA (with NIST P256 and secp256k1), but this feature
+is pretty much experimental, and it requires development version of
+GnuPG with newest version of libgcrypt.
 
 
 What's Gnuk?
@@ -52,7 +55,8 @@ A0: Good points of Gnuk are:
 	    "for Free Software"; Gnuk supports GnuPG.
 
 Q1: What kind of key algorithm is supported?
-A1: Gnuk version 1 only supports 2048-bit RSA.
+A1: Gnuk version 1.0 only supports 2048-bit RSA.
+    Development version of Gnuk (1.1.x) supports 256-bit ECDSA.
 
 Q2: How long does it take for digital signing?
 A2: It takes a second and a half or so. 
@@ -122,11 +126,12 @@ Ac: ST-Link/V2 is cheap one.  We have a tool/stlinkv2.py as flash ROM
 Release notes
 =============
 
-This is another experimental release in version 1.1 series of Gnuk.
+This is third experimental release in version 1.1 series of Gnuk.
 
-While it is daily use for more than two years, some newly introduced
-features (including key generation and firmware upgrade) should be
-considered experimental.
+While it is daily use by its developer, some newly introduced features
+(including ECDSA, key generation and firmware upgrade) should be
+considered experimental.  ECDSA is really experimental.  The feature
+even requires manual edit of Makefile after 'configure'.
 
 Tested features are:
 
@@ -465,7 +470,7 @@ How to configure
 ================
 
 You need python and pyscard (python-pyscard package in Debian) or
-PyUSB (python-usb package in Debian).
+PyUSB 0.4.3 (python-usb package in Debian).
 
 (1) [pyscard] Stop scdaemon
     [PyUSB] Stop the pcsc daemon.

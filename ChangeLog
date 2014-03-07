@@ -1,3 +1,7 @@
+2014-03-07  Niibe Yutaka  <gniibe@fsij.org>
+
+	* VERSION: 1.1.2.
+
 2014-02-25  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/openpgp-do.c (gpg_do_public_key): Don't put OID.

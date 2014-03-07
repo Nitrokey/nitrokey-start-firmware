@@ -1,5 +1,16 @@
 Gnuk NEWS - User visible changes
 
+* Major changes in Gnuk 1.1.2
+
+  Released 2014-03-07, by NIIBE Yutaka
+
+** Experimental ECC support for secp256k1.
+After configure, you can edit the DEFS variable in src/Makefile, so
+that Gnuk can support ECDSA with NIST P256 (for authentication), and
+ECDSA with secp256k1 (for signature).  Note that this is pretty much
+experimental, and subjects to change.
+
+
 * Major changes in Gnuk 1.1.1
 
   Released 2013-12-25, by NIIBE Yutaka
