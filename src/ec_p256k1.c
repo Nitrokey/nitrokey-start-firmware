@@ -25,6 +25,7 @@
 #include <string.h>
 #include "bn.h"
 #include "modp256k1.h"
+#include "affine.h"
 #include "jpc-ac_p256k1.h"
 #include "mod.h"
 #include "ec_p256k1.h"
