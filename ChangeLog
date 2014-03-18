@@ -1,3 +1,8 @@
+2014-03-18  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/mod25638.c (mod25638_add, mod25638_sub, mod25638_sqr)
+	(mod25638_shift): New.
+
 2014-03-13  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/mod25638.c: Rename from fe25519.c.

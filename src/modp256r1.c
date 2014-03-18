@@ -413,7 +413,7 @@ modp256r1_inv (bn256 *C, const bn256 *a)
 
 /**
  * @brief  X = (A << shift) mod p256r1
- * @note   shift <= 32
+ * @note   shift < 32
  */
 void
 modp256r1_shift (bn256 *X, const bn256 *A, int shift)

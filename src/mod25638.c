@@ -1,5 +1,5 @@
 /*
- * fe25519.c -- 2^255-19 field element computation
+ * mod25638.c -- modulo arithmetic of 2^256-38 for 2^255-19 field
  *
  * Copyright (C) 2014 Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
@@ -25,12 +25,19 @@
  * The field is \Z/(2^255-19)
  *
  * We use radix-32.  During computation, it's not reduced to 2^255-19,
- * but it is represented in 256-bit (it is redundant representation).
+ * but it is represented in 256-bit (it is redundant representation),
+ * that is, 2^256-38.
+ *
+ * The idea is, to keep 2^256-38 until it will be converted to affine
+ * coordinates.
  */
 
 #include <stdint.h>
 #include <string.h>
-#include "fe25519.h"
+
+#include "bn.h"
+#include "mod25638.h"
+#include "muladd_256.h"
 
 #define ADDWORD_256(d_,w_,c_)                    \
  asm ( "ldmia  %[d], { r4, r5, r6, r7 } \n\t"    \
@@ -47,75 +54,71 @@
        "stmia  %[d]!, { r4, r5, r6, r7 }\n\t"    \
        "mov    %[c], #0                 \n\t"    \
        "adc    %[c], %[c], #0"                   \
-       : [d] "=&r" (d_), [c] "=&r" (c_)            \
+       : [d] "=&r" (d_), [c] "=&r" (c_)          \
        : "[d]" (d_), [w] "r" (w_)                \
        : "r4", "r5", "r6", "r7", "memory", "cc" )
 
-#define MULADD_256(s_,d_,w_,c_)   do {           \
- asm ( "ldmia  %[s]!, { r8, r9, r10 } \n\t"      \
-       "ldmia  %[d], { r5, r6, r7 }   \n\t"      \
-       "umull  r4, r8, %[w], r8       \n\t"      \
-       "adds   r5, r5, r4             \n\t"      \
-       "adcs   r6, r6, r8             \n\t"      \
-       "umull  r4, r8, %[w], r9       \n\t"      \
-       "adc    %[c], r8, #0           \n\t"      \
-       "adds   r6, r6, r4             \n\t"      \
-       "adcs   r7, r7, %[c]           \n\t"      \
-       "umull  r4, r8, %[w], r10      \n\t"      \
-       "adc    %[c], r8, #0           \n\t"      \
-       "adds   r7, r7, r4             \n\t"      \
-       "stmia  %[d]!, { r5, r6, r7 }  \n\t"      \
-       "ldmia  %[s]!, { r8, r9, r10 } \n\t"      \
-       "ldmia  %[d], { r5, r6, r7 }   \n\t"      \
-       "adcs   r5, r5, %[c]           \n\t"      \
-       "umull  r4, r8, %[w], r8       \n\t"      \
-       "adc    %[c], r8, #0           \n\t"      \
-       "adds   r5, r5, r4             \n\t"      \
-       "adcs   r6, r6, %[c]           \n\t"      \
-       "umull  r4, r8, %[w], r9       \n\t"      \
-       "adc    %[c], r8, #0           \n\t"      \
-       "adds   r6, r6, r4             \n\t"      \
-       "adcs   r7, r7, %[c]           \n\t"      \
-       "umull  r4, r8, %[w], r10      \n\t"      \
-       "adc    %[c], r8, #0           \n\t"      \
-       "adds   r7, r7, r4             \n\t"      \
-       "stmia  %[d]!, { r5, r6, r7 }  \n\t"      \
-       "ldmia  %[s]!, { r8, r9 }      \n\t"      \
-       "ldmia  %[d], { r5, r6 }       \n\t"      \
-       "adcs   r5, r5, %[c]           \n\t"      \
-       "umull  r4, r8, %[w], r8       \n\t"      \
-       "adc    %[c], r8, #0           \n\t"      \
-       "adds   r5, r5, r4             \n\t"      \
-       "adcs   r6, r6, %[c]           \n\t"      \
-       "umull  r4, r8, %[w], r9       \n\t"      \
-       "adc    %[c], r8, #0           \n\t"      \
-       "adds   r6, r6, r4             \n\t"      \
-       "adc    %[c], %[c], #0         \n\t"      \
-       "stmia  %[d]!, { r5, r6 }"                \
-       : [s] "=&r" (s_), [d] "=&r" (d_), [c] "=&r" (c_)     \
-       : "[s]" (s_), "[d]" (d_), [w] "r" (w_)            \
-       : "r4", "r5", "r6", "r7", "r8", "r9", "r10",      \
-         "memory", "cc" );                               \
-  *d_ = c_;                                              \
-} while (0)
+/*
+256      224      192      160      128       96       64       32        0
+2^256
+  1 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+2^256 - 32
+  0 ffffffff ffffffff ffffffff ffffffff ffffffff ffffffff ffffffff ffffffe0
+2^256 - 32 - 4
+  0 ffffffff ffffffff ffffffff ffffffff ffffffff ffffffff ffffffff ffffffdc
+2^256 - 32 - 4 - 2
+  0 ffffffff ffffffff ffffffff ffffffff ffffffff ffffffff ffffffff ffffffda
+*/
+const bn256 n25638 = { {0xffffffda, 0xffffffff, 0xffffffff, 0xffffffff,
+			0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff } };
 
-static void mul_hlp (const uint32_t *s, uint32_t *d, uint32_t w)
+
+/**
+ * @brief  X = (A + B) mod 2^256-38
+ */
+void
+mod25638_add (bn256 *X, const bn256 *A, const bn256 *B)
 {
-  uint32_t c;
+  uint32_t carry;
+  bn256 tmp[1];
 
-  MULADD_256 (s, d, w, c);
+  carry = bn256_add (X, A, B);
+  if (carry)
+    bn256_sub (X, X, N25638);
+  else
+    bn256_sub (tmp, X, N25638);
+}
+
+/**
+ * @brief  X = (A - B) mod 2^256-38
+ */
+void
+mod25638_sub (bn256 *X, const bn256 *A, const bn256 *B)
+{
+  uint32_t borrow;
+  bn256 tmp[1];
+
+  borrow = bn256_sub (X, A, B);
+  if (borrow)
+    bn256_add (X, X, N25638);
+  else
+    bn256_add (tmp, X, N25638);
 }
 
 
-void fe_mul (fe25519 *X, const fe25519 *A, const fe25519 *B)
+/**
+ * @brief  X = (A * B) mod 2^256-38
+ */
+void
+mod25638_mul (bn256 *X, const bn256 *A, const bn256 *B)
 {
-  uint32_t word[FE25519_WORDS*2];
+  uint32_t word[BN256_WORDS*2];
   const uint32_t *s;
   uint32_t *d;
   uint32_t w;
   uint32_t c, c0;
 
-  memset (word, 0, sizeof (uint32_t)*FE25519_WORDS);
+  memset (word, 0, sizeof (uint32_t)*BN256_WORDS);
 
   s = A->word;  d = &word[0];  w = B->word[0];  MULADD_256 (s, d, w, c);
   s = A->word;  d = &word[1];  w = B->word[1];  MULADD_256 (s, d, w, c);
@@ -131,4 +134,40 @@ void fe_mul (fe25519 *X, const fe25519 *A, const fe25519 *B)
   ADDWORD_256 (s, c0, c);
   word[0] += c * 38;
   memcpy (X->word, word, sizeof X->word);
+}
+
+/**
+ * @brief  X = A * A mod 2^256-38
+ */
+void
+mod25638_sqr (bn256 *X, const bn256 *A)
+{
+  /* This could be improved a bit, see mpi_montsqr.  */
+  mod25638_mul (X, A, A);
+}
+
+
+/**
+ * @brief  X = (A << shift) mod 2^256-38
+ * @note   shift < 32
+ */
+void
+mod25638_shift (bn256 *X, const bn256 *A, int shift)
+{
+  uint32_t carry;
+  bn256 tmp[1];
+
+  carry = bn256_shift (X, A, shift);
+  if (shift < 0)
+    return;
+
+  memset (tmp, 0, sizeof (bn256));
+  tmp->word[0] = (carry << 1);
+  /* tmp->word[1] = (carry >> 31);  always zero.  */
+  tmp->word[0] = tmp->word[0] + (carry << 2);
+  tmp->word[1] = (tmp->word[0] < (carry << 2)) + (carry >> 30);
+  tmp->word[0] = tmp->word[0] + (carry << 5);
+  tmp->word[1] = tmp->word[1] + (tmp->word[0] < (carry << 5)) + (carry >> 27);
+
+  mod25638_add (X, X, tmp);
 }
