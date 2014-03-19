@@ -1,3 +1,7 @@
+2014-03-19  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/ecc-edwards.c: New.
+
 2014-03-18  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/mod25638.c (mod25638_add, mod25638_sub, mod25638_sqr)
