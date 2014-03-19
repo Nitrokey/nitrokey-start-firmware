@@ -69,8 +69,8 @@
 2^256 - 32 - 4 - 2
   0 ffffffff ffffffff ffffffff ffffffff ffffffff ffffffff ffffffff ffffffda
 */
-const bn256 n25638 = { {0xffffffda, 0xffffffff, 0xffffffff, 0xffffffff,
-			0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff } };
+const bn256 n25638[1] = { {0xffffffda, 0xffffffff, 0xffffffff, 0xffffffff,
+			   0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff } };
 
 
 /*
@@ -93,9 +93,9 @@ mod25638_add (bn256 *X, const bn256 *A, const bn256 *B)
 
   carry = bn256_add (X, A, B);
   if (carry)
-    bn256_sub (X, X, N25638);
+    bn256_sub (X, X, n25638);
   else
-    bn256_sub (tmp, X, N25638);
+    bn256_sub (tmp, X, n25638);
 }
 
 /**
@@ -109,9 +109,9 @@ mod25638_sub (bn256 *X, const bn256 *A, const bn256 *B)
 
   borrow = bn256_sub (X, A, B);
   if (borrow)
-    bn256_add (X, X, N25638);
+    bn256_add (X, X, n25638);
   else
-    bn256_add (tmp, X, N25638);
+    bn256_add (tmp, X, n25638);
 }
 
 
