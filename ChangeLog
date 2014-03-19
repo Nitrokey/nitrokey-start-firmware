@@ -1,5 +1,8 @@
 2014-03-19  Niibe Yutaka  <gniibe@fsij.org>
 
+	* src/bn.c (bn256_add): Fix for X == B.
+	(bn256_sub): Likewise.
+
 	* src/ecc-edwards.c: New.
 
 2014-03-18  Niibe Yutaka  <gniibe@fsij.org>

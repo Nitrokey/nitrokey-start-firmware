@@ -30,6 +30,7 @@ uint32_t
 bn256_add (bn256 *X, const bn256 *A, const bn256 *B)
 {
   int i;
+  uint32_t v;
   uint32_t carry = 0;
   uint32_t *px;
   const uint32_t *pa, *pb;
@@ -40,9 +41,10 @@ bn256_add (bn256 *X, const bn256 *A, const bn256 *B)
 
   for (i = 0; i < BN256_WORDS; i++)
     {
+      v = *pb;
       *px = *pa + carry;
       carry = (*px < carry);
-      *px += *pb;
+      *px += v;
       carry += (*px < *pb);
       px++;
       pa++;
@@ -56,6 +58,7 @@ uint32_t
 bn256_sub (bn256 *X, const bn256 *A, const bn256 *B)
 {
   int i;
+  uint32_t v;
   uint32_t borrow = 0;
   uint32_t *px;
   const uint32_t *pa, *pb;
@@ -68,9 +71,10 @@ bn256_sub (bn256 *X, const bn256 *A, const bn256 *B)
     {
       uint32_t borrow0 = (*pa < borrow);
 
+      v = *pb;
       *px = *pa - borrow;
-      borrow = (*px < *pb) + borrow0;
-      *px -= *pb;
+      borrow = (*px < v) + borrow0;
+      *px -= v;
       px++;
       pa++;
       pb++;
