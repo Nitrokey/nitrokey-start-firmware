@@ -46,6 +46,17 @@
 const bn256 p256r1 = { {0xffffffff, 0xffffffff, 0xffffffff, 0x00000000,
 			0x00000000, 0x00000000, 0x00000001, 0xffffffff} };
 
+/*
+ * Implementation Note.
+ *
+ * It's not always modulo p256r1.  The representation is redundant
+ * during computation.  For example, when we add the prime - 1 and 1,
+ * it won't overflow to 2^256, and the result is represented within
+ * 256-bit.
+ *
+ * It is guaranteed that modp256r1_reduce reduces to modulo p256r1.
+ */
+
 /**
  * @brief  X = (A + B) mod p256r1
  */

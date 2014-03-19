@@ -73,6 +73,15 @@ const bn256 n25638 = { {0xffffffda, 0xffffffff, 0xffffffff, 0xffffffff,
 			0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff } };
 
 
+/*
+ * Implementation Note.
+ *
+ * It's not always modulo n25638.  The representation is redundant
+ * during computation.  For example, when we add the number - 1 and 1,
+ * it won't overflow to 2^256, and the result is represented within
+ * 256-bit.
+ */
+
 /**
  * @brief  X = (A + B) mod 2^256-38
  */
@@ -142,7 +151,7 @@ mod25638_mul (bn256 *X, const bn256 *A, const bn256 *B)
 void
 mod25638_sqr (bn256 *X, const bn256 *A)
 {
-  /* This could be improved a bit, see mpi_montsqr.  */
+  /* This could be improved a bit, see bn256_sqr.  */
   mod25638_mul (X, A, A);
 }
 
