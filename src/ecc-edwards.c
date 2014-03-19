@@ -22,6 +22,13 @@
  *
  */
 
+#include <stdint.h>
+#include <string.h>
+
+#include "bn.h"
+#include "mod.h"
+#include "mod25638.h"
+
 /*
  * Identity element: (0,1)
  * Negation: -(x,y) = (-x,y)
@@ -35,8 +42,8 @@
 
 /* d + 2^255 - 19 */
 static const bn256 coefficient_d[1] = {
-  { 0x135978a3, 0x75eb4dca, 0x4141d8ab, 0x00700a4d,
-    0x7779e898, 0x8cc74079, 0x2b6ffe73, 0x52036cee } };
+  {{ 0x135978a3, 0x75eb4dca, 0x4141d8ab, 0x00700a4d,
+     0x7779e898, 0x8cc74079, 0x2b6ffe73, 0x52036cee }} };
 
 
 /**
@@ -61,11 +68,11 @@ static void
 ed_double_25638 (ptc *X, const ptc *A)
 {
   uint32_t borrow;
-  bn256 d[1], e[1];
+  bn256 b[1], d[1], e[1];
 
-  /* Compute: B = (X1 + Y1)^2 : X3_tmp */
-  mod25638_add (X->x, A->x, A->y);
-  mod25638_sqr (X->x, X->x);
+  /* Compute: B = (X1 + Y1)^2 */
+  mod25638_add (b, A->x, A->y);
+  mod25638_sqr (b, b);
 
   /* Compute: C = X1^2        : E      */
   mod25638_sqr (e, A->x);
@@ -81,7 +88,7 @@ ed_double_25638 (ptc *X, const ptc *A)
   if (borrow)
     bn256_add (X->y, X->y, n25638); /* carry ignored */
   else
-    bn256_add (X->z, X->y, n25638); /* dummy calculation */
+    bn256_add (X->x, X->y, n25638); /* dummy calculation */
 
   /* Compute: F = E + D = D - C; where a = -1 : E */
   mod25638_sub (e, d, e);
@@ -93,15 +100,15 @@ ed_double_25638 (ptc *X, const ptc *A)
   mod25638_add (d, d, d);
   mod25638_sub (d, e, d);
 
-  /* Compute: X3 = (B-C-D)*J = (X3_tmp+Y3_tmp)*J  */
-  mod25638_add (X->x, X->y);
+  /* Compute: X3 = (B-C-D)*J = (B+Y3_tmp)*J  */
+  mod25638_add (X->x, b, X->y);
   mod25638_mul (X->x, X->x, d);
 
   /* Compute: Y3 = F*(E-D) = F*Y3_tmp            */
   mod25638_mul (X->y, X->y, e);
 
   /* Z3 = F*J             */
-  mod25638_mul (X->z, d, e);
+  mod25638_mul (X->z, e, d);
 }
 
 
@@ -185,8 +192,8 @@ ed_add_25638 (ptc *X, const ptc *A, const ac *B, int minus)
 
 
 static const bn256 p25519[1] = {
-  {0xffffffed, 0xffffffff, 0xffffffff, 0xffffffff,
-   0xffffffff, 0xffffffff, 0xffffffff, 0x7fffffff } };
+  {{ 0xffffffed, 0xffffffff, 0xffffffff, 0xffffffff,
+     0xffffffff, 0xffffffff, 0xffffffff, 0x7fffffff }} };
 
 /**
  * @brief	X = convert A
@@ -272,4 +279,74 @@ point_is_on_the_curve (const ac *P)
 
 int
 compute_kP_25519 (ac *X, const bn256 *K, const ac *P);
+#endif
+
+#ifdef PRINT_OUT_TABLE
+static const ptc G[1] = {{
+  {{{ 0x8f25d51a, 0xc9562d60, 0x9525a7b2, 0x692cc760,
+      0xfdd6dc5c, 0xc0a4e231, 0xcd6e53fe, 0x216936d3 }}},
+  {{{ 0x66666658, 0x66666666, 0x66666666, 0x66666666,
+      0x66666666, 0x66666666, 0x66666666, 0x66666666 }}},
+  {{{ 1, 0, 0, 0, 0, 0, 0, 0 }}},
+}};
+
+#include <stdio.h>
+
+static void
+print_point (const ac *X)
+{
+  int i;
+
+  for (i = 0; i < 8; i++)
+    printf ("%08x\n", X->x->word[i]);
+  puts ("");
+  for (i = 0; i < 8; i++)
+    printf ("%08x\n", X->y->word[i]);
+}
+
+
+static const uint8_t *str = "abcdefghijklmnopqrstuvwxyz0123456789";
+
+const uint8_t *
+random_bytes_get (void)
+{
+  return (const uint8_t *)str;
+}
+
+/*
+ * Free pointer to random 32-byte
+ */
+void
+random_bytes_free (const uint8_t *p)
+{
+  (void)p;
+}
+
+
+int
+main (int argc, char *argv[])
+{
+  ac x[1];
+  ptc a[1];
+  int i;
+
+  ed_double_25638 (a, G);
+  ptc_to_ac_25519 (x, a);
+  print_point (x);
+
+  ed_add_25638 (a, G, G, 1);
+  ptc_to_ac_25519 (x, a);
+  print_point (x);
+
+  ed_add_25638 (a, G, G, 0);
+  ptc_to_ac_25519 (x, a);
+  print_point (x);
+
+  for (i = 0; i < 64 - 1; i++)
+    ed_double_25638 (a, a);
+
+  ptc_to_ac_25519 (x, a);
+  print_point (x);
+  return 0;
+}
 #endif

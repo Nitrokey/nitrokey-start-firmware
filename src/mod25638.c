@@ -37,8 +37,13 @@
 
 #include "bn.h"
 #include "mod25638.h"
-#include "muladd_256.h"
 
+#ifndef BN256_C_IMPLEMENTATION
+#define ASM_IMPLEMENTATION 1
+#endif
+
+#if ASM_IMPLEMENTATION
+#include "muladd_256.h"
 #define ADDWORD_256(d_,w_,c_)                    \
  asm ( "ldmia  %[d], { r4, r5, r6, r7 } \n\t"    \
        "adds   r4, r4, %[w]             \n\t"    \
@@ -57,6 +62,7 @@
        : [d] "=&r" (d_), [c] "=&r" (c_)          \
        : "[d]" (d_), [w] "r" (w_)                \
        : "r4", "r5", "r6", "r7", "memory", "cc" )
+#endif
 
 /*
 256      224      192      160      128       96       64       32        0
@@ -69,8 +75,9 @@
 2^256 - 32 - 4 - 2
   0 ffffffff ffffffff ffffffff ffffffff ffffffff ffffffff ffffffff ffffffda
 */
-const bn256 n25638[1] = { {0xffffffda, 0xffffffff, 0xffffffff, 0xffffffff,
-			   0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff } };
+const bn256 n25638[1] = {
+  {{0xffffffda, 0xffffffff, 0xffffffff, 0xffffffff,
+    0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff }} };
 
 
 /*
@@ -127,6 +134,7 @@ mod25638_mul (bn256 *X, const bn256 *A, const bn256 *B)
   uint32_t w;
   uint32_t c, c0;
 
+#if ASM_IMPLEMENTATION
   memset (word, 0, sizeof (uint32_t)*BN256_WORDS);
 
   s = A->word;  d = &word[0];  w = B->word[0];  MULADD_256 (s, d, w, c);
@@ -142,7 +150,58 @@ mod25638_mul (bn256 *X, const bn256 *A, const bn256 *B)
   s = word;
   ADDWORD_256 (s, c0, c);
   word[0] += c * 38;
-  memcpy (X->word, word, sizeof X->word);
+  memcpy (X, word, sizeof (bn256));
+#else
+  (void)c;  (void)c0;
+  bn256_mul ((bn512 *)word, A, B);
+
+  s = &word[8]; d = &word[0];  w = 38;
+  {
+    int i;
+    uint32_t r0, r1;
+
+    r0 = r1 = 0;
+    for (i = 0; i < BN256_WORDS; i++)
+      {
+	uint64_t uv;
+	uint32_t u, v;
+	uint32_t carry;
+
+	r0 += d[i];
+	r1 += (r0 < d[i]);
+	carry = (r1 < (r0 < d[i]));
+
+	uv = ((uint64_t)s[i])*w;
+	v = uv;
+	u = (uv >> 32);
+	r0 += v;
+	r1 += (r0 < v);
+	carry += (r1 < (r0 < v));
+	r1 += u;
+	carry += (r1 < u);
+
+	d[i] = r0;
+	r0 = r1;
+	r1 = carry;
+      }
+    d[i] = r0;
+
+    r0 = word[8] * 38;
+    d = word;
+    for (i = 0; i < BN256_WORDS; i++)
+      {
+	uint32_t carry;
+
+	r0 += d[i];
+	carry = (r0 < d[i]);
+	d[i] = r0;
+	r0 = carry;
+      }
+    word[0] += r0 * 38;
+  }
+
+  memcpy (X, word, sizeof (bn256));
+#endif
 }
 
 /**
