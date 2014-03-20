@@ -45,7 +45,7 @@ bn256_add (bn256 *X, const bn256 *A, const bn256 *B)
       *px = *pa + carry;
       carry = (*px < carry);
       *px += v;
-      carry += (*px < *pb);
+      carry += (*px < v);
       px++;
       pa++;
       pb++;
