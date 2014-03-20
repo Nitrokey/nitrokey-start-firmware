@@ -368,6 +368,25 @@ static const ac precomputed_2E_KG[15] = {
         0xee80b79c, 0x1ce155df, 0xe9bdf1b1, 0x181b445b }}} },
 };
 
+static int
+get_vk (const bn256 *K, int i)
+{
+  uint32_t w0, w1, w2, w3;
+
+  if (i < 32)
+    {
+      w3 = K->word[6]; w2 = K->word[4]; w1 = K->word[2]; w0 = K->word[0];
+    }
+  else
+    {
+      w3 = K->word[7]; w2 = K->word[5]; w1 = K->word[3]; w0 = K->word[1];
+      i -= 32;
+    }
+
+  w3 >>= i;  w2 >>= i;  w1 >>= i;  w0 >>= i;
+  return ((w3 & 1) << 3) | ((w2 & 1) << 2) | ((w1 & 1) << 1) | (w0 & 1);
+}
+
 /**
  * @brief	X  = k * G
  *
@@ -379,6 +398,47 @@ static const ac precomputed_2E_KG[15] = {
 int
 compute_kG_25519 (ac *X, const bn256 *K)
 {
+  uint8_t index[64]; /* Lower 4-bit for index absolute value, msb is
+			for sign (encoded as: 0 means 1, 1 means -1).  */
+  bn256 K_dash[1];
+  ptc Q[1], tmp[1], *dst;
+  int i;
+  int vk;
+  uint32_t k_is_even = bn256_is_even (K);
+
+  bn256_sub_uint (K_dash, K, k_is_even);
+  /* It keeps the condition: 1 <= K' <= N - 2, and K' is odd.  */
+
+  /* Fill index.  */
+  vk = get_vk (K_dash, 0);
+  for (i = 1; i < 64; i++)
+    {
+      int vk_next, is_zero;
+
+      vk_next = get_vk (K_dash, i);
+      is_zero = (vk_next == 0);
+      index[i-1] = (vk - 1) | (is_zero << 7);
+      vk = (is_zero ? vk : vk_next);
+    }
+  index[63] = vk - 1;
+
+  /* identity element */
+  memset (Q, 0, sizeof (bn256));
+  Q->y->word[0] = 1;
+  Q->z->word[0] = 1;
+
+  for (i = 31; i >= 0; i--)
+    {
+      ed_double_25638 (Q, Q);
+      ed_add_25638 (Q, Q, &precomputed_2E_KG[index[i+32]&0x0f],
+		    index[i+32] >> 7);
+      ed_add_25638 (Q, Q, &precomputed_KG[index[i]&0x0f], index[i] >> 7);
+    }
+
+  dst = k_is_even ? Q : tmp;
+  ed_add_25638 (dst, Q, &precomputed_KG[0], 0);
+
+  ptc_to_ac_25519 (X, Q);
   return 0;
 }
 

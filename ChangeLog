@@ -3,6 +3,7 @@
 	* src/ecc-edwards.c (ed_add_25638): Fix for X == A.
 	(main): Compute pre-computed tables.
 	(precomputed_KG, precomputed_2E_KG): Add.
+	(compute_kG_25519): New.
 
 2014-03-19  Niibe Yutaka  <gniibe@fsij.org>
 
