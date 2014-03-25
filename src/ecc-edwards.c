@@ -64,7 +64,7 @@ typedef struct
 #include "affine.h"
 
 
-static int
+int
 mod25519_is_neg (const bn256 *a)
 {
   return (a->word[0] & 1);

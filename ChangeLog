@@ -1,5 +1,7 @@
 2014-03-25  Niibe Yutaka  <gniibe@fsij.org>
 
+	* misc/t-eddsa.c: New.
+
 	* src/ecc-edwards.c (bnX_mul_C, mod_reduce_M): New.
 	(eddsa_25519): New.
 
