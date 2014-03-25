@@ -1,3 +1,8 @@
+2014-03-25  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/ecc-edwards.c (bnX_mul_C, mod_reduce_M): New.
+	(eddsa_25519): New.
+
 2014-03-20  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/ecc-edwards.c (ed_add_25638): Fix for X == A.

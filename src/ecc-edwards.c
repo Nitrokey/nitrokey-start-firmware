@@ -28,6 +28,7 @@
 #include "bn.h"
 #include "mod.h"
 #include "mod25638.h"
+#include "sha512.h"
 
 /*
  * Identity element: (0,1)
@@ -39,6 +40,10 @@
  * Gx: 0x216936D3CD6E53FEC0A4E231FDD6DC5C692CC7609525A7B2C9562D608F25D51A
  * Gy: 0x6666666666666666666666666666666666666666666666666666666666666658
  */
+
+static const bn256 p25519[1] = {
+  {{ 0xffffffed, 0xffffffff, 0xffffffff, 0xffffffff,
+     0xffffffff, 0xffffffff, 0xffffffff, 0x7fffffff }} };
 
 /* d + 2^255 - 19 */
 static const bn256 coefficient_d[1] = {
@@ -57,6 +62,13 @@ typedef struct
 } ptc;
 
 #include "affine.h"
+
+
+static int
+mod25519_is_neg (const bn256 *a)
+{
+  return (a->word[0] & 1);
+}
 
 
 /**
@@ -190,10 +202,6 @@ ed_add_25638 (ptc *X, const ptc *A, const ac *B, int minus)
   /* Z3 = F * G */
 }
 
-
-static const bn256 p25519[1] = {
-  {{ 0xffffffed, 0xffffffff, 0xffffffff, 0xffffffff,
-     0xffffffff, 0xffffffff, 0xffffffff, 0x7fffffff }} };
 
 /**
  * @brief	X = convert A
@@ -423,7 +431,7 @@ compute_kG_25519 (ac *X, const bn256 *K)
   index[63] = vk - 1;
 
   /* identity element */
-  memset (Q, 0, sizeof (bn256));
+  memset (Q, 0, sizeof (ptc));
   Q->y->word[0] = 1;
   Q->z->word[0] = 1;
 
@@ -443,9 +451,221 @@ compute_kG_25519 (ac *X, const bn256 *K)
 }
 
 
-void
-eddsa_25519 (bn256 *r, bn256 *s, const bn256 *z, const bn256 *d)
+#define BN416_WORDS 13
+#define BN128_WORDS 4
+
+/* M: The order of the generator G.  */
+static const bn256 M[1] = {
+  {{  0x5CF5D3ED, 0x5812631A, 0xA2F79CD6, 0x14DEF9DE,
+      0x00000000, 0x00000000, 0x00000000, 0x10000000  }}
+};
+
+#define C ((const uint32_t *)M)
+
+static void
+bnX_mul_C (uint32_t *r, const uint32_t *q, int q_size)
 {
+  int i, j, k;
+  int i_beg, i_end;
+  uint32_t r0, r1, r2;
+
+  r0 = r1 = r2 = 0;
+  for (k = 0; k <= q_size + BN128_WORDS - 2; k++)
+    {
+      if (q_size < BN128_WORDS)
+	if (k < q_size)
+	  {
+	    i_beg = 0;
+	    i_end = k;
+	  }
+	else
+	  {
+	    i_beg = k - q_size + 1;
+	    i_end = k;
+	    if (i_end > BN128_WORDS - 1)
+	      i_end = BN128_WORDS - 1;
+	  }
+      else
+	if (k < BN128_WORDS)
+	  {
+	    i_beg = 0;
+	    i_end = k;
+	  }
+	else
+	  {
+	    i_beg = k - BN128_WORDS + 1;
+	    i_end = k;
+	    if (i_end > q_size - 1)
+	      i_end = q_size - 1;
+	  }
+
+      for (i = i_beg; i <= i_end; i++)
+	{
+	  uint64_t uv;
+	  uint32_t u, v;
+	  uint32_t carry;
+
+	  j = k - i;
+	  if (q_size < BN128_WORDS)
+	    uv = ((uint64_t )q[j])*((uint64_t )C[i]);
+	  else
+	    uv = ((uint64_t )q[i])*((uint64_t )C[j]);
+	  v = uv;
+	  u = (uv >> 32);
+	  r0 += v;
+	  carry = (r0 < v);
+	  r1 += carry;
+	  carry = (r1 < carry);
+	  r1 += u;
+	  carry += (r1 < u);
+	  r2 += carry;
+	}
+
+      r[k] = r0;
+      r0 = r1;
+      r1 = r2;
+      r2 = 0;
+    }
+
+  r[k] = r0;
+}
+
+/**
+ * @brief R = A mod M (using M=2^252+C) (Barret reduction)
+ * 
+ * See HAC 14.47.
+ */
+static void
+mod_reduce_M (bn256 *R, const bn512 *A)
+{
+  uint32_t q[BN256_WORDS+1];
+  uint32_t tmp[BN416_WORDS];
+  bn256 r[1];
+  uint32_t carry, next_carry;
+  int i;
+#define borrow carry
+
+  q[8] = A->word[15]>>28;
+  carry = A->word[15] & 0x0fffffff;
+  for (i = BN256_WORDS - 1; i >= 0; i--)
+    {
+      next_carry = A->word[i+7] & 0x0fffffff;
+      q[i] = (A->word[i+7] >> 28) | (carry << 4);
+      carry = next_carry;
+    }
+  memcpy (R, A, sizeof (bn256));
+  R->word[7] &= 0x0fffffff;
+
+  /* Q_size: 9 */
+  bnX_mul_C (tmp, q, 9); /* TMP = Q*C */
+  /* Q = tmp / 2^252 */
+  carry = tmp[12] & 0x0fffffff;
+  for (i = 4; i >= 0; i--)
+    {
+      next_carry = tmp[i+7] & 0x0fffffff;
+      q[i] = (tmp[i+7] >> 28) | (carry << 4);
+      carry = next_carry;
+    }
+  /* R' = tmp % 2^252 */
+  memcpy (r, tmp, sizeof (bn256));
+  r->word[7] &= 0x0fffffff;
+  /* R -= R' */
+  borrow = bn256_sub (R, R, r);
+  if (borrow)
+    bn256_add (R, R, M);
+  else
+    bn256_add ((bn256 *)tmp, R, M);
+
+  /* Q_size: 5 */
+  bnX_mul_C (tmp, q, 5); /* TMP = Q*C */
+  carry = tmp[8] & 0x0fffffff;
+  q[0] = (tmp[7] >> 28) | (carry << 4);
+  /* R' = tmp % 2^252 */
+  memcpy (r, tmp, sizeof (bn256));
+  r->word[7] &= 0x0fffffff;
+  /* R += R' */
+  bn256_add (R, R, r);
+  borrow = bn256_sub (R, R, M);
+  if (borrow)
+    bn256_add (R, R, M);
+  else
+    bn256_add ((bn256 *)tmp, R, M);
+
+  /* Q_size: 1 */
+  bnX_mul_C (tmp, q, 1); /* TMP = Q*C */
+  /* R' = tmp % 2^252 */
+  memset (((uint8_t *)r)+(sizeof (uint32_t)*5), 0, sizeof (uint32_t)*3);
+  memcpy (r, tmp, sizeof (uint32_t)*5);
+  /* R -= R' */
+  borrow = bn256_sub (R, R, r);
+  if (borrow)
+    bn256_add (R, R, M);
+  else
+    bn256_add ((bn256 *)tmp, R, M);
+#undef borrow
+}
+
+
+void
+eddsa_25519 (bn256 *r, bn256 *s, const uint8_t *input, size_t ilen,
+	     const bn256 *d)
+{
+  sha512_context ctx;
+  uint8_t hash[64];
+  bn256 a[1], pk[1], tmp[1];
+  ac R[1];
+  uint32_t carry, borrow;
+
+  sha512 ((uint8_t *)d, sizeof (bn256), hash);
+  hash[0] &= 248;
+  hash[31] &= 127;
+  hash[31] |= 64;
+  memcpy (a, hash, sizeof (bn256)); /* Lower half of hash */
+
+  compute_kG_25519 (R, a);
+  /* EdDSA encoding.  */
+  memcpy (pk, R->y, sizeof (bn256));
+  pk->word[7] ^= mod25519_is_neg (R->x) * 0x80000000;
+  print_point (R);
+  print_bn256 (pk);
+
+  sha512_start (&ctx);
+  sha512_update (&ctx, hash+32, 32); /* Upper half of hash */
+  sha512_update (&ctx, input, ilen);
+  sha512_finish (&ctx, hash);
+
+  print_bn256 ((bn256 *)(hash+32));
+  print_bn256 ((bn256 *)hash);
+
+  mod_reduce_M (r, (bn512 *)hash);
+  print_bn256 (r);
+
+  compute_kG_25519 (R, r);
+  print_point (R);
+  print_bn256 (pk);
+
+  /* EdDSA encoding.  */
+  memcpy (tmp, R->y, sizeof (bn256));
+  tmp->word[7] ^= mod25519_is_neg (R->x) * 0x80000000;
+
+  sha512_start (&ctx);
+  sha512_update (&ctx, (uint8_t *)tmp, sizeof (bn256));
+  sha512_update (&ctx, (uint8_t *)pk, sizeof (bn256));
+  sha512_update (&ctx, input, ilen);
+  sha512_finish (&ctx, (uint8_t *)hash);
+
+  mod_reduce_M (s, (bn512 *)hash);
+  bn256_mul ((bn512 *)hash, s, a);
+  mod_reduce_M (s, (bn512 *)hash);
+  carry = bn256_add (s, s, r);
+  borrow = bn256_sub (s, s, M);
+
+  memcpy (r, tmp, sizeof (bn256));
+
+  if ((borrow && !carry))
+    bn256_add (s, s, M);
+  else
+    bn256_add (tmp, s, M);
 }
 
 
@@ -478,6 +698,16 @@ static const ptc G[1] = {{
 }};
 
 #include <stdio.h>
+
+static void
+print_bn256 (const bn256 *X)
+{
+  int i;
+
+  for (i = 7; i >= 0; i--)
+    printf ("%08x", X->word[i]);
+  puts ("");
+}
 
 static void
 print_point (const ac *X)
@@ -531,28 +761,22 @@ print_point_ptc (const ptc *X)
 }
 #endif
 
-static const uint8_t *str = (const uint8_t *)
-  "abcdefghijklmnopqrstuvwxyz0123456789";
-
-const uint8_t *
-random_bytes_get (void)
-{
-  return (const uint8_t *)str;
-}
-
-/*
- * Free pointer to random 32-byte
- */
-void
-random_bytes_free (const uint8_t *p)
-{
-  (void)p;
-}
-
 
 int
 main (int argc, char *argv[])
 {
+#ifdef TESTING_EDDSA
+  bn256 r[1], s[1];
+
+  const bn256 sk[1] = {
+    {{ 0x9db1619d, 0x605afdef, 0xf44a84ba, 0xc42cec92,
+       0x69c54944, 0x1969327b, 0x03ac3b70, 0x607fae1c }} };
+
+  eddsa_25519 (r, s, (const uint8_t *)"", 0, sk);
+
+  print_bn256 (r);
+  print_bn256 (s);
+#else
   ac a0001[1], a0010[1], a0100[1], a1000[1];
   ac x[1];
   ptc a[1];
@@ -642,6 +866,7 @@ main (int argc, char *argv[])
       ptc_to_ac_25519 (x, a);
       print_point (x);
     }
+#endif
 
   return 0;
 }
