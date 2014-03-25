@@ -1073,7 +1073,7 @@ gpg_do_chks_prvkey (enum kind_of_key kk,
  *   7f48, xx: cardholder private key template
  *       9x LEN: 9x=tag of private key d,  LEN=length of d
  *   5f48, xx : cardholder private key
- * <d> (in the format of: 04 || X || Y )
+ * <d: 32-byte>
  */
 static int
 proc_key_import (const uint8_t *data, int len)

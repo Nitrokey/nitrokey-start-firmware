@@ -1,5 +1,12 @@
 Gnuk NEWS - User visible changes
 
+* Major changes in Gnuk 1.1.3
+
+  Released 2014-04-??, by NIIBE Yutaka
+
+** Experimental EdDSA support.
+
+
 * Major changes in Gnuk 1.1.2
 
   Released 2014-03-07, by NIIBE Yutaka
