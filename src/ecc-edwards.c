@@ -626,23 +626,15 @@ eddsa_25519 (bn256 *r, bn256 *s, const uint8_t *input, size_t ilen,
   /* EdDSA encoding.  */
   memcpy (pk, R->y, sizeof (bn256));
   pk->word[7] ^= mod25519_is_neg (R->x) * 0x80000000;
-  print_point (R);
-  print_bn256 (pk);
 
   sha512_start (&ctx);
   sha512_update (&ctx, hash+32, 32); /* Upper half of hash */
   sha512_update (&ctx, input, ilen);
   sha512_finish (&ctx, hash);
 
-  print_bn256 ((bn256 *)(hash+32));
-  print_bn256 ((bn256 *)hash);
-
   mod_reduce_M (r, (bn512 *)hash);
-  print_bn256 (r);
 
   compute_kG_25519 (R, r);
-  print_point (R);
-  print_bn256 (pk);
 
   /* EdDSA encoding.  */
   memcpy (tmp, R->y, sizeof (bn256));
