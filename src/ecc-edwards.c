@@ -219,20 +219,9 @@ ptc_to_ac_25519 (ac *X, const ptc *A)
 
   /*
    * A->z may be bigger than p25519, or two times bigger than p25519.
-   * We try to subtract p25519 twice.
+   * But this is no problem for computation of mod_inv.
    */
-  borrow = bn256_sub (z_inv, A->z, p25519);
-  if (borrow)
-    memcpy (z_inv, A->z, sizeof (bn256));
-  else
-    memcpy (z, A->z, sizeof (bn256)); /* dumy copy */
-  borrow = bn256_sub (z, z_inv, p25519);
-  if (borrow)
-    memcpy (z, z_inv, sizeof (bn256));
-  else
-    memcpy (z_inv, z, sizeof (bn256)); /* dumy copy */
-
-  mod_inv (z_inv, z, p25519);
+  mod_inv (z_inv, A->z, p25519);
 
   mod25638_mul (X->x, A->x, z_inv);
   borrow = bn256_sub (z, X->x, p25519);

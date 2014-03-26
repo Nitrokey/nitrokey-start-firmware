@@ -1,3 +1,10 @@
+2014-03-26  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/mod25638.c (mod25638_reduce): New.
+	(mod25638_mul, mod25638_sqr): Use mod25638_reduce.
+
+	* src/ecc-edwards.c (ptc_to_ac_25519): No need to subtract p25519.
+
 2014-03-25  Niibe Yutaka  <gniibe@fsij.org>
 
 	* misc/t-eddsa.c: New.

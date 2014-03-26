@@ -123,39 +123,29 @@ mod25638_sub (bn256 *X, const bn256 *A, const bn256 *B)
 
 
 /**
- * @brief  X = (A * B) mod 2^256-38
+ * @brief  X = A mod 25638
+ *
+ * Note that the second argument is not "const bn512 *".
+ * A is modified during the computation of modulo.
  */
-void
-mod25638_mul (bn256 *X, const bn256 *A, const bn256 *B)
+static void
+mod25638_reduce (bn256 *X, bn512 *A)
 {
-  uint32_t word[BN256_WORDS*2];
   const uint32_t *s;
   uint32_t *d;
   uint32_t w;
-  uint32_t c, c0;
 
 #if ASM_IMPLEMENTATION
-  memset (word, 0, sizeof (uint32_t)*BN256_WORDS);
+  uint32_t c, c0;
 
-  s = A->word;  d = &word[0];  w = B->word[0];  MULADD_256 (s, d, w, c);
-  s = A->word;  d = &word[1];  w = B->word[1];  MULADD_256 (s, d, w, c);
-  s = A->word;  d = &word[2];  w = B->word[2];  MULADD_256 (s, d, w, c);
-  s = A->word;  d = &word[3];  w = B->word[3];  MULADD_256 (s, d, w, c);
-  s = A->word;  d = &word[4];  w = B->word[4];  MULADD_256 (s, d, w, c);
-  s = A->word;  d = &word[5];  w = B->word[5];  MULADD_256 (s, d, w, c);
-  s = A->word;  d = &word[6];  w = B->word[6];  MULADD_256 (s, d, w, c);
-  s = A->word;  d = &word[7];  w = B->word[7];  MULADD_256 (s, d, w, c);
-  s = &word[8]; d = &word[0];  w = 38;          MULADD_256 (s, d, w, c);
-  c0 = word[8] * 38;
-  s = word;
+  s = &A->word[8]; d = &A->word[0]; w = 38; MULADD_256 (s, d, w, c);
+  c0 = A->word[8] * 38;
+  s = &A->word[0];
   ADDWORD_256 (s, c0, c);
-  word[0] += c * 38;
-  memcpy (X, word, sizeof (bn256));
+  A->word[0] += c * 38;
+  memcpy (X, A, sizeof (bn256));
 #else
-  (void)c;  (void)c0;
-  bn256_mul ((bn512 *)word, A, B);
-
-  s = &word[8]; d = &word[0];  w = 38;
+  s = &A->word[8]; d = &A->word[0]; w = 38;
   {
     int i;
     uint64_t r;
@@ -179,8 +169,8 @@ mod25638_mul (bn256 *X, const bn256 *A, const bn256 *B)
       }
     d[i] = (uint32_t)r;
 
-    r0 = word[8] * 38;
-    d = word;
+    r0 = A->word[8] * 38;
+    d = &A->word[0];
     for (i = 0; i < BN256_WORDS; i++)
       {
 	r0 += d[i];
@@ -188,11 +178,23 @@ mod25638_mul (bn256 *X, const bn256 *A, const bn256 *B)
 	d[i] = r0;
 	r0 = carry;
       }
-    word[0] += r0 * 38;
+    A->word[0] += r0 * 38;
   }
 
-  memcpy (X, word, sizeof (bn256));
+  memcpy (X, A, sizeof (bn256));
 #endif
+}
+
+/**
+ * @brief  X = (A * B) mod 2^256-38
+ */
+void
+mod25638_mul (bn256 *X, const bn256 *A, const bn256 *B)
+{
+  bn512 tmp[1];
+
+  bn256_mul (tmp, A, B);
+  mod25638_reduce (X, tmp);
 }
 
 /**
@@ -201,8 +203,10 @@ mod25638_mul (bn256 *X, const bn256 *A, const bn256 *B)
 void
 mod25638_sqr (bn256 *X, const bn256 *A)
 {
-  /* This could be improved a bit, see bn256_sqr.  */
-  mod25638_mul (X, A, A);
+  bn512 tmp[1];
+
+  bn256_sqr (tmp, A);
+  mod25638_reduce (X, tmp);
 }
 
 
