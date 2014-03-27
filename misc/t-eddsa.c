@@ -64,8 +64,6 @@ print_point (const ac *X)
   puts ("--");
 }
 
-extern void eddsa_25519 (bn256 *r, bn256 *s,
-			 const uint8_t *input, size_t ilen, const bn256 *d);
 #define MAXLINE 4096
 
 static int lineno;
@@ -356,14 +354,16 @@ read_testcase (void)
 int
 main (int argc, char *argv[])
 {
+  int all_good = 1;
   int r;
   ac pk_calculated[1];
   uint8_t hash[64];
   bn256 a[1];
   extern int compute_kG_25519 (ac *X, const bn256 *K);
   extern int mod25519_is_neg (const bn256 *a);
-  extern void eddsa_25519 (bn256 *r, bn256 *s, const uint8_t *input,
-			   size_t ilen, const bn256 *d);
+  extern void eddsa_25519 (bn256 *r, bn256 *s,
+			   const uint8_t *input, size_t ilen,
+			   const bn256 *a, const uint8_t *seed);
 
   bn256 R[1], S[1];
 
@@ -397,10 +397,11 @@ main (int argc, char *argv[])
 	  print_be_bn256 (sk);
 	  print_point (pk);
 	  print_point (pk_calculated);
+	  all_good = 0;
 	  continue;
 	}
 
-      eddsa_25519 (R, S, msg, msglen, sk);
+      eddsa_25519 (R, S, msg, msglen, a, hash+32);
       if (memcmp (sig, R, sizeof (bn256)) != 0
 	  || memcmp (((const uint8_t *)sig)+32, S, sizeof (bn256)) != 0)
 	{
@@ -409,10 +410,11 @@ main (int argc, char *argv[])
 	  print_le_bn256 (S);
 	  print_le_bn256 ((const bn256 *)sig);
 	  print_le_bn256 ((const bn256 *)(((const uint8_t *)sig)+32));
+	  all_good = 0;
 	  continue;
 	}
 
       printf ("%d\n", test_no);
     }
-  return 0;
+  return all_good == 1?0:1;
 }

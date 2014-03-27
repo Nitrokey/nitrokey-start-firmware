@@ -566,19 +566,13 @@ mod_reduce_M (bn256 *R, const bn512 *A)
 
 void
 eddsa_25519 (bn256 *r, bn256 *s, const uint8_t *input, size_t ilen,
-	     const bn256 *d)
+	     const bn256 *a, const uint8_t *seed)
 {
   sha512_context ctx;
   uint8_t hash[64];
-  bn256 a[1], pk[1], tmp[1];
+  bn256 pk[1], tmp[1];
   ac R[1];
   uint32_t carry, borrow;
-
-  sha512 ((uint8_t *)d, sizeof (bn256), hash);
-  hash[0] &= 248;
-  hash[31] &= 127;
-  hash[31] |= 64;
-  memcpy (a, hash, sizeof (bn256)); /* Lower half of hash */
 
   compute_kG_25519 (R, a);
   /* EdDSA encoding.  */
@@ -586,7 +580,7 @@ eddsa_25519 (bn256 *r, bn256 *s, const uint8_t *input, size_t ilen,
   pk->word[7] ^= mod25519_is_neg (R->x) * 0x80000000;
 
   sha512_start (&ctx);
-  sha512_update (&ctx, hash+32, 32); /* Upper half of hash */
+  sha512_update (&ctx, seed, sizeof (bn256)); /* It's upper half of the hash */
   sha512_update (&ctx, input, ilen);
   sha512_finish (&ctx, hash);
 
