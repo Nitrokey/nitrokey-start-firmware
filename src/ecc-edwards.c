@@ -46,6 +46,22 @@
  */
 
 /*
+ * IMPLEMENTATION NOTE
+ *
+ * (0) We assume that the processor has no cache, nor branch target
+ *     prediction.  Thus, we don't avoid indexing by secret value. 
+ *     We don't avoid conditional jump if both cases have same timing,
+ *     either.
+ *
+ * (1) We use Radix-32 field arithmetic.  It's a representation like
+ *     2^256-38, but it's more redundant.  For example, "1" can be
+ *     represented in three ways in 256-bit: 1, 2^255-18, and
+ *     2^256-37.
+ *
+ * (2) We use comb multiplication.
+ */
+
+/*
  * Identity element: (0,1)
  * Negation: -(x,y) = (-x,y)
  *
