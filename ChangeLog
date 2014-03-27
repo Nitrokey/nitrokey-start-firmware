@@ -1,3 +1,9 @@
+2014-03-27  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/ecc-edwards.c (ed_add_25638): Remove the third argument.
+	(compute_kG_25519): The curve is complete, we don't need to avoid
+	identity element as NIST curve or secp256k1 curve.
+
 2014-03-26  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/mod25638.c (mod25638_reduce): New.

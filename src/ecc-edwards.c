@@ -31,6 +31,21 @@
 #include "sha512.h"
 
 /*
+ * References:
+ *
+ * [1] Daniel J. Bernstein, Niels Duif, Tanja Lange, Peter Schwabe, Bo-Yin Yang.
+ *     High-speed high-security signatures.
+ *     Journal of Cryptographic Engineering 2 (2012), 77--89.
+ *     http://cr.yp.to/papers.html#ed25519
+ *
+ * [2] Daniel J. Bernstein, Peter Birkner, Marc Joye, Tanja Lange,
+ *     Christiane Peters.
+ *     Twisted Edwards curves.
+ *     Pages 389--405 in Progress in cryptology---AFRICACRYPT 2008.
+ *     http://cr.yp.to/papers.html#twisted
+ */
+
+/*
  * Identity element: (0,1)
  * Negation: -(x,y) = (-x,y)
  *
@@ -125,33 +140,21 @@ ed_double_25638 (ptc *X, const ptc *A)
 
 
 /**
- * @brief	X = A +/- B
+ * @brief	X = A + B
  *
  * @param X	Destination PTC
  * @param A	PTC
  * @param B	AC
- * @param MINUS if 1 subtraction, addition otherwise.
  *
  * Compute: (X3 : Y3 : Z3) = (X1 : Y1 : Z1) + (X2 : Y2 : 1)
  */
 static void
-ed_add_25638 (ptc *X, const ptc *A, const ac *B, int minus)
+ed_add_25638 (ptc *X, const ptc *A, const ac *B)
 {
   bn256 c[1], d[1], e[1], tmp[1];
-  bn256 minus_B_x[1];
-  uint32_t borrow;
 
   /* Compute: C = X1 * X2 */
-  borrow = bn256_sub (minus_B_x, n25638, B->x);
-  if (borrow)
-    bn256_add (minus_B_x, minus_B_x, n25638); /* carry ignored */
-  else
-    bn256_add (c, minus_B_x, n25638); /* dummy calculation */
-  if (minus)
-    mod25638_mul (c, A->x, minus_B_x);
-  else
-    mod25638_mul (c, A->x, B->x);
-#undef minus_B_x
+  mod25638_mul (c, A->x, B->x);
 
   /* Compute: D = Y1 * Y2 */
   mod25638_mul (d, A->y, B->y);
@@ -174,10 +177,7 @@ ed_add_25638 (ptc *X, const ptc *A, const ac *B, int minus)
 
   /* X3_final = Z1 * tmp * ((X1 + Y1) * (X2 + Y2) - C_1) */
   mod25638_add (X->x, A->x, A->y);
-  if (minus)
-    mod25638_sub (e, B->y, B->x);
-  else
-    mod25638_add (e, B->x, B->y);
+  mod25638_add (e, B->x, B->y);
   mod25638_mul (e, X->x, e);
   mod25638_sub (e, e, c);
   mod25638_mul (e, tmp, e);
@@ -239,7 +239,9 @@ ptc_to_ac_25519 (ac *X, const ptc *A)
 }
 
 
-static const ac precomputed_KG[15] = {
+static const ac precomputed_KG[16] = {
+  { {{{ 0, 0, 0, 0, 0, 0, 0, 0 }}},
+    {{{ 1, 0, 0, 0, 0, 0, 0, 0 }}}                         },
   { {{{ 0x8f25d51a, 0xc9562d60, 0x9525a7b2, 0x692cc760, 
         0xfdd6dc5c, 0xc0a4e231, 0xcd6e53fe, 0x216936d3 }}},
     {{{ 0x66666658, 0x66666666, 0x66666666, 0x66666666, 
@@ -302,7 +304,9 @@ static const ac precomputed_KG[15] = {
         0x3c2ed620, 0x178bc945, 0x90c7e779, 0x25183a99 }}} },
 };
 
-static const ac precomputed_2E_KG[15] = {
+static const ac precomputed_2E_KG[16] = {
+  { {{{ 0, 0, 0, 0, 0, 0, 0, 0 }}},
+    {{{ 1, 0, 0, 0, 0, 0, 0, 0 }}}                         },
   { {{{ 0x6abc0cbb, 0x931797a4, 0x72de6f2d, 0x2c081c10, 
         0x6832800f, 0xddabd427, 0x136158c5, 0x4d1e116d }}},
     {{{ 0x10c9b91a, 0xf44e1efb, 0x5e8a4b84, 0x43e84b7b, 
@@ -365,24 +369,6 @@ static const ac precomputed_2E_KG[15] = {
         0xee80b79c, 0x1ce155df, 0xe9bdf1b1, 0x181b445b }}} },
 };
 
-static int
-get_vk (const bn256 *K, int i)
-{
-  uint32_t w0, w1, w2, w3;
-
-  if (i < 32)
-    {
-      w3 = K->word[6]; w2 = K->word[4]; w1 = K->word[2]; w0 = K->word[0];
-    }
-  else
-    {
-      w3 = K->word[7]; w2 = K->word[5]; w1 = K->word[3]; w0 = K->word[1];
-      i -= 32;
-    }
-
-  w3 >>= i;  w2 >>= i;  w1 >>= i;  w0 >>= i;
-  return ((w3 & 1) << 3) | ((w2 & 1) << 2) | ((w1 & 1) << 1) | (w0 & 1);
-}
 
 /**
  * @brief	X  = k * G
@@ -395,29 +381,8 @@ get_vk (const bn256 *K, int i)
 int
 compute_kG_25519 (ac *X, const bn256 *K)
 {
-  uint8_t index[64]; /* Lower 4-bit for index absolute value, msb is
-			for sign (encoded as: 0 means 1, 1 means -1).  */
-  bn256 K_dash[1];
-  ptc Q[1], tmp[1], *dst;
+  ptc Q[1];
   int i;
-  int vk;
-  uint32_t k_is_even = bn256_is_even (K);
-
-  bn256_sub_uint (K_dash, K, k_is_even);
-  /* It keeps the condition: 1 <= K' <= N - 2, and K' is odd.  */
-
-  /* Fill index.  */
-  vk = get_vk (K_dash, 0);
-  for (i = 1; i < 64; i++)
-    {
-      int vk_next, is_zero;
-
-      vk_next = get_vk (K_dash, i);
-      is_zero = (vk_next == 0);
-      index[i-1] = (vk - 1) | (is_zero << 7);
-      vk = (is_zero ? vk : vk_next);
-    }
-  index[63] = vk - 1;
 
   /* identity element */
   memset (Q, 0, sizeof (ptc));
@@ -426,14 +391,18 @@ compute_kG_25519 (ac *X, const bn256 *K)
 
   for (i = 31; i >= 0; i--)
     {
-      ed_double_25638 (Q, Q);
-      ed_add_25638 (Q, Q, &precomputed_2E_KG[index[i+32]&0x0f],
-		    index[i+32] >> 7);
-      ed_add_25638 (Q, Q, &precomputed_KG[index[i]&0x0f], index[i] >> 7);
-    }
+      int k_i, k_i_e;
 
-  dst = k_is_even ? Q : tmp;
-  ed_add_25638 (dst, Q, &precomputed_KG[0], 0);
+      k_i = (((K->word[6] >> i) & 1) << 3) | (((K->word[4] >> i) & 1) << 2)
+	| (((K->word[2] >> i) & 1) << 1) | ((K->word[0] >> i) & 1);
+
+      k_i_e = (((K->word[7] >> i) & 1) << 3) | (((K->word[5] >> i) & 1) << 2)
+	| (((K->word[3] >> i) & 1) << 1) | ((K->word[1] >> i) & 1);
+ 
+      ed_double_25638 (Q, Q);
+      ed_add_25638 (Q, Q, &precomputed_2E_KG[k_i_e]);
+      ed_add_25638 (Q, Q, &precomputed_KG[k_i]);
+    }
 
   ptc_to_ac_25519 (X, Q);
   return 0;
