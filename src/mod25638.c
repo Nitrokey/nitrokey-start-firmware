@@ -123,10 +123,13 @@ mod25638_sub (bn256 *X, const bn256 *A, const bn256 *B)
 
 
 /**
- * @brief  X = A mod 25638
+ * @brief  X = A mod 2^256-38
  *
  * Note that the second argument is not "const bn512 *".
  * A is modified during the computation of modulo.
+ *
+ * It's not precisely modulo 2^256-38 for all cases,
+ * but result may be redundant.
  */
 static void
 mod25638_reduce (bn256 *X, bn512 *A)

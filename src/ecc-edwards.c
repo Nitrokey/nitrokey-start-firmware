@@ -60,7 +60,8 @@
  *
  * (2) We use fixed base comb multiplication.  Scalar is 252-bit.
  *     There are various possible choices for 252 = 2 * 2 * 3 * 3 * 7.
- *     Current choice is 3KB table.  We use three tables of 16 points.
+ *     Current choice of total size is 3KB.  We use three tables, and
+ *     a table has 16 points (3 * 1KB).
  *
  *     Window size W = 4-bit, E = 21.
  *                                                       <--21-bit-
@@ -127,7 +128,7 @@ mod25519_is_neg (const bn256 *a)
  * Compute (X3 : Y3 : Z3) = 2 * (X1 : Y1 : Z1)
  */
 static void
-ed_double_25638 (ptc *X, const ptc *A)
+point_double (ptc *X, const ptc *A)
 {
   uint32_t borrow;
   bn256 b[1], d[1], e[1];
@@ -184,7 +185,7 @@ ed_double_25638 (ptc *X, const ptc *A)
  * Compute: (X3 : Y3 : Z3) = (X1 : Y1 : Z1) + (X2 : Y2 : 1)
  */
 static void
-ed_add_25638 (ptc *X, const ptc *A, const ac *B)
+point_add (ptc *X, const ptc *A, const ac *B)
 {
   bn256 c[1], d[1], e[1], tmp[1];
 
@@ -238,6 +239,84 @@ ed_add_25638 (ptc *X, const ptc *A, const ac *B)
 }
 
 
+static void
+add19 (bn256 *r, bn256 *x)
+{
+  uint32_t v;
+  int i;
+
+  v = 19;
+  for (i = 0; i < BN256_WORDS; i++)
+    {
+      r->word[i] = x->word[i] + v;
+      v = (r->word[i] < v);
+    }
+}
+
+/*
+ * @brief  X = A mod 2^255-19
+ *
+ * It's precisely modulo 2^255-19 (unlike mod25638_reduce).
+ */
+static void
+mod25519_reduce (bn256 *X)
+{
+  uint32_t q;
+  bn256 r0[1], r1[1];
+  int flag;
+
+  memcpy (r0, X, sizeof (bn256));
+  q = (r0->word[7] >> 31);
+  r0->word[7] &= 0x7fffffff;
+  if (q)
+    {
+      add19 (r0, r0);
+      q = (r0->word[7] >> 31);
+      r0->word[7] &= 0x7fffffff;
+      if (q)
+	{
+	  add19 (r1, r0);
+	  q = (r1->word[7] >> 31);
+	  r1->word[7] &= 0x7fffffff;
+	  flag = 0;
+	}
+      else
+	flag = 1;
+    }
+  else
+    {
+      add19 (r1, r0);		 /* dummy */
+      q = (r1->word[7] >> 31);	 /* dummy */
+      r1->word[7] &= 0x7fffffff; /* dummy */
+      if (q)
+	flag = 2;
+      else
+	flag = 3;
+    }
+
+  if (flag)
+    {
+      add19 (r1, r0);
+      q = (r1->word[7] >> 31);
+      r1->word[7] &= 0x7fffffff;
+      if (q)
+	memcpy (X, r1, sizeof (bn256));
+      else
+	memcpy (X, r0, sizeof (bn256));
+    }
+  else
+    {
+      if (q)
+	{
+	  asm volatile ("" : : "r" (q) : "memory");
+	  memcpy (X, r1, sizeof (bn256));
+	  asm volatile ("" : : "r" (q) : "memory");
+	}
+      else
+	memcpy (X, r1, sizeof (bn256));
+    }
+}
+
 /**
  * @brief	X = convert A
  *
@@ -247,10 +326,9 @@ ed_add_25638 (ptc *X, const ptc *A, const ac *B)
  * (X1:Y1:Z1) represents the affine point (x=X1/Z1, y=Y1/Z1) 
  */
 static void
-ptc_to_ac_25519 (ac *X, const ptc *A)
+point_ptc_to_ac (ac *X, const ptc *A)
 {
-  uint32_t borrow;
-  bn256 z_inv[1], tmp[1];
+  bn256 z_inv[1];
 
   /*
    * A->z may be bigger than p25519, or two times bigger than p25519.
@@ -259,28 +337,9 @@ ptc_to_ac_25519 (ac *X, const ptc *A)
   mod_inv (z_inv, A->z, p25519);
 
   mod25638_mul (X->x, A->x, z_inv);
-  borrow = bn256_sub (tmp, X->x, p25519);
-  if (borrow)
-    memcpy (tmp, X->x, sizeof (bn256)); /* dumy copy */
-  else
-    memcpy (X->x, tmp, sizeof (bn256));
-  borrow = bn256_sub (tmp, X->x, p25519);
-  if (borrow)
-    memcpy (tmp, X->x, sizeof (bn256)); /* dumy copy */
-  else
-    memcpy (X->x, tmp, sizeof (bn256));
-
+  mod25519_reduce (X->x);
   mod25638_mul (X->y, A->y, z_inv);
-  borrow = bn256_sub (tmp, X->y, p25519);
-  if (borrow)
-    memcpy (tmp, X->y, sizeof (bn256)); /* dumy copy */
-  else
-    memcpy (X->y, tmp, sizeof (bn256));
-  borrow = bn256_sub (tmp, X->y, p25519);
-  if (borrow)
-    memcpy (tmp, X->y, sizeof (bn256)); /* dumy copy */
-  else
-    memcpy (X->y, tmp, sizeof (bn256));
+  mod25519_reduce (X->y);
 }
 
 
@@ -524,13 +583,13 @@ compute_kG_25519 (ac *X, const bn256 *K)
 	| ((K->word[5] >> (i+6)) & 4)
 	| ((K->word[7] >> (i+4)) & 8);
 
-      ed_double_25638 (Q, Q);
-      ed_add_25638 (Q, Q, &precomputed_KG[k0]);
-      ed_add_25638 (Q, Q, &precomputed_2E_KG[k1]);
-      ed_add_25638 (Q, Q, &precomputed_4E_KG[k2]);
+      point_double (Q, Q);
+      point_add (Q, Q, &precomputed_KG[k0]);
+      point_add (Q, Q, &precomputed_2E_KG[k1]);
+      point_add (Q, Q, &precomputed_4E_KG[k2]);
     }
 
-  ptc_to_ac_25519 (X, Q);
+  point_ptc_to_ac (X, Q);
 }
 
 
@@ -743,10 +802,10 @@ eddsa_public_key_25519 (bn256 *pk, const bn256 *a)
   memcpy (X, R, sizeof (ac));
   memset (X->z, 0, sizeof (bn256));
   X->z->word[0] = 1;
-  ed_double_25638 (X, X);
-  ed_double_25638 (X, X);
-  ed_double_25638 (X, X);
-  ptc_to_ac_25519 (R, X);
+  point_double (X, X);
+  point_double (X, X);
+  point_double (X, X);
+  point_ptc_to_ac (R, X);
   /* EdDSA encoding.  */
   memcpy (pk, R->y, sizeof (bn256));
   pk->word[7] ^= mod25519_is_neg (R->x) * 0x80000000;

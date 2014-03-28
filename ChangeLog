@@ -1,3 +1,8 @@
+2014-03-29  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/ecc-edwards.c (point_double, point_add): Rename.
+	(mod25519_reduce): New.
+
 2014-03-28  Niibe Yutaka  <gniibe@fsij.org>
 
 	* misc/t-eddsa.c (main): Update for new API of eddsa_25519.
