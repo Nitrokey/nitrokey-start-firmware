@@ -49,28 +49,12 @@ print_be_bn256 (const bn256 *X)
   puts ("");
 }
 
-static void
-print_point (const ac *X)
-{
-  int i;
-
-  puts ("--");
-  for (i = 7; i >= 0; i--)
-    printf ("%08x", X->x->word[i]);
-  puts ("");
-  for (i = 7; i >= 0; i--)
-    printf ("%08x", X->y->word[i]);
-  puts ("");
-  puts ("--");
-}
-
 #define MAXLINE 4096
 
 static int lineno;
 static int test_no;
 static bn256 sk[1];
-static int pk_is_compressed;
-static ac pk[1];
+static bn256 pk[1];
 static unsigned char msg[MAXLINE];
 static size_t msglen;
 static bn512 sig[1];
@@ -191,32 +175,35 @@ read_be_bn256 (bn256 *sk, const char *l)
 
 
 static int
-read_pk (ac *pk, const char *l, int len)
+read_pk (bn256 *pk, const char *l, int len)
 {
   int r;
 
   if (len == 64)		/* 64 chars == 32-byte */
     {				/* compressed form */
-      r = read_le_bn256 (pk->y, l);
+      r = read_le_bn256 (pk, l);
       if (r < 0)
 	return -1;
-      return 1;
+      return 0;
     }
   else
     {
+      bn256 x[1];
+
       r = read_hex_8bit (&l);
       if (r < 0)
 	return -1;
       if (r != 4)
 	return -1;
 
-      r = read_be_bn256 (pk->x, l);
+      r = read_be_bn256 (x, l);
       if (r < 0)
 	return -1;
-      r = read_be_bn256 (pk->y, l+64);
+      r = read_be_bn256 (pk, l+64);
       if (r < 0)
 	return -1;
 
+      pk->word[7] ^= (x->word[0] & 1) * 0x80000000;
       return 0;
     }
 }
@@ -258,7 +245,6 @@ read_testcase (void)
 
   test_no = 0;
   memset (sk, 0, sizeof (bn256));
-  pk_is_compressed = 0;
   memset (pk, 0, sizeof (ac));
   msglen = 0;
   memset (sig, 0, sizeof (bn512));
@@ -309,8 +295,7 @@ read_testcase (void)
       else if (r > 3 && strncmp (line, "PK:", 3) == 0)
 	{
 	  const char *l = skip_white_space (line+3);
-	  pk_is_compressed = read_pk (pk, l, line+len-1-l);
-	  if (pk_is_compressed < 0)
+	  if (read_pk (pk, l, line+len-1-l) < 0)
 	    {
 	      fprintf (stderr, "read_pk: %d\n", lineno);
 	      err = -1;
@@ -356,14 +341,13 @@ main (int argc, char *argv[])
 {
   int all_good = 1;
   int r;
-  ac pk_calculated[1];
+  bn256 pk_calculated[1];
   uint8_t hash[64];
   bn256 a[1];
-  extern int compute_kG_25519 (ac *X, const bn256 *K);
-  extern int mod25519_is_neg (const bn256 *a);
-  extern void eddsa_25519 (bn256 *r, bn256 *s,
-			   const uint8_t *input, size_t ilen,
-			   const bn256 *a, const uint8_t *seed);
+  extern void eddsa_25519 (bn256 *r, bn256 *s, const uint8_t *input,
+			   size_t ilen, const bn256 *a, const uint8_t *seed,
+			   const bn256 *pk);
+  extern void eddsa_public_key_25519 (bn256 *pk, const bn256 *a);
 
   bn256 R[1], S[1];
 
@@ -379,29 +363,18 @@ main (int argc, char *argv[])
       hash[31] |= 64;
       memcpy (a, hash, sizeof (bn256)); /* Lower half of hash */
 
-      compute_kG_25519 (pk_calculated, a);
-      if (pk_is_compressed)
-	{
-	  /* EdDSA encoding.  */
-	  pk_calculated->y->word[7] ^= 
-	    mod25519_is_neg (pk_calculated->x) * 0x80000000;
-	  r = memcmp (pk->y, pk_calculated->y, sizeof (bn256));
-	}
-      else
-	{
-	  r = memcmp (pk, pk_calculated, sizeof (ac));
-	}
-      if (r != 0)
+      eddsa_public_key_25519 (pk_calculated, a);
+      if (memcmp (pk, pk_calculated, sizeof (bn256)) != 0)
 	{
 	  printf ("ERR PK: %d\n", test_no);
 	  print_be_bn256 (sk);
-	  print_point (pk);
-	  print_point (pk_calculated);
+	  print_be_bn256 (pk);
+	  print_be_bn256 (pk_calculated);
 	  all_good = 0;
 	  continue;
 	}
 
-      eddsa_25519 (R, S, msg, msglen, a, hash+32);
+      eddsa_25519 (R, S, msg, msglen, a, hash+32, pk);
       if (memcmp (sig, R, sizeof (bn256)) != 0
 	  || memcmp (((const uint8_t *)sig)+32, S, sizeof (bn256)) != 0)
 	{

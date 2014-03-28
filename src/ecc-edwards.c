@@ -58,7 +58,26 @@
  *     represented in three ways in 256-bit: 1, 2^255-18, and
  *     2^256-37.
  *
- * (2) We use comb multiplication.
+ * (2) We use fixed base comb multiplication.  Scalar is 252-bit.
+ *     There are various possible choices for 252 = 2 * 2 * 3 * 3 * 7.
+ *     Current choice is 3KB table.  We use three tables of 16 points.
+ *
+ *     Window size W = 4-bit, E = 21.
+ *                                                       <--21-bit-
+ *                                             <---42-bit----------
+ *     [        ][########][////////][        ][########][////////]
+ *                                   <-------63-bit----------------
+ *                         <-----------84-bit----------------------
+ *               <--------------105-bit----------------------------
+ *
+ *     [        ][########][////////][        ][########][////////]
+ *                                                                 <-126-bit-
+ *                                                       <-147-bit-
+ *                                             <----168-bit--------
+ *
+ *                                   <-------189-bit---------------
+ *                         <----------210-bit----------------------
+ *               <-------------231-bit-----------------------------
  */
 
 /*
@@ -95,7 +114,7 @@ typedef struct
 #include "affine.h"
 
 
-int
+static int
 mod25519_is_neg (const bn256 *a)
 {
   return (a->word[0] & 1);
@@ -231,7 +250,7 @@ static void
 ptc_to_ac_25519 (ac *X, const ptc *A)
 {
   uint32_t borrow;
-  bn256 z[1], z_inv[1];
+  bn256 z_inv[1], tmp[1];
 
   /*
    * A->z may be bigger than p25519, or two times bigger than p25519.
@@ -240,18 +259,28 @@ ptc_to_ac_25519 (ac *X, const ptc *A)
   mod_inv (z_inv, A->z, p25519);
 
   mod25638_mul (X->x, A->x, z_inv);
-  borrow = bn256_sub (z, X->x, p25519);
+  borrow = bn256_sub (tmp, X->x, p25519);
   if (borrow)
-    memcpy (z, X->x, sizeof (bn256)); /* dumy copy */
+    memcpy (tmp, X->x, sizeof (bn256)); /* dumy copy */
   else
-    memcpy (X->x, z, sizeof (bn256));
+    memcpy (X->x, tmp, sizeof (bn256));
+  borrow = bn256_sub (tmp, X->x, p25519);
+  if (borrow)
+    memcpy (tmp, X->x, sizeof (bn256)); /* dumy copy */
+  else
+    memcpy (X->x, tmp, sizeof (bn256));
 
   mod25638_mul (X->y, A->y, z_inv);
-  borrow = bn256_sub (z, X->y, p25519);
+  borrow = bn256_sub (tmp, X->y, p25519);
   if (borrow)
-    memcpy (z, X->y, sizeof (bn256)); /* dumy copy */
+    memcpy (tmp, X->y, sizeof (bn256)); /* dumy copy */
   else
-    memcpy (X->y, z, sizeof (bn256));
+    memcpy (X->y, tmp, sizeof (bn256));
+  borrow = bn256_sub (tmp, X->y, p25519);
+  if (borrow)
+    memcpy (tmp, X->y, sizeof (bn256)); /* dumy copy */
+  else
+    memcpy (X->y, tmp, sizeof (bn256));
 }
 
 
@@ -262,129 +291,193 @@ static const ac precomputed_KG[16] = {
         0xfdd6dc5c, 0xc0a4e231, 0xcd6e53fe, 0x216936d3 }}},
     {{{ 0x66666658, 0x66666666, 0x66666666, 0x66666666, 
         0x66666666, 0x66666666, 0x66666666, 0x66666666 }}} },
-  { {{{ 0xf4eda202, 0x3e0b6b8f, 0xd51a35eb, 0x0078db7e, 
-        0xb4a08a96, 0xd44b60cf, 0xbf2df9d5, 0x6222bd88 }}},
-    {{{ 0x82e45313, 0x8f1efa57, 0xba902b06, 0x5410b608, 
-        0x261b7c4f, 0xdd6bdaed, 0xea4ed025, 0x0325bb42 }}} },
-  { {{{ 0x61ccfba2, 0x1a700667, 0xff3a78c4, 0x2cdd6232, 
-        0x3b1950ab, 0xb87d9bf2, 0x9c294ffd, 0x0eba91a7 }}},
-    {{{ 0xfe515e46, 0xe5e5bf1d, 0x670d959b, 0x5ab5d1f8, 
-        0xc32c93a1, 0x85970ede, 0xabea7f2d, 0x1830473e }}} },
-  { {{{ 0x60b7e824, 0xfc8047ae, 0xc2e723e5, 0x98e685c9, 
-        0xe14e29a0, 0x952d3984, 0x3c45f32c, 0x4c27afff }}},
-    {{{ 0x4bf5a66b, 0x5bbabd11, 0x51a4c49e, 0x90d0be1e, 
-        0x26c29c3a, 0x95f11eb6, 0x526dc87d, 0x5f2c99e6 }}} },
-  { {{{ 0x680c969a, 0xfbe2fd29, 0x31ecbce6, 0xb0e6ec08, 
-        0x8cc36053, 0x8ab3c1be, 0x2b88e48f, 0x6e64e555 }}},
-    {{{ 0x7bafd09b, 0x25352a64, 0x9ec55210, 0x36391158, 
-        0x39b85145, 0x6a9dfc93, 0xa4cb58be, 0x383c510f }}} },
-  { {{{ 0x43abca05, 0x8bf30e63, 0x9bf8a641, 0x53807053, 
-        0xe38f5e86, 0xc8180dc3, 0xd81f344b, 0x6df2bc1d }}},
-    {{{ 0xdfbe3a34, 0x89f3f6d9, 0x9f94e1a1, 0xe95d4c5d, 
-        0xef9249a1, 0x8981530e, 0x37a68758, 0x6062ddf1 }}} },
-  { {{{ 0x1b9d5a63, 0x527dc68c, 0x6a0970ea, 0x73f332e1, 
-        0x7b071f21, 0xd8499b7c, 0x7225f3c0, 0x31ed9d6f }}},
-    {{{ 0x54363667, 0xe6719240, 0xad112811, 0x7b853293, 
-        0x493bb73e, 0xb0071c13, 0xfdaa932e, 0x3d4728fd }}} },
-  { {{{ 0xc7dad28d, 0xdb7ad644, 0xb81d7d26, 0x7a9ddee1, 
-        0x1c7e177d, 0x2d8d0437, 0x38185e7c, 0x1bc7af1e }}},
-    {{{ 0x00314833, 0xcaf2f659, 0x631b270f, 0x1d027e12, 
-        0x795dc049, 0x7a5eef87, 0x55661f2f, 0x61d909d8 }}} },
-  { {{{ 0x07b06838, 0x85ccfca3, 0x654c7f10, 0xfafab365, 
-        0xdb6f53a5, 0x46564c74, 0x7ad5e203, 0x02c61c29 }}},
-    {{{ 0x04f259bc, 0x84c06375, 0x671c602f, 0x8663fd76, 
-        0xdcbffaf3, 0x91902dd2, 0xe5a933bd, 0x42da0c66 }}} },
-  { {{{ 0x66f4ca27, 0x1492ecc2, 0xd0630657, 0xeb06154d, 
-        0x774f5869, 0xf0c78bc5, 0xa064ed8e, 0x71663cb3 }}},
-    {{{ 0x0ada2dc6, 0x2770fe0d, 0xfa27f864, 0xa5305ff6, 
-        0xf2da6c0d, 0x47785e62, 0x1c0066d3, 0x5d1f56fd }}} },
-  { {{{ 0x4cf46f3f, 0x270efdd8, 0xbc2b5cc9, 0x23e7a4c0, 
-        0x319f0229, 0x96d7e9d6, 0x0b5ee0f4, 0x3cee130e }}},
-    {{{ 0x3df2ed09, 0xa4c39176, 0x87d4ae97, 0x18f65dd0, 
-        0x671d1f47, 0xa063cff2, 0x93f82791, 0x3f237545 }}} },
-  { {{{ 0x23adf1d1, 0x969364dd, 0xf77f7041, 0xa289a9f5, 
-        0x1b8db034, 0x491519ae, 0x876d2358, 0x76814f15 }}},
-    {{{ 0xeab523fb, 0x8d54accf, 0xeb2f424e, 0x68db630f, 
-        0x8bcfa837, 0x6ea4f5ab, 0xd6b22a96, 0x0dbd9ebe }}} },
-  { {{{ 0xcfa942b4, 0x178a8301, 0xc6c47647, 0x0b950483, 
-        0x62c911fc, 0x84760cb8, 0xfa37b9d9, 0x6dc27cfc }}},
-    {{{ 0x04b33e58, 0x488f8cbb, 0xcc2791bc, 0x1922b7f9, 
-        0xb5092e83, 0x1c54d972, 0x0beaa14d, 0x7208c6f1 }}} },
-  { {{{ 0x6e7a8746, 0x8a0a5680, 0x6b11ddc0, 0xdf47ddd6, 
-        0xead8d910, 0x038fb07c, 0x8fc12e00, 0x30d3a844 }}},
-    {{{ 0xf9a28906, 0x03dcad34, 0xa751ed85, 0x5de79c82, 
-        0x320c9352, 0xaae15b9a, 0x6d02b8ca, 0x3ab1d43a }}} },
-  { {{{ 0xb5be5ff0, 0x386b100d, 0x8076ac32, 0x7194cabd, 
-        0x35c9f27a, 0x429fde2a, 0xab011849, 0x647cefbc }}},
-    {{{ 0x923d583f, 0xdb13db59, 0xe00a6e58, 0x084a91b7, 
-        0x3c2ed620, 0x178bc945, 0x90c7e779, 0x25183a99 }}} },
+  { {{{ 0x3713af22, 0xac7137bd, 0xac634604, 0x25ed77a4, 
+        0xa815e038, 0xce0d0064, 0xbca90151, 0x041c030f }}},
+    {{{ 0x0780f989, 0xe9b33fcf, 0x3d4445e7, 0xe4e97c2a, 
+        0x655e5c16, 0xc67dc71c, 0xee43fb7a, 0x72467625 }}} },
+  { {{{ 0x3ee99893, 0x76a19171, 0x7ba9b065, 0xe647edd9, 
+        0x6aeae260, 0x31f39299, 0x5f4a9bb2, 0x6d9e4545 }}},
+    {{{ 0x94cae280, 0xc41433da, 0x79061211, 0x8e842de8, 
+        0xa259dc8a, 0xaab95e0b, 0x99013cd0, 0x28bd5fc3 }}} },
+  { {{{ 0x7d23ea24, 0x59e22c56, 0x0460850e, 0x1e745a88, 
+        0xda13ef4b, 0x4583ff4c, 0x95083f85, 0x1f13202c }}},
+    {{{ 0x90275f48, 0xad42025c, 0xb55c4778, 0x0085087e, 
+        0xfdfd7ffa, 0xf21109e7, 0x6c381b7e, 0x66336d35 }}} },
+  { {{{ 0xd00851f2, 0xaa9476ab, 0x4a61600b, 0xe7838534, 
+        0x1a52df87, 0x0de65625, 0xbd675870, 0x5f0dd494 }}},
+    {{{ 0xe23493ba, 0xf20aec1b, 0x3414b0a8, 0x8f7f2741, 
+        0xa80e1eb6, 0x497e74bd, 0xe9365b15, 0x1648eaac }}} },
+  { {{{ 0x04ac2b69, 0x5b78dcec, 0x32001a73, 0xecdb66ce, 
+        0xb34cf697, 0xb75832f4, 0x3a2bce94, 0x7aaf57c5 }}},
+    {{{ 0x60fdfc6f, 0xb32ed2ce, 0x757924c6, 0x77bf20be, 
+        0x48742dd1, 0xaebd15dd, 0x55d38439, 0x6311bb16 }}} },
+  { {{{ 0x42ff5c97, 0x139cdd73, 0xdbd82964, 0xee4c359e, 
+        0x70611a3f, 0x91c1cd94, 0x8075dbcb, 0x1d0c34f6 }}},
+    {{{ 0x5f931219, 0x43eaa549, 0xa23d35a6, 0x3737aba7, 
+        0x46f167bb, 0x54b1992f, 0xb74a9944, 0x01a11f3c }}} },
+  { {{{ 0xba46b161, 0x67a5310e, 0xd9d67f6c, 0x790f8527, 
+        0x2f6cc814, 0x359c5b5f, 0x7786383d, 0x7b6a5565 }}},
+    {{{ 0x663ab0d3, 0xf1431b60, 0x09995826, 0x14a32d8f, 
+        0xeddb8571, 0x61d526f6, 0x0eac739a, 0x0cb7acea }}} },
+  { {{{ 0x4a2d009f, 0x5eb1a697, 0xd8df987a, 0xdacb43b4, 
+        0x8397f958, 0x4870f214, 0x8a175fbb, 0x5aa0c67c }}},
+    {{{ 0x78887db3, 0x27dbbd4c, 0x64e322ab, 0xe327b707, 
+        0x7cbe4e3b, 0x87e293fa, 0xbda72395, 0x17040799 }}} },
+  { {{{ 0x99d1e696, 0xc833a5a2, 0x2d9d5877, 0x969bff8e, 
+        0x2216fa67, 0x383a533a, 0x684d3925, 0x338bbe0a }}},
+    {{{ 0xd6cfb491, 0x35b5aae8, 0xaa12f3f8, 0x4a588279, 
+        0x2e30380e, 0xa7c2e708, 0x9e4b3d62, 0x69f13e09 }}} },
+  { {{{ 0x27f1cd56, 0xec0dc2ef, 0xdb11cc97, 0x1af11548, 
+        0x9ebc7613, 0xb642f86a, 0xcb77c3b9, 0x5ce45e73 }}},
+    {{{ 0x3eddd6de, 0x5d128786, 0x4859eab7, 0x16f9a6b4, 
+        0xd8782345, 0x55c53916, 0xdb7b202a, 0x6b1dfa87 }}} },
+  { {{{ 0x19e30528, 0x2461a8ed, 0x665cfb1c, 0xaf756bf9, 
+        0x3a6e8673, 0x0fcafd1d, 0x45d10f48, 0x0d264435 }}},
+    {{{ 0x5431db67, 0x543fd4c6, 0x60932432, 0xc153a5b3, 
+        0xd2119aa4, 0x41d5b8eb, 0x8b09b6a5, 0x36bd9ab4 }}} },
+  { {{{ 0x21e06738, 0x6d39f935, 0x3765dd86, 0x4e6a7c59, 
+        0xa4730880, 0xefc0dd80, 0x4079fe2f, 0x40617e56 }}},
+    {{{ 0x921439b9, 0xbc83cdff, 0x98833c09, 0xd5cccc06, 
+        0xda13cdcb, 0xe315c425, 0x67ff5370, 0x37bc6e84 }}} },
+  { {{{ 0xf643b5f5, 0x65e7f028, 0x0ffbf5a8, 0x5b0d4831, 
+        0xf4085f62, 0x0f540498, 0x0db7bd1b, 0x6f0bb035 }}},
+    {{{ 0x9733742c, 0x51f65571, 0xf513409f, 0x2fc047a0, 
+        0x355facf6, 0x07f45010, 0x3a989a9c, 0x5cd416a9 }}} },
+  { {{{ 0x748f2a67, 0x0bdd7208, 0x415b7f7f, 0x0cf0b80b, 
+        0x57aa0119, 0x44afdd5f, 0x430dc946, 0x05d68802 }}},
+    {{{ 0x1a60eeb2, 0x420c46e5, 0x665024f5, 0xc60a9b33, 
+        0x48c51347, 0x37520265, 0x00a21bfb, 0x6f4be0af }}} }
 };
 
 static const ac precomputed_2E_KG[16] = {
   { {{{ 0, 0, 0, 0, 0, 0, 0, 0 }}},
     {{{ 1, 0, 0, 0, 0, 0, 0, 0 }}}                         },
-  { {{{ 0x6abc0cbb, 0x931797a4, 0x72de6f2d, 0x2c081c10, 
-        0x6832800f, 0xddabd427, 0x136158c5, 0x4d1e116d }}},
-    {{{ 0x10c9b91a, 0xf44e1efb, 0x5e8a4b84, 0x43e84b7b, 
-        0xb5008f8c, 0x5cc51354, 0x9d4e35b6, 0x6d415be4 }}} },
-  { {{{ 0x3b5775d0, 0x56145ceb, 0xb84fc950, 0xf4a31eb8, 
-        0x20a9f5ab, 0xda829415, 0x599b1c96, 0x51f4ff8c }}},
-    {{{ 0xd7863ac1, 0x7f8406b0, 0x07d4bd1b, 0xb12e8078, 
-        0x3852eeb4, 0xf6f99aee, 0xd46e41f3, 0x35ac9588 }}} },
-  { {{{ 0xb1e3cbcb, 0x23246812, 0xb51b86b7, 0x4626ba92, 
-        0x7c5a82a9, 0xbad60319, 0xb0a4d421, 0x1a3d5fa5 }}},
-    {{{ 0xa7f87bc6, 0xd984822e, 0xd61f19a1, 0xc9878318, 
-        0xd28f1441, 0x033d3655, 0xa0ee984e, 0x1d5faa15 }}} },
-  { {{{ 0x52014031, 0x285b9456, 0xee52aa8a, 0x8d050ad8, 
-        0x2eaab5cd, 0x87b7aa38, 0x04fb2bf7, 0x543d84cb }}},
-    {{{ 0xde59ef20, 0x6e932ba4, 0x9a42ec2e, 0x46f42dd4, 
-        0x182b2758, 0x693d838f, 0xb63ed49e, 0x0358fdc5 }}} },
-  { {{{ 0xb32f56f0, 0x5682666f, 0x38fd4625, 0xe8be4ba2, 
-        0x649501d6, 0xf78cf0e0, 0xbcce6bab, 0x2567450f }}},
-    {{{ 0x538b58d7, 0x6581f96e, 0xc25cfdf1, 0x5eb54f3e, 
-        0xf899e2cf, 0x84f772f7, 0x4768df26, 0x7c9ca5b5 }}} },
-  { {{{ 0xa955bba4, 0x35d5face, 0xd1bf9787, 0x13e50d77, 
-        0xeff0ee33, 0xc9b67e36, 0x40ef61cd, 0x32e253be }}},
-    {{{ 0xcc8e3fd4, 0x03fa09fa, 0x57f17d59, 0x04d1daed, 
-        0xe17b4361, 0x6f356428, 0x5d8a9401, 0x2d9acf86 }}} },
-  { {{{ 0xe9edd690, 0x06ea63bb, 0xb2d7d5f4, 0x1532536e, 
-        0x8e9f5c47, 0xd55c86c3, 0x0077fe28, 0x35e81b03 }}},
-    {{{ 0xdeb7e5f8, 0xf8f5f35a, 0x9386c94f, 0xf1384675, 
-        0xbbf27ae1, 0x89c2f5c7, 0x1bcb5d12, 0x6e2810d6 }}} },
-  { {{{ 0xcb05dc3f, 0x23c83c41, 0x99382c04, 0xf95568e3, 
-        0xbfc732d3, 0x5d1bd4fa, 0x4210dcde, 0x75d942c0 }}},
-    {{{ 0x4e35ab2d, 0x9765c487, 0x47a42467, 0xf38e3fad, 
-        0x771731cb, 0x8fd7e2c5, 0x56cdc13c, 0x696cc148 }}} },
-  { {{{ 0x1c3eae7b, 0x3fde9e2a, 0x54665d04, 0xf3bea8c8, 
-        0x0d7e1fdf, 0x11c026d7, 0xe0744e05, 0x7d17c4ff }}},
-    {{{ 0x2479704e, 0x71530a4d, 0x70a41133, 0x316b2419, 
-        0x3008bf60, 0xe6b151ed, 0x91f4ba0f, 0x3d8acfb9 }}} },
-  { {{{ 0xfba75a58, 0xb6859189, 0xefad9ec8, 0xb459a9b1, 
-        0x6c18aaad, 0x250970a4, 0x6c9ed604, 0x48540861 }}},
-    {{{ 0xdbe02f54, 0x51c52acc, 0x5c87096e, 0xa1ffff9e, 
-        0x5cca82cd, 0xd7b2b928, 0xa7047f4e, 0x00b7a530 }}} },
-  { {{{ 0xd7a206ad, 0x2fa8b877, 0xc26be66b, 0xeb0ec8e5, 
-        0x6c43abcf, 0x812d4d32, 0x21b49825, 0x15b95ece }}},
-    {{{ 0x6401bfc5, 0xc5c588ca, 0x26caa2eb, 0x6c2f708f, 
-        0x7b620be3, 0x5575925c, 0x285eb272, 0x1b8e9998 }}} },
-  { {{{ 0xc8c0b25a, 0x3c58fb25, 0xf61dd811, 0x45e69804, 
-        0x4f4f3099, 0xe0506d88, 0xf6cb4804, 0x46e5ad62 }}},
-    {{{ 0x2b3d2d89, 0x3ab72c24, 0x83a0d441, 0xc3547b12, 
-        0x6b6b242d, 0x4bc9ef39, 0x8c21d8f4, 0x35dd429a }}} },
-  { {{{ 0x40d5666c, 0xda6a76e6, 0x02bbbfdd, 0xfe5fb226, 
-        0xec0db634, 0x335c47d6, 0x27a83af1, 0x0b3a68e0 }}},
-    {{{ 0xeb1ed0fe, 0x958eda03, 0x58cb1b6c, 0x98ad7ed0, 
-        0xe6e0887c, 0xc9a8a932, 0x8d10575b, 0x182ae50d }}} },
-  { {{{ 0xc80926b5, 0xe85218d5, 0x663244da, 0x4e3ca84c, 
-        0x8c93a82e, 0xd8dd2b95, 0x694d17e6, 0x3be6208c }}},
-    {{{ 0xa3cd685d, 0xbb2f7abd, 0x9636e5cc, 0x43ddbc27, 
-        0x8398acfd, 0x22cd89da, 0xa454d187, 0x663fede3 }}} },
-  { {{{ 0xdd12463a, 0x77e83188, 0x10321a86, 0xc29101f7, 
-        0x80c4fcac, 0x739f0dfb, 0x3c0a1c4e, 0x6bb76555 }}},
-    {{{ 0x4f7a95fd, 0xb6b30c93, 0x28f71108, 0x3070bbe4, 
-        0xee80b79c, 0x1ce155df, 0xe9bdf1b1, 0x181b445b }}} },
+  { {{{ 0x199c4f7d, 0xec314ac0, 0xb2ebaaf9, 0x66a39c16, 
+        0xedd4d15f, 0xab1c92b8, 0x57d9eada, 0x482a4cdf }}},
+    {{{ 0x6e4eb04b, 0xbd513b11, 0x25e4fd6a, 0x3f115fa5, 
+        0x14519298, 0x0b3c5fc6, 0x81c2f7a8, 0x7391de43 }}} },
+  { {{{ 0x1254fe02, 0xa57dca18, 0x6da34368, 0xa56a2a14, 
+        0x63e7328e, 0x44c6e34f, 0xca63ab3e, 0x3f748617 }}},
+    {{{ 0x7dc1641e, 0x5a13dc52, 0xee4e9ca1, 0x4cbb2899, 
+        0x1ba9acee, 0x3938a289, 0x420fc47b, 0x0fed89e6 }}} },
+  { {{{ 0x49cbad08, 0x3c193f32, 0x15e80ef5, 0xdda71ef1, 
+        0x9d128c33, 0xda44186c, 0xbf98c24f, 0x54183ede }}},
+    {{{ 0x93d165c1, 0x2cb483f7, 0x177f44aa, 0x51762ace, 
+        0xb4ab035d, 0xb3fe651b, 0xa0b0d4e5, 0x426c99c3 }}} },
+  { {{{ 0xef3f3fb1, 0xb3fcf4d8, 0x065060a0, 0x7052292b, 
+        0x24240b15, 0x18795ff8, 0x9989ffcc, 0x13aea184 }}},
+    {{{ 0xc2b81f44, 0x1930c101, 0x10600555, 0x672d6ca4, 
+        0x1b25e570, 0xfbddbff2, 0x8ca12b70, 0x0884949c }}} },
+  { {{{ 0x00564bbf, 0x9983a033, 0xde61b72d, 0x95587d25, 
+        0xeb17ad71, 0xb6719dfb, 0xc0bc3517, 0x46871ad0 }}},
+    {{{ 0xe95a6693, 0xb034fb61, 0x76eabad9, 0x5b0d8d18, 
+        0x884785dc, 0xad295dd0, 0x74a1276a, 0x359debad }}} },
+  { {{{ 0xe89fb5ca, 0x2e5a2686, 0x5656c6c5, 0xd3d200ba, 
+        0x9c969001, 0xef4c051e, 0x02cb45f4, 0x0d4ea946 }}},
+    {{{ 0x76d6e506, 0xa6f8a422, 0x63209e23, 0x454c768f, 
+        0x2b372386, 0x5c12fd04, 0xdbfee11f, 0x1aedbd3e }}} },
+  { {{{ 0x00dbf569, 0x700ab50f, 0xd335b313, 0x9553643c, 
+        0xa17dc97e, 0xeea9bddf, 0x3350a2bd, 0x0d12fe3d }}},
+    {{{ 0xa16a3dee, 0xe5ac35fe, 0xf81950c3, 0x4ae4664a, 
+        0x3dbbf921, 0x75c63df4, 0x2958a5a6, 0x545b109c }}} },
+  { {{{ 0x0a61b29c, 0xd7a52a98, 0x65aca9ee, 0xe21e0acb, 
+        0x5985dcbe, 0x57a69c0f, 0xeb87a534, 0x3c0c1e7b }}},
+    {{{ 0x6384bd2f, 0xf0a0b50d, 0xc6939e4b, 0xff349a34, 
+        0x6e2f1973, 0x922c4554, 0xf1347631, 0x74e826b2 }}} },
+  { {{{ 0xa655803c, 0xd7eaa066, 0x38292c5c, 0x09504e76, 
+        0x2c874953, 0xe298a02e, 0x8932b73f, 0x225093ed }}},
+    {{{ 0xe69c3efd, 0xf93e2b4d, 0x8a87c799, 0xa2cbd5fc, 
+        0x85dba986, 0xdf41da94, 0xccee8edc, 0x36fe85e7 }}} },
+  { {{{ 0x7d742813, 0x78df7dc5, 0x4a193e64, 0x333bcc6d, 
+        0x6a966d2d, 0x8242aa25, 0x4cd36d32, 0x03500a94 }}},
+    {{{ 0x580505d7, 0xd5d110fc, 0xfa11e1e9, 0xb2f47e16, 
+        0x06eab6b4, 0xd0030f92, 0x62c91d46, 0x2dc80d5f }}} },
+  { {{{ 0x2a75e492, 0x5788b01a, 0xbae31352, 0x992acf54, 
+        0x8159db27, 0x4591b980, 0xd3d84740, 0x36c6533c }}},
+    {{{ 0x103883b5, 0xc44c7c00, 0x515d0820, 0x10329423, 
+        0x71b9dc16, 0xbd306903, 0xf88f8d32, 0x7edd5a95 }}} },
+  { {{{ 0x005523d7, 0xfd63b1ac, 0xad70dd21, 0x74482e0d, 
+        0x02b56105, 0x67c9d9d0, 0x5971b456, 0x4d318012 }}},
+    {{{ 0x841106df, 0xdc9a6f6d, 0xa326987f, 0x7c52ed9d, 
+        0x00607ea0, 0x4dbeaa6f, 0x6959e688, 0x115c221d }}} },
+  { {{{ 0xc80f7c16, 0xf8718464, 0xe9930634, 0x05dc8f40, 
+        0xc2e9d5f4, 0xefa699bb, 0x021da209, 0x2469e813 }}},
+    {{{ 0xc602a3c4, 0x75c02845, 0x0a200f9d, 0x49d1b2ce, 
+        0x2fb3ec8f, 0xd21b75e4, 0xd72a7545, 0x10dd726a }}} },
+  { {{{ 0x63ef1a6c, 0xeda58527, 0x051705e0, 0xb3fc0e72, 
+        0x44f1161f, 0xbda6f3ee, 0xf339efe5, 0x7680aebf }}},
+    {{{ 0xb1b070a7, 0xe8d3fd01, 0xdbfbaaa0, 0xc3ff7dbf, 
+        0xa320c916, 0xd81ef6f2, 0x62a3b54d, 0x3e22a1fb }}} },
+  { {{{ 0xb1fa18c8, 0xcdbb9187, 0xcb483a17, 0x8ddb5f6b, 
+        0xea49af98, 0xc0a880b9, 0xf2dfddd0, 0x53bf600b }}},
+    {{{ 0x9e25b164, 0x4217404c, 0xafb74aa7, 0xfabf06ee, 
+        0x2b9f233c, 0xb17712ae, 0xd0eb909e, 0x71f0b344 }}} }
 };
 
+static const ac precomputed_4E_KG[16] = {
+  { {{{ 0, 0, 0, 0, 0, 0, 0, 0 }}},
+    {{{ 1, 0, 0, 0, 0, 0, 0, 0 }}}                         },
+  { {{{ 0xe388a820, 0xbb6ec091, 0x5182278a, 0xa928b283, 
+        0xa9a6eb83, 0x2259174d, 0x45500054, 0x184b48cb }}},
+    {{{ 0x26e77c33, 0xfe324dba, 0x83faf453, 0x6679a5e3, 
+        0x2380ef73, 0xdd60c268, 0x03dc33a9, 0x3ee0e07a }}} },
+  { {{{ 0xce974493, 0x403aff28, 0x9bf6f5c4, 0x84076bf4, 
+        0xecd898fb, 0xec57038c, 0xb663ed49, 0x2898ffaa }}},
+    {{{ 0xf335163d, 0xf4b3bc46, 0xfa4fb6c6, 0xe613a0f4, 
+        0xb9934557, 0xe759d6bc, 0xab6c9477, 0x094f3b96 }}} },
+  { {{{ 0x6afffe9e, 0x168bb5a0, 0xee748c29, 0x950f7ad7, 
+        0xda17203d, 0xa4850a2b, 0x77289e0f, 0x0062f7a7 }}},
+    {{{ 0x4b3829fa, 0x6265d4e9, 0xbdfcd386, 0x4f155ada, 
+        0x475795f6, 0x9f38bda4, 0xdece4a4c, 0x560ed4b3 }}} },
+  { {{{ 0x141e648a, 0xdad4570a, 0x019b965c, 0x8bbf674c, 
+        0xdb08fe30, 0xd7a8d50d, 0xa2851109, 0x7efb45d3 }}},
+    {{{ 0xd0c28cda, 0x52e818ac, 0xa321d436, 0x792257dd, 
+        0x9d71f8b7, 0x867091c6, 0x11a1bf56, 0x0fe1198b }}} },
+  { {{{ 0x06137ab1, 0x4e848339, 0x3e6674cc, 0x5673e864, 
+        0x0140502b, 0xad882043, 0x6ea1e46a, 0x34b5c0cb }}},
+    {{{ 0x1d70aa7c, 0x29786814, 0x8cdbb8aa, 0x840ae3f9, 
+        0xbd4801fb, 0x78b4d622, 0xcf18ae9a, 0x6cf4e146 }}} },
+  { {{{ 0x36297168, 0x95c270ad, 0x942e7812, 0x2303ce80, 
+        0x0205cf0e, 0x71908cc2, 0x32bcd754, 0x0cc15edd }}},
+    {{{ 0x2c7ded86, 0x1db94364, 0xf141b22c, 0xc694e39b, 
+        0x5e5a9312, 0xf22f64ef, 0x3c5e6155, 0x649b8859 }}} },
+  { {{{ 0xb6417945, 0x0d5611c6, 0xac306c97, 0x9643fdbf, 
+        0x0df500ff, 0xe81faaa4, 0x6f50e615, 0x0792c79b }}},
+    {{{ 0xd2af8c8d, 0xb45bbc49, 0x84f51bfe, 0x16c615ab, 
+        0xc1d02d32, 0xdc57c526, 0x3c8aaa55, 0x5fb9a9a6 }}} },
+  { {{{ 0xdee40b98, 0x82faa8db, 0x6d520674, 0xff8a5208, 
+        0x446ac562, 0x1f8c510f, 0x2cc6b66e, 0x4676d381 }}},
+    {{{ 0x2e7429f4, 0x8f1aa780, 0x8ed6bdf6, 0x2a95c1bf, 
+        0x457fa0eb, 0x051450a0, 0x744c57b1, 0x7d89e2b7 }}} },
+  { {{{ 0x3f95ea15, 0xb6bdacd2, 0x2f1a5d69, 0xc9a9d1b1, 
+        0xf4d22d72, 0xd4c2f1a9, 0x4dc516b5, 0x73ecfdf1 }}},
+    {{{ 0x05391e08, 0xa1ce93cd, 0x7b8aac17, 0x98f1e99e, 
+        0xa098cbb3, 0x9ba84f2e, 0xf9bdd37a, 0x1425aa8b }}} },
+  { {{{ 0x966abfc0, 0x8a385bf4, 0xf081a640, 0x55e5e8bc, 
+        0xee26f5ff, 0x835dff85, 0xe509e1ea, 0x4927e622 }}},
+    {{{ 0x352334b0, 0x164c8dbc, 0xa3fea31f, 0xcac1ad63, 
+        0x682fd457, 0x9b87a676, 0x1a53145f, 0x75f382ff }}} },
+  { {{{ 0xc3efcb46, 0x16b944f5, 0x68cb184c, 0x1fb55714, 
+        0x9ccf2dc8, 0xf1c2b116, 0x808283d8, 0x7417e00f }}},
+    {{{ 0x930199ba, 0x1ea67a22, 0x718990d8, 0x9fbaf765, 
+        0x8f3d5d57, 0x231fc664, 0xe5853194, 0x38141a19 }}} },
+  { {{{ 0x2f81290d, 0xb9f00390, 0x04a9ca6c, 0x44877827, 
+        0xe1dbdd65, 0x65d7f9b9, 0xf7c6698a, 0x7133424c }}},
+    {{{ 0xa7cd250f, 0x604cfb3c, 0x5acc18f3, 0x460c3c4b, 
+        0xb518e3eb, 0xa53e50e0, 0x98a40196, 0x2b4b9267 }}} },
+  { {{{ 0xc5dbd06c, 0x591b0672, 0xaa1eeb65, 0x10d43dca, 
+        0xcd2517af, 0x420cdef8, 0x0b695a8a, 0x513a307e }}},
+    {{{ 0x66503215, 0xee9d6a7b, 0x088fd9a4, 0xdea58720, 
+        0x973afe12, 0x8f3cbbea, 0x872f2538, 0x005c2350 }}} },
+  { {{{ 0x35af3291, 0xe5024b70, 0x4f5e669a, 0x1d3eec2d, 
+        0x6e79d539, 0xc1f6d766, 0x795b5248, 0x34ec043f }}},
+    {{{ 0x400960b6, 0xb2763511, 0x29e57df0, 0xff7a3d84, 
+        0x1666c1f1, 0xaeac7792, 0x66084bc0, 0x72426e97 }}} },
+  { {{{ 0x44f826ca, 0x5b1c3199, 0x790aa408, 0x68b00b73, 
+        0x69e9b92b, 0xaf0984b4, 0x3ffe9093, 0x5fe6736f }}},
+    {{{ 0xffd49312, 0xd67f2889, 0x5cb9ed21, 0x3520d747, 
+        0x3c65a606, 0x94f893b1, 0x2d65496f, 0x2fee5e8c }}} }
+};
 
 /**
  * @brief	X  = k * G
@@ -394,7 +487,7 @@ static const ac precomputed_2E_KG[16] = {
  * Return -1 on error.
  * Return 0 on success.
  */
-int
+static void
 compute_kG_25519 (ac *X, const bn256 *K)
 {
   ptc Q[1];
@@ -405,23 +498,39 @@ compute_kG_25519 (ac *X, const bn256 *K)
   Q->y->word[0] = 1;
   Q->z->word[0] = 1;
 
-  for (i = 31; i >= 0; i--)
+  for (i = 20; i >= 0; i--)
     {
-      int k_i, k_i_e;
+      int k0, k1, k2;
 
-      k_i = (((K->word[6] >> i) & 1) << 3) | (((K->word[4] >> i) & 1) << 2)
-	| (((K->word[2] >> i) & 1) << 1) | ((K->word[0] >> i) & 1);
+      k0 = ((K->word[0] >> i) & 1)
+	| (i < 1 ? ((K->word[1] >> 30) & 2)
+	   : (((K->word[2] >> (i-1)) & 1) << 1))
+	| (i < 2 ? ((K->word[3] >> (i+28)) & 4)
+	   : (((K->word[4] >> (i-2)) & 1) << 2))
+	| (i < 3 ? ((K->word[5] >> (i+26)) & 8)
+	   : (((K->word[6] >> (i-3)) & 1) << 3));
 
-      k_i_e = (((K->word[7] >> i) & 1) << 3) | (((K->word[5] >> i) & 1) << 2)
-	| (((K->word[3] >> i) & 1) << 1) | ((K->word[1] >> i) & 1);
- 
+      k1 = (i < 11 ? ((K->word[0] >> (i+21)) & 1)
+	    : ((K->word[1] >> (i-11)) & 1))
+	| (i < 12 ? ((K->word[2] >> (i+19)) & 2)
+	   : (((K->word[3] >> (i-12)) & 1) << 1))
+	| (i < 13 ? ((K->word[4] >> (i+17)) & 4)
+	   : (((K->word[5] >> (i-13)) & 1) << 2))
+	| (i < 14 ? ((K->word[6] >> (i+15)) & 8)
+	   : (((K->word[7] >> (i-14)) & 1) << 3));
+
+      k2 = ((K->word[1] >> (i+10)) & 1)
+	| ((K->word[3] >> (i+8)) & 2)
+	| ((K->word[5] >> (i+6)) & 4)
+	| ((K->word[7] >> (i+4)) & 8);
+
       ed_double_25638 (Q, Q);
-      ed_add_25638 (Q, Q, &precomputed_2E_KG[k_i_e]);
-      ed_add_25638 (Q, Q, &precomputed_KG[k_i]);
+      ed_add_25638 (Q, Q, &precomputed_KG[k0]);
+      ed_add_25638 (Q, Q, &precomputed_2E_KG[k1]);
+      ed_add_25638 (Q, Q, &precomputed_4E_KG[k2]);
     }
 
   ptc_to_ac_25519 (X, Q);
-  return 0;
 }
 
 
@@ -582,18 +691,13 @@ mod_reduce_M (bn256 *R, const bn512 *A)
 
 void
 eddsa_25519 (bn256 *r, bn256 *s, const uint8_t *input, size_t ilen,
-	     const bn256 *a, const uint8_t *seed)
+	     const bn256 *a, const uint8_t *seed, const bn256 *pk)
 {
   sha512_context ctx;
   uint8_t hash[64];
-  bn256 pk[1], tmp[1];
+  bn256 tmp[1];
   ac R[1];
   uint32_t carry, borrow;
-
-  compute_kG_25519 (R, a);
-  /* EdDSA encoding.  */
-  memcpy (pk, R->y, sizeof (bn256));
-  pk->word[7] ^= mod25519_is_neg (R->x) * 0x80000000;
 
   sha512_start (&ctx);
   sha512_update (&ctx, seed, sizeof (bn256)); /* It's upper half of the hash */
@@ -601,7 +705,6 @@ eddsa_25519 (bn256 *r, bn256 *s, const uint8_t *input, size_t ilen,
   sha512_finish (&ctx, hash);
 
   mod_reduce_M (r, (bn512 *)hash);
-
   compute_kG_25519 (R, r);
 
   /* EdDSA encoding.  */
@@ -628,6 +731,26 @@ eddsa_25519 (bn256 *r, bn256 *s, const uint8_t *input, size_t ilen,
     bn256_add (tmp, s, M);
 }
 
+void
+eddsa_public_key_25519 (bn256 *pk, const bn256 *a)
+{
+  ac R[1];
+  ptc X[1];
+  bn256 a0[1];
+
+  bn256_shift (a0, a, -3);
+  compute_kG_25519 (R, a0);
+  memcpy (X, R, sizeof (ac));
+  memset (X->z, 0, sizeof (bn256));
+  X->z->word[0] = 1;
+  ed_double_25638 (X, X);
+  ed_double_25638 (X, X);
+  ed_double_25638 (X, X);
+  ptc_to_ac_25519 (R, X);
+  /* EdDSA encoding.  */
+  memcpy (pk, R->y, sizeof (bn256));
+  pk->word[7] ^= mod25519_is_neg (R->x) * 0x80000000;
+}
 
 #if 0
 /**
@@ -659,6 +782,7 @@ static const ptc G[1] = {{
 
 #include <stdio.h>
 
+#ifdef TESTING_EDDSA
 static void
 print_bn256 (const bn256 *X)
 {
@@ -668,7 +792,9 @@ print_bn256 (const bn256 *X)
     printf ("%08x", X->word[i]);
   puts ("");
 }
+#endif
 
+#if 0
 static void
 print_point (const ac *X)
 {
@@ -701,7 +827,6 @@ print_point (const ac *X)
 #endif
 }
 
-#if 0
 static void
 print_point_ptc (const ptc *X)
 {
@@ -722,40 +847,21 @@ print_point_ptc (const ptc *X)
 #endif
 
 
-int
-main (int argc, char *argv[])
+#ifndef TESTING_EDDSA
+static void power_2 (ac *A, ptc *a, int N)
 {
-#ifdef TESTING_EDDSA
-  bn256 r[1], s[1];
-
-  const bn256 sk[1] = {
-    {{ 0x9db1619d, 0x605afdef, 0xf44a84ba, 0xc42cec92,
-       0x69c54944, 0x1969327b, 0x03ac3b70, 0x607fae1c }} };
-
-  eddsa_25519 (r, s, (const uint8_t *)"", 0, sk);
-
-  print_bn256 (r);
-  print_bn256 (s);
-#else
-  ac a0001[1], a0010[1], a0100[1], a1000[1];
-  ac x[1];
-  ptc a[1];
   int i;
 
-  memcpy (a, G, sizeof (ptc));
-  ptc_to_ac_25519 (a0001, a);
-
-  for (i = 0; i < 64; i++)
+  for (i = 0; i < N; i++)
     ed_double_25638 (a, a);
-  ptc_to_ac_25519 (a0010, a);
+  ptc_to_ac_25519 (A, a);
+}
 
-  for (i = 0; i < 64; i++)
-    ed_double_25638 (a, a);
-  ptc_to_ac_25519 (a0100, a);
-
-  for (i = 0; i < 64; i++)
-    ed_double_25638 (a, a);
-  ptc_to_ac_25519 (a1000, a);
+static void print_table (ac *a0001, ac *a0010, ac *a0100, ac *a1000)
+{
+  int i;
+  ptc a[1];
+  ac x[1];
 
   for (i = 1; i < 16; i++)
     {
@@ -765,67 +871,91 @@ main (int argc, char *argv[])
       a->z->word[0] = 1;
 
       if ((i & 1))
-	ed_add_25638 (a, a, a0001, 0);
+	ed_add_25638 (a, a, a0001);
       if ((i & 2))
-	ed_add_25638 (a, a, a0010, 0);
+	ed_add_25638 (a, a, a0010);
       if ((i & 4))
-	ed_add_25638 (a, a, a0100, 0);
+	ed_add_25638 (a, a, a0100);
       if ((i & 8))
-	ed_add_25638 (a, a, a1000, 0);
+	ed_add_25638 (a, a, a1000);
 
       ptc_to_ac_25519 (x, a);
       print_point (x);
     }
 
   fputs ("\n", stdout);
+}
+
+static void compute_and_print_table (ac *a0001, ac *a0010, ac *a0100, ac *a1000)
+{
+  ptc a[1];
 
   memcpy (a, a0001, sizeof (ac));
   memset (a->z, 0, sizeof (bn256));
   a->z->word[0] = 1;
-  for (i = 0; i < 32; i++)
-    ed_double_25638 (a, a);
-  ptc_to_ac_25519 (a0001, a);
+  power_2 (a0010, a, 63);
+  power_2 (a0100, a, 63);
+  power_2 (a1000, a, 63);
+  print_table (a0001, a0010, a0100, a1000);
+}
+#endif
 
-  memcpy (a, a0010, sizeof (ac));
-  memset (a->z, 0, sizeof (bn256));
-  a->z->word[0] = 1;
-  for (i = 0; i < 32; i++)
-    ed_double_25638 (a, a);
-  ptc_to_ac_25519 (a0010, a);
+int
+main (int argc, char *argv[])
+{
+#ifdef TESTING_EDDSA
+  uint8_t hash[64];
+  bn256 a[1];
+  bn256 r[1], s[1];
+  bn256 pk[1];
 
-  memcpy (a, a0100, sizeof (ac));
-  memset (a->z, 0, sizeof (bn256));
-  a->z->word[0] = 1;
-  for (i = 0; i < 32; i++)
-    ed_double_25638 (a, a);
-  ptc_to_ac_25519 (a0100, a);
+  const bn256 sk[1] = {
+    {{ 0x9db1619d, 0x605afdef, 0xf44a84ba, 0xc42cec92,
+       0x69c54944, 0x1969327b, 0x03ac3b70, 0x607fae1c }} };
 
-  memcpy (a, a1000, sizeof (ac));
-  memset (a->z, 0, sizeof (bn256));
-  a->z->word[0] = 1;
-  for (i = 0; i < 32; i++)
-    ed_double_25638 (a, a);
-  ptc_to_ac_25519 (a1000, a);
+  const bn256 r_expected[1] = {
+    {{ 0x004356e5, 0x72ac60c3, 0xcce28690, 0x8a826e80,
+       0x1e7f8784, 0x74d9e5b8, 0x65e073d8, 0x55014922 }} };
 
-  for (i = 1; i < 16; i++)
+  const bn256 s_expected[1] = {
+    {{ 0x1582b85f, 0xac3ba390, 0x70391ec6, 0x6bb4f91c,
+       0xf0f55bd2, 0x24be5b59, 0x43415165, 0x0b107a8e }} };
+
+  sha512 ((uint8_t *)sk, sizeof (bn256), hash);
+  hash[0] &= 248;
+  hash[31] &= 127;
+  hash[31] |= 64;
+  memcpy (a, hash, sizeof (bn256));
+
+  eddsa_public_key_25519 (pk, a);
+  eddsa_25519 (r, s, (const uint8_t *)"", 0, a, hash+32, pk);
+
+  if (memcmp (r, r_expected, sizeof (bn256)) != 0
+      || memcmp (s, s_expected, sizeof (bn256)) != 0)
     {
-      /* A := Identity Element  */
-      memset (a, 0, sizeof (ptc));
-      a->y->word[0] = 1;
-      a->z->word[0] = 1;
-
-      if ((i & 1))
-	ed_add_25638 (a, a, a0001, 0);
-      if ((i & 2))
-	ed_add_25638 (a, a, a0010, 0);
-      if ((i & 4))
-	ed_add_25638 (a, a, a0100, 0);
-      if ((i & 8))
-	ed_add_25638 (a, a, a1000, 0);
-
-      ptc_to_ac_25519 (x, a);
-      print_point (x);
+      print_bn256 (r);
+      print_bn256 (s);
+      return 1;
     }
+#else
+  ac a0001[1], a0010[1], a0100[1], a1000[1];
+  ptc a[1];
+
+  memcpy (a, G, sizeof (ptc));
+  ptc_to_ac_25519 (a0001, a);
+  compute_and_print_table (a0001, a0010, a0100, a1000);
+
+  memcpy (a, a0001, sizeof (ac));
+  memset (a->z, 0, sizeof (bn256));
+  a->z->word[0] = 1;
+  power_2 (a0001, a, 21);
+  compute_and_print_table (a0001, a0010, a0100, a1000);
+
+  memcpy (a, a0001, sizeof (ac));
+  memset (a->z, 0, sizeof (bn256));
+  a->z->word[0] = 1;
+  power_2 (a0001, a, 21);
+  compute_and_print_table (a0001, a0010, a0100, a1000);
 #endif
 
   return 0;

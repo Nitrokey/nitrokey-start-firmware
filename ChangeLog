@@ -1,3 +1,11 @@
+2014-03-28  Niibe Yutaka  <gniibe@fsij.org>
+
+	* misc/t-eddsa.c (main): Update for new API of eddsa_25519.
+
+	* src/ecc-edwards.c (compute_kG_25519): Tune for 252-bit.
+	(eddsa_25519): Public key should be provided by caller.
+	(eddsa_public_key_25519): New.
+
 2014-03-27  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/ecc-edwards.c (ed_add_25638): Remove the third argument.
