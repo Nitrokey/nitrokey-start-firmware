@@ -843,7 +843,7 @@ cmd_pso (void)
       else
 	{
 	  DEBUG_SHORT (len);
-	  DEBUG_BINARY (&kd[GPG_KEY_FOR_SIGNING], KEY_CONTENT_LEN);
+	  DEBUG_BINARY (kd[GPG_KEY_FOR_SIGNING].data, KEY_CONTENT_LEN);
 
 	  r = rsa_sign (apdu.cmd_apdu_data, res_APDU, len,
 			&kd[GPG_KEY_FOR_SIGNING]);
@@ -884,7 +884,7 @@ cmd_pso (void)
   else if (P1 (apdu) == 0x80 && P2 (apdu) == 0x86)
     {
       DEBUG_SHORT (len);
-      DEBUG_BINARY (&kd[GPG_KEY_FOR_DECRYPTION], KEY_CONTENT_LEN);
+      DEBUG_BINARY (kd[GPG_KEY_FOR_DECRYPTION].data, KEY_CONTENT_LEN);
 
       if (!ac_check_status (AC_OTHER_AUTHORIZED))
 	{
@@ -918,7 +918,7 @@ cmd_pso (void)
 }
 
 
-#ifdef RSA_AUTH
+#if defined(RSA_AUTH)
 #define MAX_DIGEST_INFO_LEN 102 /* 40% */
 static void
 cmd_internal_authenticate (void)
@@ -962,7 +962,7 @@ cmd_internal_authenticate (void)
 
   DEBUG_INFO ("INTERNAL AUTHENTICATE done.\r\n");
 }
-#else
+#elif defined(ECDSA_AUTH)
 static void
 cmd_internal_authenticate (void)
 {
@@ -1006,6 +1006,52 @@ cmd_internal_authenticate (void)
 
   DEBUG_INFO ("INTERNAL AUTHENTICATE done.\r\n");
 }
+#elif defined(EDDSA_AUTH)
+static void
+cmd_internal_authenticate (void)
+{
+  int len = apdu.cmd_apdu_data_len;
+  int r;
+
+  DEBUG_INFO (" - INTERNAL AUTHENTICATE\r\n");
+
+  if (P1 (apdu) == 0x00 && P2 (apdu) == 0x00)
+    {
+      DEBUG_SHORT (len);
+
+      if (!ac_check_status (AC_OTHER_AUTHORIZED))
+	{
+	  DEBUG_INFO ("security error.");
+	  GPG_SECURITY_FAILURE ();
+	  return;
+	}
+
+      if (len > EDDSA_HASH_LEN_MAX)
+	{
+	  DEBUG_INFO ("wrong hash length.");
+	  GPG_CONDITION_NOT_SATISFIED ();
+	  return;
+	}
+
+      res_APDU_size = EDDSA_SIGNATURE_LENGTH;
+      r = eddsa_sign_25519 (apdu.cmd_apdu_data, res_APDU,
+			    &kd[GPG_KEY_FOR_AUTHENTICATION]);
+      if (r < 0)
+	GPG_ERROR ();
+    }
+  else
+    {
+      DEBUG_INFO (" - ??");
+      DEBUG_BYTE (P1 (apdu));
+      DEBUG_INFO (" - ??");
+      DEBUG_BYTE (P2 (apdu));
+      GPG_ERROR ();
+    }
+
+  DEBUG_INFO ("INTERNAL AUTHENTICATE done.\r\n");
+}
+#else
+#error "Authentication not defined."
 #endif
 
 #define MBD_OPRATION_WRITE  0

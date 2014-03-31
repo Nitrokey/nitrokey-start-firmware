@@ -63,7 +63,6 @@
 
 #define FLASH_DATA_POOL_HEADER_SIZE	2
 #define FLASH_DATA_POOL_SIZE		(FLASH_PAGE_SIZE*2)
-#define FLASH_KEYSTORE_SIZE		(FLASH_PAGE_SIZE*3)
 
 static const uint8_t *data_pool;
 extern uint8_t _keystore_pool;
@@ -78,12 +77,36 @@ const uint8_t const flash_data[4] __attribute__ ((section (".gnuk_data"))) = {
 /* Linker set this symbol */
 extern uint8_t _data_pool;
 
+static int key_available_at (uint8_t *k)
+{
+  int i;
+  uint8_t *p;
+
+  p = k;
+  for (i = 0; i < KEY_SIZE; i++)
+    if (*p)
+      break;
+  if (p == k + KEY_SIZE)	/* It's ZERO.  Released key.  */
+    return 0;
+
+  p = k;
+  for (i = 0; i < KEY_SIZE; i++)
+    if (*p != 0xff)
+      break;
+  if (p == k + KEY_SIZE)	/* It's FULL.  Unused key.  */
+    return 0;
+
+  return 1;
+}
+
 const uint8_t *
 flash_init (void)
 {
   uint16_t gen0, gen1;
   uint16_t *gen0_p = (uint16_t *)&_data_pool;
   uint16_t *gen1_p = (uint16_t *)(&_data_pool + FLASH_PAGE_SIZE);
+  uint8_t *p;
+  int i; 
 
   /* Check data pool generation and choose the page */
   gen0 = *gen0_p;
@@ -96,6 +119,23 @@ flash_init (void)
     data_pool = &_data_pool + FLASH_PAGE_SIZE;
   else
     data_pool = &_data_pool;
+
+  /* For each key, find its address.  */
+  p = &_keystore_pool;
+  for (i = 0; i < 3; i++)
+    {
+      uint8_t *k;
+
+      kd[i].key_addr = NULL;
+      for (k = p; k < k + FLASH_PAGE_SIZE; k += KEY_SIZE)
+	if (key_available_at (k))
+	  {
+	    kd[i].key_addr = k;
+	    break;
+	  }
+
+      p += FLASH_PAGE_SIZE;
+    }
 
   return data_pool + FLASH_DATA_POOL_HEADER_SIZE;
 }
@@ -270,14 +310,16 @@ flash_do_release (const uint8_t *do_data)
 
 
 uint8_t *
-flash_key_alloc (void)
+flash_key_alloc (enum kind_of_key kk)
 {
-  uint8_t *k;
+  uint8_t *k0, *k;
   int i; 
 
-  /* Seek empty keystore.  */
-  k = &_keystore_pool;
-  while (k < &_keystore_pool + FLASH_KEYSTORE_SIZE)
+  /* There is a page for each KK.  */
+  k0 = &_keystore_pool + (FLASH_PAGE_SIZE * kk);
+
+  /* Seek free space in the page.  */
+  for (k = k0; k < k0 + FLASH_PAGE_SIZE; k += KEY_SIZE)
     {
       const uint32_t *p = (const uint32_t *)k;
 
@@ -287,11 +329,10 @@ flash_key_alloc (void)
 
       if (i == KEY_SIZE/4)	/* Yes, it's empty.  */
 	return k;
-
-      k += KEY_SIZE;
     }
 
-  /* Should not happen as we have enough space, but just in case.  */
+  /* Should not happen as we have enough free space all time, but just
+     in case.  */
   return NULL;
 }
 

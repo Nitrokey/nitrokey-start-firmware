@@ -1,3 +1,20 @@
+2014-03-31  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/openpgp-do.c (gpg_do_load_prvkey, gpg_do_delete_prvkey)
+	(gpg_do_write_prvkey, gpg_do_public_key, gpg_do_keygen): Follow
+	the change of PRVKEY_DATA and KEY_DATA.
+
+	* src/flash.c (key_available_at): New.
+	(flash_init): Initilize KD.
+
+	* src/gnuk.h (struct prvkey_data): Remove member KEY_ADDR.
+	(struct key_data): Addd member KEY_ADDR.
+
+	* src/openpgp-do.c (gpg_do_keygen): Bug fix.  Reset the signature
+	counter when new key is generated.
+
+	* src/flash.c (flash_key_alloc): Change API, supply KK.
+
 2014-03-29  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/ecc-edwards.c (point_double, point_add): Rename.

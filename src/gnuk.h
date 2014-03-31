@@ -120,7 +120,7 @@ enum kind_of_key {
 extern const uint8_t *flash_init (void);
 extern void flash_do_release (const uint8_t *);
 extern const uint8_t *flash_do_write (uint8_t nr, const uint8_t *data, int len);
-extern uint8_t *flash_key_alloc (void);
+extern uint8_t *flash_key_alloc (enum kind_of_key);
 extern void flash_key_release (uint8_t *);
 extern int flash_key_write (uint8_t *key_addr, const uint8_t *key_data,
 			    const uint8_t *pubkey, int pubkey_len);
@@ -148,9 +148,9 @@ extern uint8_t random_bits_start;
 #define INITIAL_VECTOR_SIZE 16
 #define DATA_ENCRYPTION_KEY_SIZE 16
 
-/* encrypted data content */
 struct key_data {
-  uint8_t data[KEY_CONTENT_LEN]; /* p and q */
+  uint8_t *key_addr;		 /* Pointer to encrypted data, and public */
+  uint8_t data[KEY_CONTENT_LEN]; /* decrypted data content */
 };
 
 struct key_data_internal {
@@ -159,7 +159,6 @@ struct key_data_internal {
 };
 
 struct prvkey_data {
-  const uint8_t *key_addr;
   /*
    * IV: Initial Vector
    */

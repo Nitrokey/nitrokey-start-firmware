@@ -35,15 +35,6 @@
 #include "polarssl/config.h"
 #include "polarssl/aes.h"
 
-/* Handles possible unaligned access.  */
-static uint32_t
-fetch_four_bytes (const void *addr)
-{
-  const uint8_t *p = (const uint8_t *)addr;
-
-  return p[0] | (p[1] << 8) | (p[2] << 16) | (p[3] << 24);
-}
-
 
 #define PASSWORD_ERRORS_MAX 3	/* >= errors, it will be locked */
 static const uint8_t *pw_err_counter_p[3];
@@ -624,7 +615,7 @@ encrypt (const uint8_t *key, const uint8_t *iv, uint8_t *data, int len)
   aes_crypt_cfb128 (&aes, AES_ENCRYPT, len, &iv_offset, iv0, data, data);
 }
 
-/* Signing, Decryption, and Authentication */
+/* For three keys: Signing, Decryption, and Authentication */
 struct key_data kd[3];
 
 static void
@@ -679,7 +670,7 @@ get_do_ptr_nr_for_kk (enum kind_of_key kk)
 void
 gpg_do_clear_prvkey (enum kind_of_key kk)
 {
-  memset ((void *)&kd[kk], 0, sizeof (struct key_data));
+  memset (kd[kk].data, 0, KEY_CONTENT_LEN);
 }
 
 
@@ -722,12 +713,12 @@ gpg_do_load_prvkey (enum kind_of_key kk, int who, const uint8_t *keystring)
   if (do_data == NULL)
     return 0;
 
-  key_addr = (const uint8_t *)fetch_four_bytes (&do_data[1]);
+  key_addr = kd[kk].key_addr;
   memcpy (kdi.data, key_addr, KEY_CONTENT_LEN);
-  iv = do_data+5;
+  iv = &do_data[1];
   memcpy (kdi.checksum, iv + INITIAL_VECTOR_SIZE, DATA_ENCRYPTION_KEY_SIZE);
 
-  memcpy (dek, do_data+5+16*(who+1), DATA_ENCRYPTION_KEY_SIZE);
+  memcpy (dek, iv+16*(who+1), DATA_ENCRYPTION_KEY_SIZE);
   decrypt_dek (keystring, dek);
 
   decrypt (dek, iv, (uint8_t *)&kdi, sizeof (struct key_data_internal));
@@ -739,7 +730,7 @@ gpg_do_load_prvkey (enum kind_of_key kk, int who, const uint8_t *keystring)
     }
 
   memcpy (kd[kk].data, kdi.data, KEY_CONTENT_LEN);
-  DEBUG_BINARY (&kd[kk], KEY_CONTENT_LEN);
+  DEBUG_BINARY (kd[kk].data, KEY_CONTENT_LEN);
   return 1;
 }
 
@@ -756,10 +747,11 @@ gpg_do_delete_prvkey (enum kind_of_key kk)
   if (do_data == NULL)
     return;
 
-  key_addr = (uint8_t *)fetch_four_bytes (&do_data[1]);
-  flash_key_release (key_addr);
   do_ptr[nr - NR_DO__FIRST__] = NULL;
   flash_do_release (do_data);
+  key_addr = kd[kk].key_addr;
+  kd[kk].key_addr = NULL;
+  flash_key_release (key_addr);
 
   if (admin_authorized == BY_ADMIN && kk == GPG_KEY_FOR_SIGNING)
     {			/* Recover admin keystring DO.  */
@@ -869,7 +861,7 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
     }
 
   DEBUG_INFO ("Getting keystore address...\r\n");
-  key_addr = flash_key_alloc ();
+  key_addr = flash_key_alloc (kk);
   if (key_addr == NULL)
     {
       if (pubkey_allocated_here)
@@ -880,6 +872,7 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
       free (pd);
       return -1;
     }
+  kd[kk].key_addr = key_addr;
 
   num_prv_keys++;
 
@@ -950,7 +943,6 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
       return r;
     }
 
-  pd->key_addr = key_addr;
   memcpy (pd->iv, iv, INITIAL_VECTOR_SIZE);
   memcpy (pd->checksum_encrypted, kdi.checksum, DATA_ENCRYPTION_KEY_SIZE);
 
@@ -1014,7 +1006,7 @@ gpg_do_chks_prvkey (enum kind_of_key kk,
 
   memcpy (pd, &do_data[1], sizeof (struct prvkey_data));
 
-  dek_p = ((uint8_t *)pd) + 4 + INITIAL_VECTOR_SIZE
+  dek_p = ((uint8_t *)pd) + INITIAL_VECTOR_SIZE
     + DATA_ENCRYPTION_KEY_SIZE * who_old;
   memcpy (dek, dek_p, DATA_ENCRYPTION_KEY_SIZE);
   if (who_new == 0)		/* Remove */
@@ -1054,6 +1046,21 @@ gpg_do_chks_prvkey (enum kind_of_key kk,
     return -1;
 
   return 1;
+}
+
+
+static enum kind_of_key
+kkb_to_kk (uint8_t kk_byte)
+{
+  enum kind_of_key kk;
+
+  if (kk_byte == 0xb6)
+    kk = GPG_KEY_FOR_SIGNING;
+  else if (kk_byte == 0xb8)
+    kk = GPG_KEY_FOR_DECRYPTION;
+  else				/* 0xa4 */
+    kk = GPG_KEY_FOR_AUTHENTICATION;
+  return kk;
 }
 
 /*
@@ -1101,20 +1108,15 @@ proc_key_import (const uint8_t *data, int len)
   else
     p += 1;
 
-  if (*p == 0xb6)
+  kk = kkb_to_kk (*p);
+  if (kk == GPG_KEY_FOR_SIGNING)
     {
-      kk = GPG_KEY_FOR_SIGNING;
       ac_reset_pso_cds ();
       gpg_reset_digital_signature_counter ();
     }
   else
-    {
-      if (*p == 0xb8)
-	kk = GPG_KEY_FOR_DECRYPTION;
-      else				/* 0xa4 */
-	kk = GPG_KEY_FOR_AUTHENTICATION;
-      ac_reset_other ();
-    }
+    ac_reset_other ();
+
 
 #if defined(RSA_AUTH) && defined(RSA_SIG)
   if (len <= 22)
@@ -1647,27 +1649,20 @@ gpg_do_put_data (uint16_t tag, const uint8_t *data, int len)
 void
 gpg_do_public_key (uint8_t kk_byte)
 {
-  const uint8_t *do_data;
   const uint8_t *key_addr;
+  enum kind_of_key kk;
 
   DEBUG_INFO ("Public key\r\n");
   DEBUG_BYTE (kk_byte);
 
-  if (kk_byte == 0xb6)
-    do_data = do_ptr[NR_DO_PRVKEY_SIG - NR_DO__FIRST__];
-  else if (kk_byte == 0xb8)
-    do_data = do_ptr[NR_DO_PRVKEY_DEC - NR_DO__FIRST__];
-  else				/* 0xa4 */
-    do_data = do_ptr[NR_DO_PRVKEY_AUT - NR_DO__FIRST__];
-
-  if (do_data == NULL)
+  kk = kkb_to_kk (kk_byte);
+  key_addr = kd[kk].key_addr;
+  if (key_addr == NULL)
     {
       DEBUG_INFO ("none.\r\n");
       GPG_NO_RECORD ();
       return;
     }
-
-  key_addr = (const uint8_t *)fetch_four_bytes (&do_data[1]);
 
   res_p = res_APDU;
 
@@ -1771,13 +1766,7 @@ gpg_do_keygen (uint8_t kk_byte)
   DEBUG_INFO ("Keygen\r\n");
   DEBUG_BYTE (kk_byte);
 
-  if (kk_byte == 0xb6)
-    kk = GPG_KEY_FOR_SIGNING;
-  else if (kk_byte == 0xb8)
-    kk = GPG_KEY_FOR_DECRYPTION;
-  else				/* 0xa4 */
-    kk = GPG_KEY_FOR_AUTHENTICATION;
-
+  kk = kkb_to_kk (kk_byte);
   if (admin_authorized == BY_ADMIN)
     keystring_admin = keystring_md_pw3;
   else
@@ -1812,6 +1801,7 @@ gpg_do_keygen (uint8_t kk_byte)
       /* GnuPG expects it's ready for signing. */
       /* Don't call ac_reset_pso_cds here, but load the private key */
 
+      gpg_reset_digital_signature_counter ();
       s2k (NULL, 0, pw, strlen (OPENPGP_CARD_INITIAL_PW1), keystring);
       gpg_do_load_prvkey (GPG_KEY_FOR_SIGNING, BY_USER, keystring);
     }
