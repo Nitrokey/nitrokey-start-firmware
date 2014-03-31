@@ -145,6 +145,15 @@ static const uint8_t algorithm_attr_p256k1[] __attribute__ ((aligned (1))) = {
   0x2b, 0x81, 0x04, 0x00, 0x0a /* OID of curve secp256k1 */
 };
 
+static const uint8_t algorithm_attr_ed25519[] __attribute__ ((aligned (1))) = {
+  11,
+  0x16, /* EdDSA */
+  /* OID of the curve Ed25519 */
+  0x2b, 0x06, 0x01, 0x04, 0x01, 0x97, 0x55, 0x01, 0x05, 0x01
+  /* Possibly ID for SHA512??? */
+};
+
+
 /*
  * Representation of PW1_LIFETIME:
  *    0: PW1_LIEFTIME_P == NULL : PW1 is valid for single PSO:CDS command
@@ -1229,10 +1238,14 @@ gpg_do_table[] = {
   { GPG_DO_ALG_SIG, DO_FIXED, AC_ALWAYS, AC_NEVER, algorithm_attr_p256k1 },
 #endif
   { GPG_DO_ALG_DEC, DO_FIXED, AC_ALWAYS, AC_NEVER, algorithm_attr_rsa },
-#ifdef RSA_AUTH
+#if defined(RSA_AUTH)
   { GPG_DO_ALG_AUT, DO_FIXED, AC_ALWAYS, AC_NEVER, algorithm_attr_rsa },
-#else
+#elif defined(ECDSA_AUTH)
   { GPG_DO_ALG_AUT, DO_FIXED, AC_ALWAYS, AC_NEVER, algorithm_attr_p256r1 },
+#elif defined(EDDSA_AUTH)
+  { GPG_DO_ALG_AUT, DO_FIXED, AC_ALWAYS, AC_NEVER, algorithm_attr_ed25519 },
+#else
+#error "Not supported (AUTH)."
 #endif
   /* Compound data: Read access only */
   { GPG_DO_CH_DATA, DO_CMP_READ, AC_ALWAYS, AC_NEVER, cmp_ch_data },
