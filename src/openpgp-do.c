@@ -1689,10 +1689,12 @@ gpg_do_public_key (uint8_t kk_byte)
   if (kk_byte == 0xb6)
 #elif !defined(RSA_AUTH) && defined(RSA_SIG)
   /* ECDSA with p256r1 for authentication */
+  /* EdDSA with Ed25519 for authentication */
   if (kk_byte == 0xa4)
 #else
 #error "not supported."
 #endif
+#if defined(ECDSA_AUTH)
     {				/* ECDSA */
       /* LEN */
       *res_p++ = 2 + 1 + 64;
@@ -1705,6 +1707,19 @@ gpg_do_public_key (uint8_t kk_byte)
 	res_p += 64;
       }
     }
+#else  /* EDDSA_AUTH */
+    {				/* EdDSA */
+      /* LEN */
+      *res_p++ = 2 + 32;
+      {
+	/*TAG*/          /* LEN = 32 */
+	*res_p++ = 0x86; *res_p++ = 0x20;
+	/* 32-byte binary (little endian): Y with parity */
+	memcpy (res_p, key_addr + KEY_CONTENT_LEN, 32);
+	res_p += 32;
+      }
+    }
+#endif
   else
     {				/* RSA */
       /* LEN = 9+256 */
