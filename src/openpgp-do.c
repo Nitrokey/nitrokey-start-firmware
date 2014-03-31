@@ -1083,13 +1083,14 @@ kkb_to_kk (uint8_t kk_byte)
  *   5f48, xx xx xx: cardholder private key
  * <E: 4-byte>, <P: 128-byte>, <Q: 128-byte>
  *
- * ECDSA:
+ * ECDSA / EdDSA:
  * 4d, xx:    Extended Header List
  *   a4 00 (AUT)
  *   7f48, xx: cardholder private key template
  *       9x LEN: 9x=tag of private key d,  LEN=length of d
  *   5f48, xx : cardholder private key
  * <d: 32-byte>
+ * EdDSA 64-byte??? (a + seed, 32-byte each)
  */
 static int
 proc_key_import (const uint8_t *data, int len)
@@ -1126,7 +1127,6 @@ proc_key_import (const uint8_t *data, int len)
   else
     ac_reset_other ();
 
-
 #if defined(RSA_AUTH) && defined(RSA_SIG)
   if (len <= 22)
 #elif defined(RSA_AUTH) && !defined(RSA_SIG)
@@ -1159,6 +1159,7 @@ proc_key_import (const uint8_t *data, int len)
     r = gpg_do_write_prvkey (kk, &data[12], len - 12, keystring_admin, NULL);
 #elif !defined(RSA_AUTH) && defined(RSA_SIG)
   /* ECDSA with p256r1 for authentication */
+  /* EdDSA with Ed25519 for authentication */
   if (kk != GPG_KEY_FOR_AUTHENTICATION)
     {			   /* RSA */
       /* It should starts with 00 01 00 01 (E) */
