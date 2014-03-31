@@ -1,5 +1,7 @@
 2014-03-31  Niibe Yutaka  <gniibe@fsij.org>
 
+	* src/ecc-edwards.c (eddsa_sign_25519): Rename and API change.
+
 	* src/openpgp-do.c (gpg_do_load_prvkey, gpg_do_delete_prvkey)
 	(gpg_do_write_prvkey, gpg_do_public_key, gpg_do_keygen): Follow
 	the change of PRVKEY_DATA and KEY_DATA.

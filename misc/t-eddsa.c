@@ -344,12 +344,17 @@ main (int argc, char *argv[])
   bn256 pk_calculated[1];
   uint8_t hash[64];
   bn256 a[1];
-  extern void eddsa_25519 (bn256 *r, bn256 *s, const uint8_t *input,
-			   size_t ilen, const bn256 *a, const uint8_t *seed,
-			   const bn256 *pk);
+  bn256 *R, *S;
+  uint8_t out[64];
+
+  extern void eddsa_sign_25519 (const uint8_t *input, size_t ilen,
+				uint8_t *output,
+				const bn256 *a, const uint8_t *seed,
+				const bn256 *pk);
   extern void eddsa_public_key_25519 (bn256 *pk, const bn256 *a);
 
-  bn256 R[1], S[1];
+  R = (bn256 *)out;
+  S = (bn256 *)(out+32);
 
   while (1)
     {
@@ -374,7 +379,7 @@ main (int argc, char *argv[])
 	  continue;
 	}
 
-      eddsa_25519 (R, S, msg, msglen, a, hash+32, pk);
+      eddsa_sign_25519 (msg, msglen, out, a, hash+32, pk);
       if (memcmp (sig, R, sizeof (bn256)) != 0
 	  || memcmp (((const uint8_t *)sig)+32, S, sizeof (bn256)) != 0)
 	{

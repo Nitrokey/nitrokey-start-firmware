@@ -15,6 +15,7 @@ CSRC = main.c usb_stm32f103.c adc_stm32f103.c \
 	bn.c mod.c \
 	modp256r1.c jpc_p256r1.c ec_p256r1.c call-ec_p256r1.c \
 	modp256k1.c jpc_p256k1.c ec_p256k1.c call-ec_p256k1.c \
+	mod25638.c ecc-edwards.c sha512.c \
 	random.c neug.c sha256.c sys.c
 
 INCDIR =

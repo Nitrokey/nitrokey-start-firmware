@@ -808,6 +808,9 @@ cmd_get_data (void)
 #define ECDSA_HASH_LEN 32
 #define ECDSA_SIGNATURE_LENGTH 64
 
+#define EDDSA_HASH_LEN_MAX 256
+#define EDDSA_SIGNATURE_LENGTH 32
+
 static void
 cmd_pso (void)
 {
@@ -1034,8 +1037,10 @@ cmd_internal_authenticate (void)
 	}
 
       res_APDU_size = EDDSA_SIGNATURE_LENGTH;
-      r = eddsa_sign_25519 (apdu.cmd_apdu_data, res_APDU,
-			    &kd[GPG_KEY_FOR_AUTHENTICATION]);
+      r = eddsa_sign_25519 (apdu.cmd_apdu_data, len, res_APDU,
+	    kd[GPG_KEY_FOR_AUTHENTICATION].data,
+	    kd[GPG_KEY_FOR_AUTHENTICATION].data+32,
+	    kd[GPG_KEY_FOR_AUTHENTICATION].key_addr + KEY_CONTENT_LEN);
       if (r < 0)
 	GPG_ERROR ();
     }

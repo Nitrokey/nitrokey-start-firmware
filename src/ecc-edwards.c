@@ -749,14 +749,18 @@ mod_reduce_M (bn256 *R, const bn512 *A)
 
 
 void
-eddsa_25519 (bn256 *r, bn256 *s, const uint8_t *input, size_t ilen,
-	     const bn256 *a, const uint8_t *seed, const bn256 *pk)
+eddsa_sign_25519 (const uint8_t *input, size_t ilen, uint8_t *out,
+		  const bn256 *a, const uint8_t *seed, const bn256 *pk)
 {
+  bn256 *r, *s;
   sha512_context ctx;
   uint8_t hash[64];
   bn256 tmp[1];
   ac R[1];
   uint32_t carry, borrow;
+
+  r = (bn256 *)out;
+  s = (bn256 *)(out+32);
 
   sha512_start (&ctx);
   sha512_update (&ctx, seed, sizeof (bn256)); /* It's upper half of the hash */
@@ -965,8 +969,9 @@ main (int argc, char *argv[])
 #ifdef TESTING_EDDSA
   uint8_t hash[64];
   bn256 a[1];
-  bn256 r[1], s[1];
+  uint8_t r_s[64];
   bn256 pk[1];
+  bn256 *r, *s;
 
   const bn256 sk[1] = {
     {{ 0x9db1619d, 0x605afdef, 0xf44a84ba, 0xc42cec92,
@@ -980,6 +985,9 @@ main (int argc, char *argv[])
     {{ 0x1582b85f, 0xac3ba390, 0x70391ec6, 0x6bb4f91c,
        0xf0f55bd2, 0x24be5b59, 0x43415165, 0x0b107a8e }} };
 
+  r = (bn256 *)r_s;
+  s = (bn256 *)(r_s+32);
+
   sha512 ((uint8_t *)sk, sizeof (bn256), hash);
   hash[0] &= 248;
   hash[31] &= 127;
@@ -987,7 +995,7 @@ main (int argc, char *argv[])
   memcpy (a, hash, sizeof (bn256));
 
   eddsa_public_key_25519 (pk, a);
-  eddsa_25519 (r, s, (const uint8_t *)"", 0, a, hash+32, pk);
+  eddsa_sign_25519 ((const uint8_t *)"", 0, r_s, a, hash+32, pk);
 
   if (memcmp (r, r_expected, sizeof (bn256)) != 0
       || memcmp (s, s_expected, sizeof (bn256)) != 0)
