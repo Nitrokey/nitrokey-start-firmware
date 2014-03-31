@@ -248,19 +248,19 @@ extern int rsa_verify (const uint8_t *pubkey, const uint8_t *hash,
 		       const uint8_t *signature);
 extern uint8_t *rsa_genkey (void);
 
-extern int ecdsa_sign_p256r1  (const uint8_t *hash, uint8_t *output,
-			       const uint8_t *key_data);
+extern int ecdsa_sign_p256r1 (const uint8_t *hash, uint8_t *output,
+			      const uint8_t *key_data);
 extern uint8_t *ecdsa_compute_public_p256r1 (const uint8_t *key_data);
 
-extern int ecdsa_sign_p256k1  (const uint8_t *hash, uint8_t *output,
-			       const uint8_t *key_data);
+extern int ecdsa_sign_p256k1 (const uint8_t *hash, uint8_t *output,
+			      const uint8_t *key_data);
 extern uint8_t *ecdsa_compute_public_p256k1 (const uint8_t *key_data);
 
-
-extern int eddsa_sign_25519  (const uint8_t *input, size_t ilen,
-			      uint8_t *output,
-			      const uint8_t *sk_a, const uint8_t *seed,
-			      const uint8_t *pk);
+extern int eddsa_sign_25519 (const uint8_t *input, size_t ilen,
+			     uint8_t *output,
+			     const uint8_t *sk_a, const uint8_t *seed,
+			     const uint8_t *pk);
+extern uint8_t *eddsa_compute_public_25519 (const uint8_t *a);
 
 extern const uint8_t *gpg_do_read_simple (uint8_t);
 extern void gpg_do_write_simple (uint8_t, const uint8_t *, int);

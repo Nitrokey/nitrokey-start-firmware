@@ -1,3 +1,11 @@
+2014-04-01  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/ecc-edwards.c (eddsa_compute_public_25519): New.
+
+	* src/openpgp-do.c (algorithm_attr_ed25519): New.
+	(gpg_do_write_prvkey, proc_key_import, gpg_do_public_key): Add
+	EdDSA handling.
+
 2014-03-31  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/ecc-edwards.c (eddsa_sign_25519): Rename and API change.

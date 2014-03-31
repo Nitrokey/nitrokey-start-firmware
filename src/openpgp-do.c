@@ -826,6 +826,7 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
 	return -1;
     }
 #elif !defined(RSA_AUTH) && defined(RSA_SIG)
+#if defined(ECDSA_AUTH)
   /* ECDSA with p256r1 for authentication */
   if (kk != GPG_KEY_FOR_AUTHENTICATION && key_len != KEY_CONTENT_LEN)
     return -1;
@@ -835,6 +836,17 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
       if (key_len != 32)
 	return -1;
     }
+#else
+  /* EdDSA with Ed25519 for authentication */
+  if (kk != GPG_KEY_FOR_AUTHENTICATION && key_len != KEY_CONTENT_LEN)
+    return -1;
+  if (kk == GPG_KEY_FOR_AUTHENTICATION)
+    {
+      pubkey_len = key_len / 2;
+      if (key_len != 64)
+	return -1;
+    }
+#endif
 #else
 #error "not supported."
 #endif
@@ -854,11 +866,19 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
       else
 	pubkey_allocated_here = modulus_calc (key_data, key_len);
 #elif !defined(RSA_AUTH) && defined(RSA_SIG)
+#if defined(ECDSA_AUTH)
       /* ECDSA with p256r1 for authentication */
       if (kk == GPG_KEY_FOR_AUTHENTICATION)
 	pubkey_allocated_here = ecdsa_compute_public_p256r1 (key_data);
       else
 	pubkey_allocated_here = modulus_calc (key_data, key_len);
+#else
+      /* EdDSA with Ed25519 for authentication */
+      if (kk == GPG_KEY_FOR_AUTHENTICATION)
+	pubkey_allocated_here = eddsa_compute_public_25519 (key_data);
+      else
+	pubkey_allocated_here = modulus_calc (key_data, key_len);
+#endif
 #else
 #error "not supported."
 #endif
@@ -900,7 +920,8 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
   else
     memcpy (kdi.data, key_data, KEY_CONTENT_LEN);
 #elif !defined(RSA_AUTH) && defined(RSA_SIG)
- /* ECDSA with p256r1 for authentication */
+  /* ECDSA with p256r1 for authentication */
+  /* EdDSA with Ed25519 for authentication */
   if (kk == GPG_KEY_FOR_AUTHENTICATION)
     {
       memcpy (kdi.data, key_data, key_len);
@@ -1083,14 +1104,21 @@ kkb_to_kk (uint8_t kk_byte)
  *   5f48, xx xx xx: cardholder private key
  * <E: 4-byte>, <P: 128-byte>, <Q: 128-byte>
  *
- * ECDSA / EdDSA:
+ * ECDSA:
  * 4d, xx:    Extended Header List
  *   a4 00 (AUT)
  *   7f48, xx: cardholder private key template
  *       9x LEN: 9x=tag of private key d,  LEN=length of d
  *   5f48, xx : cardholder private key
  * <d: 32-byte>
- * EdDSA 64-byte??? (a + seed, 32-byte each)
+ *
+ * EdDSA:
+ * 4d, xx:    Extended Header List
+ *   a4 00 (AUT)
+ *   7f48, xx: cardholder private key template
+ *       9x LEN: 9x=tag of private key d,  LEN=length of d
+ *   5f48, xx : cardholder private key
+ * <d: 64-byte>: (a + seed, 32-byte each)
  */
 static int
 proc_key_import (const uint8_t *data, int len)

@@ -23,6 +23,7 @@
  */
 
 #include <stdint.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "bn.h"
@@ -814,6 +815,22 @@ eddsa_public_key_25519 (bn256 *pk, const bn256 *a)
   memcpy (pk, R->y, sizeof (bn256));
   pk->word[7] ^= mod25519_is_neg (R->x) * 0x80000000;
 }
+
+
+uint8_t *
+eddsa_compute_public_25519 (const uint8_t *kd)
+{
+  uint8_t *p0;
+  const bn256 *a = (const bn256 *)kd;
+
+  p0 = (uint8_t *)malloc (sizeof (bn256));
+  if (p0 == NULL)
+    return NULL;
+
+  eddsa_public_key_25519 ((bn256 *)p0, a);
+  return p0;
+}
+
 
 #if 0
 /**
