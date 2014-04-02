@@ -1,3 +1,8 @@
+2014-04-02  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/openpgp-do.c (proc_key_import): Handle EdDSA.
+	(algorithm_attr_ed25519): Fix OID and add ID for SHA512.
+
 2014-04-01  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/ecc-edwards.c (eddsa_compute_public_25519): New.

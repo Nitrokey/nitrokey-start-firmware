@@ -34,6 +34,7 @@
 #include "random.h"
 #include "polarssl/config.h"
 #include "polarssl/aes.h"
+#include "sha512.h"
 
 
 #define PASSWORD_ERRORS_MAX 3	/* >= errors, it will be locked */
@@ -147,10 +148,10 @@ static const uint8_t algorithm_attr_p256k1[] __attribute__ ((aligned (1))) = {
 
 static const uint8_t algorithm_attr_ed25519[] __attribute__ ((aligned (1))) = {
   11,
-  0x16, /* EdDSA */
+  0x69, /* EdDSA (experimental) */
+  0x0a, /* ID for SHA512 */
   /* OID of the curve Ed25519 */
-  0x2b, 0x06, 0x01, 0x04, 0x01, 0x97, 0x55, 0x01, 0x05, 0x01
-  /* Possibly ID for SHA512??? */
+  0x2b, 0x06, 0x01, 0x04, 0x01, 0xda, 0x47, 0x0f, 0x01
 };
 
 
@@ -1104,21 +1105,13 @@ kkb_to_kk (uint8_t kk_byte)
  *   5f48, xx xx xx: cardholder private key
  * <E: 4-byte>, <P: 128-byte>, <Q: 128-byte>
  *
- * ECDSA:
+ * ECDSA / EdDSA:
  * 4d, xx:    Extended Header List
  *   a4 00 (AUT)
  *   7f48, xx: cardholder private key template
  *       9x LEN: 9x=tag of private key d,  LEN=length of d
  *   5f48, xx : cardholder private key
  * <d: 32-byte>
- *
- * EdDSA:
- * 4d, xx:    Extended Header List
- *   a4 00 (AUT)
- *   7f48, xx: cardholder private key template
- *       9x LEN: 9x=tag of private key d,  LEN=length of d
- *   5f48, xx : cardholder private key
- * <d: 64-byte>: (a + seed, 32-byte each)
  */
 static int
 proc_key_import (const uint8_t *data, int len)
@@ -1186,8 +1179,8 @@ proc_key_import (const uint8_t *data, int len)
   else
     r = gpg_do_write_prvkey (kk, &data[12], len - 12, keystring_admin, NULL);
 #elif !defined(RSA_AUTH) && defined(RSA_SIG)
+#if defined(ECDSA_AUTH)
   /* ECDSA with p256r1 for authentication */
-  /* EdDSA with Ed25519 for authentication */
   if (kk != GPG_KEY_FOR_AUTHENTICATION)
     {			   /* RSA */
       /* It should starts with 00 01 00 01 (E) */
@@ -1196,6 +1189,28 @@ proc_key_import (const uint8_t *data, int len)
     }
   else
     r = gpg_do_write_prvkey (kk, &data[12], len - 12, keystring_admin, NULL);
+#else  /* EdDSA */
+  /* EdDSA with Ed25519 for authentication */
+  if (kk != GPG_KEY_FOR_AUTHENTICATION)
+    {			   /* RSA */
+      /* It should starts with 00 01 00 01 (E) */
+      /* Skip E, 4-byte */
+      r = gpg_do_write_prvkey (kk, &data[26], len - 26, keystring_admin, NULL);
+    }
+  else
+    {
+      uint8_t hash[64];
+
+      if (len - 12 != 32)
+	return 1;		/* Error.  */
+
+      sha512 (&data[12], 32, hash);
+      hash[0] &= 248;
+      hash[31] &= 127;
+      hash[31] |= 64;
+      r = gpg_do_write_prvkey (kk, hash, 64, keystring_admin, NULL);
+    }
+#endif
 #else
 #error "not supported."
 #endif
