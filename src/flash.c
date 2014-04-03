@@ -80,20 +80,17 @@ extern uint8_t _data_pool;
 static int key_available_at (uint8_t *k)
 {
   int i;
-  uint8_t *p;
 
-  p = k;
   for (i = 0; i < KEY_SIZE; i++)
-    if (*p)
+    if (k[i])
       break;
-  if (p == k + KEY_SIZE)	/* It's ZERO.  Released key.  */
+  if (i == KEY_SIZE)	/* It's ZERO.  Released key.  */
     return 0;
 
-  p = k;
   for (i = 0; i < KEY_SIZE; i++)
-    if (*p != 0xff)
+    if (k[i] != 0xff)
       break;
-  if (p == k + KEY_SIZE)	/* It's FULL.  Unused key.  */
+  if (i == KEY_SIZE)	/* It's FULL.  Unused key.  */
     return 0;
 
   return 1;
@@ -127,7 +124,7 @@ flash_init (void)
       uint8_t *k;
 
       kd[i].key_addr = NULL;
-      for (k = p; k < k + FLASH_PAGE_SIZE; k += KEY_SIZE)
+      for (k = p; k < p + FLASH_PAGE_SIZE; k += KEY_SIZE)
 	if (key_available_at (k))
 	  {
 	    kd[i].key_addr = k;

@@ -76,7 +76,6 @@ KEYPTR
          ----> [   P   ][   Q   ][       N        ]
                <---encrypted----><---  plain  ---->
 
-key_addr                       4-byte
 initial_vector (random)        16-byte
 checksum_encrypted             16-byte
 dek_encrypted_by_keystring_pw1 16-byte

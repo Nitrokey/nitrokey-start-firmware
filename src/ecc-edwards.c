@@ -750,7 +750,7 @@ mod_reduce_M (bn256 *R, const bn512 *A)
 
 
 void
-eddsa_sign_25519 (const uint8_t *input, size_t ilen, uint8_t *out,
+eddsa_sign_25519 (const uint8_t *input, size_t ilen, uint32_t *out,
 		  const bn256 *a, const uint8_t *seed, const bn256 *pk)
 {
   bn256 *r, *s;
@@ -761,7 +761,7 @@ eddsa_sign_25519 (const uint8_t *input, size_t ilen, uint8_t *out,
   uint32_t carry, borrow;
 
   r = (bn256 *)out;
-  s = (bn256 *)(out+32);
+  s = (bn256 *)(out+(32/4));
 
   sha512_start (&ctx);
   sha512_update (&ctx, seed, sizeof (bn256)); /* It's upper half of the hash */

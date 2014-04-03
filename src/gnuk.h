@@ -257,7 +257,7 @@ extern int ecdsa_sign_p256k1 (const uint8_t *hash, uint8_t *output,
 extern uint8_t *ecdsa_compute_public_p256k1 (const uint8_t *key_data);
 
 extern int eddsa_sign_25519 (const uint8_t *input, size_t ilen,
-			     uint8_t *output,
+			     uint32_t *output,
 			     const uint8_t *sk_a, const uint8_t *seed,
 			     const uint8_t *pk);
 extern uint8_t *eddsa_compute_public_25519 (const uint8_t *a);

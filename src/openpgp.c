@@ -809,7 +809,7 @@ cmd_get_data (void)
 #define ECDSA_SIGNATURE_LENGTH 64
 
 #define EDDSA_HASH_LEN_MAX 256
-#define EDDSA_SIGNATURE_LENGTH 32
+#define EDDSA_SIGNATURE_LENGTH 64
 
 static void
 cmd_pso (void)
@@ -1020,6 +1020,8 @@ cmd_internal_authenticate (void)
 
   if (P1 (apdu) == 0x00 && P2 (apdu) == 0x00)
     {
+      uint32_t output[64/4];	/* Require 4-byte alignment. */
+
       DEBUG_SHORT (len);
 
       if (!ac_check_status (AC_OTHER_AUTHORIZED))
@@ -1037,10 +1039,11 @@ cmd_internal_authenticate (void)
 	}
 
       res_APDU_size = EDDSA_SIGNATURE_LENGTH;
-      r = eddsa_sign_25519 (apdu.cmd_apdu_data, len, res_APDU,
+      r = eddsa_sign_25519 (apdu.cmd_apdu_data, len, output,
 	    kd[GPG_KEY_FOR_AUTHENTICATION].data,
 	    kd[GPG_KEY_FOR_AUTHENTICATION].data+32,
 	    kd[GPG_KEY_FOR_AUTHENTICATION].key_addr + KEY_CONTENT_LEN);
+      memcpy (res_APDU, output, EDDSA_SIGNATURE_LENGTH);
       if (r < 0)
 	GPG_ERROR ();
     }

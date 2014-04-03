@@ -1,3 +1,10 @@
+2014-04-03  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/ecc-edwards.c (eddsa_sign_25519): Change type of OUT.
+	* src/openpgp.c (cmd_internal_authenticate): Have a buffer.
+
+	* src/flash.c (flash_init): Fix key address finder.
+
 2014-04-02  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/openpgp-do.c (proc_key_import): Handle EdDSA.
