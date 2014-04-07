@@ -147,9 +147,8 @@ static const uint8_t algorithm_attr_p256k1[] __attribute__ ((aligned (1))) = {
 };
 
 static const uint8_t algorithm_attr_ed25519[] __attribute__ ((aligned (1))) = {
-  11,
+  10,
   0x69, /* EdDSA (experimental) */
-  0x0a, /* ID for SHA512 */
   /* OID of the curve Ed25519 */
   0x2b, 0x06, 0x01, 0x04, 0x01, 0xda, 0x47, 0x0f, 0x01
 };

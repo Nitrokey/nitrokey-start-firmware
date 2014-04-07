@@ -1,3 +1,7 @@
+2014-04-07  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/openpgp-do.c (algorithm_attr_ed25519): It's OID only.
+
 2014-04-03  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/ecc-edwards.c (eddsa_sign_25519): Change type of OUT.
