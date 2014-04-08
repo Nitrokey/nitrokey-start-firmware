@@ -24,6 +24,7 @@
 #include <stdint.h>
 #include <string.h>
 #include "bn.h"
+#include "mod.h"
 #include "modp256r1.h"
 #include "affine.h"
 #include "jpc-ac_p256r1.h"

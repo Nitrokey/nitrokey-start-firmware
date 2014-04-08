@@ -1,3 +1,11 @@
+2014-04-08  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/mod.c (mod_inv): Use MAX_GCD_STEPS_BN256.
+	Return failure or success.
+	* src/jpc.c (jpc_to_ac): Use mod_inv.
+	* src/modp256k1.c (modp256k1_inv): Remove.
+	* src/modp256r1.c (modp256r1_inv): Remove.
+
 2014-04-07  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/openpgp-do.c (algorithm_attr_ed25519): It's OID only.

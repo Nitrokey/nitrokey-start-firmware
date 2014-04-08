@@ -185,7 +185,7 @@ FUNC(jpc_to_ac) (ac *X, const jpc *A)
 {
   bn256 z_inv[1], z_inv_sqr[1];
 
-  if (MFNC(inv) (z_inv, A->z) < 0)
+  if (mod_inv (z_inv, A->z, CONST_P256) < 0)
     return -1;
 
   MFNC(sqr) (z_inv_sqr, z_inv);
