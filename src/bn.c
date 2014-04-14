@@ -23,7 +23,9 @@
 
 #include <stdint.h>
 #include <string.h>
+#ifndef BN256_NO_RANDOM
 #include "random.h"
+#endif
 #include "bn.h"
 
 uint32_t

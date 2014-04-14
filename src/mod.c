@@ -147,8 +147,10 @@ mod_reduce (bn256 *X, const bn512 *A, const bn256 *B, const bn256 *MU_lower)
  * @brief C = X^(-1) mod N
  * 
  * Assume X and N are co-prime (or N is prime).
+ * If N==0, return 0.
+ *
  */
-int
+void
 mod_inv (bn256 *C, const bn256 *X, const bn256 *N)
 {
   bn256 u[1], v[1], tmp[1];
@@ -156,9 +158,6 @@ mod_inv (bn256 *C, const bn256 *X, const bn256 *N)
   uint32_t carry;
 #define borrow carry
   int n = MAX_GCD_STEPS_BN256;
-
-  if (bn256_is_zero (X))
-    return -1;
 
   memset (C, 0, sizeof (bn256));
   memcpy (u, X, sizeof (bn256));
@@ -352,6 +351,4 @@ mod_inv (bn256 *C, const bn256 *X, const bn256 *N)
 	}
     }
 #undef borrow
-
-  return 0;
 }

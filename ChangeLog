@@ -1,3 +1,11 @@
+2014-04-14  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/jpc.c (jpc_to_ac): Error check before mod_inv.
+
+	* src/mod.c (mod_inv): No return value (if N==0 returns ZERO).
+
+	* src/bn.c [BN256_NO_RANDOM]: Only include "random.h" if needed.
+
 2014-04-08  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/mod.c (mod_inv): Use MAX_GCD_STEPS_BN256.
