@@ -26,10 +26,10 @@
  *
  * We use radix-32.  During computation, it's not reduced to 2^255-19,
  * but it is represented in 256-bit (it is redundant representation),
- * that is, 2^256-38.
+ * that is, something like 2^256-38.
  *
- * The idea is, to keep 2^256-38 until it will be converted to affine
- * coordinates.
+ * The idea is, keeping within 256-bit until it will be converted to
+ * affine coordinates.
  */
 
 #include <stdint.h>
@@ -78,6 +78,10 @@
 const bn256 n25638[1] = {
   {{0xffffffda, 0xffffffff, 0xffffffff, 0xffffffff,
     0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff }} };
+
+const bn256 p25519[1] = {
+  {{ 0xffffffed, 0xffffffff, 0xffffffff, 0xffffffff,
+     0xffffffff, 0xffffffff, 0xffffffff, 0x7fffffff }} };
 
 
 /*
@@ -152,7 +156,6 @@ mod25638_reduce (bn256 *X, bn512 *A)
   {
     int i;
     uint64_t r;
-    uint32_t r0;
     uint32_t carry;
 
     r = 0;
@@ -172,16 +175,8 @@ mod25638_reduce (bn256 *X, bn512 *A)
       }
     d[i] = (uint32_t)r;
 
-    r0 = A->word[8] * 38;
-    d = &A->word[0];
-    for (i = 0; i < BN256_WORDS; i++)
-      {
-	r0 += d[i];
-	carry = (r0 < d[i]);
-	d[i] = r0;
-	r0 = carry;
-      }
-    A->word[0] += r0 * 38;
+    carry = bn256_add_uint ((bn256 *)A, (bn256 *)A, A->word[8] * 38);
+    A->word[0] += carry * 38;
   }
 
   memcpy (X, A, sizeof (bn256));
@@ -236,4 +231,82 @@ mod25638_shift (bn256 *X, const bn256 *A, int shift)
   tmp->word[1] = tmp->word[1] + (tmp->word[0] < (carry << 5)) + (carry >> 27);
 
   mod25638_add (X, X, tmp);
+}
+
+static void
+add19 (bn256 *r, bn256 *x)
+{
+  uint32_t v;
+  int i;
+
+  v = 19;
+  for (i = 0; i < BN256_WORDS; i++)
+    {
+      r->word[i] = x->word[i] + v;
+      v = (r->word[i] < v);
+    }
+}
+
+/*
+ * @brief  X = A mod 2^255-19
+ *
+ * It's precisely modulo 2^255-19 (unlike mod25638_reduce).
+ */
+void
+mod25519_reduce (bn256 *X)
+{
+  uint32_t q;
+  bn256 r0[1], r1[1];
+  int flag;
+
+  memcpy (r0, X, sizeof (bn256));
+  q = (r0->word[7] >> 31);
+  r0->word[7] &= 0x7fffffff;
+  if (q)
+    {
+      add19 (r0, r0);
+      q = (r0->word[7] >> 31);
+      r0->word[7] &= 0x7fffffff;
+      if (q)
+	{
+	  add19 (r1, r0);
+	  q = (r1->word[7] >> 31);
+	  r1->word[7] &= 0x7fffffff;
+	  flag = 0;
+	}
+      else
+	flag = 1;
+    }
+  else
+    {
+      add19 (r1, r0);		 /* dummy */
+      q = (r1->word[7] >> 31);	 /* dummy */
+      r1->word[7] &= 0x7fffffff; /* dummy */
+      if (q)
+	flag = 2;
+      else
+	flag = 3;
+    }
+
+  if (flag)
+    {
+      add19 (r1, r0);
+      q = (r1->word[7] >> 31);
+      r1->word[7] &= 0x7fffffff;
+      if (q)
+	memcpy (X, r1, sizeof (bn256));
+      else
+	memcpy (X, r0, sizeof (bn256));
+    }
+  else
+    {
+      if (q)
+	{
+	  asm volatile ("" : : "r" (q) : "memory");
+	  memcpy (X, r1, sizeof (bn256));
+	  asm volatile ("" : : "r" (q) : "memory");
+	}
+      else
+	memcpy (X, r1, sizeof (bn256));
+    }
 }

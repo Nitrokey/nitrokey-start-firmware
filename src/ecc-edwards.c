@@ -93,10 +93,6 @@
  * Gy: 0x6666666666666666666666666666666666666666666666666666666666666658
  */
 
-static const bn256 p25519[1] = {
-  {{ 0xffffffed, 0xffffffff, 0xffffffff, 0xffffffff,
-     0xffffffff, 0xffffffff, 0xffffffff, 0x7fffffff }} };
-
 /* d + 2^255 - 19 */
 static const bn256 coefficient_d[1] = {
   {{ 0x135978a3, 0x75eb4dca, 0x4141d8ab, 0x00700a4d,
@@ -239,84 +235,6 @@ point_add (ptc *X, const ptc *A, const ac *B)
   /* Z3 = F * G */
 }
 
-
-static void
-add19 (bn256 *r, bn256 *x)
-{
-  uint32_t v;
-  int i;
-
-  v = 19;
-  for (i = 0; i < BN256_WORDS; i++)
-    {
-      r->word[i] = x->word[i] + v;
-      v = (r->word[i] < v);
-    }
-}
-
-/*
- * @brief  X = A mod 2^255-19
- *
- * It's precisely modulo 2^255-19 (unlike mod25638_reduce).
- */
-static void
-mod25519_reduce (bn256 *X)
-{
-  uint32_t q;
-  bn256 r0[1], r1[1];
-  int flag;
-
-  memcpy (r0, X, sizeof (bn256));
-  q = (r0->word[7] >> 31);
-  r0->word[7] &= 0x7fffffff;
-  if (q)
-    {
-      add19 (r0, r0);
-      q = (r0->word[7] >> 31);
-      r0->word[7] &= 0x7fffffff;
-      if (q)
-	{
-	  add19 (r1, r0);
-	  q = (r1->word[7] >> 31);
-	  r1->word[7] &= 0x7fffffff;
-	  flag = 0;
-	}
-      else
-	flag = 1;
-    }
-  else
-    {
-      add19 (r1, r0);		 /* dummy */
-      q = (r1->word[7] >> 31);	 /* dummy */
-      r1->word[7] &= 0x7fffffff; /* dummy */
-      if (q)
-	flag = 2;
-      else
-	flag = 3;
-    }
-
-  if (flag)
-    {
-      add19 (r1, r0);
-      q = (r1->word[7] >> 31);
-      r1->word[7] &= 0x7fffffff;
-      if (q)
-	memcpy (X, r1, sizeof (bn256));
-      else
-	memcpy (X, r0, sizeof (bn256));
-    }
-  else
-    {
-      if (q)
-	{
-	  asm volatile ("" : : "r" (q) : "memory");
-	  memcpy (X, r1, sizeof (bn256));
-	  asm volatile ("" : : "r" (q) : "memory");
-	}
-      else
-	memcpy (X, r1, sizeof (bn256));
-    }
-}
 
 /**
  * @brief	X = convert A

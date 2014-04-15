@@ -1,3 +1,11 @@
+2014-04-15  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/ecc-mont.c: New.
+
+	* src/mod25638.c (p25519): Move from ecc-edwards.c.
+	(mod25519_reduce, add19): Likewise.
+	(mod25638_reduce) [!ASM_IMPLEMENTATION]: Use bn256_add_uint.
+
 2014-04-14  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/jpc.c (jpc_to_ac): Error check before mod_inv.
