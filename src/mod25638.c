@@ -100,13 +100,10 @@ void
 mod25638_add (bn256 *X, const bn256 *A, const bn256 *B)
 {
   uint32_t carry;
-  bn256 tmp[1];
 
   carry = bn256_add (X, A, B);
-  if (carry)
-    bn256_sub (X, X, n25638);
-  else
-    bn256_sub (tmp, X, n25638);
+  carry = bn256_add_uint (X, X, carry*38);
+  X->word[0] += carry * 38;
 }
 
 /**
@@ -116,13 +113,10 @@ void
 mod25638_sub (bn256 *X, const bn256 *A, const bn256 *B)
 {
   uint32_t borrow;
-  bn256 tmp[1];
 
   borrow = bn256_sub (X, A, B);
-  if (borrow)
-    bn256_add (X, X, n25638);
-  else
-    bn256_add (tmp, X, n25638);
+  borrow = bn256_sub_uint (X, X, borrow*38);
+  X->word[0] -= borrow * 38;
 }
 
 
