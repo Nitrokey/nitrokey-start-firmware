@@ -1,3 +1,7 @@
+2014-04-16  Niibe Yutaka  <gniibe@fsij.org>
+
+	* VERSION: 1.1.3.
+
 2014-04-15  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/ecc-mont.c: New.

@@ -1,21 +1,23 @@
 Gnuk - An Implementation of USB Cryptographic Token for GnuPG
 
-							  Version 1.1.2
-							     2014-03-07
+							  Version 1.1.3
+							     2014-04-16
 							   Niibe Yutaka
 				      Free Software Initiative of Japan
 
 Warning
 =======
 
-This is another experimental release of Gnuk, version 1.1.2, which has
+This is another experimental release of Gnuk, version 1.1.3, which has
 incompatible changes to Gnuk 1.0.x.  Specifically, it now supports
 overriding key import, but importing keys (or generating keys) results
 password reset.  Please update your documentation for Gnuk Token, so
 that the instruction of importing keys won't cause any confusion.  It
-has support of ECDSA (with NIST P256 and secp256k1), but this feature
-is pretty much experimental, and it requires development version of
-GnuPG with newest version of libgcrypt.
+has supports of ECDSA (with NIST P256 and secp256k1) and EdDSA with
+EdDSA, but this feature is pretty much experimental, and it requires
+development version of GnuPG with newest version of libgcrypt.  You
+will not able to keep using EdDSA keys, as the key format is subject
+to change.
 
 
 What's Gnuk?
@@ -56,7 +58,7 @@ A0: Good points of Gnuk are:
 
 Q1: What kind of key algorithm is supported?
 A1: Gnuk version 1.0 only supports 2048-bit RSA.
-    Development version of Gnuk (1.1.x) supports 256-bit ECDSA.
+    Development version of Gnuk (1.1.x) supports 256-bit ECDSA and EdDSA.
 
 Q2: How long does it take for digital signing?
 A2: It takes a second and a half or so. 
@@ -129,9 +131,11 @@ Release notes
 This is third experimental release in version 1.1 series of Gnuk.
 
 While it is daily use by its developer, some newly introduced features
-(including ECDSA, key generation and firmware upgrade) should be
-considered experimental.  ECDSA is really experimental.  The feature
-even requires manual edit of Makefile after 'configure'.
+(including ECDSA/EdDSA, key generation and firmware upgrade) should be
+considered experimental.  ECDSA/EdDSA is really experimental.  The
+feature even requires manual edit of Makefile after 'configure'.
+More, EdDSA is much experimental.  You won't be able to keep using
+the EdDSA key, as it is subject to change.
 
 Tested features are:
 

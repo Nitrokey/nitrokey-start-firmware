@@ -2,9 +2,12 @@ Gnuk NEWS - User visible changes
 
 * Major changes in Gnuk 1.1.3
 
-  Released 2014-04-??, by NIIBE Yutaka
+  Released 2014-04-16, by NIIBE Yutaka
 
 ** Experimental EdDSA support.
+After configure, you can edit the DEFS variable in src/Makefile, so
+that Gnuk can support EdDSA with Ed25519 (for authentication).  Note
+that this is pretty much experimental, and subjects to change.
 
 
 * Major changes in Gnuk 1.1.2
