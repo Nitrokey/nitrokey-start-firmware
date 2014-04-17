@@ -1,3 +1,11 @@
+2014-04-17  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/mod25638.c (mod25638_add, mod25638_sub): Simplify.
+	(n25638): Remove.
+	(mod25638_neg): New.
+
+	* src/ecc-edwards.c (point_double): Use mod25638_neg.
+
 2014-04-16  Niibe Yutaka  <gniibe@fsij.org>
 
 	* VERSION: 1.1.3.

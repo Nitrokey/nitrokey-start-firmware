@@ -127,7 +127,6 @@ mod25519_is_neg (const bn256 *a)
 static void
 point_double (ptc *X, const ptc *A)
 {
-  uint32_t borrow;
   bn256 b[1], d[1], e[1];
 
   /* Compute: B = (X1 + Y1)^2 */
@@ -143,12 +142,7 @@ point_double (ptc *X, const ptc *A)
   /* E = aC; where a = -1 */
   /* Compute: E - D = -(C+D)  : Y3_tmp */
   mod25638_add (X->y, e, d);
-  /* Negation: it can result borrow, as it is in redundant representation. */
-  borrow = bn256_sub (X->y, n25638, X->y);
-  if (borrow)
-    bn256_add (X->y, X->y, n25638); /* carry ignored */
-  else
-    bn256_add (X->x, X->y, n25638); /* dummy calculation */
+  mod25638_neg (X->y, X->y);
 
   /* Compute: F = E + D = D - C; where a = -1 : E */
   mod25638_sub (e, d, e);

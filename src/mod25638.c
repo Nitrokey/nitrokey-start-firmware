@@ -68,17 +68,13 @@
 256      224      192      160      128       96       64       32        0
 2^256
   1 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
-2^256 - 32
-  0 ffffffff ffffffff ffffffff ffffffff ffffffff ffffffff ffffffff ffffffe0
-2^256 - 32 - 4
-  0 ffffffff ffffffff ffffffff ffffffff ffffffff ffffffff ffffffff ffffffdc
-2^256 - 32 - 4 - 2
-  0 ffffffff ffffffff ffffffff ffffffff ffffffff ffffffff ffffffff ffffffda
+2^256 - 16
+  0 ffffffff ffffffff ffffffff ffffffff ffffffff ffffffff ffffffff fffffff0
+2^256 - 16 - 2
+  0 ffffffff ffffffff ffffffff ffffffff ffffffff ffffffff ffffffff ffffffee
+2^256 - 16 - 2 - 1
+  0 ffffffff ffffffff ffffffff ffffffff ffffffff ffffffff ffffffff ffffffed
 */
-const bn256 n25638[1] = {
-  {{0xffffffda, 0xffffffff, 0xffffffff, 0xffffffff,
-    0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff }} };
-
 const bn256 p25519[1] = {
   {{ 0xffffffed, 0xffffffff, 0xffffffff, 0xffffffff,
      0xffffffff, 0xffffffff, 0xffffffff, 0x7fffffff }} };
@@ -92,6 +88,27 @@ const bn256 p25519[1] = {
  * it won't overflow to 2^256, and the result is represented within
  * 256-bit.
  */
+
+/**
+ * @brief  X = -A mod 2^256-38
+ */
+void
+mod25638_neg (bn256 *X, const bn256 *A)
+{
+  int i;
+  uint32_t borrow;
+  uint32_t *px;
+  const uint32_t *pa;
+
+  px = X->word;
+  pa = A->word;
+
+  for (i = 0; i < BN256_WORDS; i++)
+    *px++ = ~*pa++;
+
+  borrow = bn256_sub_uint (X, X, 37);
+  X->word[0] -= borrow * 38;
+}
 
 /**
  * @brief  X = (A + B) mod 2^256-38
