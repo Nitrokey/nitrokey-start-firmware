@@ -44,23 +44,23 @@
 
 #if ASM_IMPLEMENTATION
 #include "muladd_256.h"
-#define ADDWORD_256(d_,w_,c_)                    \
- asm ( "ldmia  %[d], { r4, r5, r6, r7 } \n\t"    \
-       "adds   r4, r4, %[w]             \n\t"    \
-       "adcs   r5, r5, #0               \n\t"    \
-       "adcs   r6, r6, #0               \n\t"    \
-       "adcs   r7, r7, #0               \n\t"    \
-       "stmia  %[d]!, { r4, r5, r6, r7 }\n\t"    \
-       "ldmia  %[d], { r4, r5, r6, r7 } \n\t"    \
-       "adcs   r4, r4, #0               \n\t"    \
-       "adcs   r5, r5, #0               \n\t"    \
-       "adcs   r6, r6, #0               \n\t"    \
-       "adcs   r7, r7, #0               \n\t"    \
-       "stmia  %[d]!, { r4, r5, r6, r7 }\n\t"    \
-       "mov    %[c], #0                 \n\t"    \
-       "adc    %[c], %[c], #0"                   \
-       : [d] "=&r" (d_), [c] "=&r" (c_)          \
-       : "[d]" (d_), [w] "r" (w_)                \
+#define ADDWORD_256(d_,s_,w_,c_)		        \
+ asm ( "ldmia  %[s]!, { r4, r5, r6, r7 } \n\t"          \
+       "adds   r4, r4, %[w]             \n\t"           \
+       "adcs   r5, r5, #0               \n\t"           \
+       "adcs   r6, r6, #0               \n\t"           \
+       "adcs   r7, r7, #0               \n\t"           \
+       "stmia  %[d]!, { r4, r5, r6, r7 }\n\t"           \
+       "ldmia  %[s]!, { r4, r5, r6, r7 } \n\t"          \
+       "adcs   r4, r4, #0               \n\t"           \
+       "adcs   r5, r5, #0               \n\t"           \
+       "adcs   r6, r6, #0               \n\t"           \
+       "adcs   r7, r7, #0               \n\t"           \
+       "stmia  %[d]!, { r4, r5, r6, r7 }\n\t"           \
+       "mov    %[c], #0                 \n\t"           \
+       "adc    %[c], %[c], #0"                          \
+       : [s] "=&r" (s_), [d] "=&r" (d_), [c] "=&r" (c_)	\
+       : "[s]" (s_), "[d]" (d_), [w] "r" (w_)		\
        : "r4", "r5", "r6", "r7", "memory", "cc" )
 #endif
 
@@ -89,26 +89,6 @@ const bn256 p25519[1] = {
  * 256-bit.
  */
 
-/**
- * @brief  X = -A mod 2^256-38
- */
-void
-mod25638_neg (bn256 *X, const bn256 *A)
-{
-  int i;
-  uint32_t borrow;
-  uint32_t *px;
-  const uint32_t *pa;
-
-  px = X->word;
-  pa = A->word;
-
-  for (i = 0; i < BN256_WORDS; i++)
-    *px++ = ~*pa++;
-
-  borrow = bn256_sub_uint (X, X, 37);
-  X->word[0] -= borrow * 38;
-}
 
 /**
  * @brief  X = (A + B) mod 2^256-38
@@ -158,10 +138,10 @@ mod25638_reduce (bn256 *X, bn512 *A)
 
   s = &A->word[8]; d = &A->word[0]; w = 38; MULADD_256 (s, d, w, c);
   c0 = A->word[8] * 38;
+  d = &X->word[0];
   s = &A->word[0];
-  ADDWORD_256 (s, c0, c);
-  A->word[0] += c * 38;
-  memcpy (X, A, sizeof (bn256));
+  ADDWORD_256 (d, s, c0, c);
+  X->word[0] += c * 38;
 #else
   s = &A->word[8]; d = &A->word[0]; w = 38;
   {
@@ -184,13 +164,10 @@ mod25638_reduce (bn256 *X, bn512 *A)
 	d[i] = (uint32_t)r;
 	r = ((r >> 32) | ((uint64_t)carry << 32));
       }
-    d[i] = (uint32_t)r;
 
-    carry = bn256_add_uint ((bn256 *)A, (bn256 *)A, A->word[8] * 38);
-    A->word[0] += carry * 38;
+    carry = bn256_add_uint (X, (bn256 *)A, r * 38);
+    X->word[0] += carry * 38;
   }
-
-  memcpy (X, A, sizeof (bn256));
 #endif
 }
 
@@ -244,19 +221,6 @@ mod25638_shift (bn256 *X, const bn256 *A, int shift)
   mod25638_add (X, X, tmp);
 }
 
-static void
-add19 (bn256 *r, bn256 *x)
-{
-  uint32_t v;
-  int i;
-
-  v = 19;
-  for (i = 0; i < BN256_WORDS; i++)
-    {
-      r->word[i] = x->word[i] + v;
-      v = (r->word[i] < v);
-    }
-}
 
 /*
  * @brief  X = A mod 2^255-19
@@ -275,12 +239,12 @@ mod25519_reduce (bn256 *X)
   r0->word[7] &= 0x7fffffff;
   if (q)
     {
-      add19 (r0, r0);
+      bn256_add_uint (r0, r0, 19);
       q = (r0->word[7] >> 31);
       r0->word[7] &= 0x7fffffff;
       if (q)
 	{
-	  add19 (r1, r0);
+	  bn256_add_uint (r1, r0, 19);
 	  q = (r1->word[7] >> 31);
 	  r1->word[7] &= 0x7fffffff;
 	  flag = 0;
@@ -290,7 +254,7 @@ mod25519_reduce (bn256 *X)
     }
   else
     {
-      add19 (r1, r0);		 /* dummy */
+      bn256_add_uint (r1, r0, 19);
       q = (r1->word[7] >> 31);	 /* dummy */
       r1->word[7] &= 0x7fffffff; /* dummy */
       if (q)
@@ -301,7 +265,7 @@ mod25519_reduce (bn256 *X)
 
   if (flag)
     {
-      add19 (r1, r0);
+      bn256_add_uint (r1, r0, 19);
       q = (r1->word[7] >> 31);
       r1->word[7] &= 0x7fffffff;
       if (q)

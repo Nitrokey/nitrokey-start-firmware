@@ -89,7 +89,7 @@ uint32_t
 bn256_add_uint (bn256 *X, const bn256 *A, uint32_t w)
 {
   int i;
-  uint32_t carry = 0;
+  uint32_t carry = w;
   uint32_t *px;
   const uint32_t *pa;
 
@@ -100,12 +100,6 @@ bn256_add_uint (bn256 *X, const bn256 *A, uint32_t w)
     {
       *px = *pa + carry;
       carry = (*px < carry);
-      if (i == 0)
-	{
-	  *px += w;
-	  carry += (*px < w);
-	}
-
       px++;
       pa++;
     }
@@ -117,7 +111,7 @@ uint32_t
 bn256_sub_uint (bn256 *X, const bn256 *A, uint32_t w)
 {
   int i;
-  uint32_t borrow = 0;
+  uint32_t borrow = w;
   uint32_t *px;
   const uint32_t *pa;
 
@@ -129,14 +123,7 @@ bn256_sub_uint (bn256 *X, const bn256 *A, uint32_t w)
       uint32_t borrow0 = (*pa < borrow);
 
       *px = *pa - borrow;
-      if (i == 0)
-	{
-	  borrow = (*px < w) + borrow0;
-	  *px -= w;
-	}
-      else
-	borrow = borrow0;
-
+      borrow = borrow0;
       px++;
       pa++;
     }

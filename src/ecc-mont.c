@@ -58,6 +58,9 @@
  *
  */
 
+#ifndef BN256_C_IMPLEMENTATION
+#define ASM_IMPLEMENTATION 1
+#endif
 /*
  *
  * 121665 = 0x1db41
@@ -66,22 +69,31 @@
 static void
 mod25638_mul_121665 (bn256 *x, const bn256 *a)
 {
+#if ASM_IMPLEMENTATION
+#include "muladd_256.h"
+  const uint32_t *s;
+  uint32_t *d;
+  uint32_t w;
   uint32_t c;
+
+  s = a->word;
+  d = x->word;
+  w = 121665;
+  MULADD_256_ASM (s, d, w, c);
+#else
+  uint32_t c, c1;
   bn256 m[1];
 
-  c = 0;
-  memcpy (x, a, sizeof (bn256));                           /* X = A        */
-  c += bn256_shift (m, a, 6);   c += bn256_add (x, x, m);  /* X += A << 6  */
-  c += bn256_shift (m, a, 8);   c += bn256_add (x, x, m);  /* X += A << 8  */
-  c += bn256_shift (m, a, 9);   c += bn256_add (x, x, m);  /* X += A << 9  */
-  c += bn256_shift (m, a, 11);  c += bn256_add (x, x, m);  /* X += A << 11 */
-  c += bn256_shift (m, a, 12);  c += bn256_add (x, x, m);  /* X += A << 12 */
-  c += bn256_shift (m, a, 14);  c += bn256_add (x, x, m);  /* X += A << 14 */
-  c += bn256_shift (m, a, 15);  c += bn256_add (x, x, m);  /* X += A << 15 */
-  c += bn256_shift (m, a, 16);  c += bn256_add (x, x, m);  /* X += A << 16 */
-
-  c *= 38;
-  c = bn256_add_uint (x, x, c);
+  c = c1 = bn256_shift (m, a, 6); c += bn256_add (x, a, m);
+  c1 <<= 2; c1 |= bn256_shift (m, m, 2); c = c + c1 + bn256_add (x, x, m);
+  c1 <<= 1; c1 |= bn256_shift (m, m, 1); c = c + c1 + bn256_add (x, x, m);
+  c1 <<= 2; c1 |= bn256_shift (m, m, 2); c = c + c1 + bn256_add (x, x, m);
+  c1 <<= 1; c1 |= bn256_shift (m, m, 1); c = c + c1 + bn256_add (x, x, m);
+  c1 <<= 2; c1 |= bn256_shift (m, m, 2); c = c + c1 + bn256_add (x, x, m);
+  c1 <<= 1; c1 |= bn256_shift (m, m, 1); c = c + c1 + bn256_add (x, x, m);
+  c1 <<= 1; c1 |= bn256_shift (m, m, 1); c = c + c1 + bn256_add (x, x, m);
+#endif
+  c = bn256_add_uint (x, x, c*38);
   x->word[0] += c * 38;
 }
 

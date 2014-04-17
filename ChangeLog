@@ -1,10 +1,15 @@
 2014-04-17  Niibe Yutaka  <gniibe@fsij.org>
 
-	* src/mod25638.c (mod25638_add, mod25638_sub): Simplify.
-	(n25638): Remove.
-	(mod25638_neg): New.
+	* src/muladd_256.h (MULADD_256_ASM): New.
+	(MULADD_256): Use MULADD_256_ASM.
+	* src/ecc-mont.c (mod25638_mul_121665): Add asm implementation.
 
-	* src/ecc-edwards.c (point_double): Use mod25638_neg.
+	* src/bn.c (bn256_add_uint, bn256_sub_uint): Simplify.
+	* src/mod25638.c (mod25638_add, mod25638_sub): Simplify.
+	(n25638, add19): Remove.
+	(ADDWORD_256): Add s_ as source pointer.
+	(mod25519_reduce): Remove a call to memcpy.  Use bn256_add_uint.
+	* src/ecc-edwards.c (point_double): Simplify.
 
 2014-04-16  Niibe Yutaka  <gniibe@fsij.org>
 

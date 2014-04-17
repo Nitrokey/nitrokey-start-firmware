@@ -140,28 +140,27 @@ point_double (ptc *X, const ptc *A)
   mod25638_sqr (d, A->y);
 
   /* E = aC; where a = -1 */
-  /* Compute: E - D = -(C+D)  : Y3_tmp */
+  /* Compute: D - E = D + C : Y3_tmp */
   mod25638_add (X->y, e, d);
-  mod25638_neg (X->y, X->y);
 
-  /* Compute: F = E + D = D - C; where a = -1 : E */
-  mod25638_sub (e, d, e);
+  /* Compute: -F = -(E + D) = C - D; where a = -1 : E */
+  mod25638_sub (e, e, d);
 
   /* Compute: H = Z1^2        : D     */
   mod25638_sqr (d, A->z);
 
-  /* Compute: J = F - 2*H     : D     */
+  /* Compute: -J = 2*H - F    : D     */
   mod25638_add (d, d, d);
-  mod25638_sub (d, e, d);
+  mod25638_add (d, d, e);
 
-  /* Compute: X3 = (B-C-D)*J = (B+Y3_tmp)*J  */
-  mod25638_add (X->x, b, X->y);
+  /* Compute: X3 = (B-C-D)*J = -J*(C+D-B) = -J*(Y3_tmp-B)  */
+  mod25638_sub (X->x, X->y, b);
   mod25638_mul (X->x, X->x, d);
 
-  /* Compute: Y3 = F*(E-D) = F*Y3_tmp            */
+  /* Compute: Y3 = -F*(D-E) = -F*Y3_tmp            */
   mod25638_mul (X->y, X->y, e);
 
-  /* Z3 = F*J             */
+  /* Z3 = -F*-J             */
   mod25638_mul (X->z, e, d);
 }
 
