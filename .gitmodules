@@ -1,6 +1,3 @@
 [submodule "chopstx"]
 	path = chopstx
-	url = chopstx.git
-#
-# url = git@gitorious.org:chopstx/chopstx.git
-#
+	url = chopstx/chopstx.git
