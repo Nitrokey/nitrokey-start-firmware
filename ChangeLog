@@ -1,3 +1,7 @@
+2014-06-05  Niibe Yutaka  <gniibe@fsij.org>
+
+	* tool/add_openpgp_authkey_from_gpgssh.py: New.
+
 2014-04-17  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/muladd_256.h (MULADD_256_ASM): New.
