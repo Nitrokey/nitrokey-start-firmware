@@ -1,3 +1,10 @@
+2014-06-19  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/ecc-mont.c (compute_nQ): Add comment.
+
+	* src/mod.c (mod_inv): Fix comment. X^-1 = 0 when X=0
+	is important for Montgomery curve computation.
+
 2014-06-05  Niibe Yutaka  <gniibe@fsij.org>
 
 	* tool/add_openpgp_authkey_from_gpgssh.py: New.

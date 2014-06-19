@@ -147,7 +147,7 @@ mod_reduce (bn256 *X, const bn512 *A, const bn256 *B, const bn256 *MU_lower)
  * @brief C = X^(-1) mod N
  * 
  * Assume X and N are co-prime (or N is prime).
- * If N==0, return 0.
+ * NOTE: If X==0, it return 0.
  *
  */
 void

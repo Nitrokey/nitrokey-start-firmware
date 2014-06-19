@@ -185,6 +185,11 @@ compute_nQ (bn256 *res, const bn256 *n, const bn256 *q_x)
     }
 
   /* We know the LSB of N is always 0.  Thus, result is always in P0.  */
+  /*
+   * p0->z may be zero here, but our mod_inv doesn't raise error for 0,
+   * but returns 0 (like the implementation of z^(p-2)), thus, RES will
+   * be 0 in that case, which is correct value.
+   */
   mod_inv (res, p0->z, p25519);
   mod25638_mul (res, res, p0->x);
   mod25519_reduce (res);
