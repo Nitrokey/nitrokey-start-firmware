@@ -55,7 +55,7 @@ OBJCOPY   = $(CROSS)objcopy
 MCU   = cortex-m3
 CWARN = -Wall -Wextra -Wstrict-prototypes
 # DEFS: Add  
-DEFS  = -DCHX_PRIO_MAIN=5 -DRSA_AUTH -DRSA_SIG @KEYGEN_SUPPORT@ @HAVE_SYS_H@
+DEFS  = -DCHX_PRIO_MAIN=5 @KEYGEN_SUPPORT@ @HAVE_SYS_H@
 OPT   = -O3 -Os -g
 LIBS  =
 

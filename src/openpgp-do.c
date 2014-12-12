@@ -1244,22 +1244,32 @@ kkb_to_kk (uint8_t kk_byte)
 }
 
 /*
- * RSA:
+ * RSA-2048:
  * 4d, xx, xx, xx:    Extended Header List
  *   b6 00 (SIG) / b8 00 (DEC) / a4 00 (AUT)
  *   7f48, xx: cardholder private key template
- *       91 L<E>: L<E>:  91=tag of E, L<E>: length of E
+ *       91 L<E>:        91=tag of E, L<E>: length of E
  *       92 Lh<P> Ll<P>: 92=tag of P, L<P>: length of P
  *       93 Lh<Q> Ll<Q>: 93=tag of Q, L<Q>: length of Q
  *   5f48, xx xx xx: cardholder private key
- * <E: 4-byte>, <P: 128-byte>, <Q: 128-byte>
+ *       <E: 4-byte>, <P: 128-byte>, <Q: 128-byte>
  *
- * ECDSA / EdDSA:
- * 4d, xx:    Extended Header List
- *   a4 00 (AUT)
- *   7f48, xx: cardholder private key template
+ * RSA-4096:
+ * 4d, 82, 02, 18:    Extended Header List
+ *   b6 00 (SIG) / b8 00 (DEC) / a4 00 (AUT)
+ *   7f48, 0a: cardholder private key template
+ *       91 L<E>:        91=tag of E, L<E>: length of E
+ *       92 82 Lh<P> Ll<P>: 92=tag of P, L<P>: length of P
+ *       93 82 Lh<Q> Ll<Q>: 93=tag of Q, L<Q>: length of Q
+ *   5f48, 82 02 04: cardholder private key
+ *       <E: 4-byte>, <P: 256-byte>, <Q: 256-byte>
+ *
+ * ECDSA / ECDH / EdDSA:
+ * 4d, 2a:    Extended Header List
+ *   b6 00 (SIG) / b8 00 (DEC) / a4 00 (AUT)
+ *   7f48, 02: cardholder private key template
  *       9x LEN: 9x=tag of private key d,  LEN=length of d
- *   5f48, xx : cardholder private key
+ *   5f48, 20: cardholder private key
  * <d: 32-byte>
  */
 static int
@@ -1268,6 +1278,7 @@ proc_key_import (const uint8_t *data, int len)
   int r;
   enum kind_of_key kk;
   const uint8_t *keystring_admin;
+  int attr;
   const uint8_t *p = data;
 
   if (admin_authorized == BY_ADMIN)
@@ -1297,56 +1308,25 @@ proc_key_import (const uint8_t *data, int len)
   else
     ac_reset_other ();
 
-#if defined(RSA_AUTH) && defined(RSA_SIG)
-  if (len <= 22)
-#elif defined(RSA_AUTH) && !defined(RSA_SIG)
-  /* ECDSA with p256k1 for signature */
-  if ((kk != GPG_KEY_FOR_SIGNING && len <= 22)
-      || (kk == GPG_KEY_FOR_SIGNING && len <= 12))
-#elif !defined(RSA_AUTH) && defined(RSA_SIG)
-  /* ECDSA with p256r1 for authentication */
-  if ((kk != GPG_KEY_FOR_AUTHENTICATION && len <= 22)
-      || (kk == GPG_KEY_FOR_AUTHENTICATION && len <= 12))
-#else
-#error "not supported."
-#endif
+  attr = gpg_get_algo_attr (kk);
+
+  if ((len <= 12 && (attr == ALGO_NISTP256R1 || attr == ALGO_SECP256K1
+		     || attr == ALGO_ED25519))
+      || (len <= 22 && attr == ALGO_RSA2K) || (len <= 24 && attr == ALGO_RSA4K))
     {					    /* Deletion of the key */
       gpg_do_delete_prvkey (kk);
       return 1;
     }
 
-#if defined(RSA_AUTH) && defined(RSA_SIG)
-  r = gpg_do_write_prvkey (kk, &data[26], len - 26, keystring_admin, NULL);
-#elif defined(RSA_AUTH) && !defined(RSA_SIG)
-  /* ECDSA with p256k1 for signature */
-  if (kk != GPG_KEY_FOR_SIGNING)
-    {			   /* RSA */
-      /* It should starts with 00 01 00 01 (E) */
-      /* Skip E, 4-byte */
-      r = gpg_do_write_prvkey (kk, &data[26], len - 26, keystring_admin, NULL);
-    }
-  else
+  if (attr == ALGO_RSA2K)
+    /* It should starts with 00 01 00 01 (E), skiping E (4-byte) */
+    r = gpg_do_write_prvkey (kk, &data[26], len - 26, keystring_admin, NULL);
+  else if (attr == ALGO_RSA4K)
+    /* It should starts with 00 01 00 01 (E), skiping E (4-byte) */
+    r = gpg_do_write_prvkey (kk, &data[28], len - 28, keystring_admin, NULL);
+  else if (attr == ALGO_NISTP256R1 || attr == ALGO_SECP256K1)
     r = gpg_do_write_prvkey (kk, &data[12], len - 12, keystring_admin, NULL);
-#elif !defined(RSA_AUTH) && defined(RSA_SIG)
-#if defined(ECDSA_AUTH)
-  /* ECDSA with p256r1 for authentication */
-  if (kk != GPG_KEY_FOR_AUTHENTICATION)
-    {			   /* RSA */
-      /* It should starts with 00 01 00 01 (E) */
-      /* Skip E, 4-byte */
-      r = gpg_do_write_prvkey (kk, &data[26], len - 26, keystring_admin, NULL);
-    }
-  else
-    r = gpg_do_write_prvkey (kk, &data[12], len - 12, keystring_admin, NULL);
-#else  /* EdDSA */
-  /* EdDSA with Ed25519 for authentication */
-  if (kk != GPG_KEY_FOR_AUTHENTICATION)
-    {			   /* RSA */
-      /* It should starts with 00 01 00 01 (E) */
-      /* Skip E, 4-byte */
-      r = gpg_do_write_prvkey (kk, &data[26], len - 26, keystring_admin, NULL);
-    }
-  else
+  else /* if (attr == ALGO_ED25519) */
     {
       uint8_t hash[64];
 
@@ -1359,10 +1339,6 @@ proc_key_import (const uint8_t *data, int len)
       hash[31] |= 64;
       r = gpg_do_write_prvkey (kk, hash, 64, keystring_admin, NULL);
     }
-#endif
-#else
-#error "not supported."
-#endif
 
   if (r < 0)
     return 0;
