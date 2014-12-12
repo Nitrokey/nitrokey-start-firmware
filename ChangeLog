@@ -1,5 +1,7 @@
 2014-12-12  Niibe Yutaka  <gniibe@fsij.org>
 
+	* src/Makefile.in (build/bignum.o): Specific OPT for this target.
+
 	* src/configure (target): Default is FST-01.
 	(--with-dfu): FST-01 doesn't have DFU.  If set, it must be
 	mistake.

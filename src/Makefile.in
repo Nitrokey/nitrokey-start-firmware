@@ -68,6 +68,8 @@ board.h:
 
 sys.c: board.h
 
+build/bignum.o: OPT = -O3 -g
+
 distclean: clean
 	-rm -f gnuk.ld config.h board.h Makefile \
 	       usb-strings.c.inc usb-vid-pid-ver.c.inc
