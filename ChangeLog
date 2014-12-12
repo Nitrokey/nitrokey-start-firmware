@@ -1,3 +1,10 @@
+2014-12-10  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/ecc-cdh.c: Remove as smartcard only does
+	a part of ECDH computation as gpg-agent does.
+
+	* src/chconf.h, src/halconf.h: Remove files needed for ChibiOS/RT.
+
 2014-12-09  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/call-ec.c (ecc_compute_public): Rename, as we share
