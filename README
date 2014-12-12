@@ -369,7 +369,7 @@ Olimex STM32-H103 board
 
 If you are using Olimex JTAG-Tiny, type following to invoke OpenOCD:
 
-  $ openocd -f interface/olimex-jtag-tiny.cfg -f board/olimex_stm32_h103.cfg
+  $ openocd -f interface/ftdi/olimex-jtag-tiny.cfg -f board/olimex_stm32_h103.cfg
 
 Then, with another terminal, type following to write "gnuk.elf" to Flash ROM:
 

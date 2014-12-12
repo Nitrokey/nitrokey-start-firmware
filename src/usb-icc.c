@@ -1,7 +1,8 @@
 /*
  * usb-icc.c -- USB CCID protocol handling
  *
- * Copyright (C) 2010, 2011, 2012, 2013 Free Software Initiative of Japan
+ * Copyright (C) 2010, 2011, 2012, 2013, 2014
+ *               Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
  * This file is a part of Gnuk, a GnuPG USB Token implementation.
@@ -467,21 +468,18 @@ static int end_cmd_apdu_head (struct ep_out *epo, size_t orig_len)
     }
 
   if (epo->cnt == 4)
-    {
-      /* No Lc and Le */
-      c->a->cmd_apdu_data_len = 0;
-      c->a->expected_res_size = 0;
-    }
+    /* No Lc and Le */
+    c->a->expected_res_size = 0;
   else if (epo->cnt == 5)
     {
       /* No Lc but Le */
-      c->a->cmd_apdu_data_len = 0;
       c->a->expected_res_size = c->a->cmd_apdu_head[4];
       if (c->a->expected_res_size == 0)
 	c->a->expected_res_size = 256;
       c->a->cmd_apdu_head[4] = 0;
     }
 
+  c->a->cmd_apdu_data_len = 0;
   return 0;
 }
 
@@ -516,6 +514,8 @@ static int end_cmd_apdu_data (struct ep_out *epo, size_t orig_len)
     {
       /* it has Le field*/
       c->a->expected_res_size = epo->buf[-1];
+      if (c->a->expected_res_size == 0)
+	c->a->expected_res_size = 256;
       len--;
     }
   else
