@@ -1,3 +1,8 @@
+2014-12-11  Niibe Yutaka  <gniibe@fsij.org>
+
+	* chopstx: Upgrade to 0.04.
+	* src/syc.c: Update from 0.04.
+
 2014-12-10  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/ecc-cdh.c: Remove as smartcard only does
