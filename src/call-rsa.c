@@ -32,29 +32,25 @@
 #include "polarssl/config.h"
 #include "polarssl/rsa.h"
 
-#define RSA_SIGNATURE_LENGTH KEY_CONTENT_LEN
- /* 256 byte == 2048-bit */
- /* 128 byte == 1024-bit */
-
 static rsa_context rsa_ctx;
 
 int
 rsa_sign (const uint8_t *raw_message, uint8_t *output, int msg_len,
-	  struct key_data *kd)
+	  struct key_data *kd, int pubkey_len)
 {
   mpi P1, Q1, H;
   int ret = 0;
-  unsigned char temp[RSA_SIGNATURE_LENGTH];
+  unsigned char temp[pubkey_len];
 
   rsa_init (&rsa_ctx, RSA_PKCS_V15, 0);
 
   mpi_init (&P1);  mpi_init (&Q1);  mpi_init (&H);
 
-  rsa_ctx.len = KEY_CONTENT_LEN;
+  rsa_ctx.len = pubkey_len;
   MPI_CHK( mpi_lset (&rsa_ctx.E, 0x10001) );
-  MPI_CHK( mpi_read_binary (&rsa_ctx.P, &kd->data[0], rsa_ctx.len / 2) );
-  MPI_CHK( mpi_read_binary (&rsa_ctx.Q, &kd->data[KEY_CONTENT_LEN/2],
-			    rsa_ctx.len / 2) );
+  MPI_CHK( mpi_read_binary (&rsa_ctx.P, &kd->data[0], pubkey_len / 2) );
+  MPI_CHK( mpi_read_binary (&rsa_ctx.Q, &kd->data[pubkey_len / 2],
+			    pubkey_len / 2) );
 #if 0
   MPI_CHK( mpi_mul_mpi (&rsa_ctx.N, &rsa_ctx.P, &rsa_ctx.Q) );
 #endif
@@ -74,7 +70,7 @@ rsa_sign (const uint8_t *raw_message, uint8_t *output, int msg_len,
       ret = rsa_rsassa_pkcs1_v15_sign (&rsa_ctx, NULL, NULL,
 				       RSA_PRIVATE, SIG_RSA_RAW,
 				       msg_len, raw_message, temp);
-      memcpy (output, temp, RSA_SIGNATURE_LENGTH);
+      memcpy (output, temp, pubkey_len);
     }
 
   rsa_free (&rsa_ctx);
@@ -86,7 +82,7 @@ rsa_sign (const uint8_t *raw_message, uint8_t *output, int msg_len,
     }
   else
     {
-      res_APDU_size = RSA_SIGNATURE_LENGTH;
+      res_APDU_size = pubkey_len;
       DEBUG_INFO ("done.\r\n");
       GPG_SUCCESS ();
       return 0;
@@ -139,9 +135,8 @@ rsa_decrypt (const uint8_t *input, uint8_t *output, int msg_len,
   DEBUG_WORD (msg_len);
 
   MPI_CHK( mpi_lset (&rsa_ctx.E, 0x10001) );
-  MPI_CHK( mpi_read_binary (&rsa_ctx.P, &kd->data[0], KEY_CONTENT_LEN / 2) );
-  MPI_CHK( mpi_read_binary (&rsa_ctx.Q, &kd->data[KEY_CONTENT_LEN/2],
-			    KEY_CONTENT_LEN / 2) );
+  MPI_CHK( mpi_read_binary (&rsa_ctx.P, &kd->data[0], msg_len / 2) );
+  MPI_CHK( mpi_read_binary (&rsa_ctx.Q, &kd->data[msg_len / 2], msg_len / 2) );
 #if 0
   MPI_CHK( mpi_mul_mpi (&rsa_ctx.N, &rsa_ctx.P, &rsa_ctx.Q) );
 #endif
@@ -179,14 +174,15 @@ rsa_decrypt (const uint8_t *input, uint8_t *output, int msg_len,
 }
 
 int
-rsa_verify (const uint8_t *pubkey, const uint8_t *hash, const uint8_t *sig)
+rsa_verify (const uint8_t *pubkey, int pubkey_len,
+	    const uint8_t *hash, const uint8_t *sig)
 {
   int ret;
 
   rsa_init (&rsa_ctx, RSA_PKCS_V15, 0);
-  rsa_ctx.len = KEY_CONTENT_LEN;
+  rsa_ctx.len = pubkey_len;
   MPI_CHK( mpi_lset (&rsa_ctx.E, 0x10001) );
-  MPI_CHK( mpi_read_binary (&rsa_ctx.N, pubkey, KEY_CONTENT_LEN) );
+  MPI_CHK( mpi_read_binary (&rsa_ctx.N, pubkey, pubkey_len) );
 
   DEBUG_INFO ("RSA verify...");
 
@@ -212,14 +208,14 @@ rsa_verify (const uint8_t *pubkey, const uint8_t *hash, const uint8_t *sig)
 
 #ifdef KEYGEN_SUPPORT
 uint8_t *
-rsa_genkey (void)
+rsa_genkey (int pubkey_len)
 {
   int ret;
   uint8_t index = 0;
-  uint8_t *p_q_modulus = (uint8_t *)malloc (KEY_CONTENT_LEN*2);
+  uint8_t *p_q_modulus = (uint8_t *)malloc (pubkey_len * 2);
   uint8_t *p = p_q_modulus;
-  uint8_t *q = p_q_modulus + KEY_CONTENT_LEN/2;
-  uint8_t *modulus = p_q_modulus + KEY_CONTENT_LEN;
+  uint8_t *q = p_q_modulus + pubkey_len / 2;
+  uint8_t *modulus = p_q_modulus + pubkey_len;
   extern int prng_seed (int (*f_rng)(void *, unsigned char *, size_t),
 			void *p_rng);
   extern void neug_flush (void);
@@ -231,8 +227,8 @@ rsa_genkey (void)
   prng_seed (random_gen, &index);
 
   rsa_init (&rsa_ctx, RSA_PKCS_V15, 0);
-  MPI_CHK( rsa_gen_key (&rsa_ctx, random_gen, &index,
-			KEY_CONTENT_LEN * 8, RSA_EXPONENT) );
+  MPI_CHK( rsa_gen_key (&rsa_ctx, random_gen, &index, pubkey_len * 8,
+			RSA_EXPONENT) );
   if (ret != 0)
     {
       free (p_q_modulus);
@@ -240,9 +236,9 @@ rsa_genkey (void)
       return NULL;
     }
 
-  MPI_CHK( mpi_write_binary (&rsa_ctx.P, p, KEY_CONTENT_LEN/2) );
-  MPI_CHK( mpi_write_binary (&rsa_ctx.Q, q, KEY_CONTENT_LEN/2) );
-  MPI_CHK( mpi_write_binary (&rsa_ctx.N, modulus, KEY_CONTENT_LEN) );
+  MPI_CHK( mpi_write_binary (&rsa_ctx.P, p, pubkey_len / 2) );
+  MPI_CHK( mpi_write_binary (&rsa_ctx.Q, q, pubkey_len / 2) );
+  MPI_CHK( mpi_write_binary (&rsa_ctx.N, modulus, pubkey_len) );
 
  cleanup:
   rsa_free (&rsa_ctx);

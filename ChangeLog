@@ -1,3 +1,12 @@
+2014-09-16  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/gnuk.h (MAX_PRVKEY_LEN): New.
+	(KEY_CONTENT_LEN): Remove.
+
+	* src/call-rsa.c (RSA_SIGNATURE_LENGTH): Remove.
+	(rsa_sign, rsa_verify, rsa_genkey): Add new arg: PUBKEY_LEN.
+	(rsa_decrypt): Don't use KEY_CONTENT_LEN.
+
 2014-06-19  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/ecc-mont.c (compute_nQ): Add comment.

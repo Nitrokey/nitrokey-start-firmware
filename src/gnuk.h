@@ -144,13 +144,14 @@ extern int flash_write_binary (uint8_t file_id, const uint8_t *data, uint16_t le
 extern uint8_t ch_certificate_start;
 extern uint8_t random_bits_start;
 
-#define KEY_CONTENT_LEN 256	/* p and q */
 #define INITIAL_VECTOR_SIZE 16
 #define DATA_ENCRYPTION_KEY_SIZE 16
 
+#define MAX_PRVKEY_LEN 512	/* Maximum is the case for RSA 4096-bit.  */
+
 struct key_data {
-  uint8_t *key_addr;		 /* Pointer to encrypted data, and public */
-  uint8_t data[KEY_CONTENT_LEN]; /* decrypted data content */
+  const uint8_t *pubkey;	 /* Pointer to public key*/
+  uint8_t data[MAX_PRVKEY_LEN]; /* decrypted private key data content */
 };
 
 struct key_data_internal {
@@ -241,12 +242,11 @@ extern void put_binary (const char *s, int len);
 #define DEBUG_BINARY(s,len)
 #endif
 
-extern int rsa_sign (const uint8_t *, uint8_t *, int, struct key_data *);
+extern int rsa_sign (const uint8_t *, uint8_t *, int, struct key_data *, int);
 extern uint8_t *modulus_calc (const uint8_t *, int);
 extern int rsa_decrypt (const uint8_t *, uint8_t *, int, struct key_data *);
-extern int rsa_verify (const uint8_t *pubkey, const uint8_t *hash,
-		       const uint8_t *signature);
-extern uint8_t *rsa_genkey (void);
+extern int rsa_verify (const uint8_t *, int, const uint8_t *, const uint8_t *);
+extern uint8_t *rsa_genkey (int);
 
 extern int ecdsa_sign_p256r1 (const uint8_t *hash, uint8_t *output,
 			      const uint8_t *key_data);
