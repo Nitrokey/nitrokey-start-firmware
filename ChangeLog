@@ -1,5 +1,10 @@
 2014-11-20  Niibe Yutaka  <gniibe@fsij.org>
 
+	* src/openpgp-do.c (extended_capabilities): Key attributes can be
+	modifid now.
+
+2014-11-20  Niibe Yutaka  <gniibe@fsij.org>
+
 	* src/gnuk.h (NR_NONE, NR_DO__FIRST__): Remove.
 	(NR_DO_*): Redefine.
 	(NR_KEY_ALGO_ATTR_SIG, NR_KEY_ALGO_ATTR_DEC)
