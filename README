@@ -65,8 +65,6 @@ A2: It takes a second and a half or so.
 
 Q3: What's your recommendation for target board?
 A3: Orthodox choice is Olimex STM32-H103.
-    If you have skill of electronics and like DIY, STM32 part of STM8S
-    Discovery Kit might be the best choice.
     FST-01 (Flying Stone Tiny 01) is available for sale, and it is a
     kind of the best choice, hopefully.
 
@@ -176,16 +174,14 @@ It is known not-working well:
 Targets
 =======
 
-We use Olimex STM32-H103 board and Flying Stone Tiny 01 (FST-01).  We
-also use STM32 part of STM8S Discovery Kit.
+We use Olimex STM32-H103 board and Flying Stone Tiny 01 (FST-01).
 
 With DfuSe support, STBee is also our targets.  But this target with
 DfuSe is for experiment only, because it is impossible for DfuSe to
 disable read from flash.  For real use, please consider killing DfuSe
 and enabling read protection using JTAG debugger.
 
-For PIN-pad support, I connect a consumer IR receive module to FST-01
-and STM8S Discovery Kit, and use controller for TV.  PIN verification
+For PIN-pad support, I connect a consumer IR receive module to FST-01, and use controller for TV.  PIN verification
 is supported by this configuration.  Yes, it is not secure at all,
 since it is very easy to monitor IR output of the controllers.  It is
 just an experiment.  Note that hardware needed for this experiment is
@@ -414,29 +410,6 @@ OpenOCD 0.6.1 now supports ST-Link/V2.  We can use it:
   $ openocd -f interface/stlink-v2.cfg -f target/stm32f1x_stlink.cfg
 
 But it doesn't support option bytes handling (protection) yet.
-
-
-STM8S Discovery Kit
--------------------
-
-If you are using FTDI-2232D module and the connection is standard, type:
-
-  $ openocd -f interface/openocd-usb.cfg -f target/stm32f1x.cfg
-
-Initially, the flash ROM of the chip is protected.  you need to do:
-
-  $ telnet localhost 4444
-  > reset halt
-  > stm32f1x unlock 0
-  > reset
-  > shutdown
-  $ 
-
-and re-connect the board.  Note that power-off / power-on sequence is
-required to reset flash ROM.
-
-Then, invoke OpenOCD again and telnet to connect OpenCD and write
-image as above example of Olimex STM32-H103.
 
 
 STBee

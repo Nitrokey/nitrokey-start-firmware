@@ -1,5 +1,11 @@
 2014-12-12  Niibe Yutaka  <gniibe@fsij.org>
 
+	* src/configure (target): Default is FST-01.
+	(--with-dfu): FST-01 doesn't have DFU.  If set, it must be
+	mistake.
+
+	* boards/STBEE_MINI: Remove, since it is now supported by Chopstx.
+
 	* test/features/802_get_data_static.feature: Reflect the change
 	of extended capabilities.
 	* test/features/402_get_data_static.feature: Ditto.

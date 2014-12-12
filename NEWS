@@ -1,5 +1,32 @@
 Gnuk NEWS - User visible changes
 
+* Major changes in Gnuk 1.1.4
+
+  Released 2014-12-13, by NIIBE Yutaka
+
+** Experimental RSA-4096 support.
+Although it takes too long (more than 8.7 second), RSA-4096
+is now implemented.
+
+** ECDH support.
+ECDH is now supported.  You need development branch (master)
+of GnuPG to use this feature.
+
+** ECDSA and EdDSA is not that experimental.
+You don't need to edit DEFS variable in src/Makefile.
+
+** STM8S_DISCOVERY is not supported any more.
+It's flash ROM size (64KiB) is a bit small to have all features of
+Gnuk now.  If you manually edit code to limit the size of executable,
+it still could run Gnuk, though.
+
+** configure's default target is now FST-01.
+Receiving reports from those who complain default target, I
+reconsidered.  Those who has Olimex STM32 H103 usually has JTAG
+debugger, while FST-01 users don't.  So, to be safe, the default
+target is now FST-01, instead of Olimex STM32 H103.
+
+
 * Major changes in Gnuk 1.1.3
 
   Released 2014-04-16, by NIIBE Yutaka
