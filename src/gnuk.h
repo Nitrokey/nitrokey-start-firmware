@@ -36,10 +36,10 @@ void ccid_card_change_signal (int how);
 #define EV_VERIFY_CMD_AVAILABLE (8)
 #define EV_MODIFY_CMD_AVAILABLE (16)
 
-/* Maximum cmd apdu data is key import 22+4+128+128 (proc_key_import) */
-#define MAX_CMD_APDU_DATA_SIZE (22+4+128+128) /* without header */
-/* Maximum res apdu data is public key 5+9+256 (gpg_do_public_key) */
-#define MAX_RES_APDU_DATA_SIZE (5+9+256) /* without trailer */
+/* Maximum cmd apdu data is key import 24+4+256+256 (proc_key_import) */
+#define MAX_CMD_APDU_DATA_SIZE (24+4+256+256) /* without header */
+/* Maximum res apdu data is public key 5+9+512 (gpg_do_public_key) */
+#define MAX_RES_APDU_DATA_SIZE (5+9+512) /* without trailer */
 
 #define ICC_MSG_HEADER_SIZE	10
 

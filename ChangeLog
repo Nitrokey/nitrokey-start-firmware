@@ -1,3 +1,13 @@
+2014-12-03  NIIBE Yutaka  <gniibe@fsij.org>
+
+	Changes for RSA-4096.
+
+	* src/gnuk.h (MAX_CMD_APDU_DATA_SIZE, MAX_RES_APDU_DATA_SIZE):
+	Send/Recv buffer should be bigger.
+	* polarssl/library/bignum.c (mpi_exp_mod): Don't consume much.
+	* polarssl/library/rsa.c (rsa_rsaes_pkcs1_v15_decrypt): buffer
+	allocation size should be variable.
+
 2014-12-01  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/Makefile.in (DEFS): Don't define compile time preference of

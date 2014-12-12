@@ -671,14 +671,14 @@ int rsa_rsaes_pkcs1_v15_decrypt( rsa_context *ctx,
     size_t ilen, pad_count = 0;
     unsigned char *p, *q;
     unsigned char bt;
-    unsigned char buf[POLARSSL_MPI_MAX_SIZE];
+    unsigned char buf[ctx->len];
 
     if( ctx->padding != RSA_PKCS_V15 )
         return( POLARSSL_ERR_RSA_BAD_INPUT_DATA );
 
     ilen = ctx->len;
 
-    if( ilen < 16 || ilen > sizeof( buf ) )
+    if( ilen < 16)
         return( POLARSSL_ERR_RSA_BAD_INPUT_DATA );
 
     ret = ( mode == RSA_PUBLIC )

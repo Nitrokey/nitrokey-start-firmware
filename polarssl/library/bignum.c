@@ -1545,7 +1545,8 @@ int mpi_exp_mod( mpi *X, const mpi *A, const mpi *E, const mpi *N, mpi *_RR )
 {
     int ret;
     size_t i = mpi_msb( E );
-    size_t wsize = ( i > 671 ) ? 6 : ( i > 239 ) ? 5 :
+    size_t wsize = ( i > 1024 ) ? 4 : /* Because of not enough memory.  */
+      		   ( i > 671 ) ? 6 : ( i > 239 ) ? 5 :
                    ( i >  79 ) ? 4 : ( i >  23 ) ? 3 : 1;
     size_t wbits, one = 1;
     size_t nblimbs;
