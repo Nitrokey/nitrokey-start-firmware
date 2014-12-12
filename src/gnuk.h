@@ -49,8 +49,7 @@ void ccid_card_change_signal (int how);
 /* USB buffer size of LL (Low-level): size of single Bulk transaction */
 #define USB_LL_BUF_SIZE 64
 
-enum icc_state
-{
+enum icc_state {
   ICC_STATE_NOCARD,		/* No card available */
   ICC_STATE_START,		/* Initial */
   ICC_STATE_WAIT,		/* Waiting APDU */
@@ -85,10 +84,10 @@ int ac_check_status (uint8_t ac_flag);
 int verify_pso_cds (const uint8_t *pw, int pw_len);
 int verify_other (const uint8_t *pw, int pw_len);
 int verify_user_0 (uint8_t access, const uint8_t *pw, int buf_len,
-			  int pw_len_known, const uint8_t *ks_pw1, int saveks);
+		   int pw_len_known, const uint8_t *ks_pw1, int saveks);
 int verify_admin (const uint8_t *pw, int pw_len);
 int verify_admin_0 (const uint8_t *pw, int buf_len, int pw_len_known,
-			   const uint8_t *ks_pw3, int saveks);
+		    const uint8_t *ks_pw3, int saveks);
 
 void ac_reset_pso_cds (void);
 void ac_reset_other (void);
@@ -117,13 +116,21 @@ enum kind_of_key {
   GPG_KEY_FOR_AUTHENTICATION,
 };
 
+enum size_of_key {
+  GPG_KEY_STORAGE = 0,		/* PUBKEY + PRVKEY rounded to 2^N */
+  GPG_KEY_PUBLIC,
+  GPG_KEY_PRIVATE,
+};
+
 const uint8_t *flash_init (void);
+void flash_init_keys (void);
 void flash_do_release (const uint8_t *);
 const uint8_t *flash_do_write (uint8_t nr, const uint8_t *data, int len);
 uint8_t *flash_key_alloc (enum kind_of_key);
-void flash_key_release (uint8_t *);
-int flash_key_write (uint8_t *key_addr, const uint8_t *key_data,
-			    const uint8_t *pubkey, int pubkey_len);
+void flash_key_release (uint8_t *, int);
+int flash_key_write (uint8_t *key_addr,
+		     const uint8_t *key_data, int key_data_len,
+		     const uint8_t *pubkey, int pubkey_len);
 void flash_set_data_pool_last (const uint8_t *p);
 void flash_clear_halfword (uint32_t addr);
 void flash_increment_counter (uint8_t counter_tag_nr);
@@ -136,7 +143,8 @@ void flash_reset_counter (uint8_t counter_tag_nr);
 #define FILEID_UPDATE_KEY_3	4
 #define FILEID_CH_CERTIFICATE	5
 int flash_erase_binary (uint8_t file_id);
-int flash_write_binary (uint8_t file_id, const uint8_t *data, uint16_t len, uint16_t offset);
+int flash_write_binary (uint8_t file_id, const uint8_t *data,
+			uint16_t len, uint16_t offset);
 
 #define FLASH_CH_CERTIFICATE_SIZE 2048
 
@@ -144,13 +152,15 @@ int flash_write_binary (uint8_t file_id, const uint8_t *data, uint16_t len, uint
 extern uint8_t ch_certificate_start;
 extern uint8_t random_bits_start;
 
+#define FIRMWARE_UPDATE_KEY_CONTENT_LEN 256	/* RSA-2048 (p and q) */
+
 #define INITIAL_VECTOR_SIZE 16
 #define DATA_ENCRYPTION_KEY_SIZE 16
 
 #define MAX_PRVKEY_LEN 512	/* Maximum is the case for RSA 4096-bit.  */
 
 struct key_data {
-  const uint8_t *pubkey;	 /* Pointer to public key*/
+  const uint8_t *pubkey;	/* Pointer to public key*/
   uint8_t data[MAX_PRVKEY_LEN]; /* decrypted private key data content */
 };
 
@@ -208,11 +218,11 @@ void s2k (const unsigned char *salt, size_t slen,
 void gpg_do_clear_prvkey (enum kind_of_key kk);
 int gpg_do_load_prvkey (enum kind_of_key kk, int who, const uint8_t *keystring);
 int gpg_do_chks_prvkey (enum kind_of_key kk,
-			       int who_old, const uint8_t *old_ks,
-			       int who_new, const uint8_t *new_ks);
+			int who_old, const uint8_t *old_ks,
+			int who_new, const uint8_t *new_ks);
 
 int gpg_change_keystring (int who_old, const uint8_t *old_ks,
-				 int who_new, const uint8_t *new_ks);
+			  int who_new, const uint8_t *new_ks);
 
 extern struct key_data kd[3];
 
@@ -370,7 +380,8 @@ void flash_warning (const char *msg);
 void flash_put_data_internal (const uint8_t *p, uint16_t hw);
 void flash_bool_write_internal (const uint8_t *p, int nr);
 void flash_cnt123_write_internal (const uint8_t *p, int which, int v);
-void flash_do_write_internal (const uint8_t *p, int nr, const uint8_t *data, int len);
+void flash_do_write_internal (const uint8_t *p, int nr,
+			      const uint8_t *data, int len);
 
 extern const uint8_t gnukStringSerial[];
 
@@ -380,7 +391,7 @@ extern const uint8_t gnukStringSerial[];
 #define LED_START_COMMAND	(8)
 #define LED_FINISH_COMMAND	(16)
 #define LED_FATAL		(32)
-extern void led_blink (int spec);
+void led_blink (int spec);
 
 #if defined(PINPAD_SUPPORT)
 # if defined(PINPAD_CIR_SUPPORT)

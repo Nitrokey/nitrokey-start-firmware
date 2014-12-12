@@ -1,7 +1,7 @@
 /*
  * flash.c -- Data Objects (DO) and GPG Key handling on Flash ROM
  *
- * Copyright (C) 2010, 2011, 2012, 2013
+ * Copyright (C) 2010, 2011, 2012, 2013, 2014
  *               Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
@@ -57,9 +57,12 @@
  * _data_pool
  *	   <two pages>
  * _keystore_pool
- *         three flash pages for keystore (single: 512-byte (p, q and N))
+ *         Three flash pages for keystore
+ *         a page contains a key data of:
+ *              For RSA-2048: 512-byte (p, q and N)
+ *              For RSA-4096: 1024-byte (p, q and N)
+ *              For ECDSA/ECDH and EdDSA, there are padding after public key
  */
-#define KEY_SIZE	512	/* P, Q and N */
 
 #define FLASH_DATA_POOL_HEADER_SIZE	2
 #define FLASH_DATA_POOL_SIZE		(FLASH_PAGE_SIZE*2)
@@ -77,20 +80,20 @@ const uint8_t const flash_data[4] __attribute__ ((section (".gnuk_data"))) = {
 /* Linker set this symbol */
 extern uint8_t _data_pool;
 
-static int key_available_at (uint8_t *k)
+static int key_available_at (const uint8_t *k, int key_size)
 {
   int i;
 
-  for (i = 0; i < KEY_SIZE; i++)
+  for (i = 0; i < key_size; i++)
     if (k[i])
       break;
-  if (i == KEY_SIZE)	/* It's ZERO.  Released key.  */
+  if (i == key_size)	/* It's ZERO.  Released key.  */
     return 0;
 
-  for (i = 0; i < KEY_SIZE; i++)
+  for (i = 0; i < key_size; i++)
     if (k[i] != 0xff)
       break;
-  if (i == KEY_SIZE)	/* It's FULL.  Unused key.  */
+  if (i == key_size)	/* It's FULL.  Unused key.  */
     return 0;
 
   return 1;
@@ -102,8 +105,6 @@ flash_init (void)
   uint16_t gen0, gen1;
   uint16_t *gen0_p = (uint16_t *)&_data_pool;
   uint16_t *gen1_p = (uint16_t *)(&_data_pool + FLASH_PAGE_SIZE);
-  uint8_t *p;
-  int i; 
 
   /* Check data pool generation and choose the page */
   gen0 = *gen0_p;
@@ -117,24 +118,34 @@ flash_init (void)
   else
     data_pool = &_data_pool;
 
+  return data_pool + FLASH_DATA_POOL_HEADER_SIZE;
+}
+
+void
+flash_init_keys (void)
+{
+  const uint8_t *p;
+  int i;
+
   /* For each key, find its address.  */
   p = &_keystore_pool;
   for (i = 0; i < 3; i++)
     {
-      uint8_t *k;
+      const uint8_t *k;
+      int key_size = gpg_get_algo_attr_key_size (i, GPG_KEY_STORAGE);
 
-      kd[i].key_addr = NULL;
-      for (k = p; k < p + FLASH_PAGE_SIZE; k += KEY_SIZE)
-	if (key_available_at (k))
+      kd[i].pubkey = NULL;
+      for (k = p; k < p + FLASH_PAGE_SIZE; k += key_size)
+	if (key_available_at (k, key_size))
 	  {
-	    kd[i].key_addr = k;
+	    int prv_len = gpg_get_algo_attr_key_size (i, GPG_KEY_PRIVATE);
+
+	    kd[i].pubkey = k + prv_len;
 	    break;
 	  }
 
       p += FLASH_PAGE_SIZE;
     }
-
-  return data_pool + FLASH_DATA_POOL_HEADER_SIZE;
 }
 
 /*
@@ -151,6 +162,7 @@ flash_init (void)
  *     123-counter
  *     14-bit counter
  *     bool object
+ *     small enum
  *
  * Format of a Data Object:
  *    NR:   8-bit tag_number
@@ -311,20 +323,21 @@ flash_key_alloc (enum kind_of_key kk)
 {
   uint8_t *k0, *k;
   int i; 
+  int key_size = gpg_get_algo_attr_key_size (kk, GPG_KEY_STORAGE);
 
   /* There is a page for each KK.  */
   k0 = &_keystore_pool + (FLASH_PAGE_SIZE * kk);
 
   /* Seek free space in the page.  */
-  for (k = k0; k < k0 + FLASH_PAGE_SIZE; k += KEY_SIZE)
+  for (k = k0; k < k0 + FLASH_PAGE_SIZE; k += key_size)
     {
       const uint32_t *p = (const uint32_t *)k;
 
-      for (i = 0; i < KEY_SIZE/4; i++)
+      for (i = 0; i < key_size/4; i++)
 	if (p[i] != 0xffffffff)
 	  break;
 
-      if (i == KEY_SIZE/4)	/* Yes, it's empty.  */
+      if (i == key_size/4)	/* Yes, it's empty.  */
 	return k;
     }
 
@@ -334,7 +347,8 @@ flash_key_alloc (enum kind_of_key kk)
 }
 
 int
-flash_key_write (uint8_t *key_addr, const uint8_t *key_data,
+flash_key_write (uint8_t *key_addr,
+		 const uint8_t *key_data, int key_data_len,
 		 const uint8_t *pubkey, int pubkey_len)
 {
   uint16_t hw;
@@ -342,7 +356,7 @@ flash_key_write (uint8_t *key_addr, const uint8_t *key_data,
   int i;
 
   addr = (uint32_t)key_addr;
-  for (i = 0; i < KEY_CONTENT_LEN/2; i ++)
+  for (i = 0; i < key_data_len/2; i ++)
     {
       hw = key_data[i*2] | (key_data[i*2+1]<<8);
       if (flash_program_halfword (addr, hw) != 0)
@@ -362,14 +376,14 @@ flash_key_write (uint8_t *key_addr, const uint8_t *key_data,
 }
 
 static int
-flash_check_all_other_keys_released (const uint8_t *key_addr)
+flash_check_all_other_keys_released (const uint8_t *key_addr, int key_size)
 {
   uint32_t start = (uint32_t)key_addr & ~(FLASH_PAGE_SIZE - 1);
   const uint32_t *p = (const uint32_t *)start;
 
   while (p < (const uint32_t *)(start + FLASH_PAGE_SIZE))
     if (p == (const uint32_t *)key_addr)
-      p += KEY_SIZE/4;
+      p += key_size/4;
     else
       if (*p)
 	return 0;
@@ -380,22 +394,22 @@ flash_check_all_other_keys_released (const uint8_t *key_addr)
 }
 
 static void
-flash_key_fill_zero_as_released (uint8_t *key_addr)
+flash_key_fill_zero_as_released (uint8_t *key_addr, int key_size)
 {
   int i;
   uint32_t addr = (uint32_t)key_addr;
 
-  for (i = 0; i < KEY_SIZE/2; i++)
+  for (i = 0; i < key_size/2; i++)
     flash_program_halfword (addr + i*2, 0);
 }
 
 void
-flash_key_release (uint8_t *key_addr)
+flash_key_release (uint8_t *key_addr, int key_size)
 {
-  if (flash_check_all_other_keys_released (key_addr))
+  if (flash_check_all_other_keys_released (key_addr, key_size))
     flash_erase_page (((uint32_t)key_addr & ~(FLASH_PAGE_SIZE - 1)));
   else
-    flash_key_fill_zero_as_released (key_addr);
+    flash_key_fill_zero_as_released (key_addr, key_size);
 }
 
 
@@ -590,7 +604,7 @@ flash_write_binary (uint8_t file_id, const uint8_t *data,
     }
   else if (file_id >= FILEID_UPDATE_KEY_0 && file_id <= FILEID_UPDATE_KEY_3)
     {
-      maxsize = KEY_CONTENT_LEN;
+      maxsize = FIRMWARE_UPDATE_KEY_CONTENT_LEN;
       p = gpg_get_firmware_update_key (file_id - FILEID_UPDATE_KEY_0);
       if (len == 0 && offset == 0)
 	{ /* This means removal of update key.  */

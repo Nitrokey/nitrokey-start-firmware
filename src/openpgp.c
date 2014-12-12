@@ -634,7 +634,7 @@ gpg_get_firmware_update_key (uint8_t keyno)
   extern uint8_t _updatekey_store;
   const uint8_t *p;
 
-  p = &_updatekey_store + keyno * KEY_CONTENT_LEN;
+  p = &_updatekey_store + keyno * FIRMWARE_UPDATE_KEY_CONTENT_LEN;
   return p;
 }
 
@@ -693,8 +693,8 @@ cmd_read_binary (void)
       else
 	{
 	  p = gpg_get_firmware_update_key (file_id - FILEID_UPDATE_KEY_0);
-	  res_APDU_size = KEY_CONTENT_LEN;
-	  memcpy (res_APDU, p, KEY_CONTENT_LEN);
+	  res_APDU_size = FIRMWARE_UPDATE_KEY_CONTENT_LEN;
+	  memcpy (res_APDU, p, FIRMWARE_UPDATE_KEY_CONTENT_LEN);
 	  GPG_SUCCESS ();
 	}
     }
@@ -1211,7 +1211,8 @@ cmd_external_authenticate (void)
       return;
     }
 
-  r = rsa_verify (pubkey, challenge, signature);
+  r = rsa_verify (pubkey, FIRMWARE_UPDATE_KEY_CONTENT_LEN,
+		  challenge, signature);
   random_bytes_free (challenge);
   challenge = NULL;
 

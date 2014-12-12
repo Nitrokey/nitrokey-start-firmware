@@ -1,3 +1,25 @@
+2014-11-19  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/gnuk.h (FIRMWARE_UPDATE_KEY_CONTENT_LEN): New.
+	(size_of_key): New enum.
+
+	* src/openpgp.c (gpg_get_firmware_update_key)
+	(cmd_read_binary, cmd_external_authenticate): Use
+	FIRMWARE_UPDATE_KEY_CONTENT_LEN.
+
+	* src/flash.c (KEY_SIZE): Remove.
+	(key_available_at): Add new arg as KEY_SIZE.
+	(flash_check_all_other_keys_released): Likewise.
+	(flash_key_fill_zero_as_released, flash_key_release): Likewise.
+
+	(flash_init): Move initializing keys into another function.
+	(flash_init_keys): New function.
+
+	(flash_key_alloc): Use gpg_get_algo_attr_key_size.
+	(flash_key_write): Add new arg as KEY_DATA_LEN.
+
+	(flash_write_binary): Use FIRMWARE_UPDATE_KEY_CONTENT_LEN.
+
 2014-09-16  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/gnuk.h (MAX_PRVKEY_LEN): New.
