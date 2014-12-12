@@ -107,6 +107,7 @@ gpg_init (void)
   file_selection = FILE_NONE;
   flash_data_start = flash_init ();
   gpg_data_scan (flash_data_start);
+  flash_init_keys ();
 }
 
 static void
@@ -815,14 +816,21 @@ static void
 cmd_pso (void)
 {
   int len = apdu.cmd_apdu_data_len;
-  int r;
+  int r = -1;
+  int attr;
+  int pubkey_len;
 
   DEBUG_INFO (" - PSO: ");
   DEBUG_WORD ((uint32_t)&r);
   DEBUG_BINARY (apdu.cmd_apdu_data, apdu.cmd_apdu_data_len);
+  DEBUG_SHORT (len);
 
   if (P1 (apdu) == 0x9e && P2 (apdu) == 0x9a)
     {
+      attr = gpg_get_algo_attr (GPG_KEY_FOR_SIGNING);
+      pubkey_len = gpg_get_algo_attr_key_size (GPG_KEY_FOR_SIGNING,
+					       GPG_KEY_PUBLIC);
+
       if (!ac_check_status (AC_PSO_CDS_AUTHORIZED))
 	{
 	  DEBUG_INFO ("security error.");
@@ -830,64 +838,81 @@ cmd_pso (void)
 	  return;
 	}
 
-#ifdef RSA_SIG
-      /* Check size of digestInfo */
-      if (len != 34		/* MD5 */
-	  && len != 35		/* SHA1 / RIPEMD-160 */
-	  && len != 47		/* SHA224 */
-	  && len != 51		/* SHA256 */
-	  && len != 67		/* SHA384 */
-	  && len != 83)		/* SHA512 */
+      if (attr == ALGO_RSA2K || attr == ALGO_RSA4K)
 	{
-	  DEBUG_INFO (" wrong length: ");
-	  DEBUG_SHORT (len);
-	  GPG_ERROR ();
-	}
-      else
-	{
-	  DEBUG_SHORT (len);
-	  DEBUG_BINARY (kd[GPG_KEY_FOR_SIGNING].data, KEY_CONTENT_LEN);
+	  /* Check size of digestInfo */
+	  if (len != 34		/* MD5 */
+	      && len != 35		/* SHA1 / RIPEMD-160 */
+	      && len != 47		/* SHA224 */
+	      && len != 51		/* SHA256 */
+	      && len != 67		/* SHA384 */
+	      && len != 83)		/* SHA512 */
+	    {
+	      DEBUG_INFO (" wrong length");
+	      GPG_CONDITION_NOT_SATISFIED ();
+	      return;
+	    }
+
+	  DEBUG_BINARY (kd[GPG_KEY_FOR_SIGNING].data, pubkey_len);
 
 	  r = rsa_sign (apdu.cmd_apdu_data, res_APDU, len,
-			&kd[GPG_KEY_FOR_SIGNING]);
+			&kd[GPG_KEY_FOR_SIGNING], pubkey_len);
 	  if (r < 0)
-	    {
-	      ac_reset_pso_cds ();
-	      GPG_ERROR ();
-	    }
+	    ac_reset_pso_cds ();
 	  else
 	    /* Success */
 	    gpg_increment_digital_signature_counter ();
 	}
-#else
-      /* ECDSA with p256k1 for signature */
-      if (len != ECDSA_HASH_LEN)
+      else if (attr == ALGO_NISTP256R1 || attr == ALGO_SECP256K1)
 	{
-	  DEBUG_INFO (" wrong length: ");
-	  GPG_CONDITION_NOT_SATISFIED ();
-	}
-      else
-	{
-	  DEBUG_SHORT (len);
+	  /* ECDSA with p256r1/p256k1 for signature */
+	  if (len != ECDSA_HASH_LEN)
+	    {
+	      DEBUG_INFO (" wrong length");
+	      GPG_CONDITION_NOT_SATISFIED ();
+	      return;
+	    }
 
-	  res_APDU_size = ECDSA_SIGNATURE_LENGTH;
-	  r = ecdsa_sign_p256k1 (apdu.cmd_apdu_data, res_APDU,
-				 kd[GPG_KEY_FOR_SIGNING].data);
+	  if (attr == ALGO_NISTP256R1)
+	    r = ecdsa_sign_p256r1 (apdu.cmd_apdu_data, res_APDU,
+				   kd[GPG_KEY_FOR_SIGNING].data);
+	  else			/* ALGO_SECP256K1 */
+	    r = ecdsa_sign_p256k1 (apdu.cmd_apdu_data, res_APDU,
+				   kd[GPG_KEY_FOR_SIGNING].data);
 	  if (r < 0)
-	    {
-	      ac_reset_pso_cds ();
-	      GPG_ERROR ();
-	    }
+	    ac_reset_pso_cds ();
 	  else
-	    /* Success */
-	    gpg_increment_digital_signature_counter ();
+	    {			/* Success */
+	      gpg_increment_digital_signature_counter ();
+	      res_APDU_size = ECDSA_SIGNATURE_LENGTH;
+	    }
 	}
-#endif
+      else if (attr == ALGO_ED25519)
+	{
+	  uint32_t output[64/4];	/* Require 4-byte alignment. */
+
+	  if (len > EDDSA_HASH_LEN_MAX)
+	    {
+	      DEBUG_INFO ("wrong hash length.");
+	      GPG_CONDITION_NOT_SATISFIED ();
+	      return;
+	    }
+
+	  res_APDU_size = EDDSA_SIGNATURE_LENGTH;
+	  r = eddsa_sign_25519 (apdu.cmd_apdu_data, len, output,
+				kd[GPG_KEY_FOR_AUTHENTICATION].data,
+				kd[GPG_KEY_FOR_AUTHENTICATION].data+32,
+				kd[GPG_KEY_FOR_AUTHENTICATION].pubkey);
+	  memcpy (res_APDU, output, EDDSA_SIGNATURE_LENGTH);
+	}
     }
   else if (P1 (apdu) == 0x80 && P2 (apdu) == 0x86)
     {
-      DEBUG_SHORT (len);
-      DEBUG_BINARY (kd[GPG_KEY_FOR_DECRYPTION].data, KEY_CONTENT_LEN);
+      attr = gpg_get_algo_attr (GPG_KEY_FOR_DECRYPTION);
+      pubkey_len = gpg_get_algo_attr_key_size (GPG_KEY_FOR_DECRYPTION,
+					       GPG_KEY_PUBLIC);
+
+      DEBUG_BINARY (kd[GPG_KEY_FOR_DECRYPTION].data, pubkey_len);
 
       if (!ac_check_status (AC_OTHER_AUTHORIZED))
 	{
@@ -896,19 +921,40 @@ cmd_pso (void)
 	  return;
 	}
 
-      /* Skip padding 0x00 */
-      len--;
-      if (len != KEY_CONTENT_LEN)
-	GPG_CONDITION_NOT_SATISFIED ();
-      else
+      if (attr == ALGO_RSA2K || attr == ALGO_RSA4K)
 	{
+	  /* Skip padding 0x00 */
+	  len--;
+	  if (len != pubkey_len)
+	    {
+	      GPG_CONDITION_NOT_SATISFIED ();
+	      return;
+	    }
 	  r = rsa_decrypt (apdu.cmd_apdu_data+1, res_APDU, len,
 			   &kd[GPG_KEY_FOR_DECRYPTION]);
-	  if (r < 0)
-	    GPG_ERROR ();
+	}
+      else if (attr == ALGO_NISTP256R1 || attr == ALGO_SECP256K1)
+	{
+	  /* Format is in big endian MPI: 04 || x || y */
+	  if (len != 65 || apdu.cmd_apdu_data[0] != 4)
+	    {
+	      GPG_CONDITION_NOT_SATISFIED ();
+	      return;
+	    }
+
+	  if (attr == ALGO_NISTP256R1)
+	    r = ecdh_decrypt_p256r1 (apdu.cmd_apdu_data, res_APDU,
+				     kd[GPG_KEY_FOR_DECRYPTION].data);
+	  else
+	    r = ecdh_decrypt_p256k1 (apdu.cmd_apdu_data, res_APDU,
+				     kd[GPG_KEY_FOR_DECRYPTION].data);
+
+	  if (r == 0)
+	    res_APDU_size = 65;
 	}
     }
-  else
+
+  if (r < 0)
     {
       DEBUG_INFO (" - ??");
       DEBUG_BYTE (P1 (apdu));
@@ -921,28 +967,39 @@ cmd_pso (void)
 }
 
 
-#if defined(RSA_AUTH)
-#define MAX_DIGEST_INFO_LEN 102 /* 40% */
+#define MAX_RSA_DIGEST_INFO_LEN 102 /* 40% */
 static void
 cmd_internal_authenticate (void)
 {
+  int attr = gpg_get_algo_attr (GPG_KEY_FOR_AUTHENTICATION);
+  int pubkey_len = gpg_get_algo_attr_key_size (GPG_KEY_FOR_AUTHENTICATION,
+					       GPG_KEY_PUBLIC);
   int len = apdu.cmd_apdu_data_len;
-  int r;
+  int r = -1;
 
   DEBUG_INFO (" - INTERNAL AUTHENTICATE\r\n");
 
-  if (P1 (apdu) == 0x00 && P2 (apdu) == 0x00)
+  if (P1 (apdu) != 0x00 || P2 (apdu) != 0x00)
     {
-      DEBUG_SHORT (len);
+      DEBUG_INFO (" - ??");
+      DEBUG_BYTE (P1 (apdu));
+      DEBUG_INFO (" - ??");
+      DEBUG_BYTE (P2 (apdu));
+      GPG_CONDITION_NOT_SATISFIED ();
+      return;
+    }
 
-      if (!ac_check_status (AC_OTHER_AUTHORIZED))
-	{
-	  DEBUG_INFO ("security error.");
-	  GPG_SECURITY_FAILURE ();
-	  return;
-	}
+  DEBUG_SHORT (len);
+  if (!ac_check_status (AC_OTHER_AUTHORIZED))
+    {
+      DEBUG_INFO ("security error.");
+      GPG_SECURITY_FAILURE ();
+      return;
+    }
 
-      if (len > MAX_DIGEST_INFO_LEN)
+  if (attr == ALGO_RSA2K || attr == ALGO_RSA4K)
+    {
+      if (len > MAX_RSA_DIGEST_INFO_LEN)
 	{
 	  DEBUG_INFO ("input is too long.");
 	  GPG_CONDITION_NOT_SATISFIED ();
@@ -950,41 +1007,10 @@ cmd_internal_authenticate (void)
 	}
 
       r = rsa_sign (apdu.cmd_apdu_data, res_APDU, len,
-		    &kd[GPG_KEY_FOR_AUTHENTICATION]);
-      if (r < 0)
-	GPG_ERROR ();
-    }
-  else
+		    &kd[GPG_KEY_FOR_AUTHENTICATION], pubkey_len);
+    }	  
+  else if (attr == ALGO_NISTP256R1)
     {
-      DEBUG_INFO (" - ??");
-      DEBUG_BYTE (P1 (apdu));
-      DEBUG_INFO (" - ??");
-      DEBUG_BYTE (P2 (apdu));
-      GPG_ERROR ();
-    }
-
-  DEBUG_INFO ("INTERNAL AUTHENTICATE done.\r\n");
-}
-#elif defined(ECDSA_AUTH)
-static void
-cmd_internal_authenticate (void)
-{
-  int len = apdu.cmd_apdu_data_len;
-  int r;
-
-  DEBUG_INFO (" - INTERNAL AUTHENTICATE\r\n");
-
-  if (P1 (apdu) == 0x00 && P2 (apdu) == 0x00)
-    {
-      DEBUG_SHORT (len);
-
-      if (!ac_check_status (AC_OTHER_AUTHORIZED))
-	{
-	  DEBUG_INFO ("security error.");
-	  GPG_SECURITY_FAILURE ();
-	  return;
-	}
-
       if (len != ECDSA_HASH_LEN)
 	{
 	  DEBUG_INFO ("wrong hash length.");
@@ -995,41 +1021,23 @@ cmd_internal_authenticate (void)
       res_APDU_size = ECDSA_SIGNATURE_LENGTH;
       r = ecdsa_sign_p256r1 (apdu.cmd_apdu_data, res_APDU,
 			     kd[GPG_KEY_FOR_AUTHENTICATION].data);
-      if (r < 0)
-	GPG_ERROR ();
     }
-  else
+  else if (attr == ALGO_SECP256K1)
     {
-      DEBUG_INFO (" - ??");
-      DEBUG_BYTE (P1 (apdu));
-      DEBUG_INFO (" - ??");
-      DEBUG_BYTE (P2 (apdu));
-      GPG_ERROR ();
-    }
-
-  DEBUG_INFO ("INTERNAL AUTHENTICATE done.\r\n");
-}
-#elif defined(EDDSA_AUTH)
-static void
-cmd_internal_authenticate (void)
-{
-  int len = apdu.cmd_apdu_data_len;
-  int r;
-
-  DEBUG_INFO (" - INTERNAL AUTHENTICATE\r\n");
-
-  if (P1 (apdu) == 0x00 && P2 (apdu) == 0x00)
-    {
-      uint32_t output[64/4];	/* Require 4-byte alignment. */
-
-      DEBUG_SHORT (len);
-
-      if (!ac_check_status (AC_OTHER_AUTHORIZED))
+      if (len != ECDSA_HASH_LEN)
 	{
-	  DEBUG_INFO ("security error.");
-	  GPG_SECURITY_FAILURE ();
+	  DEBUG_INFO ("wrong hash length.");
+	  GPG_CONDITION_NOT_SATISFIED ();
 	  return;
 	}
+
+      res_APDU_size = ECDSA_SIGNATURE_LENGTH;
+      r = ecdsa_sign_p256k1 (apdu.cmd_apdu_data, res_APDU,
+			     kd[GPG_KEY_FOR_AUTHENTICATION].data);
+    }
+  else if (attr == ALGO_ED25519)
+    {
+      uint32_t output[64/4];	/* Require 4-byte alignment. */
 
       if (len > EDDSA_HASH_LEN_MAX)
 	{
@@ -1040,27 +1048,18 @@ cmd_internal_authenticate (void)
 
       res_APDU_size = EDDSA_SIGNATURE_LENGTH;
       r = eddsa_sign_25519 (apdu.cmd_apdu_data, len, output,
-	    kd[GPG_KEY_FOR_AUTHENTICATION].data,
-	    kd[GPG_KEY_FOR_AUTHENTICATION].data+32,
-	    kd[GPG_KEY_FOR_AUTHENTICATION].key_addr + KEY_CONTENT_LEN);
+			    kd[GPG_KEY_FOR_AUTHENTICATION].data,
+			    kd[GPG_KEY_FOR_AUTHENTICATION].data+32,
+			    kd[GPG_KEY_FOR_AUTHENTICATION].pubkey);
       memcpy (res_APDU, output, EDDSA_SIGNATURE_LENGTH);
-      if (r < 0)
-	GPG_ERROR ();
     }
-  else
-    {
-      DEBUG_INFO (" - ??");
-      DEBUG_BYTE (P1 (apdu));
-      DEBUG_INFO (" - ??");
-      DEBUG_BYTE (P2 (apdu));
-      GPG_ERROR ();
-    }
+
+  if (r < 0)
+    GPG_ERROR ();
 
   DEBUG_INFO ("INTERNAL AUTHENTICATE done.\r\n");
 }
-#else
-#error "Authentication not defined."
-#endif
+
 
 #define MBD_OPRATION_WRITE  0
 #define MBD_OPRATION_UPDATE 1

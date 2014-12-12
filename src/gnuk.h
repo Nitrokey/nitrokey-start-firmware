@@ -109,6 +109,12 @@ void gpg_do_keygen (uint8_t kk_byte);
 
 const uint8_t *gpg_get_firmware_update_key (uint8_t keyno);
 
+/* Constants: algo+size */
+#define ALGO_RSA4K      0
+#define ALGO_NISTP256R1 1
+#define ALGO_SECP256K1  2
+#define ALGO_ED25519    3
+#define ALGO_RSA2K      255
 
 enum kind_of_key {
   GPG_KEY_FOR_SIGNING = 0,
@@ -121,6 +127,9 @@ enum size_of_key {
   GPG_KEY_PUBLIC,
   GPG_KEY_PRIVATE,
 };
+
+int gpg_get_algo_attr (enum kind_of_key kk);
+int gpg_get_algo_attr_key_size (enum kind_of_key kk, enum size_of_key s);
 
 const uint8_t *flash_init (void);
 void flash_init_keys (void);
@@ -160,16 +169,8 @@ extern uint8_t random_bits_start;
 #define MAX_PRVKEY_LEN 512	/* Maximum is the case for RSA 4096-bit.  */
 
 struct key_data {
-  const uint8_t *pubkey;	/* Pointer to public key*/
+  const uint8_t *pubkey;	/* Pointer to public key */
   uint8_t data[MAX_PRVKEY_LEN]; /* decrypted private key data content */
-};
-
-struct key_data_internal {
-  uint32_t data[KEY_CONTENT_LEN/4]; /*
-				     * Secret key data.
-				     * RSA: p and q, ECDSA: d, EdDSA: a+seed
-				     */
-  uint32_t checksum[DATA_ENCRYPTION_KEY_SIZE/4];
 };
 
 struct prvkey_data {
@@ -260,11 +261,15 @@ uint8_t *rsa_genkey (int);
 
 int ecdsa_sign_p256r1 (const uint8_t *hash, uint8_t *output,
 		       const uint8_t *key_data);
-uint8_t *ecdsa_compute_public_p256r1 (const uint8_t *key_data);
+uint8_t *ecc_compute_public_p256r1 (const uint8_t *key_data);
+int ecdh_decrypt_p256r1 (const uint8_t *input, uint8_t *output,
+			 const uint8_t *key_data);
 
 int ecdsa_sign_p256k1 (const uint8_t *hash, uint8_t *output,
 		       const uint8_t *key_data);
-uint8_t *ecdsa_compute_public_p256k1 (const uint8_t *key_data);
+uint8_t *ecc_compute_public_p256k1 (const uint8_t *key_data);
+int ecdh_decrypt_p256k1 (const uint8_t *input, uint8_t *output,
+			 const uint8_t *key_data);
 
 int eddsa_sign_25519 (const uint8_t *input, size_t ilen, uint32_t *output,
 		      const uint8_t *sk_a, const uint8_t *seed,

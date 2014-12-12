@@ -861,26 +861,42 @@ get_do_ptr_nr_for_kk (enum kind_of_key kk)
 void
 gpg_do_clear_prvkey (enum kind_of_key kk)
 {
-  memset (kd[kk].data, 0, KEY_CONTENT_LEN);
+  memset (kd[kk].data, 0, MAX_PRVKEY_LEN);
 }
 
 
+#define CHECKSUM_ADDR(kdi,prvkey_len) \
+	(&(kdi).data[prvkey_len / sizeof (uint32_t)])
+#define kdi_len(prvkey_len) (prvkey_len+DATA_ENCRYPTION_KEY_SIZE)
+struct key_data_internal {
+  uint32_t data[(MAX_PRVKEY_LEN+DATA_ENCRYPTION_KEY_SIZE) / sizeof (uint32_t)];
+  /*
+   * Secret key data.
+   * RSA: p and q, ECDSA/ECDH: d, EdDSA: a+seed
+   */
+  /* Checksum */
+};
+
+#define CKDC_CALC  0
+#define CKDC_CHECK 1
 static int
-compute_key_data_checksum (struct key_data_internal *kdi, int check_or_calc)
+compute_key_data_checksum (struct key_data_internal *kdi, int prvkey_len,
+			   int check_or_calc)
 {
   unsigned int i;
   uint32_t d[4] = { 0, 0, 0, 0 };
+  uint32_t *checksum = CHECKSUM_ADDR (*kdi, prvkey_len);
 
-  for (i = 0; i < KEY_CONTENT_LEN / sizeof (uint32_t); i++)
+  for (i = 0; i < prvkey_len / sizeof (uint32_t); i++)
     d[i&3] ^= kdi->data[i];
 
-  if (check_or_calc == 0)	/* store */
+  if (check_or_calc == CKDC_CALC)	/* store */
     {
-      memcpy (kdi->checksum, d, DATA_ENCRYPTION_KEY_SIZE);
+      memcpy (checksum, d, DATA_ENCRYPTION_KEY_SIZE);
       return 0;
     }
   else				/* check */
-    return memcmp (kdi->checksum, d, DATA_ENCRYPTION_KEY_SIZE) == 0;
+    return memcmp (checksum, d, DATA_ENCRYPTION_KEY_SIZE) == 0;
 }
 
 /*
@@ -892,6 +908,7 @@ int
 gpg_do_load_prvkey (enum kind_of_key kk, int who, const uint8_t *keystring)
 {
   uint8_t nr = get_do_ptr_nr_for_kk (kk);
+  int prvkey_len = gpg_get_algo_attr_key_size (kk, GPG_KEY_PRIVATE);
   const uint8_t *do_data = do_ptr[nr];
   const uint8_t *key_addr;
   uint8_t dek[DATA_ENCRYPTION_KEY_SIZE];
@@ -904,24 +921,25 @@ gpg_do_load_prvkey (enum kind_of_key kk, int who, const uint8_t *keystring)
   if (do_data == NULL)
     return 0;
 
-  key_addr = kd[kk].key_addr;
-  memcpy (kdi.data, key_addr, KEY_CONTENT_LEN);
+  key_addr = kd[kk].pubkey - prvkey_len;
+  memcpy (kdi.data, key_addr, prvkey_len);
   iv = &do_data[1];
-  memcpy (kdi.checksum, iv + INITIAL_VECTOR_SIZE, DATA_ENCRYPTION_KEY_SIZE);
+  memcpy (CHECKSUM_ADDR (kdi, prvkey_len),
+	  iv + INITIAL_VECTOR_SIZE, DATA_ENCRYPTION_KEY_SIZE);
 
-  memcpy (dek, iv+16*(who+1), DATA_ENCRYPTION_KEY_SIZE);
+  memcpy (dek, iv + DATA_ENCRYPTION_KEY_SIZE*(who+1), DATA_ENCRYPTION_KEY_SIZE);
   decrypt_dek (keystring, dek);
 
-  decrypt (dek, iv, (uint8_t *)&kdi, sizeof (struct key_data_internal));
+  decrypt (dek, iv, (uint8_t *)&kdi, kdi_len (prvkey_len));
   memset (dek, 0, DATA_ENCRYPTION_KEY_SIZE);
-  if (!compute_key_data_checksum (&kdi, 1))
+  if (!compute_key_data_checksum (&kdi, prvkey_len, CKDC_CHECK))
     {
       DEBUG_INFO ("gpg_do_load_prvkey failed.\r\n");
       return -1;
     }
 
-  memcpy (kd[kk].data, kdi.data, KEY_CONTENT_LEN);
-  DEBUG_BINARY (kd[kk].data, KEY_CONTENT_LEN);
+  memcpy (kd[kk].data, kdi.data, prvkey_len);
+  DEBUG_BINARY (kd[kk].data, prvkey_len);
   return 1;
 }
 
@@ -934,15 +952,17 @@ gpg_do_delete_prvkey (enum kind_of_key kk)
   uint8_t nr = get_do_ptr_nr_for_kk (kk);
   const uint8_t *do_data = do_ptr[nr];
   uint8_t *key_addr;
+  int prvkey_len = gpg_get_algo_attr_key_size (kk, GPG_KEY_PRIVATE);
+  int key_size = gpg_get_algo_attr_key_size (kk, GPG_KEY_STORAGE);
 
   if (do_data == NULL)
     return;
 
   do_ptr[nr] = NULL;
   flash_do_release (do_data);
-  key_addr = kd[kk].key_addr;
-  kd[kk].key_addr = NULL;
-  flash_key_release (key_addr);
+  key_addr = (uint8_t *)kd[kk].pubkey - prvkey_len;
+  kd[kk].pubkey = NULL;
+  flash_key_release (key_addr, key_size);
 
   if (admin_authorized == BY_ADMIN && kk == GPG_KEY_FOR_SIGNING)
     {			/* Recover admin keystring DO.  */
@@ -973,10 +993,12 @@ gpg_do_delete_prvkey (enum kind_of_key kk)
 }
 
 static int
-gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
-		     const uint8_t *keystring_admin, const uint8_t *pubkey)
+gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data,
+		     int prvkey_len, const uint8_t *keystring_admin,
+		     const uint8_t *pubkey)
 {
   uint8_t nr = get_do_ptr_nr_for_kk (kk);
+  int attr = gpg_get_algo_attr (kk);;
   const uint8_t *p;
   int r;
   struct prvkey_data *pd;
@@ -984,86 +1006,52 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
   const uint8_t *dek, *iv;
   struct key_data_internal kdi;
   uint8_t *pubkey_allocated_here = NULL;
-  int pubkey_len = KEY_CONTENT_LEN;
+  int pubkey_len;
   uint8_t ks[KEYSTRING_MD_SIZE];
   enum kind_of_key kk0;
 
   DEBUG_INFO ("Key import\r\n");
-  DEBUG_SHORT (key_len);
+  DEBUG_SHORT (prvkey_len);
 
   /* Delete it first, if any.  */
   gpg_do_delete_prvkey (kk);
-
-#if defined(RSA_AUTH) && defined(RSA_SIG)
-  if (key_len != KEY_CONTENT_LEN)
-     return -1;
-#elif defined(RSA_AUTH) && !defined(RSA_SIG)
-  /* ECDSA with p256k1 for signature */
-  if (kk != GPG_KEY_FOR_SIGNING && key_len != KEY_CONTENT_LEN)
-    return -1;
-  if (kk == GPG_KEY_FOR_SIGNING)
-    {
-      pubkey_len = key_len * 2;
-      if (key_len != 32)
-	return -1;
-    }
-#elif !defined(RSA_AUTH) && defined(RSA_SIG)
-#if defined(ECDSA_AUTH)
-  /* ECDSA with p256r1 for authentication */
-  if (kk != GPG_KEY_FOR_AUTHENTICATION && key_len != KEY_CONTENT_LEN)
-    return -1;
-  if (kk == GPG_KEY_FOR_AUTHENTICATION)
-    {
-      pubkey_len = key_len * 2;
-      if (key_len != 32)
-	return -1;
-    }
-#else
-  /* EdDSA with Ed25519 for authentication */
-  if (kk != GPG_KEY_FOR_AUTHENTICATION && key_len != KEY_CONTENT_LEN)
-    return -1;
-  if (kk == GPG_KEY_FOR_AUTHENTICATION)
-    {
-      pubkey_len = key_len / 2;
-      if (key_len != 64)
-	return -1;
-    }
-#endif
-#else
-#error "not supported."
-#endif
 
   pd = (struct prvkey_data *)malloc (sizeof (struct prvkey_data));
   if (pd == NULL)
     return -1;
 
+  if (attr == ALGO_NISTP256R1 || attr == ALGO_SECP256K1)
+    {
+      pubkey_len = prvkey_len * 2;
+      if (prvkey_len != 32)
+	return -1;
+    }
+  else if (attr == ALGO_ED25519)
+    {
+      pubkey_len = prvkey_len / 2;
+      if (prvkey_len != 64)
+	return -1;
+    }
+  else				/* RSA */
+    {
+      int key_size = gpg_get_algo_attr_key_size (kk, GPG_KEY_STORAGE);
+
+      pubkey_len = prvkey_len;
+      if (prvkey_len + pubkey_len != key_size)
+	return -1;
+    }
+
   if (pubkey == NULL)
     {
-#if defined(RSA_AUTH) && defined(RSA_SIG)
-      pubkey_allocated_here = modulus_calc (key_data, key_len);
-#elif defined(RSA_AUTH) && !defined(RSA_SIG)
-      /* ECDSA with p256k1 for signature */
-      if (kk == GPG_KEY_FOR_SIGNING)
-	pubkey_allocated_here = ecdsa_compute_public_p256k1 (key_data);
-      else
-	pubkey_allocated_here = modulus_calc (key_data, key_len);
-#elif !defined(RSA_AUTH) && defined(RSA_SIG)
-#if defined(ECDSA_AUTH)
-      /* ECDSA with p256r1 for authentication */
-      if (kk == GPG_KEY_FOR_AUTHENTICATION)
-	pubkey_allocated_here = ecdsa_compute_public_p256r1 (key_data);
-      else
-	pubkey_allocated_here = modulus_calc (key_data, key_len);
-#else
-      /* EdDSA with Ed25519 for authentication */
-      if (kk == GPG_KEY_FOR_AUTHENTICATION)
+      if (attr == ALGO_SECP256K1)
+	pubkey_allocated_here = ecc_compute_public_p256k1 (key_data);
+      else if (attr == ALGO_NISTP256R1)
+	pubkey_allocated_here = ecc_compute_public_p256r1 (key_data);
+      else if (attr == ALGO_ED25519)
 	pubkey_allocated_here = eddsa_compute_public_25519 (key_data);
-      else
-	pubkey_allocated_here = modulus_calc (key_data, key_len);
-#endif
-#else
-#error "not supported."
-#endif
+      else				/* RSA */
+	pubkey_allocated_here = modulus_calc (key_data, prvkey_len);
+
       if (pubkey_allocated_here == NULL)
 	{
 	  free (pd);
@@ -1083,38 +1071,17 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
       free (pd);
       return -1;
     }
-  kd[kk].key_addr = key_addr;
+  kd[kk].pubkey = key_addr + prvkey_len;
 
   num_prv_keys++;
 
   DEBUG_INFO ("key_addr: ");
   DEBUG_WORD ((uint32_t)key_addr);
 
-#if defined(RSA_AUTH) && defined(RSA_SIG)
-  memcpy (kdi.data, key_data, KEY_CONTENT_LEN);
-#elif defined(RSA_AUTH) && !defined(RSA_SIG)
-  /* ECDSA with p256k1 for signature */
-  if (kk == GPG_KEY_FOR_SIGNING)
-    {
-      memcpy (kdi.data, key_data, key_len);
-      memset ((uint8_t *)kdi.data + key_len, 0, KEY_CONTENT_LEN - key_len);
-    }
-  else
-    memcpy (kdi.data, key_data, KEY_CONTENT_LEN);
-#elif !defined(RSA_AUTH) && defined(RSA_SIG)
-  /* ECDSA with p256r1 for authentication */
-  /* EdDSA with Ed25519 for authentication */
-  if (kk == GPG_KEY_FOR_AUTHENTICATION)
-    {
-      memcpy (kdi.data, key_data, key_len);
-      memset ((uint8_t *)kdi.data + key_len, 0, KEY_CONTENT_LEN - key_len);
-    }
-  else
-    memcpy (kdi.data, key_data, KEY_CONTENT_LEN);
-#else
-#error "not supported."
-#endif
-  compute_key_data_checksum (&kdi, 0);
+  memcpy (kdi.data, key_data, prvkey_len);
+  memset ((uint8_t *)kdi.data + prvkey_len, 0, MAX_PRVKEY_LEN - prvkey_len);
+
+  compute_key_data_checksum (&kdi, prvkey_len, CKDC_CALC);
 
   dek = random_bytes_get (); /* 32-byte random bytes */
   iv = dek + DATA_ENCRYPTION_KEY_SIZE;
@@ -1136,9 +1103,9 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
 	gpg_do_chks_prvkey (kk0, BY_RESETCODE, NULL, 0, NULL);
       }
 
-  encrypt (dek, iv, (uint8_t *)&kdi, sizeof (struct key_data_internal));
+  encrypt (dek, iv, (uint8_t *)&kdi, kdi_len (prvkey_len));
 
-  r = flash_key_write (key_addr, (const uint8_t *)kdi.data,
+  r = flash_key_write (key_addr, (const uint8_t *)kdi.data, prvkey_len,
 		       pubkey_allocated_here? pubkey_allocated_here: pubkey,
 		       pubkey_len);
   if (pubkey_allocated_here)
@@ -1156,7 +1123,8 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
     }
 
   memcpy (pd->iv, iv, INITIAL_VECTOR_SIZE);
-  memcpy (pd->checksum_encrypted, kdi.checksum, DATA_ENCRYPTION_KEY_SIZE);
+  memcpy (pd->checksum_encrypted, CHECKSUM_ADDR (kdi, prvkey_len),
+	  DATA_ENCRYPTION_KEY_SIZE);
 
   encrypt_dek (ks, pd->dek_encrypted_1);
 
@@ -1916,15 +1884,15 @@ gpg_do_put_data (uint16_t tag, const uint8_t *data, int len)
 void
 gpg_do_public_key (uint8_t kk_byte)
 {
-  const uint8_t *key_addr;
-  enum kind_of_key kk;
+  enum kind_of_key kk = kkb_to_kk (kk_byte);
+  int attr = gpg_get_algo_attr (kk);
+  int pubkey_len = gpg_get_algo_attr_key_size (kk, GPG_KEY_PUBLIC);
+  const uint8_t *pubkey = kd[kk].pubkey;
 
   DEBUG_INFO ("Public key\r\n");
   DEBUG_BYTE (kk_byte);
 
-  kk = kkb_to_kk (kk_byte);
-  key_addr = kd[kk].key_addr;
-  if (key_addr == NULL)
+  if (pubkey == NULL)
     {
       DEBUG_INFO ("none.\r\n");
       GPG_NO_RECORD ();
@@ -1936,20 +1904,8 @@ gpg_do_public_key (uint8_t kk_byte)
   /* TAG */
   *res_p++ = 0x7f; *res_p++ = 0x49;
 
-#if defined(RSA_AUTH) && defined(RSA_SIG)
-  if (0)
-#elif defined(RSA_AUTH) && !defined(RSA_SIG)
-  /* ECDSA with p256k1 for signature */
-  if (kk_byte == 0xb6)
-#elif !defined(RSA_AUTH) && defined(RSA_SIG)
-  /* ECDSA with p256r1 for authentication */
-  /* EdDSA with Ed25519 for authentication */
-  if (kk_byte == 0xa4)
-#else
-#error "not supported."
-#endif
-#if defined(ECDSA_AUTH)
-    {				/* ECDSA */
+  if (attr == ALGO_NISTP256R1 || attr == ALGO_SECP256K1)
+    {				/* ECDSA or ECDH */
       /* LEN */
       *res_p++ = 2 + 1 + 64;
       {
@@ -1957,11 +1913,11 @@ gpg_do_public_key (uint8_t kk_byte)
 	*res_p++ = 0x86; *res_p++ = 0x41;
 	*res_p++ = 0x04; 	/* No compression of EC point.  */
 	/* 64-byte binary (big endian): X || Y */
-	memcpy (res_p, key_addr + KEY_CONTENT_LEN, 64);
+	memcpy (res_p, pubkey, 64);
 	res_p += 64;
       }
     }
-#else  /* EDDSA_AUTH */
+  else if (attr == ALGO_ED25519)
     {				/* EdDSA */
       /* LEN */
       *res_p++ = 2 + 32;
@@ -1969,22 +1925,22 @@ gpg_do_public_key (uint8_t kk_byte)
 	/*TAG*/          /* LEN = 32 */
 	*res_p++ = 0x86; *res_p++ = 0x20;
 	/* 32-byte binary (little endian): Y with parity */
-	memcpy (res_p, key_addr + KEY_CONTENT_LEN, 32);
+	memcpy (res_p, pubkey, 32);
 	res_p += 32;
       }
     }
-#endif
   else
     {				/* RSA */
-      /* LEN = 9+256 */
-      *res_p++ = 0x82; *res_p++ = 0x01; *res_p++ = 0x09;
+      /* LEN = 9+256or512 */
+      *res_p++ = 0x82; *res_p++ = pubkey_len > 256? 0x02: 0x01; *res_p++ = 0x09;
 
       {
-	/*TAG*/          /* LEN = 256 */
-	*res_p++ = 0x81; *res_p++ = 0x82; *res_p++ = 0x01; *res_p++ = 0x00;
-	/* 256-byte binary (big endian) */
-	memcpy (res_p, key_addr + KEY_CONTENT_LEN, KEY_CONTENT_LEN);
-	res_p += 256;
+	/*TAG*/          /* LEN = 256or512 */
+	*res_p++ = 0x81;
+	*res_p++ = 0x82; *res_p++ = pubkey_len > 256? 0x02: 0x01;*res_p++ = 0x00;
+	/* PUBKEY_LEN-byte binary (big endian) */
+	memcpy (res_p, pubkey, pubkey_len);
+	res_p += pubkey_len;
       }
       {
 	/*TAG*/          /* LEN= 3 */
@@ -2038,7 +1994,8 @@ gpg_do_write_simple (uint8_t nr, const uint8_t *data, int size)
 void
 gpg_do_keygen (uint8_t kk_byte)
 {
-  enum kind_of_key kk;
+  enum kind_of_key kk = kkb_to_kk (kk_byte);
+  int pubkey_len = gpg_get_algo_attr_key_size (kk, GPG_KEY_PUBLIC);
   const uint8_t *keystring_admin;
   uint8_t *p_q_modulus;
   const uint8_t *p_q;
@@ -2048,13 +2005,12 @@ gpg_do_keygen (uint8_t kk_byte)
   DEBUG_INFO ("Keygen\r\n");
   DEBUG_BYTE (kk_byte);
 
-  kk = kkb_to_kk (kk_byte);
   if (admin_authorized == BY_ADMIN)
     keystring_admin = keystring_md_pw3;
   else
     keystring_admin = NULL;
 
-  p_q_modulus = rsa_genkey ();
+  p_q_modulus = rsa_genkey (pubkey_len);
   if (p_q_modulus == NULL)
     {
       GPG_MEMORY_FAILURE ();
@@ -2062,10 +2018,10 @@ gpg_do_keygen (uint8_t kk_byte)
     }
 
   p_q = p_q_modulus;
-  modulus = p_q_modulus + KEY_CONTENT_LEN;
+  modulus = p_q_modulus + pubkey_len;
 
-  r = gpg_do_write_prvkey (kk, p_q, KEY_CONTENT_LEN, keystring_admin, modulus);
-  memset (p_q_modulus, 0, KEY_CONTENT_LEN*2);
+  r = gpg_do_write_prvkey (kk, p_q, pubkey_len, keystring_admin, modulus);
+  memset (p_q_modulus, 0, pubkey_len * 2);
   free (p_q_modulus);
   if (r < 0)
     {

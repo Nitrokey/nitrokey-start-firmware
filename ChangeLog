@@ -1,5 +1,24 @@
 2014-11-21  Niibe Yutaka  <gniibe@fsij.org>
 
+	* src/gnuk.h (ALGO_RSA4K, ALGO_NISTP256R1, ALGO_SECP256K1)
+	(ALGO_ED25519, ALGO_RSA2K): New.
+	(struct key_data_internal): Move to ...
+	* src/openpgp-do.c (struct key_data_internal): ... here.
+	(CHECKSUM_ADDR, kdi_len): New.
+	(CKDC_CALC, CKDC_CHECK): New.
+	(compute_key_data_checksum): Add arg PRVKEY_LEN.
+	(gpg_do_load_prvkey, gpg_do_delete_prvkey): Support modifiable key
+	algo attributes.
+	(gpg_do_write_prvkey, gpg_do_public_key, gpg_do_keygen): Likewise.
+	(gpg_do_clear_prvkey): Use MAX_PRVKEY_LEN.
+
+	* src/openpgp.c (gpg_init): Call flash_init_keys after
+	gpg_data_scan.
+	(cmd_pso): Support modifiable key algo attributes.
+	(cmd_internal_authenticate): Likewise.
+
+2014-11-21  Niibe Yutaka  <gniibe@fsij.org>
+
 	* src/openpgp-do.c (algorithm_attr_rsa2k): Rename from *_rsa.
 	(algorithm_attr_rsa4k): New.
 	(get_algo_attr_pointer, kk_to_nr, gpg_get_algo_attr)
