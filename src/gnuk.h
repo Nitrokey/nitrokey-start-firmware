@@ -284,7 +284,6 @@ extern uint8_t keystring_md_pw3[KEYSTRING_MD_SIZE];
 extern uint8_t admin_authorized;
 
 /*** Flash memory tag values ***/
-#define NR_NONE			0x00
 /* Data objects */
 /*
  * Representation of data object:
@@ -292,28 +291,27 @@ extern uint8_t admin_authorized;
  *   <-1 halfword-> <--len/2 halfwords->
  *   <-tag-><-len-> <---data content--->
  */
-#define NR_DO__FIRST__		0x01
-#define NR_DO_SEX		0x01
-#define NR_DO_FP_SIG		0x02
-#define NR_DO_FP_DEC		0x03
-#define NR_DO_FP_AUT		0x04
-#define NR_DO_CAFP_1		0x05
-#define NR_DO_CAFP_2		0x06
-#define NR_DO_CAFP_3		0x07
-#define NR_DO_KGTIME_SIG	0x08
-#define NR_DO_KGTIME_DEC	0x09
-#define NR_DO_KGTIME_AUT	0x0a
-#define NR_DO_LOGIN_DATA	0x0b
-#define NR_DO_URL		0x0c
-#define NR_DO_NAME		0x0d
-#define NR_DO_LANGUAGE		0x0e
-#define NR_DO_PRVKEY_SIG	0x0f
-#define NR_DO_PRVKEY_DEC	0x10
-#define NR_DO_PRVKEY_AUT	0x11
-#define NR_DO_KEYSTRING_PW1	0x12
-#define NR_DO_KEYSTRING_RC	0x13
-#define NR_DO_KEYSTRING_PW3	0x14
-#define NR_DO__LAST__		21   /* == 0x15 */
+#define NR_DO_SEX		0x00
+#define NR_DO_FP_SIG		0x01
+#define NR_DO_FP_DEC		0x02
+#define NR_DO_FP_AUT		0x03
+#define NR_DO_CAFP_1		0x04
+#define NR_DO_CAFP_2		0x05
+#define NR_DO_CAFP_3		0x06
+#define NR_DO_KGTIME_SIG	0x07
+#define NR_DO_KGTIME_DEC	0x08
+#define NR_DO_KGTIME_AUT	0x09
+#define NR_DO_LOGIN_DATA	0x0a
+#define NR_DO_URL		0x0b
+#define NR_DO_NAME		0x0c
+#define NR_DO_LANGUAGE		0x0d
+#define NR_DO_PRVKEY_SIG	0x0e
+#define NR_DO_PRVKEY_DEC	0x0f
+#define NR_DO_PRVKEY_AUT	0x10
+#define NR_DO_KEYSTRING_PW1	0x11
+#define NR_DO_KEYSTRING_RC	0x12
+#define NR_DO_KEYSTRING_PW3	0x13
+#define NR_DO__LAST__		20   /* == 0x14 */
 /* 14-bit counter for DS: Recorded in flash memory by 1-halfword (2-byte).  */
 /*
  * Representation of 14-bit counter:
@@ -332,7 +330,10 @@ extern uint8_t admin_authorized;
  *   1023: 0xc3ff
  */
 #define NR_COUNTER_DS_LSB	0xc0 /* ..0xc3 */
-/* 8-bit int or Boolean objects: Recorded in flash memory by 1-halfword (2-byte) */
+/*
+ * Boolean object, small enum, or 8-bit integer:
+ * Recorded in flash memory by 1-halfword (2-byte)
+ */
 /*
  * Representation of Boolean object:
  *   0: No record in flash memory
@@ -340,7 +341,20 @@ extern uint8_t admin_authorized;
  */
 #define NR_BOOL_PW1_LIFETIME	0xf0
 /*
- * NR_BOOL_SOMETHING, NR_UINT_SOMETHING could be here...  Use 0xf?
+ * Representation of algorithm attribute object:
+ *   RSA-2048:       No record in flash memory
+ *   RSA-4096:       0xf?00
+ *   ECC p256r1:     0xf?01
+ *   ECC p256k1:     0xf?02
+ *   ECC Ed25519:    0xf?03
+ *   ECC Curve25519: 0xf?04
+ * where <?> == 1 (signature), 2 (decryption) or 3 (authentication)
+ */
+#define NR_KEY_ALGO_ATTR_SIG	0xf1
+#define NR_KEY_ALGO_ATTR_DEC	0xf2
+#define NR_KEY_ALGO_ATTR_AUT	0xf3
+/*
+ * NR_UINT_SOMETHING could be here...  Use 0xf[456789abcd]
  */
 /* 123-counters: Recorded in flash memory by 2-halfword (4-byte).  */
 /*
@@ -371,6 +385,8 @@ extern const uint8_t openpgpcard_aid[14];
 
 void flash_bool_clear (const uint8_t **addr_p);
 const uint8_t *flash_bool_write (uint8_t nr);
+void flash_enum_clear (const uint8_t **addr_p);
+const uint8_t *flash_enum_write (uint8_t nr, uint8_t v);
 int flash_cnt123_get_value (const uint8_t *p);
 void flash_cnt123_increment (uint8_t which, const uint8_t **addr_p);
 void flash_cnt123_clear (const uint8_t **addr_p);
@@ -379,6 +395,7 @@ void flash_warning (const char *msg);
 
 void flash_put_data_internal (const uint8_t *p, uint16_t hw);
 void flash_bool_write_internal (const uint8_t *p, int nr);
+void flash_enum_write_internal (const uint8_t *p, int nr, uint8_t v);
 void flash_cnt123_write_internal (const uint8_t *p, int which, int v);
 void flash_do_write_internal (const uint8_t *p, int nr,
 			      const uint8_t *data, int len);

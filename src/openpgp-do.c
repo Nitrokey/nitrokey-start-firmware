@@ -294,7 +294,7 @@ static const struct do_table_entry *get_do_entry (uint16_t tag);
 
 static const uint8_t *do_ptr[NR_DO__LAST__];
 
-static uint8_t
+static int
 do_tag_to_nr (uint16_t tag)
 {
   switch (tag)
@@ -328,7 +328,7 @@ do_tag_to_nr (uint16_t tag)
     case GPG_DO_LANGUAGE:
       return NR_DO_LANGUAGE;
     default:
-      return NR_NONE;
+      return -1;
     }
 }
 
@@ -710,7 +710,7 @@ int
 gpg_do_load_prvkey (enum kind_of_key kk, int who, const uint8_t *keystring)
 {
   uint8_t nr = get_do_ptr_nr_for_kk (kk);
-  const uint8_t *do_data = do_ptr[nr - NR_DO__FIRST__];
+  const uint8_t *do_data = do_ptr[nr];
   const uint8_t *key_addr;
   uint8_t dek[DATA_ENCRYPTION_KEY_SIZE];
   const uint8_t *iv;
@@ -750,13 +750,13 @@ static void
 gpg_do_delete_prvkey (enum kind_of_key kk)
 {
   uint8_t nr = get_do_ptr_nr_for_kk (kk);
-  const uint8_t *do_data = do_ptr[nr - NR_DO__FIRST__];
+  const uint8_t *do_data = do_ptr[nr];
   uint8_t *key_addr;
 
   if (do_data == NULL)
     return;
 
-  do_ptr[nr - NR_DO__FIRST__] = NULL;
+  do_ptr[nr] = NULL;
   flash_do_release (do_data);
   key_addr = kd[kk].key_addr;
   kd[kk].key_addr = NULL;
@@ -986,7 +986,7 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
     memset (pd->dek_encrypted_3, 0, DATA_ENCRYPTION_KEY_SIZE);
 
   p = flash_do_write (nr, (const uint8_t *)pd, sizeof (struct prvkey_data));
-  do_ptr[nr - NR_DO__FIRST__] = p;
+  do_ptr[nr] = p;
 
   random_bytes_free (dek);
   memset (pd, 0, sizeof (struct prvkey_data));
@@ -1020,7 +1020,7 @@ gpg_do_chks_prvkey (enum kind_of_key kk,
 		    int who_new, const uint8_t *new_ks)
 {
   uint8_t nr = get_do_ptr_nr_for_kk (kk);
-  const uint8_t *do_data = do_ptr[nr - NR_DO__FIRST__];
+  const uint8_t *do_data = do_ptr[nr];
   uint8_t dek[DATA_ENCRYPTION_KEY_SIZE];
   struct prvkey_data *pd;
   const uint8_t *p;
@@ -1065,9 +1065,9 @@ gpg_do_chks_prvkey (enum kind_of_key kk,
   if (update_needed)
     {
       flash_do_release (do_data);
-      do_ptr[nr - NR_DO__FIRST__] = NULL;
+      do_ptr[nr] = NULL;
       p = flash_do_write (nr, (const uint8_t *)pd, sizeof (struct prvkey_data));
-      do_ptr[nr - NR_DO__FIRST__] = p;
+      do_ptr[nr] = p;
     }
 
   memset (pd, 0, sizeof (struct prvkey_data));
@@ -1341,7 +1341,7 @@ gpg_data_scan (const uint8_t *p_start)
 	  if (nr < 0x80)
 	    {
 	      /* It's Data Object */
-	      do_ptr[nr - NR_DO__FIRST__] = p;
+	      do_ptr[nr] = p;
 	      p += second_byte + 1; /* second_byte has length */
 
 	      if (((uint32_t)p & 1))
@@ -1379,17 +1379,17 @@ gpg_data_scan (const uint8_t *p_start)
   flash_set_data_pool_last (p);
 
   num_prv_keys = 0;
-  if (do_ptr[NR_DO_PRVKEY_SIG - NR_DO__FIRST__] != NULL)
+  if (do_ptr[NR_DO_PRVKEY_SIG] != NULL)
     num_prv_keys++;
-  if (do_ptr[NR_DO_PRVKEY_DEC - NR_DO__FIRST__] != NULL)
+  if (do_ptr[NR_DO_PRVKEY_DEC] != NULL)
     num_prv_keys++;
-  if (do_ptr[NR_DO_PRVKEY_AUT - NR_DO__FIRST__] != NULL)
+  if (do_ptr[NR_DO_PRVKEY_AUT] != NULL)
     num_prv_keys++;
 
   data_objects_number_of_bytes = 0;
-  for (i = NR_DO__FIRST__; i < NR_DO__LAST__; i++)
-    if (do_ptr[i - NR_DO__FIRST__] != NULL)
-      data_objects_number_of_bytes += *do_ptr[i - NR_DO__FIRST__];
+  for (i = 0; i < NR_DO__LAST__; i++)
+    if (do_ptr[i] != NULL)
+      data_objects_number_of_bytes += *do_ptr[i];
 
   if (dsc_l10_p == NULL)
     dsc_l10 = 0;
@@ -1441,14 +1441,14 @@ gpg_data_copy (const uint8_t *p_start)
       }
 
   data_objects_number_of_bytes = 0;
-  for (i = NR_DO__FIRST__; i < NR_DO__LAST__; i++)
-    if (do_ptr[i - NR_DO__FIRST__] != NULL)
+  for (i = 0; i < NR_DO__LAST__; i++)
+    if (do_ptr[i] != NULL)
       {
-	const uint8_t *do_data = do_ptr[i - NR_DO__FIRST__];
+	const uint8_t *do_data = do_ptr[i];
 	int len = do_data[0];
 
 	flash_do_write_internal (p, i, &do_data[1], len);
-	do_ptr[i - NR_DO__FIRST__] = p + 1;
+	do_ptr[i] = p + 1;
 	p += 2 + ((len + 1) & ~1);
 	data_objects_number_of_bytes += len;
       }
@@ -1658,9 +1658,9 @@ gpg_do_put_data (uint16_t tag, const uint8_t *data, int len)
 	      GPG_MEMORY_FAILURE ();
 	    else
 	      {
-		uint8_t nr = do_tag_to_nr (tag);
+		int nr = do_tag_to_nr (tag);
 
-		if (nr == NR_NONE)
+		if (nr < 0)
 		  GPG_MEMORY_FAILURE ();
 		else
 		  {
@@ -1796,7 +1796,7 @@ gpg_do_read_simple (uint8_t nr)
 {
   const uint8_t *do_data;
 
-  do_data = do_ptr[nr - NR_DO__FIRST__];
+  do_data = do_ptr[nr];
   if (do_data == NULL)
     return NULL;
 
@@ -1808,7 +1808,7 @@ gpg_do_write_simple (uint8_t nr, const uint8_t *data, int size)
 {
   const uint8_t **do_data_p;
 
-  do_data_p = (const uint8_t **)&do_ptr[nr - NR_DO__FIRST__];
+  do_data_p = (const uint8_t **)&do_ptr[nr];
   if (*do_data_p)
     flash_do_release (*do_data_p);
 

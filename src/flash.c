@@ -477,6 +477,38 @@ flash_bool_write (uint8_t nr)
 }
 
 
+void
+flash_enum_clear (const uint8_t **addr_p)
+{
+  flash_bool_clear (addr_p);
+}
+
+void
+flash_enum_write_internal (const uint8_t *p, int nr, uint8_t v)
+{
+  uint16_t hw = nr | (v << 8);
+
+  flash_program_halfword ((uint32_t)p, hw);
+}
+
+const uint8_t *
+flash_enum_write (uint8_t nr, uint8_t v)
+{
+  uint8_t *p;
+  uint16_t hw = nr | (v << 8);
+
+  p = flash_data_pool_allocate (2);
+  if (p == NULL)
+    {
+      DEBUG_INFO ("enum allocation failure.\r\n");
+      return NULL;
+    }
+
+  flash_program_halfword ((uint32_t)p, hw);
+  return p;
+}
+
+
 int
 flash_cnt123_get_value (const uint8_t *p)
 {

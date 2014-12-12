@@ -1,3 +1,20 @@
+2014-11-20  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/gnuk.h (NR_NONE, NR_DO__FIRST__): Remove.
+	(NR_DO_*): Redefine.
+	(NR_KEY_ALGO_ATTR_SIG, NR_KEY_ALGO_ATTR_DEC)
+	(NR_KEY_ALGO_ATTR_AUT): New.
+
+	* src/openpgp-do.c (gpg_do_load_prvkey, gpg_do_delete_prvkey)
+	(gpg_do_write_prvkey, gpg_do_chks_prvkey, gpg_data_scan)
+	(gpg_data_copy, gpg_do_read_simple)
+	(gpg_do_write_simple): Don't use NR_DO__FIRST__.
+	(gpg_do_put_data): Don't use NR_NONE any more.
+	(do_tag_to_nr): Use -1 to specify NONE.
+
+	* src/flash.c (flash_enum_clear, flash_enum_write_internal)
+	(flash_enum_write): New.
+
 2014-11-19  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/gnuk.h (FIRMWARE_UPDATE_KEY_CONTENT_LEN): New.
