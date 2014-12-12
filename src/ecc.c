@@ -169,7 +169,7 @@ point_is_on_the_curve (const ac *P)
   MFNC(sqr) (s, P->x);
   MFNC(mul) (s, s, P->x);
 
-#ifdef COEFFICIENT_A_IS_ZERO
+#ifndef COEFFICIENT_A_IS_ZERO
   MFNC(mul) (t, coefficient_a, P->x);
   MFNC(add) (s, s, t);
 #endif
@@ -311,7 +311,7 @@ FUNC(compute_kP) (ac *X, const bn256 *K, const ac *P)
     }
 
   dst = k_is_even ? Q : tmp;
-  FUNC(jpc_add_ac) (dst, Q, &precomputed_KG[0]);
+  FUNC(jpc_add_ac) (dst, Q, P);
 
   return FUNC(jpc_to_ac) (X, Q);
 }

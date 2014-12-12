@@ -1,4 +1,9 @@
-2014-12-03  NIIBE Yutaka  <gniibe@fsij.org>
+2014-12-09  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/ecc.c (compute_kP): Bug fix.  It's P, not G.
+	(point_is_on_the_curve): Bug fix.
+
+2014-12-03  Niibe Yutaka  <gniibe@fsij.org>
 
 	Changes for RSA-4096.
 
