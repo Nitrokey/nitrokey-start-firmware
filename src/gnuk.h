@@ -76,39 +76,39 @@ extern volatile uint8_t auth_status;
 #define PW_ERR_PW1 0
 #define PW_ERR_RC  1
 #define PW_ERR_PW3 2
-extern int gpg_pw_get_retry_counter (int who);
-extern int gpg_pw_locked (uint8_t which);
-extern void gpg_pw_reset_err_counter (uint8_t which);
-extern void gpg_pw_increment_err_counter (uint8_t which);
+int gpg_pw_get_retry_counter (int who);
+int gpg_pw_locked (uint8_t which);
+void gpg_pw_reset_err_counter (uint8_t which);
+void gpg_pw_increment_err_counter (uint8_t which);
 
-extern int ac_check_status (uint8_t ac_flag);
-extern int verify_pso_cds (const uint8_t *pw, int pw_len);
-extern int verify_other (const uint8_t *pw, int pw_len);
-extern int verify_user_0 (uint8_t access, const uint8_t *pw, int buf_len,
+int ac_check_status (uint8_t ac_flag);
+int verify_pso_cds (const uint8_t *pw, int pw_len);
+int verify_other (const uint8_t *pw, int pw_len);
+int verify_user_0 (uint8_t access, const uint8_t *pw, int buf_len,
 			  int pw_len_known, const uint8_t *ks_pw1, int saveks);
-extern int verify_admin (const uint8_t *pw, int pw_len);
-extern int verify_admin_0 (const uint8_t *pw, int buf_len, int pw_len_known,
+int verify_admin (const uint8_t *pw, int pw_len);
+int verify_admin_0 (const uint8_t *pw, int buf_len, int pw_len_known,
 			   const uint8_t *ks_pw3, int saveks);
 
-extern void ac_reset_pso_cds (void);
-extern void ac_reset_other (void);
-extern void ac_reset_admin (void);
-extern void ac_fini (void);
+void ac_reset_pso_cds (void);
+void ac_reset_other (void);
+void ac_reset_admin (void);
+void ac_fini (void);
 
 
-extern void set_res_sw (uint8_t sw1, uint8_t sw2);
+void set_res_sw (uint8_t sw1, uint8_t sw2);
 extern uint16_t data_objects_number_of_bytes;
 
 #define CHALLENGE_LEN	32
 
-extern void gpg_data_scan (const uint8_t *p);
-extern void gpg_data_copy (const uint8_t *p);
-extern void gpg_do_get_data (uint16_t tag, int with_tag);
-extern void gpg_do_put_data (uint16_t tag, const uint8_t *data, int len);
-extern void gpg_do_public_key (uint8_t kk_byte);
-extern void gpg_do_keygen (uint8_t kk_byte);
+void gpg_data_scan (const uint8_t *p);
+void gpg_data_copy (const uint8_t *p);
+void gpg_do_get_data (uint16_t tag, int with_tag);
+void gpg_do_put_data (uint16_t tag, const uint8_t *data, int len);
+void gpg_do_public_key (uint8_t kk_byte);
+void gpg_do_keygen (uint8_t kk_byte);
 
-extern const uint8_t *gpg_get_firmware_update_key (uint8_t keyno);
+const uint8_t *gpg_get_firmware_update_key (uint8_t keyno);
 
 
 enum kind_of_key {
@@ -117,17 +117,17 @@ enum kind_of_key {
   GPG_KEY_FOR_AUTHENTICATION,
 };
 
-extern const uint8_t *flash_init (void);
-extern void flash_do_release (const uint8_t *);
-extern const uint8_t *flash_do_write (uint8_t nr, const uint8_t *data, int len);
-extern uint8_t *flash_key_alloc (enum kind_of_key);
-extern void flash_key_release (uint8_t *);
-extern int flash_key_write (uint8_t *key_addr, const uint8_t *key_data,
+const uint8_t *flash_init (void);
+void flash_do_release (const uint8_t *);
+const uint8_t *flash_do_write (uint8_t nr, const uint8_t *data, int len);
+uint8_t *flash_key_alloc (enum kind_of_key);
+void flash_key_release (uint8_t *);
+int flash_key_write (uint8_t *key_addr, const uint8_t *key_data,
 			    const uint8_t *pubkey, int pubkey_len);
-extern void flash_set_data_pool_last (const uint8_t *p);
-extern void flash_clear_halfword (uint32_t addr);
-extern void flash_increment_counter (uint8_t counter_tag_nr);
-extern void flash_reset_counter (uint8_t counter_tag_nr);
+void flash_set_data_pool_last (const uint8_t *p);
+void flash_clear_halfword (uint32_t addr);
+void flash_increment_counter (uint8_t counter_tag_nr);
+void flash_reset_counter (uint8_t counter_tag_nr);
 
 #define FILEID_SERIAL_NO	0
 #define FILEID_UPDATE_KEY_0	1
@@ -135,8 +135,8 @@ extern void flash_reset_counter (uint8_t counter_tag_nr);
 #define FILEID_UPDATE_KEY_2	3
 #define FILEID_UPDATE_KEY_3	4
 #define FILEID_CH_CERTIFICATE	5
-extern int flash_erase_binary (uint8_t file_id);
-extern int flash_write_binary (uint8_t file_id, const uint8_t *data, uint16_t len, uint16_t offset);
+int flash_erase_binary (uint8_t file_id);
+int flash_write_binary (uint8_t file_id, const uint8_t *data, uint16_t len, uint16_t offset);
 
 #define FLASH_CH_CERTIFICATE_SIZE 2048
 
@@ -205,13 +205,13 @@ void s2k (const unsigned char *salt, size_t slen,
 #define KS_GET_SALT(ks)       (ks + KEYSTRING_PASSLEN_SIZE)
 #define KS_GET_KEYSTRING(ks)  (ks + KS_META_SIZE)
 
-extern void gpg_do_clear_prvkey (enum kind_of_key kk);
-extern int gpg_do_load_prvkey (enum kind_of_key kk, int who, const uint8_t *keystring);
-extern int gpg_do_chks_prvkey (enum kind_of_key kk,
+void gpg_do_clear_prvkey (enum kind_of_key kk);
+int gpg_do_load_prvkey (enum kind_of_key kk, int who, const uint8_t *keystring);
+int gpg_do_chks_prvkey (enum kind_of_key kk,
 			       int who_old, const uint8_t *old_ks,
 			       int who_new, const uint8_t *new_ks);
 
-extern int gpg_change_keystring (int who_old, const uint8_t *old_ks,
+int gpg_change_keystring (int who_old, const uint8_t *old_ks,
 				 int who_new, const uint8_t *new_ks);
 
 extern struct key_data kd[3];
@@ -221,13 +221,13 @@ extern struct key_data kd[3];
 /*
  * Debug functions in debug.c
  */
-extern void put_byte (uint8_t b);
-extern void put_byte_with_no_nl (uint8_t b);
-extern void put_short (uint16_t x);
-extern void put_word (uint32_t x);
-extern void put_int (uint32_t x);
-extern void put_string (const char *s);
-extern void put_binary (const char *s, int len);
+void put_byte (uint8_t b);
+void put_byte_with_no_nl (uint8_t b);
+void put_short (uint16_t x);
+void put_word (uint32_t x);
+void put_int (uint32_t x);
+void put_string (const char *s);
+void put_binary (const char *s, int len);
 
 #define DEBUG_INFO(msg)	    put_string (msg)
 #define DEBUG_WORD(w)	    put_word (w)
@@ -242,32 +242,31 @@ extern void put_binary (const char *s, int len);
 #define DEBUG_BINARY(s,len)
 #endif
 
-extern int rsa_sign (const uint8_t *, uint8_t *, int, struct key_data *, int);
-extern uint8_t *modulus_calc (const uint8_t *, int);
-extern int rsa_decrypt (const uint8_t *, uint8_t *, int, struct key_data *);
-extern int rsa_verify (const uint8_t *, int, const uint8_t *, const uint8_t *);
-extern uint8_t *rsa_genkey (int);
+int rsa_sign (const uint8_t *, uint8_t *, int, struct key_data *, int);
+uint8_t *modulus_calc (const uint8_t *, int);
+int rsa_decrypt (const uint8_t *, uint8_t *, int, struct key_data *);
+int rsa_verify (const uint8_t *, int, const uint8_t *, const uint8_t *);
+uint8_t *rsa_genkey (int);
 
-extern int ecdsa_sign_p256r1 (const uint8_t *hash, uint8_t *output,
-			      const uint8_t *key_data);
-extern uint8_t *ecdsa_compute_public_p256r1 (const uint8_t *key_data);
+int ecdsa_sign_p256r1 (const uint8_t *hash, uint8_t *output,
+		       const uint8_t *key_data);
+uint8_t *ecdsa_compute_public_p256r1 (const uint8_t *key_data);
 
-extern int ecdsa_sign_p256k1 (const uint8_t *hash, uint8_t *output,
-			      const uint8_t *key_data);
-extern uint8_t *ecdsa_compute_public_p256k1 (const uint8_t *key_data);
+int ecdsa_sign_p256k1 (const uint8_t *hash, uint8_t *output,
+		       const uint8_t *key_data);
+uint8_t *ecdsa_compute_public_p256k1 (const uint8_t *key_data);
 
-extern int eddsa_sign_25519 (const uint8_t *input, size_t ilen,
-			     uint32_t *output,
-			     const uint8_t *sk_a, const uint8_t *seed,
-			     const uint8_t *pk);
-extern uint8_t *eddsa_compute_public_25519 (const uint8_t *a);
+int eddsa_sign_25519 (const uint8_t *input, size_t ilen, uint32_t *output,
+		      const uint8_t *sk_a, const uint8_t *seed,
+		      const uint8_t *pk);
+uint8_t *eddsa_compute_public_25519 (const uint8_t *a);
 
-extern const uint8_t *gpg_do_read_simple (uint8_t);
-extern void gpg_do_write_simple (uint8_t, const uint8_t *, int);
-extern void gpg_increment_digital_signature_counter (void);
+const uint8_t *gpg_do_read_simple (uint8_t);
+void gpg_do_write_simple (uint8_t, const uint8_t *, int);
+void gpg_increment_digital_signature_counter (void);
 
 
-extern void fatal (uint8_t code) __attribute__ ((noreturn));
+void fatal (uint8_t code) __attribute__ ((noreturn));
 #define FATAL_FLASH  1
 #define FATAL_RANDOM 2
 
@@ -360,18 +359,18 @@ extern uint8_t admin_authorized;
 
 extern const uint8_t openpgpcard_aid[14];
 
-extern void flash_bool_clear (const uint8_t **addr_p);
-extern const uint8_t *flash_bool_write (uint8_t nr);
-extern int flash_cnt123_get_value (const uint8_t *p);
-extern void flash_cnt123_increment (uint8_t which, const uint8_t **addr_p);
-extern void flash_cnt123_clear (const uint8_t **addr_p);
-extern void flash_put_data (uint16_t hw);
-extern void flash_warning (const char *msg);
+void flash_bool_clear (const uint8_t **addr_p);
+const uint8_t *flash_bool_write (uint8_t nr);
+int flash_cnt123_get_value (const uint8_t *p);
+void flash_cnt123_increment (uint8_t which, const uint8_t **addr_p);
+void flash_cnt123_clear (const uint8_t **addr_p);
+void flash_put_data (uint16_t hw);
+void flash_warning (const char *msg);
 
-extern void flash_put_data_internal (const uint8_t *p, uint16_t hw);
-extern void flash_bool_write_internal (const uint8_t *p, int nr);
-extern void flash_cnt123_write_internal (const uint8_t *p, int which, int v);
-extern void flash_do_write_internal (const uint8_t *p, int nr, const uint8_t *data, int len);
+void flash_put_data_internal (const uint8_t *p, uint16_t hw);
+void flash_bool_write_internal (const uint8_t *p, int nr);
+void flash_cnt123_write_internal (const uint8_t *p, int which, int v);
+void flash_do_write_internal (const uint8_t *p, int nr, const uint8_t *data, int len);
 
 extern const uint8_t gnukStringSerial[];
 
@@ -385,16 +384,16 @@ extern void led_blink (int spec);
 
 #if defined(PINPAD_SUPPORT)
 # if defined(PINPAD_CIR_SUPPORT)
-extern void cir_init (void);
+void cir_init (void);
 # elif defined(PINPAD_DIAL_SUPPORT)
-extern void dial_sw_disable (void);
-extern void dial_sw_enable (void);
+void dial_sw_disable (void);
+void dial_sw_enable (void);
 # elif defined(PINPAD_DND_SUPPORT)
-extern void msc_init (void);
-extern void msc_media_insert_change (int available);
-extern int msc_scsi_write (uint32_t lba, const uint8_t *buf, size_t size);
-extern int msc_scsi_read (uint32_t lba, const uint8_t **sector_p);
-extern void msc_scsi_stop (uint8_t code);
+void msc_init (void);
+void msc_media_insert_change (int available);
+int msc_scsi_write (uint32_t lba, const uint8_t *buf, size_t size);
+int msc_scsi_read (uint32_t lba, const uint8_t **sector_p);
+void msc_scsi_stop (uint8_t code);
 # endif
 #define PIN_INPUT_CURRENT 1
 #define PIN_INPUT_NEW     2
@@ -403,7 +402,7 @@ extern void msc_scsi_stop (uint8_t code);
 extern uint8_t pin_input_buffer[MAX_PIN_CHARS];
 extern uint8_t pin_input_len;
 
-extern int pinpad_getline (int msg_code, uint32_t timeout_usec);
+int pinpad_getline (int msg_code, uint32_t timeout_usec);
 
 #endif
 
