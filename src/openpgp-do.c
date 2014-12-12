@@ -85,8 +85,7 @@ uint16_t data_objects_number_of_bytes;
 
 /*
  * Compile time vars:
- *   Historical Bytes (template), Extended Capabilities,
- *   and Algorithm Attributes
+ *   Historical Bytes (template), Extended Capabilities.
  */
 
 /* Historical Bytes (template) */
@@ -126,29 +125,42 @@ static const uint8_t extended_capabilities[] __attribute__ ((aligned (1))) = {
 };
 
 /* Algorithm Attributes */
-static const uint8_t algorithm_attr_rsa[] __attribute__ ((aligned (1))) = {
+#define OPENPGP_ALGO_RSA   0x01
+#define OPENPGP_ALGO_ECDH  0x12
+#define OPENPGP_ALGO_ECDSA 0x13
+#define OPENPGP_ALGO_EDDSA 0x16 /* It catches 22, finally.  */
+
+static const uint8_t algorithm_attr_rsa2k[] __attribute__ ((aligned (1))) = {
   6,
-  0x01, /* RSA */
+  OPENPGP_ALGO_RSA,
   0x08, 0x00,	      /* Length modulus (in bit): 2048 */
   0x00, 0x20,	      /* Length exponent (in bit): 32  */
-  0x00		      /* 0: p&q , 3: CRT with N (not yet supported) */
+  0x00		      /* 0: Acceptable format is: P and Q */
+};
+
+static const uint8_t algorithm_attr_rsa4k[] __attribute__ ((aligned (1))) = {
+  6,
+  OPENPGP_ALGO_RSA,
+  0x10, 0x00,	      /* Length modulus (in bit): 4096 */
+  0x00, 0x20,	      /* Length exponent (in bit): 32  */
+  0x00		      /* 0: Acceptable format is: P and Q */
 };
 
 static const uint8_t algorithm_attr_p256r1[] __attribute__ ((aligned (1))) = {
   9,
-  0x13, /* ECDSA */
+  OPENPGP_ALGO_ECDSA,
   0x2a, 0x86, 0x48, 0xce, 0x3d, 0x03, 0x01, 0x07 /* OID of NIST curve P-256 */
 };
 
 static const uint8_t algorithm_attr_p256k1[] __attribute__ ((aligned (1))) = {
   6,
-  0x13, /* ECDSA */
+  OPENPGP_ALGO_ECDSA,
   0x2b, 0x81, 0x04, 0x00, 0x0a /* OID of curve secp256k1 */
 };
 
 static const uint8_t algorithm_attr_ed25519[] __attribute__ ((aligned (1))) = {
   10,
-  0x69, /* EdDSA (experimental) */
+  OPENPGP_ALGO_EDDSA,
   /* OID of the curve Ed25519 */
   0x2b, 0x06, 0x01, 0x04, 0x01, 0xda, 0x47, 0x0f, 0x01
 };
@@ -171,6 +183,105 @@ gpg_get_pw1_lifetime (void)
     return 0;
   else
     return 1;
+}
+
+
+/*
+ * Representation of algorithm attributes:
+ *    0: ALGO_ATTR_<>_P == NULL : RSA-2048
+ *    N: ALGO_ATTR_<>_P != NULL : 
+ *
+ */
+static const uint8_t *algo_attr_sig_p;
+static const uint8_t *algo_attr_dec_p;
+static const uint8_t *algo_attr_aut_p;
+
+static const uint8_t **
+get_algo_attr_pointer (enum kind_of_key kk)
+{
+  if (kk == GPG_KEY_FOR_SIGNING)
+    return &algo_attr_sig_p;
+  else if (kk == GPG_KEY_FOR_DECRYPTION)
+    return &algo_attr_dec_p;
+  else
+    return &algo_attr_aut_p;
+}
+
+static int
+kk_to_nr (enum kind_of_key kk)
+{
+  int nr;
+
+  if (kk == GPG_KEY_FOR_SIGNING)
+    nr = NR_KEY_ALGO_ATTR_SIG;
+  else if (kk == GPG_KEY_FOR_DECRYPTION)
+    nr = NR_KEY_ALGO_ATTR_DEC;
+  else
+    nr = NR_KEY_ALGO_ATTR_AUT;
+
+  return nr;
+}
+
+int
+gpg_get_algo_attr (enum kind_of_key kk)
+{
+  const uint8_t *algo_attr_p = *get_algo_attr_pointer (kk);
+
+  if (algo_attr_p == NULL)
+    return ALGO_RSA2K;
+
+  return algo_attr_p[1];
+}
+
+static const uint8_t *
+get_algo_attr_data_object (enum kind_of_key kk)
+{
+  const uint8_t *algo_attr_p = *get_algo_attr_pointer (kk);
+
+  if (algo_attr_p == NULL)
+    return algorithm_attr_rsa2k;
+
+  if (algo_attr_p[1] == ALGO_RSA4K)
+    return algorithm_attr_rsa4k;
+  else if (algo_attr_p[1] == ALGO_NISTP256R1)
+    return algorithm_attr_p256r1;
+  else if (algo_attr_p[1] == ALGO_SECP256K1)
+    return algorithm_attr_p256k1;
+  else if (algo_attr_p[1] == ALGO_ED25519)
+    return algorithm_attr_ed25519;
+
+  return algorithm_attr_rsa2k;
+}
+
+int
+gpg_get_algo_attr_key_size (enum kind_of_key kk, enum size_of_key s)
+{
+  const uint8_t *algo_attr_p = *get_algo_attr_pointer (kk);
+
+  if (algo_attr_p == NULL)
+    if (s == GPG_KEY_STORAGE)
+      return 512;
+    else
+      return 256;
+  else if (algo_attr_p[1] == ALGO_RSA4K)
+    if (s == GPG_KEY_STORAGE)
+      return 1024;
+    else
+      return 512;
+  else if (algo_attr_p[1] == ALGO_NISTP256R1 || algo_attr_p[1] == ALGO_SECP256K1)
+    if (s == GPG_KEY_STORAGE)
+      return 128;
+    else if (s == GPG_KEY_PUBLIC)
+      return 64;
+    else
+      return 32;
+  else				/* ED25519 */
+    if (s == GPG_KEY_STORAGE)
+      return 128;
+    else if (s == GPG_KEY_PUBLIC)
+      return 32;
+    else
+      return 64;
 }
 
 
@@ -525,25 +636,24 @@ rw_pw_status (uint16_t tag, int with_tag,
 {
   if (is_write)
     {
-      (void)len;		/* Should be SIZE_PW_STATUS_BYTES */
+      if (len != 1)
+	return 0;		/* Failure */
 
-      /* Only the first byte of DATA is checked */
-      if (data[0] == 0)
+      /* The first byte of DATA specifies the lifetime.  */
+      if (data[0] == 0 && pw1_lifetime_p != NULL)
 	{
 	  flash_bool_clear (&pw1_lifetime_p);
-	  if (pw1_lifetime_p == NULL)
-	    return 1;
-	  else
+	  if (pw1_lifetime_p != NULL) /* No change after update */
 	    return 0;
 	}
-      else
+      else if (pw1_lifetime_p == NULL)
 	{
 	  pw1_lifetime_p = flash_bool_write (NR_BOOL_PW1_LIFETIME);
-	  if (pw1_lifetime_p != NULL)
-	    return 1;
-	  else
+	  if (pw1_lifetime_p == NULL) /* No change after update */
 	    return 0;
 	}
+
+      return 1;			/* Success */
     }
   else
     {
@@ -560,6 +670,78 @@ rw_pw_status (uint16_t tag, int with_tag,
       *res_p++ = PASSWORD_ERRORS_MAX - gpg_pw_get_err_counter (PW_ERR_PW1);
       *res_p++ = PASSWORD_ERRORS_MAX - gpg_pw_get_err_counter (PW_ERR_RC);
       *res_p++ = PASSWORD_ERRORS_MAX - gpg_pw_get_err_counter (PW_ERR_PW3);
+      return 1;
+    }
+}
+
+static int
+rw_algorithm_attr (uint16_t tag, int with_tag,
+		   const uint8_t *data, int len, int is_write)
+{
+  enum kind_of_key kk;
+
+  if (tag == GPG_DO_ALG_SIG)
+    kk = GPG_KEY_FOR_SIGNING;
+  else if (tag == GPG_DO_ALG_DEC)
+    kk = GPG_KEY_FOR_DECRYPTION;
+  else
+    kk = GPG_KEY_FOR_AUTHENTICATION;
+
+  if (is_write)
+    {
+      int algo = -1;
+      const uint8_t **algo_attr_pp = get_algo_attr_pointer (kk);
+
+      if (len == 6)
+	{
+	  if (memcmp (data, algorithm_attr_rsa2k+1, 6) == 0)
+	    algo = ALGO_RSA2K;
+	  else if (memcmp (data, algorithm_attr_rsa4k+1, 6) == 0)
+	    algo = ALGO_RSA4K;
+	  else if ((tag != GPG_DO_ALG_DEC
+		    && memcmp (data, algorithm_attr_p256k1+1, 6) == 0)
+		   || (tag == GPG_DO_ALG_DEC && data[0]==OPENPGP_ALGO_ECDH
+		       && memcmp (data+1, algorithm_attr_p256k1+2, 5) == 0))
+	    algo = ALGO_SECP256K1;
+	}
+      else if (len == 9
+	       && ((tag != GPG_DO_ALG_DEC
+		    && memcmp (data, algorithm_attr_p256r1+1, 9) == 0)
+		   || (tag == GPG_DO_ALG_DEC && data[0]==OPENPGP_ALGO_ECDH
+		       && memcmp (data+1, algorithm_attr_p256r1+2, 8) == 0)))
+	algo = ALGO_NISTP256R1;
+      else if (len == 10 && memcmp (data, algorithm_attr_ed25519+1, 10) == 0)
+	algo = ALGO_ED25519;
+
+      if (algo < 0)
+	return 0;		/* Error */
+      else if (algo == ALGO_RSA2K && *algo_attr_pp != NULL)
+	{
+	  // xxx: make sure there is no key registered
+	  flash_enum_clear (algo_attr_pp);
+	  if (*algo_attr_pp != NULL)
+	    return 0;
+	}
+      else if (*algo_attr_pp == NULL || (*algo_attr_pp)[1] != algo)
+	{
+	  int nr = kk_to_nr (kk);
+
+	  // xxx: make sure there is no key registered
+	  *algo_attr_pp = flash_enum_write (nr, algo);
+	  if (*algo_attr_pp == NULL)
+	    return 0;
+	}
+
+      return 1;
+    }
+  else
+    {
+      const uint8_t *algo_attr_do = get_algo_attr_data_object (kk);
+
+      copy_do_1 (tag, algo_attr_do, with_tag);
+      /* Override the byte when GPG_DO_ALG_DEC.  */
+      if (tag == GPG_DO_ALG_DEC && algo_attr_do[1] == OPENPGP_ALGO_ECDSA)
+	*(res_p - algo_attr_do[0]) = OPENPGP_ALGO_ECDH;
       return 1;
     }
 }
@@ -1273,23 +1455,14 @@ gpg_do_table[] = {
   /* Pseudo DO READ/WRITE: calculated */
   { GPG_DO_PW_STATUS, DO_PROC_READWRITE, AC_ALWAYS, AC_ADMIN_AUTHORIZED,
     rw_pw_status },
+  { GPG_DO_ALG_SIG, DO_PROC_READWRITE, AC_ALWAYS, AC_ADMIN_AUTHORIZED,
+    rw_algorithm_attr },
+  { GPG_DO_ALG_DEC, DO_PROC_READWRITE, AC_ALWAYS, AC_ADMIN_AUTHORIZED,
+    rw_algorithm_attr },
+  { GPG_DO_ALG_AUT, DO_PROC_READWRITE, AC_ALWAYS, AC_ADMIN_AUTHORIZED,
+    rw_algorithm_attr },
   /* Fixed data */
   { GPG_DO_EXTCAP, DO_FIXED, AC_ALWAYS, AC_NEVER, extended_capabilities },
-#ifdef RSA_SIG
-  { GPG_DO_ALG_SIG, DO_FIXED, AC_ALWAYS, AC_NEVER, algorithm_attr_rsa },
-#else
-  { GPG_DO_ALG_SIG, DO_FIXED, AC_ALWAYS, AC_NEVER, algorithm_attr_p256k1 },
-#endif
-  { GPG_DO_ALG_DEC, DO_FIXED, AC_ALWAYS, AC_NEVER, algorithm_attr_rsa },
-#if defined(RSA_AUTH)
-  { GPG_DO_ALG_AUT, DO_FIXED, AC_ALWAYS, AC_NEVER, algorithm_attr_rsa },
-#elif defined(ECDSA_AUTH)
-  { GPG_DO_ALG_AUT, DO_FIXED, AC_ALWAYS, AC_NEVER, algorithm_attr_p256r1 },
-#elif defined(EDDSA_AUTH)
-  { GPG_DO_ALG_AUT, DO_FIXED, AC_ALWAYS, AC_NEVER, algorithm_attr_ed25519 },
-#else
-#error "Not supported (AUTH)."
-#endif
   /* Compound data: Read access only */
   { GPG_DO_CH_DATA, DO_CMP_READ, AC_ALWAYS, AC_NEVER, cmp_ch_data },
   { GPG_DO_APP_DATA, DO_CMP_READ, AC_ALWAYS, AC_NEVER, cmp_app_data },
@@ -1326,6 +1499,7 @@ gpg_data_scan (const uint8_t *p_start)
   pw_err_counter_p[PW_ERR_PW1] = NULL;
   pw_err_counter_p[PW_ERR_RC] = NULL;
   pw_err_counter_p[PW_ERR_PW3] = NULL;
+  algo_attr_sig_p = algo_attr_dec_p = algo_attr_aut_p = NULL;
 
   /* Traverse DO, counters, etc. in DATA pool */
   p = p_start;
@@ -1365,12 +1539,28 @@ gpg_data_scan (const uint8_t *p_start)
 	      case NR_BOOL_PW1_LIFETIME:
 		pw1_lifetime_p = p - 1;
 		p++;
-		continue;
+		break;
+	      case NR_KEY_ALGO_ATTR_SIG:
+		algo_attr_sig_p = p - 1;
+		p++;
+		break;
+	      case NR_KEY_ALGO_ATTR_DEC:
+		algo_attr_dec_p = p - 1;
+		p++;
+		break;
+	      case NR_KEY_ALGO_ATTR_AUT:
+		algo_attr_aut_p = p - 1;
+		p++;
+		break;
 	      case NR_COUNTER_123:
 		p++;
 		if (second_byte <= PW_ERR_PW3)
 		  pw_err_counter_p[second_byte] = p;
 		p += 2;
+		break;
+	      default:
+		/* Something going wrong.  ignore this word. */
+		p++;
 		break;
 	      }
 	}
@@ -1429,6 +1619,27 @@ gpg_data_copy (const uint8_t *p_start)
     {
       flash_bool_write_internal (p, NR_BOOL_PW1_LIFETIME);
       pw1_lifetime_p = p;
+      p += 2;
+    }
+
+  if (algo_attr_sig_p != NULL)
+    {
+      flash_enum_write_internal (p, NR_KEY_ALGO_ATTR_SIG, algo_attr_sig_p[1]);
+      algo_attr_sig_p = p;
+      p += 2;
+    }
+
+  if (algo_attr_dec_p != NULL)
+    {
+      flash_enum_write_internal (p, NR_KEY_ALGO_ATTR_DEC, algo_attr_dec_p[1]);
+      algo_attr_dec_p = p;
+      p += 2;
+    }
+
+  if (algo_attr_aut_p != NULL)
+    {
+      flash_enum_write_internal (p, NR_KEY_ALGO_ATTR_AUT, algo_attr_aut_p[1]);
+      algo_attr_aut_p = p;
       p += 2;
     }
 

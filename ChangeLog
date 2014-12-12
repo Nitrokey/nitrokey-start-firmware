@@ -1,3 +1,15 @@
+2014-11-21  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/openpgp-do.c (algorithm_attr_rsa2k): Rename from *_rsa.
+	(algorithm_attr_rsa4k): New.
+	(get_algo_attr_pointer, kk_to_nr, gpg_get_algo_attr)
+	(get_algo_attr_data_object, gpg_get_algo_attr_key_size): New.
+	(rw_algorithm_attr): New.
+	(gpg_do_table): Register rw_algorithm_attr for GPG_DO_ALG_*.
+	(gpg_data_scan, gpg_data_copy): Handle algo attributes.
+
+	(rw_pw_status): Fix checking against redundant write.
+
 2014-11-20  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/openpgp-do.c (extended_capabilities): Key attributes can be
