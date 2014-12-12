@@ -1,7 +1,7 @@
 /*
  * call-ec.c - interface between Gnuk and Elliptic curve over GF(prime)
  *
- * Copyright (C) 2013 Free Software Initiative of Japan
+ * Copyright (C) 2013, 2014 Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
  * This file is a part of Gnuk, a GnuPG USB Token implementation.
@@ -23,9 +23,10 @@
 
 #include "field-group-select.h"
 
-/* We are little endian.  */
+/* We are little-endian in the computation, but the protocol is big-endian.  */
 
 #define ECDSA_BYTE_SIZE 32
+#define ECDH_BYTE_SIZE 32
 
 int
 FUNC(ecdsa_sign) (const uint8_t *hash, uint8_t *output,
@@ -54,7 +55,7 @@ FUNC(ecdsa_sign) (const uint8_t *hash, uint8_t *output,
 }
 
 uint8_t *
-FUNC(ecdsa_compute_public) (const uint8_t *key_data)
+FUNC(ecc_compute_public) (const uint8_t *key_data)
 {
   uint8_t *p0, *p, *p1;
   ac q[1];
@@ -83,4 +84,43 @@ FUNC(ecdsa_compute_public) (const uint8_t *key_data)
     *p++ = p1[ECDSA_BYTE_SIZE - i - 1];
 
   return p0;
+}
+
+int
+FUNC(ecdh_decrypt) (const uint8_t *input, uint8_t *output,
+		    const uint8_t *key_data)
+{
+  bn256 k[1];
+  ac X[1], P[1];
+  int i;
+  uint8_t *p0;
+  const uint8_t *p1;
+  int r;
+
+  p0 = (uint8_t *)k;
+  for (i = 0; i < ECDH_BYTE_SIZE; i++)
+    p0[ECDH_BYTE_SIZE - i - 1] = key_data[i];
+
+  p1 = input+1;			/* skip '04' */
+  p0 = (uint8_t *)P->x;
+  for (i = 0; i < ECDH_BYTE_SIZE; i++)
+    p0[ECDH_BYTE_SIZE - i - 1] = *p1++;
+  p0 = (uint8_t *)P->y;
+  for (i = 0; i < ECDH_BYTE_SIZE; i++)
+    p0[ECDH_BYTE_SIZE - i - 1] = *p1++;
+
+  r = FUNC(compute_kP) (X, k, P);
+  if (r == 0)
+    {
+      p0 = output;
+      p1 = (const uint8_t *)X->x;
+      *p0++ = 4;
+      for (i = 0; i < ECDH_BYTE_SIZE; i++)
+	*p0++ = p1[ECDH_BYTE_SIZE - i - 1];
+      p1 = (const uint8_t *)X->y;
+      for (i = 0; i < ECDH_BYTE_SIZE; i++)
+	*p0++ = p1[ECDH_BYTE_SIZE - i - 1];
+    }
+
+  return r;
 }

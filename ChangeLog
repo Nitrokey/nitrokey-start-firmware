@@ -1,5 +1,11 @@
 2014-12-09  Niibe Yutaka  <gniibe@fsij.org>
 
+	* src/call-ec.c (ecc_compute_public): Rename, as we share
+	same routine among ECDSA and ECDH.
+	(ecdh_decrypt): New.
+
+2014-12-09  Niibe Yutaka  <gniibe@fsij.org>
+
 	* src/ecc.c (compute_kP): Bug fix.  It's P, not G.
 	(point_is_on_the_curve): Bug fix.
 
