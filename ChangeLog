@@ -1,5 +1,12 @@
 2014-12-12  Niibe Yutaka  <gniibe@fsij.org>
 
+	* test/features/802_get_data_static.feature: Reflect the change
+	of extended capabilities.
+	* test/features/402_get_data_static.feature: Ditto.
+	* test/features/002_get_data_static.feature: Ditto.
+
+	* test/features/003_keyattr_change.feature: New test.
+
 	* src/usb_lld.h: Don't use 'extern' for function declarations.
 	* src/usb-icc.c (end_cmd_apdu_data): Fix Le handling.
 
