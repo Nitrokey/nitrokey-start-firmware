@@ -137,6 +137,7 @@ void flash_do_release (const uint8_t *);
 const uint8_t *flash_do_write (uint8_t nr, const uint8_t *data, int len);
 uint8_t *flash_key_alloc (enum kind_of_key);
 void flash_key_release (uint8_t *, int);
+void flash_key_release_page (enum kind_of_key);
 int flash_key_write (uint8_t *key_addr,
 		     const uint8_t *key_data, int key_data_len,
 		     const uint8_t *pubkey, int pubkey_len);

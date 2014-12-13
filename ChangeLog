@@ -1,3 +1,10 @@
+2014-12-13  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/flash.c (flash_key_getpage, flash_key_release_page): New.
+
+	* src/openpgp-do.c (gpg_do_delete_prvkey): New arg.
+	(rw_algorithm_attr): Call gpg_do_delete_prvkey with CLEAN_PAGE_FULL.
+
 2014-12-12  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/Makefile.in (build/bignum.o): Specific OPT for this target.

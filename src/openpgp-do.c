@@ -36,6 +36,11 @@
 #include "polarssl/aes.h"
 #include "sha512.h"
 
+/* Forward declaration */
+#define CLEAN_PAGE_FULL 1
+#define CLEAN_SINGLE    0
+static void gpg_do_delete_prvkey (enum kind_of_key kk, int clean_page_full);
+
 
 #define PASSWORD_ERRORS_MAX 3	/* >= errors, it will be locked */
 static const uint8_t *pw_err_counter_p[3];
@@ -458,8 +463,15 @@ copy_tag (uint16_t tag)
 static int
 do_hist_bytes (uint16_t tag, int with_tag)
 {
-  /* XXX: For now, no life cycle management, just return template as is. */
-  /* XXX: Supporing TERMINATE DF / ACTIVATE FILE, we need to fix here */
+  /*
+   * Currently, we support no life cycle management.
+   * In case of Gnuk, user could flash the MCU, instead.
+   * Thus, just return the template as is.
+   *
+   * In future (when Gnuk will be onn the real smartcard),
+   * we can support life cycle management by implementing
+   * TERMINATE DF / ACTIVATE FILE and fix code around here.
+   */
   copy_do_1 (tag, historical_bytes, with_tag);
   return 1;
 }
@@ -717,17 +729,15 @@ rw_algorithm_attr (uint16_t tag, int with_tag,
 	return 0;		/* Error */
       else if (algo == ALGO_RSA2K && *algo_attr_pp != NULL)
 	{
-	  // xxx: make sure there is no key registered
+	  gpg_do_delete_prvkey (kk, CLEAN_PAGE_FULL);
 	  flash_enum_clear (algo_attr_pp);
 	  if (*algo_attr_pp != NULL)
 	    return 0;
 	}
       else if (*algo_attr_pp == NULL || (*algo_attr_pp)[1] != algo)
 	{
-	  int nr = kk_to_nr (kk);
-
-	  // xxx: make sure there is no key registered
-	  *algo_attr_pp = flash_enum_write (nr, algo);
+	  gpg_do_delete_prvkey (kk, CLEAN_PAGE_FULL);
+	  *algo_attr_pp = flash_enum_write (kk_to_nr (kk), algo);
 	  if (*algo_attr_pp == NULL)
 	    return 0;
 	}
@@ -947,7 +957,7 @@ gpg_do_load_prvkey (enum kind_of_key kk, int who, const uint8_t *keystring)
 static int8_t num_prv_keys;
 
 static void
-gpg_do_delete_prvkey (enum kind_of_key kk)
+gpg_do_delete_prvkey (enum kind_of_key kk, int clean_page_full)
 {
   uint8_t nr = get_do_ptr_nr_for_kk (kk);
   const uint8_t *do_data = do_ptr[nr];
@@ -956,13 +966,20 @@ gpg_do_delete_prvkey (enum kind_of_key kk)
   int key_size = gpg_get_algo_attr_key_size (kk, GPG_KEY_STORAGE);
 
   if (do_data == NULL)
-    return;
+    {
+      if (clean_page_full)
+	flash_key_release_page (kk);
+      return;
+    }
 
   do_ptr[nr] = NULL;
   flash_do_release (do_data);
   key_addr = (uint8_t *)kd[kk].pubkey - prvkey_len;
   kd[kk].pubkey = NULL;
-  flash_key_release (key_addr, key_size);
+  if (clean_page_full)
+    flash_key_release_page (kk);
+  else
+    flash_key_release (key_addr, key_size);
 
   if (admin_authorized == BY_ADMIN && kk == GPG_KEY_FOR_SIGNING)
     {			/* Recover admin keystring DO.  */
@@ -1014,7 +1031,7 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data,
   DEBUG_SHORT (prvkey_len);
 
   /* Delete it first, if any.  */
-  gpg_do_delete_prvkey (kk);
+  gpg_do_delete_prvkey (kk, CLEAN_SINGLE);
 
   pd = (struct prvkey_data *)malloc (sizeof (struct prvkey_data));
   if (pd == NULL)
@@ -1314,7 +1331,7 @@ proc_key_import (const uint8_t *data, int len)
 		     || attr == ALGO_ED25519))
       || (len <= 22 && attr == ALGO_RSA2K) || (len <= 24 && attr == ALGO_RSA4K))
     {					    /* Deletion of the key */
-      gpg_do_delete_prvkey (kk);
+      gpg_do_delete_prvkey (kk, CLEAN_SINGLE);
       return 1;
     }
 

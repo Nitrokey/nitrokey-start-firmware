@@ -318,15 +318,19 @@ flash_do_release (const uint8_t *do_data)
 }
 
 
+static uint8_t *
+flash_key_getpage (enum kind_of_key kk)
+{
+  /* There is a page for each KK.  */
+  return &_keystore_pool + (FLASH_PAGE_SIZE * kk);
+}
+
 uint8_t *
 flash_key_alloc (enum kind_of_key kk)
 {
-  uint8_t *k0, *k;
+  uint8_t *k, *k0 = flash_key_getpage (kk);
   int i; 
   int key_size = gpg_get_algo_attr_key_size (kk, GPG_KEY_STORAGE);
-
-  /* There is a page for each KK.  */
-  k0 = &_keystore_pool + (FLASH_PAGE_SIZE * kk);
 
   /* Seek free space in the page.  */
   for (k = k0; k < k0 + FLASH_PAGE_SIZE; k += key_size)
@@ -410,6 +414,12 @@ flash_key_release (uint8_t *key_addr, int key_size)
     flash_erase_page (((uint32_t)key_addr & ~(FLASH_PAGE_SIZE - 1)));
   else
     flash_key_fill_zero_as_released (key_addr, key_size);
+}
+
+void
+flash_key_release_page (enum kind_of_key kk)
+{
+  flash_erase_page ((uint32_t)flash_key_getpage (kk));
 }
 
 

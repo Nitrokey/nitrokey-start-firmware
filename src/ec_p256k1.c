@@ -21,6 +21,12 @@
  *
  */
 
+/*
+ * Note: we don't take advantage of the specific feature of this curve,
+ * but use same method of computation as NIST P-256 curve.  That's due
+ * to some software patent(s).
+ */
+
 #include <stdint.h>
 #include <string.h>
 #include "bn.h"
