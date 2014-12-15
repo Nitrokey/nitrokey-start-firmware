@@ -1,3 +1,7 @@
+2014-12-15  Niibe Yutaka  <gniibe@fsij.org>
+
+	* VERSION: 1.1.4.
+
 2014-12-13  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/flash.c (flash_key_getpage, flash_key_release_page): New.
