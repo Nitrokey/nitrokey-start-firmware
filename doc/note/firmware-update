@@ -48,9 +48,9 @@ I have three keys in my token.
 With the script below, I extract public key of the keygrip
 5D6C89682D07CCFC034AF508420BF2276D8018ED into the file: 5D6C8968.bin::
 
-   $ ./get_public_key.py 5D6C89682D07CCFC034AF508420BF2276D8018ED
+   $ ./get_raw_public_key.py 5D6C89682D07CCFC034AF508420BF2276D8018ED
 
-Here is the script, get_public_key.py::
+Here is the script, get_raw_public_key.py::
 
    #! /usr/bin/python
    
