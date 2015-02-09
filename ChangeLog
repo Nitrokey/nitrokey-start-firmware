@@ -1,3 +1,7 @@
+2015-02-09  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/openpgp.c (cmd_pso): Fix eddsa. Use GPG_KEY_FOR_SIGNING.
+
 2014-12-15  Niibe Yutaka  <gniibe@fsij.org>
 
 	* VERSION: 1.1.4.

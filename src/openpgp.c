@@ -900,9 +900,9 @@ cmd_pso (void)
 
 	  res_APDU_size = EDDSA_SIGNATURE_LENGTH;
 	  r = eddsa_sign_25519 (apdu.cmd_apdu_data, len, output,
-				kd[GPG_KEY_FOR_AUTHENTICATION].data,
-				kd[GPG_KEY_FOR_AUTHENTICATION].data+32,
-				kd[GPG_KEY_FOR_AUTHENTICATION].pubkey);
+				kd[GPG_KEY_FOR_SIGNING].data,
+				kd[GPG_KEY_FOR_SIGNING].data+32,
+				kd[GPG_KEY_FOR_SIGNING].pubkey);
 	  memcpy (res_APDU, output, EDDSA_SIGNATURE_LENGTH);
 	}
     }
