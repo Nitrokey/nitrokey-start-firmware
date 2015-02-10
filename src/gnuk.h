@@ -256,7 +256,8 @@ void put_binary (const char *s, int len);
 
 int rsa_sign (const uint8_t *, uint8_t *, int, struct key_data *, int);
 uint8_t *modulus_calc (const uint8_t *, int);
-int rsa_decrypt (const uint8_t *, uint8_t *, int, struct key_data *);
+int rsa_decrypt (const uint8_t *, uint8_t *, int, struct key_data *,
+		 unsigned int *);
 int rsa_verify (const uint8_t *, int, const uint8_t *, const uint8_t *);
 uint8_t *rsa_genkey (int);
 

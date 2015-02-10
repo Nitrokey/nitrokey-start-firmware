@@ -819,6 +819,7 @@ cmd_pso (void)
   int r = -1;
   int attr;
   int pubkey_len;
+  unsigned int result_len = 0;
 
   DEBUG_INFO (" - PSO: ");
   DEBUG_WORD ((uint32_t)&r);
@@ -855,13 +856,9 @@ cmd_pso (void)
 
 	  DEBUG_BINARY (kd[GPG_KEY_FOR_SIGNING].data, pubkey_len);
 
+	  result_len = pubkey_len;
 	  r = rsa_sign (apdu.cmd_apdu_data, res_APDU, len,
 			&kd[GPG_KEY_FOR_SIGNING], pubkey_len);
-	  if (r < 0)
-	    ac_reset_pso_cds ();
-	  else
-	    /* Success */
-	    gpg_increment_digital_signature_counter ();
 	}
       else if (attr == ALGO_NISTP256R1 || attr == ALGO_SECP256K1)
 	{
@@ -873,19 +870,13 @@ cmd_pso (void)
 	      return;
 	    }
 
+	  result_len = ECDSA_SIGNATURE_LENGTH;
 	  if (attr == ALGO_NISTP256R1)
 	    r = ecdsa_sign_p256r1 (apdu.cmd_apdu_data, res_APDU,
 				   kd[GPG_KEY_FOR_SIGNING].data);
 	  else			/* ALGO_SECP256K1 */
 	    r = ecdsa_sign_p256k1 (apdu.cmd_apdu_data, res_APDU,
 				   kd[GPG_KEY_FOR_SIGNING].data);
-	  if (r < 0)
-	    ac_reset_pso_cds ();
-	  else
-	    {			/* Success */
-	      gpg_increment_digital_signature_counter ();
-	      res_APDU_size = ECDSA_SIGNATURE_LENGTH;
-	    }
 	}
       else if (attr == ALGO_ED25519)
 	{
@@ -898,13 +889,27 @@ cmd_pso (void)
 	      return;
 	    }
 
-	  res_APDU_size = EDDSA_SIGNATURE_LENGTH;
+	  result_len = EDDSA_SIGNATURE_LENGTH;
 	  r = eddsa_sign_25519 (apdu.cmd_apdu_data, len, output,
 				kd[GPG_KEY_FOR_SIGNING].data,
 				kd[GPG_KEY_FOR_SIGNING].data+32,
 				kd[GPG_KEY_FOR_SIGNING].pubkey);
 	  memcpy (res_APDU, output, EDDSA_SIGNATURE_LENGTH);
 	}
+      else
+	{
+	  DEBUG_INFO ("unknown algo.");
+	  GPG_FUNCTION_NOT_SUPPORTED ();
+	  return;
+	}
+
+      if (r == 0)
+	{
+	  res_APDU_size = result_len;
+	  gpg_increment_digital_signature_counter ();
+	}
+      else   /* Failure */
+	ac_reset_pso_cds ();
     }
   else if (P1 (apdu) == 0x80 && P2 (apdu) == 0x86)
     {
@@ -931,7 +936,7 @@ cmd_pso (void)
 	      return;
 	    }
 	  r = rsa_decrypt (apdu.cmd_apdu_data+1, res_APDU, len,
-			   &kd[GPG_KEY_FOR_DECRYPTION]);
+			   &kd[GPG_KEY_FOR_DECRYPTION], &result_len);
 	}
       else if (attr == ALGO_NISTP256R1 || attr == ALGO_SECP256K1)
 	{
@@ -942,16 +947,23 @@ cmd_pso (void)
 	      return;
 	    }
 
+	  result_len = 65;
 	  if (attr == ALGO_NISTP256R1)
 	    r = ecdh_decrypt_p256r1 (apdu.cmd_apdu_data, res_APDU,
 				     kd[GPG_KEY_FOR_DECRYPTION].data);
 	  else
 	    r = ecdh_decrypt_p256k1 (apdu.cmd_apdu_data, res_APDU,
 				     kd[GPG_KEY_FOR_DECRYPTION].data);
-
-	  if (r == 0)
-	    res_APDU_size = 65;
 	}
+      else
+	{
+	  DEBUG_INFO ("unknown algo.");
+	  GPG_FUNCTION_NOT_SUPPORTED ();
+	  return;
+	}
+
+      if (r == 0)
+	res_APDU_size = result_len;
     }
 
   if (r < 0)

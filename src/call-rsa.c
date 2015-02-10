@@ -83,7 +83,6 @@ rsa_sign (const uint8_t *raw_message, uint8_t *output, int msg_len,
     }
   else
     {
-      res_APDU_size = pubkey_len;
       DEBUG_INFO ("done.\r\n");
       GPG_SUCCESS ();
       return 0;
@@ -120,14 +119,13 @@ modulus_calc (const uint8_t *p, int len)
 
 int
 rsa_decrypt (const uint8_t *input, uint8_t *output, int msg_len,
-	     struct key_data *kd)
+	     struct key_data *kd, unsigned int *output_len_p)
 {
   mpi P1, Q1, H;
   int ret;
-  unsigned int output_len;
 
   DEBUG_INFO ("RSA decrypt:");
-  DEBUG_WORD ((uint32_t)&output_len);
+  DEBUG_WORD ((uint32_t)&ret);
 
   rsa_init (&rsa_ctx, RSA_PKCS_V15, 0);
   mpi_init (&P1);  mpi_init (&Q1);  mpi_init (&H);
@@ -154,7 +152,7 @@ rsa_decrypt (const uint8_t *input, uint8_t *output, int msg_len,
     {
       DEBUG_INFO ("RSA decrypt ...");
       ret = rsa_rsaes_pkcs1_v15_decrypt (&rsa_ctx, NULL, NULL,
-					 RSA_PRIVATE, &output_len, input,
+					 RSA_PRIVATE, output_len_p, input,
 					 output, MAX_RES_APDU_DATA_SIZE);
     }
 
@@ -167,7 +165,6 @@ rsa_decrypt (const uint8_t *input, uint8_t *output, int msg_len,
     }
   else
     {
-      res_APDU_size = output_len;
       DEBUG_INFO ("done.\r\n");
       GPG_SUCCESS ();
       return 0;
