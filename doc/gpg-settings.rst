@@ -31,7 +31,7 @@ For GnuPG 2.0.x, gpg-agent is always used, so there is no need to specify the ``
 Let gpg-agent manage SSH key
 ============================
 
-I deactivate seahose-agent.  Also, for GNOME 2, I deactivate gnome-keyring managing SSH key. ::
+I deactivate seahorse-agent.  Also, for GNOME 2, I deactivate gnome-keyring managing SSH key. ::
 
   $ gconftool-2 --type bool --set /apps/gnome-keyring/daemon-components/ssh false
 
