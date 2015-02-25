@@ -988,6 +988,7 @@ cmd_internal_authenticate (void)
 					       GPG_KEY_PUBLIC);
   int len = apdu.cmd_apdu_data_len;
   int r = -1;
+  unsigned int result_len = 0;
 
   DEBUG_INFO (" - INTERNAL AUTHENTICATE\r\n");
 
@@ -1018,6 +1019,7 @@ cmd_internal_authenticate (void)
 	  return;
 	}
 
+      result_len = pubkey_len;
       r = rsa_sign (apdu.cmd_apdu_data, res_APDU, len,
 		    &kd[GPG_KEY_FOR_AUTHENTICATION], pubkey_len);
     }	  
@@ -1030,7 +1032,7 @@ cmd_internal_authenticate (void)
 	  return;
 	}
 
-      res_APDU_size = ECDSA_SIGNATURE_LENGTH;
+      result_len = ECDSA_SIGNATURE_LENGTH;
       r = ecdsa_sign_p256r1 (apdu.cmd_apdu_data, res_APDU,
 			     kd[GPG_KEY_FOR_AUTHENTICATION].data);
     }
@@ -1043,7 +1045,7 @@ cmd_internal_authenticate (void)
 	  return;
 	}
 
-      res_APDU_size = ECDSA_SIGNATURE_LENGTH;
+      result_len = ECDSA_SIGNATURE_LENGTH;
       r = ecdsa_sign_p256k1 (apdu.cmd_apdu_data, res_APDU,
 			     kd[GPG_KEY_FOR_AUTHENTICATION].data);
     }
@@ -1058,7 +1060,7 @@ cmd_internal_authenticate (void)
 	  return;
 	}
 
-      res_APDU_size = EDDSA_SIGNATURE_LENGTH;
+      result_len = EDDSA_SIGNATURE_LENGTH;
       r = eddsa_sign_25519 (apdu.cmd_apdu_data, len, output,
 			    kd[GPG_KEY_FOR_AUTHENTICATION].data,
 			    kd[GPG_KEY_FOR_AUTHENTICATION].data+32,
@@ -1066,7 +1068,9 @@ cmd_internal_authenticate (void)
       memcpy (res_APDU, output, EDDSA_SIGNATURE_LENGTH);
     }
 
-  if (r < 0)
+  if (r == 0)
+    res_APDU_size = result_len;
+  else
     GPG_ERROR ();
 
   DEBUG_INFO ("INTERNAL AUTHENTICATE done.\r\n");

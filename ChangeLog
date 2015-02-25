@@ -1,3 +1,8 @@
+2015-02-25  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/openpgp.c (cmd_internal_authenticate): Fix storing to
+	res_APDU_size.
+
 2015-02-10  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/openpgp.c (cmd_pso): Fix counter update for EdDSA.  Thanks
