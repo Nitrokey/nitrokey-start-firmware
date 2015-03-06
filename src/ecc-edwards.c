@@ -660,7 +660,7 @@ mod_reduce_M (bn256 *R, const bn512 *A)
 }
 
 
-void
+int
 eddsa_sign_25519 (const uint8_t *input, size_t ilen, uint32_t *out,
 		  const bn256 *a, const uint8_t *seed, const bn256 *pk)
 {
@@ -704,6 +704,8 @@ eddsa_sign_25519 (const uint8_t *input, size_t ilen, uint32_t *out,
     bn256_add (s, s, M);
   else
     bn256_add (tmp, s, M);
+
+  return 0;
 }
 
 void

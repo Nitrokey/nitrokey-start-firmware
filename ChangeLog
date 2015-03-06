@@ -1,3 +1,7 @@
+2015-03-06  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/ecc-edwards.c (eddsa_sign_25519): Return 0.
+
 2015-02-25  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/openpgp.c (cmd_internal_authenticate): Fix storing to
