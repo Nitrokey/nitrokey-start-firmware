@@ -544,11 +544,11 @@ See doc/note/firmware-update.
 Git Repositories
 ================
 
-Please use: http://gitorious.org/gnuk
+Please use: https://anonscm.debian.org/cgit/gnuk/
 
 You can get it by:
  
-    $ git clone git://gitorious.org/gnuk/gnuk.git
+    $ git clone git://anonscm.debian.org/gnuk/gnuk/gnuk.git
 
 It's also available at: www.gniibe.org
 You can browse at: http://git.gniibe.org/gitweb?p=gnuk/gnuk.git;a=summary
