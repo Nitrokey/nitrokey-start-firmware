@@ -544,7 +544,7 @@ See doc/note/firmware-update.
 Git Repositories
 ================
 
-Please use: https://anonscm.debian.org/cgit/gnuk/
+Please use: https://anonscm.debian.org/cgit/gnuk/gnuk/
 
 You can get it by:
  
@@ -570,6 +570,14 @@ Information on the Web
 
 Please visit: http://www.fsij.org/gnuk/
 
+Please see the FST-01 support pages:
+
+    http://www.gniibe.org/category/fst-01.html
+
+Please consider to join Gnuk-users mailing list:
+
+    https://lists.alioth.debian.org/mailman/listinfo/gnuk-users
+
 
 Your Contributions
 ==================
@@ -580,5 +588,6 @@ to FSIJ (if possible).
 
 Foot note
 ==========
+
 * NUK(R) is a registered trademark owend by MAPA GmbH, Germany.
 -- 

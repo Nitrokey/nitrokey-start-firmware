@@ -1,3 +1,14 @@
+2015-03-31  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/usb_conf.h (ICC_NUM_INTERFACES, HID_NUM_INTERFACES)
+	(HID_NUM_INTERFACES, VCOM_NUM_INTERFACES, MSC_NUM_INTERFACES)
+	(NUM_INTERFACES): Define here (moved from usb_desc.c).
+	(ICC_INTERFACE, HID_INTERFACE, VCOM_INTERFACE_0, VCOM_INTERFACE_1)
+	(MSC_INTERFACE): New.
+	* src/usb_ctrl.c (gnuk_setup_endpoints_for_interface)
+	(usb_cb_setup, usb_cb_ctrl_write_finish): Use *_INTERFACE.
+	* src/usb_desc.c (gnukConfigDescriptor): Likewise.
+
 2015-03-06  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/ecc-edwards.c (eddsa_sign_25519): Return 0.

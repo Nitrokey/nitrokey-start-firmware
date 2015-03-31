@@ -75,37 +75,27 @@ static const uint8_t gnukDeviceDescriptor[] = {
 };
 
 #define ICC_TOTAL_LENGTH (9+9+54+7+7+7)
-#define ICC_NUM_INTERFACES 1
 
 #ifdef HID_CARD_CHANGE_SUPPORT
 #define HID_TOTAL_LENGTH (9+9+7)
-#define HID_NUM_INTERFACES 1
 #else
 #define HID_TOTAL_LENGTH   0
-#define HID_NUM_INTERFACES 0
 #endif
 
 #ifdef ENABLE_VIRTUAL_COM_PORT
 #define VCOM_TOTAL_LENGTH (9+5+5+4+5+7+9+7+7)
-#define VCOM_NUM_INTERFACES 2
 #else
 #define VCOM_TOTAL_LENGTH   0
-#define VCOM_NUM_INTERFACES 0
 #endif
 
 #ifdef PINPAD_DND_SUPPORT
 #define MSC_TOTAL_LENGTH (9+7+7)
-#define MSC_NUM_INTERFACES 1
 #else
 #define MSC_TOTAL_LENGTH   0
-#define MSC_NUM_INTERFACES 0
 #endif
 
 #define W_TOTAL_LENGTH (ICC_TOTAL_LENGTH + HID_TOTAL_LENGTH     \
 			+ VCOM_TOTAL_LENGTH + MSC_TOTAL_LENGTH)
-#define NUM_INTERFACES (ICC_NUM_INTERFACES + HID_NUM_INTERFACES \
-			+ VCOM_NUM_INTERFACES + MSC_NUM_INTERFACES)
-
 
 
 /* Configuation Descriptor */
@@ -122,7 +112,7 @@ static const uint8_t gnukConfigDescriptor[] = {
   /* Interface Descriptor */
   9,			         /* bLength: Interface Descriptor size */
   USB_INTERFACE_DESCRIPTOR_TYPE, /* bDescriptorType: Interface */
-  0,			         /* bInterfaceNumber: Index of this interface */
+  ICC_INTERFACE,	         /* bInterfaceNumber: Index of this interface */
   0,			         /* Alternate setting for this interface */
   3,			         /* bNumEndpoints: Bulk-IN, Bulk-OUT, Intr-IN */
   USB_ICC_INTERFACE_CLASS,
@@ -207,7 +197,7 @@ static const uint8_t gnukConfigDescriptor[] = {
   /* Interface Descriptor */
   9,			         /* bLength: Interface Descriptor size */
   USB_INTERFACE_DESCRIPTOR_TYPE, /* bDescriptorType: Interface */
-  0x01,		  /* bInterfaceNumber: Number of Interface */
+  HID_INTERFACE,  /* bInterfaceNumber: Number of Interface */
   0x00,		  /* bAlternateSetting: Alternate setting */
   0x01,		  /* bNumEndpoints: One endpoint used */
   0x03,		  /* bInterfaceClass: HID */
@@ -236,7 +226,7 @@ static const uint8_t gnukConfigDescriptor[] = {
   /* Interface Descriptor */
   9,			      /* bLength: Interface Descriptor size */
   USB_INTERFACE_DESCRIPTOR_TYPE, /* bDescriptorType: Interface */
-  0x02,		  /* bInterfaceNumber: Number of Interface */
+  VCOM_INTERFACE_0,	 /* bInterfaceNumber: Index of Interface */
   0x00,		  /* bAlternateSetting: Alternate setting */
   0x01,		  /* bNumEndpoints: One endpoints used */
   0x02,		  /* bInterfaceClass: Communication Interface Class */
@@ -247,14 +237,13 @@ static const uint8_t gnukConfigDescriptor[] = {
   5,			    /* bLength: Endpoint Descriptor size */
   0x24,			    /* bDescriptorType: CS_INTERFACE */
   0x00,			    /* bDescriptorSubtype: Header Func Desc */
-  0x10,			    /* bcdCDC: spec release number */
-  0x01,
+  0x10, 0x01,		    /* bcdCDC: spec release number */
   /*Call Managment Functional Descriptor*/
   5,	    /* bFunctionLength */
   0x24,	    /* bDescriptorType: CS_INTERFACE */
   0x01,	    /* bDescriptorSubtype: Call Management Func Desc */
   0x03,	    /* bmCapabilities: D0+D1 */
-  0x02,	    /* bDataInterface: 2 */
+  VCOM_INTERFACE_1,	    /* bDataInterface */
   /*ACM Functional Descriptor*/
   4,	    /* bFunctionLength */
   0x24,	    /* bDescriptorType: CS_INTERFACE */
@@ -264,8 +253,8 @@ static const uint8_t gnukConfigDescriptor[] = {
   5,		 /* bFunctionLength */
   0x24,		 /* bDescriptorType: CS_INTERFACE */
   0x06,		 /* bDescriptorSubtype: Union func desc */
-  0x01,		 /* bMasterInterface: Communication class interface */
-  0x02,		 /* bSlaveInterface0: Data Class Interface */
+  VCOM_INTERFACE_0,	 /* bMasterInterface: Communication class interface */
+  VCOM_INTERFACE_1,	 /* bSlaveInterface0: Data Class Interface */
   /*Endpoint 4 Descriptor*/
   7,			       /* bLength: Endpoint Descriptor size */
   USB_ENDPOINT_DESCRIPTOR_TYPE,	   /* bDescriptorType: Endpoint */
@@ -277,7 +266,7 @@ static const uint8_t gnukConfigDescriptor[] = {
   /*Data class interface descriptor*/
   9,			       /* bLength: Endpoint Descriptor size */
   USB_INTERFACE_DESCRIPTOR_TYPE, /* bDescriptorType: */
-  0x03,			   /* bInterfaceNumber: Number of Interface */
+  VCOM_INTERFACE_1,	 /* bInterfaceNumber: Index of Interface */
   0x00,			   /* bAlternateSetting: Alternate setting */
   0x02,			   /* bNumEndpoints: Two endpoints used */
   0x0A,			   /* bInterfaceClass: CDC */
@@ -303,11 +292,7 @@ static const uint8_t gnukConfigDescriptor[] = {
   /* Interface Descriptor.*/
   9,			      /* bLength: Interface Descriptor size */
   USB_INTERFACE_DESCRIPTOR_TYPE, /* bDescriptorType: Interface */
-#ifdef ENABLE_VIRTUAL_COM_PORT
-  0x04,				/* bInterfaceNumber.                */
-#else
-  0x02,				/* bInterfaceNumber.                */
-#endif
+  MSC_INTERFACE,		/* bInterfaceNumber. */
   0x00,				/* bAlternateSetting.               */
   0x02,				/* bNumEndpoints.                   */
   0x08,				/* bInterfaceClass (Mass Stprage).  */

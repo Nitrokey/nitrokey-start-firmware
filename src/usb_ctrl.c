@@ -103,21 +103,11 @@ vcom_port_data_setup (uint8_t req, uint8_t req_no, uint16_t value)
 
   return USB_UNSUPPORT;
 }
-
-#define VCOM_NUM_INTERFACES 2
-#else
-#define VCOM_NUM_INTERFACES 0
 #endif
 
 #ifdef PINPAD_DND_SUPPORT
 #include "usb-msc.h"
-#define MSC_NUM_INTERFACES 1
-#else
-#define MSC_NUM_INTERFACES 0
 #endif
-
-#define NUM_INTERFACES (2+VCOM_NUM_INTERFACES+MSC_NUM_INTERFACES)
-#define MSC_INTERFACE_NO (2+VCOM_NUM_INTERFACES)
 
 uint32_t bDeviceState = UNCONNECTED; /* USB device status */
 
@@ -142,7 +132,7 @@ static uint16_t hid_report;
 static void
 gnuk_setup_endpoints_for_interface (uint16_t interface, int stop)
 {
-  if (interface == 0)
+  if (interface == ICC_INTERFACE)
     {
       if (!stop)
 	{
@@ -158,7 +148,7 @@ gnuk_setup_endpoints_for_interface (uint16_t interface, int stop)
 	}
     }
 #ifdef HID_CARD_CHANGE_SUPPORT
-  else if (interface == 1)
+  else if (interface == HID_INTERFACE)
     {
       if (!stop)
 	usb_lld_setup_endpoint (ENDP7, EP_INTERRUPT, 0, 0, ENDP7_TXADDR, 0);
@@ -167,14 +157,14 @@ gnuk_setup_endpoints_for_interface (uint16_t interface, int stop)
     }
 #endif
 #ifdef ENABLE_VIRTUAL_COM_PORT
-  else if (interface == 2)
+  else if (interface == VCOM_INTERFACE_0)
     {
       if (!stop)
 	usb_lld_setup_endpoint (ENDP4, EP_INTERRUPT, 0, 0, ENDP4_TXADDR, 0);
       else
 	usb_lld_stall_tx (ENDP4);
     }
-  else if (interface == 3)
+  else if (interface == VCOM_INTERFACE_1)
     {
       if (!stop)
 	{
@@ -190,7 +180,7 @@ gnuk_setup_endpoints_for_interface (uint16_t interface, int stop)
     }
 #endif
 #ifdef PINPAD_DND_SUPPORT
-  else if (interface == MSC_INTERFACE_NO)
+  else if (interface == MSC_INTERFACE)
     {
       if (!stop)
 	usb_lld_setup_endpoint (ENDP6, EP_BULK, 0,
@@ -328,7 +318,7 @@ usb_cb_setup (uint8_t req, uint8_t req_no,
     }
   else if (type_rcp == (CLASS_REQUEST | INTERFACE_RECIPIENT))
     {
-      if (index == 0)
+      if (index == ICC_INTERFACE)
 	{
 	  if (USB_SETUP_GET (req))
 	    {
@@ -353,7 +343,7 @@ usb_cb_setup (uint8_t req, uint8_t req_no,
 	    }
 	}
 #ifdef HID_CARD_CHANGE_SUPPORT
-      else if (index == 1)
+      else if (index == HID_INTERFACE)
 	{
 	  switch (req_no)
 	    {
@@ -386,11 +376,11 @@ usb_cb_setup (uint8_t req, uint8_t req_no,
 	}
 #endif
 #ifdef ENABLE_VIRTUAL_COM_PORT
-      else if (index == 2)
+      else if (index == VCOM_INTERFACE_0)
 	return vcom_port_data_setup (req, req_no, value);
 #endif
 #ifdef PINPAD_DND_SUPPORT
-      else if (index == MSC_INTERFACE_NO)
+      else if (index == MSC_INTERFACE)
 	{
 	  if (USB_SETUP_GET (req))
 	    {
@@ -433,7 +423,7 @@ usb_cb_ctrl_write_finish (uint8_t req, uint8_t req_no, uint16_t value,
 #ifdef HID_CARD_CHANGE_SUPPORT
   else if (type_rcp == (CLASS_REQUEST | INTERFACE_RECIPIENT))
     {
-      if (index == 1 && req_no == USB_HID_REQ_SET_REPORT)
+      if (index == HID_INTERFACE && req_no == USB_HID_REQ_SET_REPORT)
 	{
 	  if ((hid_report ^ hid_report_saved) & HID_LED_STATUS_CARDCHANGE)
 	    ccid_card_change_signal (CARD_CHANGE_TOGGLE);
