@@ -62,6 +62,8 @@ enum icc_state {
   ICC_STATE_EXEC_REQUESTED,	/* Exec requested */
 };
 
+#define CCID_CARD_INIT CARD_CHANGE_INSERT
+
 extern enum icc_state *icc_state_p;
 
 extern volatile uint8_t auth_status;

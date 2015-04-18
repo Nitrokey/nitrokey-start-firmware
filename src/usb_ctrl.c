@@ -139,6 +139,7 @@ gnuk_setup_endpoints_for_interface (uint16_t interface, int stop)
 	  usb_lld_setup_endpoint (ENDP1, EP_BULK, 0, ENDP1_RXADDR,
 				  ENDP1_TXADDR, GNUK_MAX_PACKET_SIZE);
 	  usb_lld_setup_endpoint (ENDP2, EP_INTERRUPT, 0, 0, ENDP2_TXADDR, 0);
+	  ccid_card_change_signal (CCID_CARD_INIT);
 	}
       else
 	{

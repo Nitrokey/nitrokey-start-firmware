@@ -139,6 +139,7 @@ static uint8_t icc_buffer[USB_BUF_SIZE];
 #define ICC_SLOT_STATUS		0x65 /* non-ICCD command */
 #define ICC_SECURE		0x69 /* non-ICCD command */
 #define ICC_GET_PARAMS		0x6C /* non-ICCD command */
+#define ICC_RESET_PARAMS	0x6D /* non-ICCD command */
 #define ICC_XFR_BLOCK		0x6F
 #define ICC_DATA_BLOCK_RET	0x80
 #define ICC_SLOT_STATUS_RET	0x81 /* non-ICCD result */
@@ -253,7 +254,7 @@ static void ccid_init (struct ccid *c, struct ep_in *epi, struct ep_out *epo,
 {
   icc_state_p = &c->icc_state;
 
-  c->icc_state = ICC_STATE_START;
+  c->icc_state = ICC_STATE_NOCARD;
   c->state = APDU_STATE_WAIT_COMMAND;
   /*
    * Note: a is not yet initialized yet, we can't use c->a->cmd_apdu_data here.
@@ -1178,7 +1179,8 @@ icc_handle_data (struct ccid *c)
 	    }
 	}
       else if (c->icc_header.msg_type == ICC_SET_PARAMS
-	       || c->icc_header.msg_type == ICC_GET_PARAMS)
+	       || c->icc_header.msg_type == ICC_GET_PARAMS
+	       || c->icc_header.msg_type == ICC_RESET_PARAMS)
 	icc_send_params (c);
       else if (c->icc_header.msg_type == ICC_SECURE)
 	{
@@ -1297,6 +1299,8 @@ icc_handle_timeout (struct ccid *c)
   return next_state;
 }
 
+static struct ccid ccid;
+
 /*
  * Another Tx done callback
  */
@@ -1307,8 +1311,6 @@ EP2_IN_Callback (void)
 
 
 #define USB_ICC_TIMEOUT (1950*1000)
-
-static struct ccid ccid;
 
 #define GPG_THREAD_TERMINATED 0xffff
 
@@ -1336,6 +1338,8 @@ ccid_card_change_signal (int how)
 }
 
 
+#define NOTIFY_SLOT_CHANGE 0x50
+
 static void * __attribute__ ((noinline))
 ccid_thread (chopstx_t thd)
 {
@@ -1343,7 +1347,9 @@ ccid_thread (chopstx_t thd)
   struct ep_out *epo = &endpoint_out;
   struct ccid *c = &ccid;
   struct apdu *a = &apdu;
-  int card_change_requested = 0;
+  uint8_t int_msg[2];
+
+  int_msg[0] = NOTIFY_SLOT_CHANGE;
 
   epi_init (epi, ENDP1, notify_tx, c);
   epo_init (epo, ENDP1, notify_icc, c);
@@ -1359,34 +1365,25 @@ ccid_thread (chopstx_t thd)
 
       if (m == EV_CARD_CHANGE)
 	{
-	  if (card_change_requested)
-	    {
-	      uint8_t notify_slot_change[2] = { 0x50, 0x02 };
-
-	      led_blink (LED_TWOSHOTS);
-
-	      if (c->icc_state == ICC_STATE_NOCARD)
-		{		/* Inserted!  */
-		  c->icc_state = ICC_STATE_START;
-		  notify_slot_change[1] |= 1;
-		}
-	      else
-		{
-		  if (c->application)
-		    {
-		      eventflag_signal (&c->openpgp_comm, EV_EXIT);
-		      chopstx_join (c->application, NULL);
-		      c->application = 0;
-		    }
-
-		  c->icc_state = ICC_STATE_NOCARD;
-		}
-
-	      card_change_requested = 0;
-	      usb_lld_write (ENDP2, notify_slot_change, 2);
+	  if (c->icc_state == ICC_STATE_NOCARD)
+	    { /* Inserted!  */
+	      c->icc_state = ICC_STATE_START;
+	      int_msg[1] = 0x03;
 	    }
 	  else
-	    card_change_requested = 1;
+	    { /* Removed!  */
+	      if (c->application)
+		{
+		  eventflag_signal (&c->openpgp_comm, EV_EXIT);
+		  chopstx_join (c->application, NULL);
+		  c->application = 0;
+		}
+
+	      c->icc_state = ICC_STATE_NOCARD;
+	      int_msg[1] = 0x02;
+	    }
+
+	  usb_lld_write (ENDP2, int_msg, sizeof int_msg);
 	}
       else if (m == EV_RX_DATA_READY)
 	c->icc_state = icc_handle_data (c);
@@ -1444,10 +1441,7 @@ ccid_thread (chopstx_t thd)
 	    icc_prepare_receive (c);
 	}
       else			/* Timeout */
-	{
-	  c->icc_state = icc_handle_timeout (c);
-	  card_change_requested = 0;
-	}
+	c->icc_state = icc_handle_timeout (c);
     }
 
   if (c->application)
