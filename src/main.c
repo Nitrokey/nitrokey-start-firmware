@@ -1,7 +1,8 @@
 /*
  * main.c - main routine of Gnuk
  *
- * Copyright (C) 2010, 2011, 2012, 2013 Free Software Initiative of Japan
+ * Copyright (C) 2010, 2011, 2012, 2013, 2015
+ *               Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
  * This file is a part of Gnuk, a GnuPG USB Token implementation.
@@ -290,6 +291,7 @@ const size_t __stacksize_usb = (size_t)&__process4_stack_size__;
 
 #define PRIO_CCID 3
 #define PRIO_USB  4
+#define PRIO_MAIN 5 
 
 extern void *usb_intr (void *arg);
 
@@ -342,6 +344,8 @@ main (int argc, char *argv[])
 
   usb_thd = chopstx_create (PRIO_USB, __stackaddr_usb, __stacksize_usb,
 			    usb_intr, NULL);
+
+  chopstx_main_init (PRIO_MAIN);
 
   while (1)
     {

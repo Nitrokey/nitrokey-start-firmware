@@ -1,5 +1,11 @@
 2015-04-18  Niibe Yutaka  <gniibe@fsij.org>
 
+	* chopstx: Upgrade.
+	* src/main.c (main): Call chopstx_main_init.
+	* src/Makefile.in (DEFS): Remove CHX_PRIO_MAIN.
+
+2015-04-17  Niibe Yutaka  <gniibe@fsij.org>
+
 	* src/configure: Fix shell syntax.
 
 2015-03-31  Niibe Yutaka  <gniibe@fsij.org>
