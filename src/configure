@@ -66,13 +66,13 @@ for option; do
   --disable-keygen)
     keygen=no ;;
   --enable-sys1-compat)
-    sys1_compat = yes ;;
+    sys1_compat=yes ;;
   --disable-sys1-compat)
-    sys1_compat = no ;;
+    sys1_compat=no ;;
   --enable-hid-card-change)
-    hid_card_change = yes ;;
+    hid_card_change=yes ;;
   --disable-hid-card-change)
-    hid_card_change = no ;;
+    hid_card_change=no ;;
   --with-dfu)
     with_dfu=yes ;;
   --without-dfu)

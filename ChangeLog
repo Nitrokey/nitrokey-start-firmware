@@ -1,3 +1,7 @@
+2015-04-18  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/configure: Fix shell syntax.
+
 2015-03-31  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/usb_conf.h (ICC_NUM_INTERFACES, HID_NUM_INTERFACES)
