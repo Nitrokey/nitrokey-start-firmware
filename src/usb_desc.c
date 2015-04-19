@@ -125,42 +125,36 @@ static const uint8_t gnukConfigDescriptor[] = {
   0x21,			  /* bDescriptorType: USBDESCR_ICC */
   0x10, 0x01,		  /* bcdCCID: revision 1.1 (of CCID) */
   0,			  /* bMaxSlotIndex: */
-  1,			  /* bVoltageSupport: FIXED VALUE */
+  1,			  /* bVoltageSupport: 5V-only */
   0x02, 0, 0, 0,	  /* dwProtocols: T=1 */
-  0xf3, 0x0d, 0, 0,	  /* dwDefaultClock: 3571 (non-ICCD): 3580 (ICCD) */
-  0xf3, 0x0d, 0, 0,	  /* dwMaximumClock: 3571 (non-ICCD): 3580 (ICCD) */
-  1,			  /* bNumClockSupported: FIXED VALUE */
-  0x80, 0x25, 0, 0,	  /* dwDataRate: 9600: FIXED VALUE */
-  0x80, 0x25, 0, 0,	  /* dwMaxDataRate: 9600: FIXED VALUE */
-  1,			  /* bNumDataRateSupported: FIXED VALUE */
+  0xa0, 0x0f, 0, 0,	  /* dwDefaultClock: 4000 */
+  0xa0, 0x0f, 0, 0,	  /* dwMaximumClock: 4000 */
+  0,			  /* bNumClockSupported: 0x00 */
+  0x80, 0x25, 0, 0,	  /* dwDataRate: 9600 */
+  0x80, 0x25, 0, 0,	  /* dwMaxDataRate: 9600 */
+  0,			  /* bNumDataRateSupported: 0x00 */
   0xfe, 0, 0, 0,	  /* dwMaxIFSD: 254 */
-  0, 0, 0, 0,		  /* dwSynchProtocols: FIXED VALUE */
-  0, 0, 0, 0,		  /* dwMechanical: FIXED VALUE */
-  /*
-   * According to Specification for USB ICCD (revision 1.0),
-   * dwFeatures should be 0x00040840.
-   *
-   * It is different now for better interaction to GPG's in-stock
-   * ccid-driver.
-   */
-  0x42, 0x08, 0x02, 0x00, /* dwFeatures (not ICCD):
-			   *  Short APDU level             : 0x20000 *
-			   *  (what? means ICCD?)          : 0x00800 *
-			   *  Automatic IFSD               : 0x00400
+  0, 0, 0, 0,		  /* dwSynchProtocols: 0 */
+  0, 0, 0, 0,		  /* dwMechanical: 0 */
+  0x7a, 0x04, 0x02, 0x00, /* dwFeatures:
+			   *  Short and extended APDU level: 0x40000 ----
+			   *  Short APDU level             : 0x20000  *
+			   *  (ICCD?)                      : 0x00800 ----
+			   *  Automatic IFSD               : 0x00400   *
 			   *  NAD value other than 0x00    : 0x00200
 			   *  Can set ICC in clock stop    : 0x00100
 			   *  Automatic PPS CUR            : 0x00080
 			   *  Automatic PPS PROP           : 0x00040 *
-			   *  Auto baud rate change	   : 0x00020
-			   *  Auto clock change		   : 0x00010
-			   *  Auto voltage selection	   : 0x00008
+			   *  Auto baud rate change	   : 0x00020   *
+			   *  Auto clock change		   : 0x00010   *
+			   *  Auto voltage selection	   : 0x00008   *
 			   *  Auto activaction of ICC	   : 0x00004
-			   *  Automatic conf. based on ATR : 0x00002  g
+			   *  Automatic conf. based on ATR : 0x00002  *
 			   */
   0x0f, 0x01, 0, 0,	  /* dwMaxCCIDMessageLength: 271 */
-  0xff,			  /* bClassGetResponse: */
-  0xff,			  /* bClassEnvelope: */
-  0, 0,			  /* wLCDLayout: FIXED VALUE */
+  0xff,			  /* bClassGetResponse: 0xff */
+  0x00,			  /* bClassEnvelope: 0 */
+  0, 0,			  /* wLCDLayout: 0 */
 #if defined(PINPAD_SUPPORT)
 #if defined(PINPAD_CIR_SUPPORT) || defined(PINPAD_DND_SUPPORT)
   1,			  /* bPinSupport: with PIN pad (verify) */
@@ -190,7 +184,7 @@ static const uint8_t gnukConfigDescriptor[] = {
   USB_ENDPOINT_DESCRIPTOR_TYPE,	/* bDescriptorType: Endpoint */
   0x82,				/* bEndpointAddress: (IN2) */
   0x03,				/* bmAttributes: Interrupt */
-  4, 0x00,			/* wMaxPacketSize: */
+  0x04, 0x00,			/* wMaxPacketSize: 4 */
   0xFF,				/* bInterval (255ms) */
 
 #ifdef HID_CARD_CHANGE_SUPPORT

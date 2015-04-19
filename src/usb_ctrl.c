@@ -139,7 +139,6 @@ gnuk_setup_endpoints_for_interface (uint16_t interface, int stop)
 	  usb_lld_setup_endpoint (ENDP1, EP_BULK, 0, ENDP1_RXADDR,
 				  ENDP1_TXADDR, GNUK_MAX_PACKET_SIZE);
 	  usb_lld_setup_endpoint (ENDP2, EP_INTERRUPT, 0, 0, ENDP2_TXADDR, 0);
-	  ccid_card_change_signal (CCID_CARD_INIT);
 	}
       else
 	{
@@ -222,8 +221,7 @@ usb_cb_device_reset (void)
 #define USB_CCID_REQ_GET_CLOCK_FREQUENCIES	0x02
 #define USB_CCID_REQ_GET_DATA_RATES		0x03
 
-static const uint8_t freq_table[] = { 0xf3, 0x0d, 0, 0, }; /* dwDefaultClock */
-
+static const uint8_t freq_table[] = { 0xa0, 0x0f, 0, 0, }; /* dwDefaultClock */
 static const uint8_t data_rate_table[] = { 0x80, 0x25, 0, 0, }; /* dwDataRate */
 
 #if defined(PINPAD_DND_SUPPORT)
@@ -456,6 +454,7 @@ int usb_cb_handle_event (uint8_t event_type, uint16_t value)
 	  usb_lld_set_configuration (value);
 	  for (i = 0; i < NUM_INTERFACES; i++)
 	    gnuk_setup_endpoints_for_interface (i, 0);
+	  ccid_card_change_signal (CCID_CARD_INIT);
 	  bDeviceState = CONFIGURED;
 	}
       else if (current_conf != value)

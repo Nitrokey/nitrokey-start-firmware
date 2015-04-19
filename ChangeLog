@@ -1,3 +1,12 @@
+2015-04-19  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/gnuk.h (CCID_CARD_INIT): New.
+	* src/usb_desc.c (gnukConfigDescriptor): Update dwDefaultClock,
+	dwMaximumClock,	dwFeatures, and bClassEnvelope.
+	* src/usb_ctrl.c (freq_table): Change the value to 4000MHz.
+	(usb_cb_handle_event): Call ccid_card_change_signal after configure.
+	* src/usb-icc.c (ccid_thread): Change EV_CARD_CHANGE handling.
+
 2015-04-18  Niibe Yutaka  <gniibe@fsij.org>
 
 	* chopstx: Upgrade.

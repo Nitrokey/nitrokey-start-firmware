@@ -1384,6 +1384,7 @@ ccid_thread (chopstx_t thd)
 	    }
 
 	  usb_lld_write (ENDP2, int_msg, sizeof int_msg);
+	  led_blink (LED_TWOSHOTS);
 	}
       else if (m == EV_RX_DATA_READY)
 	c->icc_state = icc_handle_data (c);
