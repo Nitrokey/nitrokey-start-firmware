@@ -1,3 +1,7 @@
+2015-04-20  Niibe Yutaka  <gniibe@fsij.org>
+
+	* chopstx: Upgrade to 0.05.
+
 2015-04-19  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/gnuk.h (CCID_CARD_INIT): New.
@@ -9,7 +13,6 @@
 
 2015-04-18  Niibe Yutaka  <gniibe@fsij.org>
 
-	* chopstx: Upgrade.
 	* src/main.c (main): Call chopstx_main_init.
 	* src/Makefile.in (DEFS): Remove CHX_PRIO_MAIN.
 
