@@ -1,7 +1,7 @@
 /*
  * openpgp.c -- OpenPGP card protocol support
  *
- * Copyright (C) 2010, 2011, 2012, 2013, 2014
+ * Copyright (C) 2010, 2011, 2012, 2013, 2014, 2015
  *               Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
@@ -812,6 +812,8 @@ cmd_get_data (void)
 #define EDDSA_HASH_LEN_MAX 256
 #define EDDSA_SIGNATURE_LENGTH 64
 
+#define ECC_CIPHER_DO_HEADER_SIZE 7
+
 static void
 cmd_pso (void)
 {
@@ -940,8 +942,15 @@ cmd_pso (void)
 	}
       else if (attr == ALGO_NISTP256R1 || attr == ALGO_SECP256K1)
 	{
+	  int header_size = -1;
+
+	  if (len == 65)
+	    header_size = 0;
+	  else if (len == 65 + ECC_CIPHER_DO_HEADER_SIZE)
+	    header_size = ECC_CIPHER_DO_HEADER_SIZE;
+
 	  /* Format is in big endian MPI: 04 || x || y */
-	  if (len != 65 || apdu.cmd_apdu_data[0] != 4)
+	  if (header_size < 0 || apdu.cmd_apdu_data[header_size] != 4)
 	    {
 	      GPG_CONDITION_NOT_SATISFIED ();
 	      return;
@@ -949,10 +958,10 @@ cmd_pso (void)
 
 	  result_len = 65;
 	  if (attr == ALGO_NISTP256R1)
-	    r = ecdh_decrypt_p256r1 (apdu.cmd_apdu_data, res_APDU,
+	    r = ecdh_decrypt_p256r1 (apdu.cmd_apdu_data + header_size, res_APDU,
 				     kd[GPG_KEY_FOR_DECRYPTION].data);
 	  else
-	    r = ecdh_decrypt_p256k1 (apdu.cmd_apdu_data, res_APDU,
+	    r = ecdh_decrypt_p256k1 (apdu.cmd_apdu_data + header_size, res_APDU,
 				     kd[GPG_KEY_FOR_DECRYPTION].data);
 	}
       else

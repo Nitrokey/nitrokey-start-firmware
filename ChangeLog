@@ -1,3 +1,7 @@
+2015-06-02  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/openpgp.c (cmd_pso): Support OpenPGPcard spec v3.0.
+
 2015-04-20  Niibe Yutaka  <gniibe@fsij.org>
 
 	* chopstx: Upgrade to 0.05.
