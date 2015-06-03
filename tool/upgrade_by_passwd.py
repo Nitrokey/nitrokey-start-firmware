@@ -4,7 +4,7 @@
 upgrade_by_passwd.py - a tool to install another firmware for Gnuk Token
                        which is just shipped from factory
 
-Copyright (C) 2012, 2013 Free Software Initiative of Japan
+Copyright (C) 2012, 2013, 2015  Free Software Initiative of Japan
 Author: NIIBE Yutaka <gniibe@fsij.org>
 
 This file is a part of Gnuk, a GnuPG USB Token implementation.
@@ -37,7 +37,7 @@ def main(keyno, passwd, data_regnual, data_upgrade):
     if (l & 0x03) != 0:
         data_regnual = data_regnual.ljust(l + 4 - (l & 0x03), chr(0))
     crc32code = crc32(data_regnual)
-    print "CRC32: %04x\n" % crc32code
+    print("CRC32: %04x\n" % crc32code)
     data_regnual += pack('<I', crc32code)
 
     rsa_key = rsa.read_key_from_file('rsa_example.key')
@@ -55,11 +55,11 @@ def main(keyno, passwd, data_regnual, data_upgrade):
     gnuk.cmd_external_authenticate(keyno, signed_bytes)
     gnuk.stop_gnuk()
     mem_info = gnuk.mem_info()
-    print "%08x:%08x" % mem_info
+    print("%08x:%08x" % mem_info)
 
-    print "Downloading flash upgrade program..."
+    print("Downloading flash upgrade program...")
     gnuk.download(mem_info[0], data_regnual)
-    print "Run flash upgrade program..."
+    print("Run flash upgrade program...")
     gnuk.execute(mem_info[0] + len(data_regnual) - 4)
     #
     time.sleep(3)
@@ -67,51 +67,56 @@ def main(keyno, passwd, data_regnual, data_upgrade):
     del gnuk
     gnuk = None
     #
-    print "Wait 3 seconds..."
+    print("Wait 3 seconds...")
     time.sleep(3)
     # Then, send upgrade program...
     reg = None
     for dev in gnuk_devices_by_vidpid():
         try:
             reg = regnual(dev)
-            print "Device: ", dev.filename
+            print("Device: ", dev.filename)
             break
         except:
             pass
     mem_info = reg.mem_info()
-    print "%08x:%08x" % mem_info
-    print "Downloading the program"
+    print("%08x:%08x" % mem_info)
+    print("Downloading the program")
     reg.download(mem_info[0], data_upgrade)
     reg.protect()
     reg.finish()
     reg.reset_device()
     return 0
 
+from getpass import getpass
+
 if __name__ == '__main__':
     if os.getcwd() != os.path.dirname(os.path.abspath(__file__)):
-        print "Please change working directory to: %s" % os.path.dirname(os.path.abspath(__file__))
+        print("Please change working directory to: %s" % os.path.dirname(os.path.abspath(__file__)))
         exit(1)
 
-    passwd = DEFAULT_PW3
     keyno = 0
+    passwd = None
     while len(sys.argv) > 3:
         option = sys.argv[1]
         sys.argv.pop(1)
-        if option == '-p':
-            from getpass import getpass
-            passwd = getpass("Admin password: ")
-        elif option == '-k':
+        if option == '-f':      # F for Factory setting
+            passwd = DEFAULT_PW3
+        elif option == '-k':    # K for Key number
             keyno = int(sys.argv[1])
             sys.argv.pop(1)
+        else:
+            raise ValueError("unknown option", option)
+    if not passwd:
+        passwd = getpass("Admin password: ")
     filename_regnual = sys.argv[1]
     filename_upgrade = sys.argv[2]
     f = open(filename_regnual)
     data_regnual = f.read()
     f.close()
-    print "%s: %d" % (filename_regnual, len(data_regnual))
+    print("%s: %d" % (filename_regnual, len(data_regnual)))
     f = open(filename_upgrade)
     data_upgrade = f.read()
     f.close()
-    print "%s: %d" % (filename_upgrade, len(data_upgrade))
+    print("%s: %d" % (filename_upgrade, len(data_upgrade)))
     # First 4096-byte in data_upgrade is SYS, so, skip it.
     main(keyno, passwd, data_regnual, data_upgrade[4096:])

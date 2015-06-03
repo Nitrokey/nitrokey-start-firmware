@@ -123,15 +123,16 @@ class gnuk_token(object):
         end = ((mem[7]*256 + mem[6])*256 + mem[5])*256 + mem[4]
         return (start, end)
 
-    def download(self, start, data):
+    def download(self, start, data, verbose=False):
         addr = start
         addr_end = (start + len(data)) & 0xffffff00
         i = (addr - 0x20000000) / 0x100
         j = 0
-        print "start %08x" % addr
-        print "end   %08x" % addr_end
+        print("start %08x" % addr)
+        print("end   %08x" % addr_end)
         while addr < addr_end:
-            print "# %08x: %d : %d" % (addr, i, 256)
+            if verbose:
+                print("# %08x: %d : %d" % (addr, i, 256))
             self.__devhandle.controlMsg(requestType = 0x40, request = 1,
                                         value = i, index = 0,
                                         buffer = data[j*256:j*256+256],
@@ -141,7 +142,8 @@ class gnuk_token(object):
             addr = addr + 256
         residue = len(data) % 256
         if residue != 0:
-            print "# %08x: %d : %d" % (addr, i, residue)
+            if verbose:
+                print("# %08x: %d : %d" % (addr, i, residue))
             self.__devhandle.controlMsg(requestType = 0x40, request = 1,
                                         value = i, index = 0,
                                         buffer = data[j*256:],
@@ -157,7 +159,7 @@ class gnuk_token(object):
     def icc_get_result(self):
         msg = self.__devhandle.bulkRead(self.__bulkin, 1024, self.__timeout)
         if len(msg) < 10:
-            print msg
+            print(msg)
             raise ValueError("icc_get_result")
         msg_type = msg[0]
         data_len = msg[1] + (msg[2]<<8) + (msg[3]<<16) + (msg[4]<<24)
@@ -491,15 +493,16 @@ class regnual(object):
         end = ((mem[7]*256 + mem[6])*256 + mem[5])*256 + mem[4]
         return (start, end)
 
-    def download(self, start, data):
+    def download(self, start, data, verbose=False):
         addr = start
         addr_end = (start + len(data)) & 0xffffff00
         i = (addr - 0x08000000) / 0x100
         j = 0
-        print "start %08x" % addr
-        print "end   %08x" % addr_end
+        print("start %08x" % addr)
+        print("end   %08x" % addr_end)
         while addr < addr_end:
-            print "# %08x: %d: %d : %d" % (addr, i, j, 256)
+            if verbose:
+                print("# %08x: %d: %d : %d" % (addr, i, j, 256))
             self.__devhandle.controlMsg(requestType = 0x40, request = 1,
                                         value = 0, index = 0,
                                         buffer = data[j*256:j*256+256],
@@ -510,7 +513,7 @@ class regnual(object):
                                               timeout = 10000)
             r_value = ((res[3]*256 + res[2])*256 + res[1])*256 + res[0]
             if (crc32code ^ r_value) != 0xffffffff:
-                print "failure"
+                print("failure")
             self.__devhandle.controlMsg(requestType = 0x40, request = 3,
                                         value = i, index = 0,
                                         buffer = None,
@@ -521,13 +524,14 @@ class regnual(object):
                                               timeout = 10000)
             r_value = ((res[3]*256 + res[2])*256 + res[1])*256 + res[0]
             if r_value == 0:
-                print "failure"
+                print("failure")
             i = i+1
             j = j+1
             addr = addr + 256
         residue = len(data) % 256
         if residue != 0:
-            print "# %08x: %d : %d" % (addr, i, residue)
+            if verbose:
+                print("# %08x: %d : %d" % (addr, i, residue))
             self.__devhandle.controlMsg(requestType = 0x40, request = 1,
                                         value = 0, index = 0,
                                         buffer = data[j*256:],
@@ -538,7 +542,7 @@ class regnual(object):
                                               timeout = 10000)
             r_value = ((res[3]*256 + res[2])*256 + res[1])*256 + res[0]
             if (crc32code ^ r_value) != 0xffffffff:
-                print "failure"
+                print("failure")
             self.__devhandle.controlMsg(requestType = 0x40, request = 3,
                                         value = i, index = 0,
                                         buffer = None,
@@ -549,7 +553,7 @@ class regnual(object):
                                               timeout = 10000)
             r_value = ((res[3]*256 + res[2])*256 + res[1])*256 + res[0]
             if r_value == 0:
-                print "failure"
+                print("failure")
 
     def protect(self):
         self.__devhandle.controlMsg(requestType = 0x40, request = 4,
@@ -561,7 +565,7 @@ class regnual(object):
                                           timeout = 10000)
         r_value = ((res[3]*256 + res[2])*256 + res[1])*256 + res[0]
         if r_value == 0:
-            print "protection failure"
+            print("protection failure")
 
     def finish(self):
         self.__devhandle.controlMsg(requestType = 0x40, request = 5,
@@ -611,9 +615,9 @@ def get_gnuk_device():
     for (dev, config, intf) in gnuk_devices():
         try:
             icc = gnuk_token(dev, config, intf)
-            print "Device: ", dev.filename
-            print "Configuration: ", config.value
-            print "Interface: ", intf.interfaceNumber
+            print("Device: ", dev.filename)
+            print("Configuration: ", config.value)
+            print("Interface: ", intf.interfaceNumber)
             break
         except:
             pass
