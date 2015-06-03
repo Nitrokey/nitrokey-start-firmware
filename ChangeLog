@@ -1,3 +1,16 @@
+2015-06-03  Niibe Yutaka  <gniibe@fsij.org>
+
+	* VERSION: 1.1.5.
+
+	* test/ecc_nistp256_keys.py: New.
+
+	* tool/upgrade_by_passwd.py: Remove -p option and add -f option.
+
+	* tool/gnuk_token.py (gnuk_token.download): Add verbose flag.
+	(regnual.download): Ditto.
+
+	* tool/gnuk_upgrade.py: Use gnuk_token module.
+
 2015-06-02  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/openpgp.c (cmd_pso): Support OpenPGPcard spec v3.0.

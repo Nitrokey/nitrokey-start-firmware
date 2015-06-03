@@ -615,9 +615,9 @@ def get_gnuk_device():
     for (dev, config, intf) in gnuk_devices():
         try:
             icc = gnuk_token(dev, config, intf)
-            print("Device: ", dev.filename)
-            print("Configuration: ", config.value)
-            print("Interface: ", intf.interfaceNumber)
+            print("Device: %s" % dev.filename)
+            print("Configuration: %d" % config.value)
+            print("Interface: %d" % intf.interfaceNumber)
             break
         except:
             pass

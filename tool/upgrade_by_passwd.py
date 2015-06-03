@@ -74,7 +74,7 @@ def main(keyno, passwd, data_regnual, data_upgrade):
     for dev in gnuk_devices_by_vidpid():
         try:
             reg = regnual(dev)
-            print("Device: ", dev.filename)
+            print("Device: %s" % dev.filename)
             break
         except:
             pass

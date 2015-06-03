@@ -1,5 +1,26 @@
 Gnuk NEWS - User visible changes
 
+* Major changes in Gnuk 1.1.5
+
+  Released 2015-06-03, by NIIBE Yutaka
+
+** upgrade_by_passwd.py is not so noisy any more.
+Since it's getting stable, no debug output any more.
+
+** Maple mini support.
+Although it's random number generation is not tested, Maple mini
+support is added.
+
+** Windows interoperability fix.
+1.1.x (0 to 4) didn't work with Windows because of INTERRUPT transfer.
+It's fixed and it works now.
+
+** OpenPGPcard specification v3.0 compatibility.
+OpenPGPcard specification v3.0 now include NIST curves (and other
+curves) and ECDSA and ECDH operations are defined.  Gnuk follows
+this specification.
+
+
 * Major changes in Gnuk 1.1.4
 
   Released 2014-12-15, by NIIBE Yutaka

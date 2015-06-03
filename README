@@ -1,14 +1,14 @@
 Gnuk - An Implementation of USB Cryptographic Token for GnuPG
 
-							  Version 1.1.4
-							     2014-12-15
+							  Version 1.1.5
+							     2015-06-03
 							   Niibe Yutaka
 				      Free Software Initiative of Japan
 
 Warning
 =======
 
-This is another experimental release of Gnuk, version 1.1.4, which has
+This is another experimental release of Gnuk, version 1.1.5, which has
 incompatible changes to Gnuk 1.0.x.  Specifically, it now supports
 overriding key import, but importing keys (or generating keys) results
 password reset.  Please update your documentation for Gnuk Token, so
@@ -25,7 +25,7 @@ What's Gnuk?
 ============
 
 Gnuk is an implementation of USB cryptographic token for GNU Privacy
-Guard.  Gnuk supports OpenPGP card protocol version 2, and it runs on
+Guard.  Gnuk supports OpenPGP card protocol version 3, and it runs on
 STM32F103 processor.
 
 I wish that Gnuk will be a developer's soother who uses GnuPG.  I have

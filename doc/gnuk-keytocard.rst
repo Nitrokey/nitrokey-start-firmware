@@ -22,7 +22,7 @@ See `another document`_ to import keys to the Token from copied directory.
 
 After personalization, I put my keys into the Token.
 
-Here is the log.
+Here is the session log.
 
 I invoke GnuPG with my key (4ca7babe).  ::
 
