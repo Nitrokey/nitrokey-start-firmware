@@ -1,3 +1,7 @@
+2015-06-30  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/main.c (device_initialize_once): Apply change of NeuG.
+
 2015-06-03  Niibe Yutaka  <gniibe@fsij.org>
 
 	* VERSION: 1.1.5.

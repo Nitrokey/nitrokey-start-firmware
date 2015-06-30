@@ -135,12 +135,12 @@ device_initialize_once (void)
        * This is the first time invocation.
        * Setup serial number by unique device ID.
        */
-      const uint8_t *u = unique_device_id ();
+      const uint8_t *u = unique_device_id () + 8;
       int i;
 
       for (i = 0; i < 4; i++)
 	{
-	  uint8_t b = u[i];
+	  uint8_t b = u[3-i];
 	  uint8_t nibble;
 
 	  nibble = (b >> 4);
