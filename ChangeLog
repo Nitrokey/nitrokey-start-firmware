@@ -1,5 +1,9 @@
 2015-06-30  Niibe Yutaka  <gniibe@fsij.org>
 
+	* chopstx: Update.
+
+	* src/sys.c: Update from chopstx/example-cdc/sys.c.
+
 	* src/main.c (device_initialize_once): Apply change of NeuG.
 
 2015-06-03  Niibe Yutaka  <gniibe@fsij.org>
