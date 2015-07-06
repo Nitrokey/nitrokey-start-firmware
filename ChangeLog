@@ -1,3 +1,19 @@
+2015-07-06  Niibe Yutaka  <gniibe@fsij.org>
+
+	Enhancement for FSM-55.
+	* tool/stlinkv2.py (stlinkv2.control_nrst): New.
+	(stlinkv2.get_rdp_key,has_spi_flash,has_protection): New.
+	(stlinkv2.get_core_id): Rename.
+	(stlinkv2.blank_check): Use self.flash_size.
+	(stlinkv2.start): Call control_nrst.  Call get_core_id.
+	Distinguishing chip, and set rdp_key, flash_size and require_nrst.
+	(stlinkv2.flash_write): Use self.flash_block_size.
+	(main): Call control_nrst.
+	(prog_flash_write_body, prog_option_bytes_write_body)
+	(prog_blank_check_body): Support Cortex-M0.
+	(main): Call API V2 halt twice.
+	* tool/asm-thumb/*.S: Updated for Cortex-M0.
+
 2015-06-30  Niibe Yutaka  <gniibe@fsij.org>
 
 	* chopstx: Update.

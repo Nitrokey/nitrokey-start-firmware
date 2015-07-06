@@ -1,7 +1,7 @@
 /* ARM Thumb Assembler code */
 // arm-none-eabi-gcc -Wa,-amhls=blank_check.lst -c blank_check.S
 
-	.cpu cortex-m3
+	.cpu cortex-m0
 	.thumb
 	ldr	r1, .START_ADDR
 	ldr	r2, .END_ADDR

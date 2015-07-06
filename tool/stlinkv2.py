@@ -3,7 +3,7 @@
 """
 stlinkv2.py - a tool to control ST-Link/V2
 
-Copyright (C) 2012, 2013 Free Software Initiative of Japan
+Copyright (C) 2012, 2013, 2015 Free Software Initiative of Japan
 Author: NIIBE Yutaka <gniibe@fsij.org>
 
 This file is a part of Gnuk, a GnuPG USB Token implementation.
@@ -31,11 +31,17 @@ from colorama import init as colorama_init, Fore, Back, Style
 
 # Assumes only single ST-Link/V2 device is attached to computer.
 
+CORE_ID_CORTEX_M3=0x1ba01477
+CORE_ID_CORTEX_M0=0x0bb11477
+
+CHIP_ID_STM32F103=0x20036410
+
 
 GPIOA=0x40010800
 GPIOB=0x40010C00
 OPTION_BYTES_ADDR=0x1ffff800
-RDP_KEY=0x00a5                  # Unlock readprotection
+RDP_KEY_F1=0x00a5                  # Unlock readprotection
+RDP_KEY_F0=0x00aa                  # Unlock readprotection
 FLASH_BASE_ADDR=0x40022000
 
 FLASH_KEYR=    FLASH_BASE_ADDR+0x04
@@ -62,44 +68,45 @@ FLASH_CR_STRT=   0x0040
 FLASH_CR_LOCK=   0x0080
 FLASH_CR_OPTWRE= 0x0200
 
+FLASH_SIZE_F1=0x20000 # 128KiB
+FLASH_SIZE_F0=0x4000  # 16KiB
 
 SPI1= 0x40013000
 
 def uint32(v):
     return v[0] + (v[1]<<8) + (v[2]<<16) + (v[3]<<24)
 
-## HERE comes: "movw r2,#SIZE" instruction
-prog_flash_write_body = "\x0A\x48" + "\x0B\x49" + \
-    "\x08\x4C" + "\x01\x25" + "\x14\x26" + "\x00\x27" + "\x25\x61" + \
+prog_flash_write_body = "\x0D\x4A" + "\x0B\x48" + "\x0B\x49" + \
+    "\x09\x4C" + "\x01\x25" + "\x14\x26" + "\x00\x27" + "\x25\x61" + \
     "\xC3\x5B" + "\xCB\x53" + "\xE3\x68" + "\x2B\x42" + "\xFC\xD1" + \
     "\x33\x42" + "\x02\xD1" + "\x02\x37" + "\x97\x42" + "\xF5\xD1" + \
-    "\x00\x27" + "\x27\x61" + "\x00\xBE" +  "\x00\x20\x02\x40" + \
-    "\x38\x00\x00\x20"
-#   .SRC_ADDR: 0x20000038
+    "\x00\x27" + "\x27\x61" + "\x00\xBE" + "\xC0\x46" + "\x00\x20\x02\x40" + \
+    "\x3C\x00\x00\x20"
+#   .SRC_ADDR: 0x2000003C
 ## HERE comes: target_addr in 4-byte
 #   .TARGET_ADDR
+## HERE comes: size in 4-byte
+#   .SIZE
 
 def gen_prog_flash_write(addr,size):
-    return pack("<BBBB", (0x40 | (size&0xf000)>>12), (0xf2 | (size&0x0800)>>9),
-                (size & 0x00ff), (0x02 | ((size&0x0700) >> 4))) + \
-                prog_flash_write_body + pack("<I", addr)
+    return prog_flash_write_body + pack("<I", addr) + pack("<I", size)
 
-
-## HERE comes: "movw r0,#VAL" instruction
-prog_option_bytes_write_body = "\x06\x49" + "\x05\x4A" + "\x10\x23" + \
-    "\x01\x24" + "\x13\x61" + "\x08\x80" + "\xD0\x68" + "\x20\x42" + \
-    "\xFC\xD1" + "\x00\x20" + "\x10\x61" + "\x00\xBE" + "\x00\x20\x02\x40"
+prog_option_bytes_write_body = "\x0B\x48" + "\x0A\x49" + "\x08\x4A" + \
+     "\x10\x23" + "\x01\x24" + "\x13\x61" + "\x08\x80" + "\xD0\x68" + \
+     "\x20\x42" + "\xFC\xD1" + "\x02\x31" + "\xFF\x20" + "\x08\x80" + \
+     "\xD0\x68" + "\x20\x42" + "\xFC\xD1" + "\x00\x20" + "\x10\x61" + \
+     "\x00\xBE" + "\xC0\x46" + "\x00\x20\x02\x40"
 ## HERE comes: target_addr in 4-byte
 #   .TARGET_ADDR
+## HERE comes: option_bytes in 4-byte
+#   .OPTION_BYTES
 
 def gen_prog_option_bytes_write(addr,val):
-    return pack("<BBBB", (0x40 | (val&0xf000)>>12), (0xf2 | (val&0x0800)>>9),
-                (val & 0x00ff), (0x00 | ((val&0x0700) >> 4))) + \
-                prog_option_bytes_write_body + pack("<I", addr)
+    return prog_option_bytes_write_body + pack("<I", addr) + pack("<I", val)
 
 prog_blank_check_body = "\x04\x49" + "\x05\x4A" + "\x08\x68" + "\x01\x30" + \
     "\x02\xD1" + "\x04\x31" + "\x91\x42" + "\xF9\xD1" + "\x00\xBE" + \
-    "\x00\xBF" + "\x00\x00\x00\x08"
+    "\xC0\x46" + "\x00\x00\x00\x08"
 ## HERE comes: end_addr in 4-byte
 # .END_ADDR
 
@@ -108,7 +115,8 @@ def gen_prog_blank_check(size):
 
 
 SRAM_ADDRESS=0x20000000
-BLOCK_SIZE=16384                # Should be less than (20KiB - 0x0038)
+FLASH_BLOCK_SIZE_F1=16384       # Should be less than (20KiB - 0x0038)
+FLASH_BLOCK_SIZE_F0=2048        # Should be less than (4KiB - 0x0038)
 BLOCK_WRITE_TIMEOUT=80          # Increase this when you increase BLOCK_SIZE
 
 
@@ -219,11 +227,14 @@ class stlinkv2(object):
     def write_debug_reg(self, addr, value):
         return self.execute_get("\xf2\x35" + pack('<II', addr, value), 2)
 
+    def control_nrst(self, value):
+        return self.execute_get("\xf2\x3c" + pack('<B', value), 2)
+
     def run(self):
         v = self.execute_get("\xf2\x09\x00", 2)
         return (v[1] << 8) + v[0]
 
-    def core_id(self):
+    def get_core_id(self):
         v = self.execute_get("\xf2\x22\x00", 4)
         return v[0] + (v[1]<<8) + (v[2]<<16) + (v[3]<<24)
 
@@ -309,7 +320,7 @@ class stlinkv2(object):
         return (self.read_memory_u32(FLASH_OBR) & 0x0002) != 0
 
     def blank_check(self):
-        prog = gen_prog_blank_check(0x20000) # 128KiB  XXX: table lookup???
+        prog = gen_prog_blank_check(self.flash_size)
         self.write_memory(SRAM_ADDRESS, prog)
         self.write_reg(15, SRAM_ADDRESS)
         self.run()
@@ -398,8 +409,8 @@ class stlinkv2(object):
 
         off = 0
         while True:
-            if len(data[off:]) > BLOCK_SIZE:
-                size = BLOCK_SIZE
+            if len(data[off:]) > self.flash_block_size:
+                size = self.flash_block_size
                 self.flash_write_internal(addr, data, off, size)
                 off = off + size
                 addr = addr + size
@@ -467,6 +478,7 @@ class stlinkv2(object):
             self.exit_from_dfu()
         new_mode = self.stl_mode()
         print "Change ST-Link/V2 mode %04x -> %04x" % (mode, new_mode)
+        self.control_nrst(2)
         self.enter_swd()
         s = self.get_status()
         if s != 0x0080:
@@ -482,6 +494,38 @@ class stlinkv2(object):
         mode = self.stl_mode()
         if mode != 2:
             raise ValueError("Failed to switch debug mode.", mode)
+
+        self.core_id = self.get_core_id()
+        if self.core_id == CORE_ID_CORTEX_M3:
+            self.chip_id = self.read_memory_u32(0xE0042000)
+        elif self.core_id == CORE_ID_CORTEX_M0:
+            self.chip_id = 0
+        else:
+            raise ValueError("Unknown core ID", self.core_id)
+        if self.chip_id == CHIP_ID_STM32F103:
+            self.rdp_key = RDP_KEY_F1
+            self.flash_size = FLASH_SIZE_F1
+            self.flash_block_size = FLASH_BLOCK_SIZE_F1
+            self.require_nrst = False
+            self.external_spi_flash = True
+            self.protection_feature = True
+        else:
+            self.rdp_key = RDP_KEY_F0
+            self.flash_size = FLASH_SIZE_F0
+            self.flash_block_size = FLASH_BLOCK_SIZE_F0
+            self.require_nrst = True
+            self.external_spi_flash = False
+            self.protection_feature = False
+        return (self.core_id, self.chip_id)
+
+    def get_rdp_key(self):
+        return self.rdp_key
+
+    def has_spi_flash(self):
+        return self.external_spi_flash
+
+    def has_protection(self):
+        return self.protection_feature
 
 
 USB_VENDOR_ST=0x0483            # 0x0483 SGS Thomson Microelectronics
@@ -538,9 +582,7 @@ def main(show_help, erase_only, no_protect, spi_flash_check,
         raise ValueError("No ST-Link/V2 device found.", None)
 
     print "ST-Link/V2 version info: %d %d %d" % stl.version()
-    stl.start()
-    core_id = stl.core_id()
-    chip_id = stl.read_memory_u32(0xE0042000)
+    (core_id, chip_id) = stl.start()
 
     # FST-01 chip id: 0x20036410
     print "CORE: %08x, CHIP_ID: %08x" % (core_id, chip_id)
@@ -553,16 +595,20 @@ def main(show_help, erase_only, no_protect, spi_flash_check,
 
     option_bytes = stl.option_bytes_read()
     print "Option bytes: %08x" % option_bytes
-    if (option_bytes & 0xff) == RDP_KEY:
+    rdp_key = stl.get_rdp_key()
+    if (option_bytes & 0xff) == rdp_key:
         ob_protection_enable = False
     else:
         ob_protection_enable = True
 
+    stl.control_nrst(2)
     stl.enter_debug()
     status = stl.get_status()
     if status != 0x0081:
         print "Core does not halt, try API V2 halt."
         #                   DCB_DHCSR    DBGKEY|C_HALT|C_DEBUGEN
+        stl.write_debug_reg(0xE000EDF0, 0xA05F0003)
+        status = stl.get_status()
         stl.write_debug_reg(0xE000EDF0, 0xA05F0003)
         status = stl.get_status()
         if status != 0x0081:
@@ -602,14 +648,14 @@ def main(show_help, erase_only, no_protect, spi_flash_check,
             stl.reset_sys()
             stl.option_bytes_erase()
         stl.reset_sys()
-        stl.option_bytes_write(OPTION_BYTES_ADDR,RDP_KEY)
+        stl.option_bytes_write(OPTION_BYTES_ADDR,rdp_key)
         stl.usb_disconnect()
         time.sleep(0.100)
         stl.finish_gpio()
         print "Flash ROM read protection disabled.  Reset the board, now."
         return 0
 
-    if spi_flash_check:
+    if spi_flash_check and stl.has_spi_flash():
         stl.spi_flash_init()
         id = stl.spi_flash_read_id()
         print "SPI Flash ROM ID: %06x" % id
@@ -646,12 +692,13 @@ def main(show_help, erase_only, no_protect, spi_flash_check,
         off = off + blk_size
     compare(data, data_received)
 
-    if not no_protect:
+    if not no_protect and stl.has_protection():
         print "PROTECT"
         stl.option_bytes_erase()
         print "Flash ROM read protection enabled.  Reset the board to enable protection."
 
     if reset_after_successful_write:
+        stl.control_nrst(2)
         stl.usb_disconnect()
         stl.reset_sys()
         stl.run()

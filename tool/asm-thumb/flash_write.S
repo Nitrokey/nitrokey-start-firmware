@@ -8,11 +8,9 @@
 #define FLASH_SR_OFFSET	0x0c
 #define FLASH_CR_OFFSET	0x10
 
-#define COUNT	0x1000
-
-	.cpu cortex-m3
+	.cpu cortex-m0
 	.thumb
-	movw	r2, #COUNT
+	ldr	r2, .SIZE
 	ldr	r0, .SRC_ADDR
 	ldr	r1, .TARGET_ADDR
 	ldr	r4, .FLASH_BASE_ADDR
@@ -35,5 +33,6 @@
 	bkpt	#0x00
 	.align	2
 .FLASH_BASE_ADDR:	.word 0x40022000
-.SRC_ADDR:		.word 0x20000038
+.SRC_ADDR:		.word 0x2000003C
 .TARGET_ADDR:		.word 0x08000000
+.SIZE:			.word 0x00000000
