@@ -1,5 +1,18 @@
 Gnuk NEWS - User visible changes
 
+* Major changes in Gnuk 1.1.6
+
+  Released 2015-??-??
+
+** USB SerialNumber String
+The way to determine a serial number of Gnuk Token has been changed.
+It uses the 96-bit unique bits of MCU, but the portion for use is
+changed.
+
+** STM32 Primer2 support and CQ STARM support are back.
+
+
+
 * Major changes in Gnuk 1.1.5
 
   Released 2015-06-03, by NIIBE Yutaka
@@ -8,7 +21,7 @@ Gnuk NEWS - User visible changes
 Since it's getting stable, no debug output any more.
 
 ** Maple mini support.
-Although it's random number generation is not tested, Maple mini
+Although its random number generation is not tested, Maple mini
 support is added.
 
 ** Windows interoperability fix.
