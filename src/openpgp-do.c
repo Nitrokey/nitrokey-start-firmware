@@ -170,6 +170,13 @@ static const uint8_t algorithm_attr_ed25519[] __attribute__ ((aligned (1))) = {
   0x2b, 0x06, 0x01, 0x04, 0x01, 0xda, 0x47, 0x0f, 0x01
 };
 
+static const uint8_t algorithm_attr_cv25519[] __attribute__ ((aligned (1))) = {
+  11,
+  OPENPGP_ALGO_ECDH,
+  /* OID of the curve Curve25519 */
+  0x2b, 0x06, 0x01, 0x04, 0x01, 0x97, 0x55, 0x01, 0x05, 0x01
+};
+
 
 /*
  * Representation of PW1_LIFETIME:
@@ -246,16 +253,21 @@ get_algo_attr_data_object (enum kind_of_key kk)
   if (algo_attr_p == NULL)
     return algorithm_attr_rsa2k;
 
-  if (algo_attr_p[1] == ALGO_RSA4K)
-    return algorithm_attr_rsa4k;
-  else if (algo_attr_p[1] == ALGO_NISTP256R1)
-    return algorithm_attr_p256r1;
-  else if (algo_attr_p[1] == ALGO_SECP256K1)
-    return algorithm_attr_p256k1;
-  else if (algo_attr_p[1] == ALGO_ED25519)
-    return algorithm_attr_ed25519;
-
-  return algorithm_attr_rsa2k;
+  switch (algo_attr_p[1])
+    {
+    case ALGO_RSA4K:
+      return algorithm_attr_rsa4k;
+    case ALGO_NISTP256R1:
+      return algorithm_attr_p256r1;
+    case ALGO_SECP256K1:
+      return algorithm_attr_p256k1;
+    case ALGO_ED25519:
+      return algorithm_attr_ed25519;
+    case ALGO_CURVE25519:
+      return algorithm_attr_cv25519;
+    default:
+      return algorithm_attr_rsa2k;
+    }
 }
 
 int
@@ -263,30 +275,43 @@ gpg_get_algo_attr_key_size (enum kind_of_key kk, enum size_of_key s)
 {
   const uint8_t *algo_attr_p = *get_algo_attr_pointer (kk);
 
-  if (algo_attr_p == NULL)
-    if (s == GPG_KEY_STORAGE)
-      return 512;
-    else
-      return 256;
-  else if (algo_attr_p[1] == ALGO_RSA4K)
-    if (s == GPG_KEY_STORAGE)
-      return 1024;
-    else
-      return 512;
-  else if (algo_attr_p[1] == ALGO_NISTP256R1 || algo_attr_p[1] == ALGO_SECP256K1)
-    if (s == GPG_KEY_STORAGE)
-      return 128;
-    else if (s == GPG_KEY_PUBLIC)
-      return 64;
-    else
-      return 32;
-  else				/* ED25519 */
-    if (s == GPG_KEY_STORAGE)
-      return 128;
-    else if (s == GPG_KEY_PUBLIC)
-      return 32;
-    else
-      return 64;
+  if (algo_attr_p == NULL)	/* RSA-2048 */
+    goto rsa2k;
+
+  switch (algo_attr_p[1])
+    {
+    case ALGO_RSA4K:
+      if (s == GPG_KEY_STORAGE)
+	return 1024;
+      else
+	return 512;
+    case ALGO_NISTP256R1:
+    case ALGO_SECP256K1:
+      if (s == GPG_KEY_STORAGE)
+	return 128;
+      else if (s == GPG_KEY_PUBLIC)
+	return 64;
+      else
+	return 32;
+    case ALGO_ED25519:
+      if (s == GPG_KEY_STORAGE)
+	return 128;
+      else if (s == GPG_KEY_PUBLIC)
+	return 32;
+      else
+	return 64;
+    case ALGO_CURVE25519:
+      if (s == GPG_KEY_STORAGE)
+	return 64;
+      else
+	return 32;
+    default:
+    rsa2k:
+      if (s == GPG_KEY_STORAGE)
+	return 512;
+      else
+	return 256;
+    }
 }
 
 
@@ -724,6 +749,8 @@ rw_algorithm_attr (uint16_t tag, int with_tag,
 	algo = ALGO_NISTP256R1;
       else if (len == 10 && memcmp (data, algorithm_attr_ed25519+1, 10) == 0)
 	algo = ALGO_ED25519;
+      else if (len == 11 && memcmp (data, algorithm_attr_cv25519+1, 11) == 0)
+	algo = ALGO_CURVE25519;
 
       if (algo < 0)
 	return 0;		/* Error */
@@ -1049,6 +1076,12 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data,
       if (prvkey_len != 64)
 	return -1;
     }
+  else if (attr == ALGO_CURVE25519)
+    {
+      pubkey_len = prvkey_len;
+      if (prvkey_len != 32)
+	return -1;
+    }
   else				/* RSA */
     {
       int key_size = gpg_get_algo_attr_key_size (kk, GPG_KEY_STORAGE);
@@ -1066,6 +1099,8 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data,
 	pubkey_allocated_here = ecc_compute_public_p256r1 (key_data);
       else if (attr == ALGO_ED25519)
 	pubkey_allocated_here = eddsa_compute_public_25519 (key_data);
+      else if (attr == ALGO_CURVE25519)
+	pubkey_allocated_here = ecdh_compute_public_25519 (key_data);
       else				/* RSA */
 	pubkey_allocated_here = modulus_calc (key_data, prvkey_len);
 
@@ -1292,7 +1327,7 @@ kkb_to_kk (uint8_t kk_byte)
 static int
 proc_key_import (const uint8_t *data, int len)
 {
-  int r;
+  int r = -1;
   enum kind_of_key kk;
   const uint8_t *keystring_admin;
   int attr;
@@ -1328,7 +1363,7 @@ proc_key_import (const uint8_t *data, int len)
   attr = gpg_get_algo_attr (kk);
 
   if ((len <= 12 && (attr == ALGO_NISTP256R1 || attr == ALGO_SECP256K1
-		     || attr == ALGO_ED25519))
+		     || attr == ALGO_ED25519 || attr == ALGO_CURVE25519))
       || (len <= 22 && attr == ALGO_RSA2K) || (len <= 24 && attr == ALGO_RSA4K))
     {					    /* Deletion of the key */
       gpg_do_delete_prvkey (kk, CLEAN_SINGLE);
@@ -1343,7 +1378,7 @@ proc_key_import (const uint8_t *data, int len)
     r = gpg_do_write_prvkey (kk, &data[28], len - 28, keystring_admin, NULL);
   else if (attr == ALGO_NISTP256R1 || attr == ALGO_SECP256K1)
     r = gpg_do_write_prvkey (kk, &data[12], len - 12, keystring_admin, NULL);
-  else /* if (attr == ALGO_ED25519) */
+  else if (attr == ALGO_ED25519)
     {
       uint8_t hash[64];
 
@@ -1355,6 +1390,18 @@ proc_key_import (const uint8_t *data, int len)
       hash[31] &= 127;
       hash[31] |= 64;
       r = gpg_do_write_prvkey (kk, hash, 64, keystring_admin, NULL);
+    }
+  else if (attr == ALGO_CURVE25519)
+    {
+      uint8_t priv[32];
+      int i;
+
+      if (len - 12 != 32)
+	return 1;		/* Error.  */
+
+      for (i = 0; i < 32; i++)
+	priv[31-i] = data[12+i];
+      r = gpg_do_write_prvkey (kk, priv, 32, keystring_admin, NULL);
     }
 
   if (r < 0)
@@ -1910,14 +1957,14 @@ gpg_do_public_key (uint8_t kk_byte)
 	res_p += 64;
       }
     }
-  else if (attr == ALGO_ED25519)
-    {				/* EdDSA */
+  else if (attr == ALGO_ED25519 || attr == ALGO_CURVE25519)
+    {				/* EdDSA or ECDH on curve25519 */
       /* LEN */
       *res_p++ = 2 + 32;
       {
 	/*TAG*/          /* LEN = 32 */
 	*res_p++ = 0x86; *res_p++ = 0x20;
-	/* 32-byte binary (little endian): Y with parity */
+	/* 32-byte binary (little endian): Y with parity or X*/
 	memcpy (res_p, pubkey, 32);
 	res_p += 32;
       }

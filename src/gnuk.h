@@ -116,6 +116,7 @@ const uint8_t *gpg_get_firmware_update_key (uint8_t keyno);
 #define ALGO_NISTP256R1 1
 #define ALGO_SECP256K1  2
 #define ALGO_ED25519    3
+#define ALGO_CURVE25519 4
 #define ALGO_RSA2K      255
 
 enum kind_of_key {
@@ -279,6 +280,9 @@ int eddsa_sign_25519 (const uint8_t *input, size_t ilen, uint32_t *output,
 		      const uint8_t *sk_a, const uint8_t *seed,
 		      const uint8_t *pk);
 uint8_t *eddsa_compute_public_25519 (const uint8_t *a);
+uint8_t *ecdh_compute_public_25519 (const uint8_t *a);
+int ecdh_decrypt_curve25519 (const uint8_t *input, uint8_t *output,
+			     const uint8_t *key_data);
 
 const uint8_t *gpg_do_read_simple (uint8_t);
 void gpg_do_write_simple (uint8_t, const uint8_t *, int);

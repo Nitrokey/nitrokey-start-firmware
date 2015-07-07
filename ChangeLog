@@ -1,3 +1,19 @@
+2015-07-07  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/Makefile.in (CSRC): Add ecc-mont.c.
+
+	* src/ecc-mont.c (mod25638_mul_121665): Fix.
+	(ecdh_compute_public_25519, ecdh_decrypt_curve25519): New.
+
+	* src/openpgp.c (cmd_pso): Support ALGO_CURVE25519.
+
+	* src/openpgp-do.c (algorithm_attr_cv25519): New.
+	(rw_algorithm_attr, get_algo_attr_data_object)
+	(gpg_get_algo_attr_key_size, gpg_do_write_prvkey)
+	(proc_key_import, gpg_do_public_key): Support ALGO_CURVE25519.
+
+	* src/gnuk.h (ALGO_CURVE25519): New.
+
 2015-07-06  Niibe Yutaka  <gniibe@fsij.org>
 
 	Enhancement for FSM-55.

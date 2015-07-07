@@ -942,15 +942,11 @@ cmd_pso (void)
 	}
       else if (attr == ALGO_NISTP256R1 || attr == ALGO_SECP256K1)
 	{
-	  int header_size = -1;
-
-	  if (len == 65)
-	    header_size = 0;
-	  else if (len == 65 + ECC_CIPHER_DO_HEADER_SIZE)
-	    header_size = ECC_CIPHER_DO_HEADER_SIZE;
+	  int header = ECC_CIPHER_DO_HEADER_SIZE;
 
 	  /* Format is in big endian MPI: 04 || x || y */
-	  if (header_size < 0 || apdu.cmd_apdu_data[header_size] != 4)
+	  if (len != 65 + ECC_CIPHER_DO_HEADER_SIZE
+	      || apdu.cmd_apdu_data[header] != 0x04)
 	    {
 	      GPG_CONDITION_NOT_SATISFIED ();
 	      return;
@@ -958,11 +954,25 @@ cmd_pso (void)
 
 	  result_len = 65;
 	  if (attr == ALGO_NISTP256R1)
-	    r = ecdh_decrypt_p256r1 (apdu.cmd_apdu_data + header_size, res_APDU,
+	    r = ecdh_decrypt_p256r1 (apdu.cmd_apdu_data + header, res_APDU,
 				     kd[GPG_KEY_FOR_DECRYPTION].data);
 	  else
-	    r = ecdh_decrypt_p256k1 (apdu.cmd_apdu_data + header_size, res_APDU,
+	    r = ecdh_decrypt_p256k1 (apdu.cmd_apdu_data + header, res_APDU,
 				     kd[GPG_KEY_FOR_DECRYPTION].data);
+	}
+      else if (attr == ALGO_CURVE25519)
+	{
+	  int header = ECC_CIPHER_DO_HEADER_SIZE;
+
+	  if (len != 32 + ECC_CIPHER_DO_HEADER_SIZE)
+	    {
+	      GPG_CONDITION_NOT_SATISFIED ();
+	      return;
+	    }
+
+	  result_len = 32;
+	  r = ecdh_decrypt_curve25519 (apdu.cmd_apdu_data + header, res_APDU,
+				       kd[GPG_KEY_FOR_DECRYPTION].data);
 	}
       else
 	{
