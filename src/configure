@@ -98,9 +98,11 @@ Configuration:
 			supported targets are:
 			   FST_01
 			   OLIMEX_STM32_H103
+			   STM32_PRIMER2
 			   STBEE
 			   STBEE_MINI
 			   MAPLE_MINI
+			   CQ_STARM
 			   FST_01_00 (unreleased version with 8MHz XTAL)
   --enable-debug	debug with virtual COM port	[no]
   --enable-pinpad=cir
