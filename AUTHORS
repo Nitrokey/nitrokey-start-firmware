@@ -1,35 +1,10 @@
 Kaz Kojima:
-    Added STM32 Primer2 support:
-	boards/STM32_PRIMER2/board.c
-	boards/STM32_PRIMER2/board.h
-	boards/STM32_PRIMER2/mcuconf.h
+    Added STM32 Primer2 support.
 
 NIIBE Yutaka:
     Founder of the project.
-    Added FST_01 support:
-	boards/FST_01/board.c
-	boards/FST_01/board.h
-	boards/FST_01/mcuconf.h
-    Added FST_01_00 support:
-	boards/FST_01_00/board.c
-	boards/FST_01_00/board.h
-	boards/FST_01_00/mcuconf.h
-    Added STBee support:
-	boards/STBEE/board.c
-	boards/STBEE/board.h
-	boards/STBEE/mcuconf.h
-    Added STM8S Discovery Kit support:
-	boards/STM8S_DISCOVERY/board.c
-	boards/STM8S_DISCOVERY/board.h
-	boards/STM8S_DISCOVERY/mcuconf.h
-    Added STBee Mini support:
-	boards/STBEE_MINI/board.c
-	boards/STBEE_MINI/board.h
-	boards/STBEE_MINI/mcuconf.h
-    Added CQ STARM support:
-	boards/CQ_STARM/board.c
-	boards/CQ_STARM/board.h
-	boards/CQ_STARM/mcuconf.h
+    Wrote tools for STLink/V2:
+	tool/stlinkv2.py
     Wrote tools for DfuSe:
 	tool/dfuse.py
 	tool/dump_mem.py
