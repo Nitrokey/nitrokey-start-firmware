@@ -478,7 +478,7 @@ int usb_cb_handle_event (uint8_t event_type, uint16_t value)
 
 int usb_cb_interface (uint8_t cmd, uint16_t interface, uint16_t alt)
 {
-  static const uint8_t zero = 0;
+  const uint8_t zero = 0;
 
   if (interface >= NUM_INTERFACES)
     return USB_UNSUPPORT;
@@ -495,7 +495,8 @@ int usb_cb_interface (uint8_t cmd, uint16_t interface, uint16_t alt)
 	}
 
     case USB_GET_INTERFACE:
-      usb_lld_set_data_to_send (&zero, 1);
+      usb_lld_write (ENDP0, &zero, 1);
+      usb_lld_set_data_to_send (NULL, 1);
       return USB_SUCCESS;
 
     default:

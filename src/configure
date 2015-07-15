@@ -252,7 +252,11 @@ SERIALNO="FSIJ-`cat ../VERSION | sed -e 's%^[^/]*/%%'`-"
 SERIALNO_STR_LEN_DEFINE="#define SERIALNO_STR_LEN ${#SERIALNO}"
 
 
-CONFIG="$target:dfu=$with_dfu:debug=$debug:pinpad=$pinpad:certdo=$certdo:keygen=$keygen"
+if test "$sys1_compat" = "yes"; then
+  CONFIG="$target:dfu=$with_dfu:debug=$debug:pinpad=$pinpad:certdo=$certdo:keygen=$keygen"
+else
+  CONFIG="dfu=$with_dfu:debug=$debug:pinpad=$pinpad:certdo=$certdo:keygen=$keygen"
+fi
 
 if !(IFS="	"
   while read VIDPID VERSION PRODUCT VENDOR; do

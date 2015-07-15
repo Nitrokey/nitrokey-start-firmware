@@ -1,5 +1,20 @@
 2015-07-15  Niibe Yutaka  <gniibe@fsij.org>
 
+	* tool/usb_strings.py (field): Add 'Board'.
+
+	* regnual/regnual.c (usb_cb_get_descriptor): Update.
+	* src/usb_ctrl.c (usb_cb_interface): Call usb_lld_write.
+	* src/usb_desc.c (usb_cb_get_descriptor): Support sys_board_name,
+	using usb_lld_write.
+	* src/usb_lld.h (usb_cb_get_descriptor): Add last argument length
+	for asked length.
+	* src/usb_stm32f103.c (handle_setup0): Allow setup callback to
+	call usb_lld_write with ENDP0.
+	* src/usb_conf.h (NUM_STRING_DESC): Remove.
+
+	* src/configure [!sys1_compat] (CONFIG): Don't include target
+	board name.
+
 	* src/flash.c: Detect flash_page_size at runtime.
 
 	* src/main.c: Remove dependency to board.h.

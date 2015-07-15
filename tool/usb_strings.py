@@ -38,7 +38,7 @@ def gnuk_devices():
                 continue
             yield dev
 
-title = [ '', 'Vendor', 'Product', 'Serial', 'Revision', 'Config', 'Sys' ]
+field = ['', 'Vendor', 'Product', 'Serial', 'Revision', 'Config', 'Sys', 'Board']
 
 def main(n):
     for dev in gnuk_devices():
@@ -47,7 +47,7 @@ def main(n):
         try:
             for i in range(1,n):
                 str = handle.getString(i, 512)
-                print "%10s: %s" % (title[i], str)
+                print "%10s: %s" % (field[i], str)
         except:
             pass
         del dev
@@ -56,5 +56,5 @@ if __name__ == '__main__':
     if len(sys.argv) > 1:
         n = int(sys.argv[1])
     else:
-        n = 7                   # Gnuk has seven strings
+        n = 8                   # Gnuk has eight strings
     main(n)

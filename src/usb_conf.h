@@ -3,7 +3,6 @@
 #ifndef __USB_CONF_H
 #define __USB_CONF_H
 
-#define NUM_STRING_DESC 7
 #define ICC_NUM_INTERFACES 1
 #define ICC_INTERFACE 0
 #ifdef HID_CARD_CHANGE_SUPPORT

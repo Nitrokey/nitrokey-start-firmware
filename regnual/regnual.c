@@ -250,9 +250,10 @@ usb_cb_setup (uint8_t req, uint8_t req_no,
 
 int
 usb_cb_get_descriptor (uint8_t rcp, uint8_t desc_type, uint8_t desc_index,
-		       uint16_t index)
+		       uint16_t index, uint16_t length)
 {
   (void)index;
+  (void)length;
   if (rcp != DEVICE_RECIPIENT)
     return USB_UNSUPPORT;
 

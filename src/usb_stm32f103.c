@@ -698,7 +698,8 @@ static int std_get_descriptor (uint8_t req, uint16_t value,
     return USB_UNSUPPORT;
 
   (void)length;
-  return usb_cb_get_descriptor (rcp, (value >> 8), (value & 0xff), index);
+  return usb_cb_get_descriptor (rcp, (value >> 8), (value & 0xff),
+				index, length);
 }
 
 static int std_get_configuration (uint8_t req, uint16_t value,
@@ -851,13 +852,22 @@ static void handle_setup0 (void)
 	  if (data_p->len > len)
 	    data_p->len = len;
 
-	  if ((data_p->len % USB_MAX_PACKET_SIZE) == 0)
+	  if (data_p->len != 0 && (data_p->len % USB_MAX_PACKET_SIZE) == 0)
 	    data_p->require_zlp = TRUE;
 	  else
 	    data_p->require_zlp = FALSE;
 
-	  dev_p->state = IN_DATA;
-	  handle_datastage_in ();
+	  if (data_p->addr == NULL)
+	    {
+	      /* usb_lld_wite was called already by the setup callback.  */
+	      dev_p->state = LAST_IN_DATA;
+	      data_p->len = 0;
+	    }
+	  else
+	    {
+	      dev_p->state = IN_DATA;
+	      handle_datastage_in ();
+	    }
 	}
       else if (ctrl_p->wLength == 0)
 	{

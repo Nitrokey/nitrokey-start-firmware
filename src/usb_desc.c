@@ -330,7 +330,7 @@ struct desc
   uint16_t size;
 };
 
-static const struct desc String_Descriptors[NUM_STRING_DESC] = {
+static const struct desc string_descriptors[] = {
   {gnukStringLangID, sizeof (gnukStringLangID)},
   {gnukStringVendor, sizeof (gnukStringVendor)},
   {gnukStringProduct, sizeof (gnukStringProduct)},
@@ -339,13 +339,14 @@ static const struct desc String_Descriptors[NUM_STRING_DESC] = {
   {gnuk_config_options, sizeof (gnuk_config_options)},
   {sys_version, sizeof (sys_version)},
 };
+#define NUM_STRING_DESC (sizeof (string_descriptors) / sizeof (struct desc))
 
 #define USB_DT_HID			0x21
 #define USB_DT_REPORT			0x22
 
 int
 usb_cb_get_descriptor (uint8_t rcp, uint8_t desc_type, uint8_t desc_index,
-		       uint16_t index)
+		       uint16_t index, uint16_t length)
 {
   if (rcp == DEVICE_RECIPIENT)
     {
@@ -365,8 +366,30 @@ usb_cb_get_descriptor (uint8_t rcp, uint8_t desc_type, uint8_t desc_index,
 	{
 	  if (desc_index < NUM_STRING_DESC)
 	    {
-	      usb_lld_set_data_to_send (String_Descriptors[desc_index].desc,
-					String_Descriptors[desc_index].size);
+	      usb_lld_set_data_to_send (string_descriptors[desc_index].desc,
+					string_descriptors[desc_index].size);
+	      return USB_SUCCESS;
+	    }
+	  else if (desc_index == NUM_STRING_DESC)
+	    {
+	      uint8_t usbbuf[64];
+	      int i;
+	      size_t len;
+
+	      for (i = 0; i < (int)sizeof (usbbuf)/2 - 2; i++)
+		{
+		  if (sys_board_name[i] == 0)
+		    break;
+
+		  usbbuf[i*2+2] = sys_board_name[i];
+		  usbbuf[i*2+3] = 0;
+		}
+	      usbbuf[0] = len = i*2 + 2;
+	      usbbuf[1] = USB_STRING_DESCRIPTOR_TYPE;
+	      if (len > length)
+		len = length;
+	      usb_lld_write (ENDP0, usbbuf, len);
+	      usb_lld_set_data_to_send (NULL, len);
 	      return USB_SUCCESS;
 	    }
 	}
@@ -392,15 +415,6 @@ usb_cb_get_descriptor (uint8_t rcp, uint8_t desc_type, uint8_t desc_index,
 #else
       (void)index;
 #endif
-      if (desc_type == STRING_DESCRIPTOR)
-	{
-	  if (desc_index < NUM_STRING_DESC)
-	    {
-	      usb_lld_set_data_to_send (String_Descriptors[desc_index].desc,
-					String_Descriptors[desc_index].size);
-	      return USB_SUCCESS;
-	    }
-	}
     }
 
   return USB_UNSUPPORT;
