@@ -3,9 +3,9 @@
 
 #define NEUG_PRE_LOOP 32
 
-#define NEUG_MODE_CONDITIONED 0
-#define NEUG_MODE_RAW         1
-#define NEUG_MODE_RAW_DATA    2
+#define NEUG_MODE_CONDITIONED 0	/* Conditioned data.             */
+#define NEUG_MODE_RAW         1	/* CRC-32 filtered sample data.  */
+#define NEUG_MODE_RAW_DATA    2	/* Sample data directly.         */
 
 extern uint8_t neug_mode;
 extern uint16_t neug_err_cnt;

@@ -215,7 +215,7 @@ static int ep_process (int mode)
       CRC->DR = adc_buf[i*4 + 1];
       CRC->DR = adc_buf[i*4 + 2];
       CRC->DR = adc_buf[i*4 + 3];
-      v = CRC->DR & 0xff;
+      v = CRC->DR & 0xff;   /* First byte of CRC->DR is used here.  */
       noise_source_continuous_test (v);
       sha256_ctx_data.wbuf[i] = v;
       ep_init (NEUG_MODE_CONDITIONED); /* The rest three-byte of
@@ -279,8 +279,6 @@ uint16_t neug_err_cnt_p4k;
 uint16_t neug_rc_max;
 uint16_t neug_p64_max;
 uint16_t neug_p4k_max;
-
-#include "board.h"
 
 static void noise_source_cnt_max_reset (void)
 {

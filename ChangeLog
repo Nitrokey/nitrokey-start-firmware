@@ -1,5 +1,12 @@
 2015-07-15  Niibe Yutaka  <gniibe@fsij.org>
 
+	* src/flash.c: Detect flash_page_size at runtime.
+
+	* src/main.c: Remove dependency to board.h.
+
+	* src/neug.c: Update from NeuG 1.0.2.
+	* src/adc_stm32f103.c: Update.
+
 	* chopstx: Update to 0.07.
 	* src/sys.c: Update.
 	* src/sys.h: Update.

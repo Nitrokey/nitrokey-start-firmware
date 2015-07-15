@@ -3,7 +3,8 @@
  *                   In this ADC driver, there are NeuG specific parts.
  *                   You need to modify to use this as generic ADC driver.
  *
- * Copyright (C) 2011, 2012, 2013 Free Software Initiative of Japan
+ * Copyright (C) 2011, 2012, 2013, 2015
+ *               Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
  * This file is a part of NeuG, a True Random Number Generator
@@ -31,6 +32,8 @@
 #include "neug.h"
 #include "stm32f103.h"
 #include "adc.h"
+
+#include "config.h"
 
 #define NEUG_CRC32_COUNTS 4
 
@@ -92,15 +95,6 @@
                               | ADC_SQR3_SQ4_N(ADC_CHANNEL_VREFINT)     
 #define NEUG_ADC_SETTING1_NUM_CHANNELS 4
 
-#if !defined(NEUG_ADC_SETTING2_SMPR1)
-#define NEUG_ADC_SETTING2_SMPR1 0
-#define NEUG_ADC_SETTING2_SMPR2 ADC_SMPR2_SMP_AN0(ADC_SAMPLE_1P5)    \
-                              | ADC_SMPR2_SMP_AN1(ADC_SAMPLE_1P5)
-#define NEUG_ADC_SETTING2_SQR3  ADC_SQR3_SQ1_N(ADC_CHANNEL_IN0)      \
-                              | ADC_SQR3_SQ2_N(ADC_CHANNEL_IN1)
-#define NEUG_ADC_SETTING2_NUM_CHANNELS 2
-#endif
-
 
 /*
  * Do calibration for both of ADCs.
@@ -133,9 +127,67 @@ void adc_init (void)
   RCC->APB2ENR &= ~(RCC_APB2ENR_ADC1EN | RCC_APB2ENR_ADC2EN);
 }
 
+#include "sys.h"
+#if defined(HAVE_SYS_H)
+# define SYS_BOARD_ID sys_board_id
+#else
+# include "board.h"
+# define SYS_BOARD_ID BOARD_ID
+#endif
+
+static void
+get_adc_config (uint32_t config[4])
+{
+  config[2] = ADC_SQR1_NUM_CH(2);
+  switch (SYS_BOARD_ID)
+    {
+    case BOARD_ID_FST_01:
+      config[0] = 0;
+      config[1] = ADC_SMPR2_SMP_AN0(ADC_SAMPLE_1P5)
+		| ADC_SMPR2_SMP_AN9(ADC_SAMPLE_1P5);
+      config[3] = ADC_SQR3_SQ1_N(ADC_CHANNEL_IN0)
+		| ADC_SQR3_SQ2_N(ADC_CHANNEL_IN9);
+      break;
+
+    case BOARD_ID_OLIMEX_STM32_H103:
+    case BOARD_ID_STBEE:
+      config[0] = ADC_SMPR1_SMP_AN10(ADC_SAMPLE_1P5) 
+		| ADC_SMPR1_SMP_AN11(ADC_SAMPLE_1P5);
+      config[1] = 0;
+      config[3] = ADC_SQR3_SQ1_N(ADC_CHANNEL_IN10)
+		| ADC_SQR3_SQ2_N(ADC_CHANNEL_IN11);
+      break;
+
+    case BOARD_ID_STBEE_MINI:
+      config[0] = 0;
+      config[1] = ADC_SMPR2_SMP_AN1(ADC_SAMPLE_1P5)
+		| ADC_SMPR2_SMP_AN2(ADC_SAMPLE_1P5);
+      config[3] = ADC_SQR3_SQ1_N(ADC_CHANNEL_IN1)
+		| ADC_SQR3_SQ2_N(ADC_CHANNEL_IN2);
+      break;
+
+    case BOARD_ID_CQ_STARM:
+    case BOARD_ID_FST_01_00:
+    case BOARD_ID_MAPLE_MINI:
+    case BOARD_ID_STM32_PRIMER2:
+    case BOARD_ID_STM8S_DISCOVERY:
+    default:
+      config[0] = 0;
+      config[1] = ADC_SMPR2_SMP_AN0(ADC_SAMPLE_1P5)
+		| ADC_SMPR2_SMP_AN1(ADC_SAMPLE_1P5);
+      config[3] = ADC_SQR3_SQ1_N(ADC_CHANNEL_IN0)
+		| ADC_SQR3_SQ2_N(ADC_CHANNEL_IN1);
+      break;
+    }
+}
+
 
 void adc_start (void)
 {
+  uint32_t config[4];
+
+  get_adc_config (config);
+
   /* Use DMA channel 1.  */
   RCC->AHBENR |= RCC_AHBENR_DMA1EN;
   DMA1_Channel1->CCR = STM32_DMA_CCR_RESET_VALUE;
@@ -156,11 +208,11 @@ void adc_start (void)
   ADC2->CR1 = (ADC_CR1_DUALMOD_2 | ADC_CR1_DUALMOD_1 | ADC_CR1_DUALMOD_0
 	       | ADC_CR1_SCAN);
   ADC2->CR2 = ADC_CR2_EXTTRIG | ADC_CR2_CONT | ADC_CR2_ADON;
-  ADC2->SMPR1 = NEUG_ADC_SETTING2_SMPR1;
-  ADC2->SMPR2 = NEUG_ADC_SETTING2_SMPR2;
-  ADC2->SQR1 = ADC_SQR1_NUM_CH(NEUG_ADC_SETTING2_NUM_CHANNELS);
+  ADC2->SMPR1 = config[0];
+  ADC2->SMPR2 = config[1];
+  ADC2->SQR1 = config[2];
   ADC2->SQR2 = 0;
-  ADC2->SQR3 = NEUG_ADC_SETTING2_SQR3;
+  ADC2->SQR3 = config[3];
 
 #ifdef DELIBARATELY_DO_IT_WRONG_START_STOP
   /*

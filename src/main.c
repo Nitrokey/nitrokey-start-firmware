@@ -28,7 +28,6 @@
 #include <eventflag.h>
 
 #include "config.h"
-#include "board.h"
 
 #include "sys.h"
 #include "adc.h"
@@ -426,15 +425,20 @@ main (int argc, char *argv[])
 #ifdef DFU_SUPPORT
 #define FLASH_SYS_START_ADDR 0x08000000
 #define FLASH_SYS_END_ADDR (0x08000000+0x1000)
+#define CHIP_ID_REG ((uint32_t *)0xE0042000)
   {
     extern uint8_t _sys;
     uint32_t addr;
     handler *new_vector = (handler *)FLASH_SYS_START_ADDR;
     void (*func) (void (*)(void)) = (void (*)(void (*)(void)))new_vector[9];
+    uint32_t flash_page_size = 1024; /* 1KiB default */
+
+   if ((*CHIP_ID_ADDR)&0x07 == 0x04) /* High dencity device.  */
+     flash_page_size = 2048; /* It's 2KiB. */
 
     /* Kill DFU */
     for (addr = FLASH_SYS_START_ADDR; addr < FLASH_SYS_END_ADDR;
-	 addr += FLASH_PAGE_SIZE)
+	 addr += flash_page_size)
       flash_erase_page (addr);
 
     /* copy system service routines */

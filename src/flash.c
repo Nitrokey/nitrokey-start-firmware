@@ -1,7 +1,7 @@
 /*
  * flash.c -- Data Objects (DO) and GPG Key handling on Flash ROM
  *
- * Copyright (C) 2010, 2011, 2012, 2013, 2014
+ * Copyright (C) 2010, 2011, 2012, 2013, 2014, 2015
  *               Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
@@ -35,7 +35,6 @@
 
 #include "config.h"
 
-#include "board.h"
 #include "sys.h"
 #include "gnuk.h"
 
@@ -65,7 +64,9 @@
  */
 
 #define FLASH_DATA_POOL_HEADER_SIZE	2
-#define FLASH_DATA_POOL_SIZE		(FLASH_PAGE_SIZE*2)
+#define FLASH_DATA_POOL_SIZE		(flash_page_size*2)
+
+static uint16_t flash_page_size;
 
 static const uint8_t *data_pool;
 extern uint8_t _keystore_pool;
@@ -99,22 +100,30 @@ static int key_available_at (const uint8_t *k, int key_size)
   return 1;
 }
 
+
+#define CHIP_ID_REG      ((uint32_t *)0xe0042000)
 const uint8_t *
 flash_init (void)
 {
   uint16_t gen0, gen1;
   uint16_t *gen0_p = (uint16_t *)&_data_pool;
-  uint16_t *gen1_p = (uint16_t *)(&_data_pool + FLASH_PAGE_SIZE);
+  uint16_t *gen1_p;
+
+  flash_page_size = 1024;
+  if (((*CHIP_ID_REG) & 0xfff) == 0x0414)
+    flash_page_size = 2048;
+
+  gen1_p = (uint16_t *)(&_data_pool + flash_page_size);
 
   /* Check data pool generation and choose the page */
   gen0 = *gen0_p;
   gen1 = *gen1_p;
   if (gen0 == 0xffff)
-    data_pool = &_data_pool + FLASH_PAGE_SIZE;
+    data_pool = &_data_pool + flash_page_size;
   else if (gen1 == 0xffff)
     data_pool = &_data_pool;
   else if (gen1 > gen0)
-    data_pool = &_data_pool + FLASH_PAGE_SIZE;
+    data_pool = &_data_pool + flash_page_size;
   else
     data_pool = &_data_pool;
 
@@ -135,7 +144,7 @@ flash_init_keys (void)
       int key_size = gpg_get_algo_attr_key_size (i, GPG_KEY_STORAGE);
 
       kd[i].pubkey = NULL;
-      for (k = p; k < p + FLASH_PAGE_SIZE; k += key_size)
+      for (k = p; k < p + flash_page_size; k += key_size)
 	if (key_available_at (k, key_size))
 	  {
 	    int prv_len = gpg_get_algo_attr_key_size (i, GPG_KEY_PRIVATE);
@@ -144,7 +153,7 @@ flash_init_keys (void)
 	    break;
 	  }
 
-      p += FLASH_PAGE_SIZE;
+      p += flash_page_size;
     }
 }
 
@@ -189,11 +198,11 @@ flash_copying_gc (void)
   if (data_pool == &_data_pool)
     {
       src = &_data_pool;
-      dst = &_data_pool + FLASH_PAGE_SIZE;
+      dst = &_data_pool + flash_page_size;
     }
   else
     {
-      src = &_data_pool + FLASH_PAGE_SIZE;
+      src = &_data_pool + flash_page_size;
       dst = &_data_pool;
     }
 
@@ -208,7 +217,7 @@ flash_copying_gc (void)
 static int
 is_data_pool_full (size_t size)
 {
-  return last_p + size > data_pool + FLASH_PAGE_SIZE;
+  return last_p + size > data_pool + flash_page_size;
 }
 
 static uint8_t *
@@ -322,7 +331,7 @@ static uint8_t *
 flash_key_getpage (enum kind_of_key kk)
 {
   /* There is a page for each KK.  */
-  return &_keystore_pool + (FLASH_PAGE_SIZE * kk);
+  return &_keystore_pool + (flash_page_size * kk);
 }
 
 uint8_t *
@@ -333,7 +342,7 @@ flash_key_alloc (enum kind_of_key kk)
   int key_size = gpg_get_algo_attr_key_size (kk, GPG_KEY_STORAGE);
 
   /* Seek free space in the page.  */
-  for (k = k0; k < k0 + FLASH_PAGE_SIZE; k += key_size)
+  for (k = k0; k < k0 + flash_page_size; k += key_size)
     {
       const uint32_t *p = (const uint32_t *)k;
 
@@ -382,10 +391,10 @@ flash_key_write (uint8_t *key_addr,
 static int
 flash_check_all_other_keys_released (const uint8_t *key_addr, int key_size)
 {
-  uint32_t start = (uint32_t)key_addr & ~(FLASH_PAGE_SIZE - 1);
+  uint32_t start = (uint32_t)key_addr & ~(flash_page_size - 1);
   const uint32_t *p = (const uint32_t *)start;
 
-  while (p < (const uint32_t *)(start + FLASH_PAGE_SIZE))
+  while (p < (const uint32_t *)(start + flash_page_size))
     if (p == (const uint32_t *)key_addr)
       p += key_size/4;
     else
@@ -411,7 +420,7 @@ void
 flash_key_release (uint8_t *key_addr, int key_size)
 {
   if (flash_check_all_other_keys_released (key_addr, key_size))
-    flash_erase_page (((uint32_t)key_addr & ~(FLASH_PAGE_SIZE - 1)));
+    flash_erase_page (((uint32_t)key_addr & ~(flash_page_size - 1)));
   else
     flash_key_fill_zero_as_released (key_addr, key_size);
 }
@@ -619,9 +628,8 @@ flash_erase_binary (uint8_t file_id)
       if (flash_check_blank (p, FLASH_CH_CERTIFICATE_SIZE) == 0)
 	{
 	  flash_erase_page ((uint32_t)p);
-#if FLASH_CH_CERTIFICATE_SIZE > FLASH_PAGE_SIZE
-	  flash_erase_page ((uint32_t)p + FLASH_PAGE_SIZE);
-#endif
+	  if (FLASH_CH_CERTIFICATE_SIZE > flash_page_size)
+	    flash_erase_page ((uint32_t)p + flash_page_size);
 	}
 
       return 0;
