@@ -1,3 +1,10 @@
+2015-07-15  Niibe Yutaka  <gniibe@fsij.org>
+
+	* tool/stlinkv2.py (stlinkv2.get_chip_id): New.  Detect flash
+	size, too.
+	(main): Call stlinkv2.get_chip_id after MCU reset and stop.
+	Verify read out fix.
+
 2015-07-11  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/configure (help): Add STM32_PRIMER2 and CQ_STARM.

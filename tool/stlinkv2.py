@@ -36,6 +36,8 @@ CORE_ID_CORTEX_M0=0x0bb11477
 
 CHIP_ID_STM32F103xB=0x20036410
 CHIP_ID_STM32F103xE=0x10016414
+# CHIP_ID_STM32F0   0x20006440
+# CHIP_ID_STM32F030??  0x10006444; FSM-55
 
 GPIOA=0x40010800
 GPIOB=0x40010C00
@@ -67,11 +69,6 @@ FLASH_CR_OPTER=  0x0020
 FLASH_CR_STRT=   0x0040
 FLASH_CR_LOCK=   0x0080
 FLASH_CR_OPTWRE= 0x0200
-
-FLASH_SIZE_F1_8=0x10000 # 64KiB
-FLASH_SIZE_F1=0x20000 # 128KiB
-FLASH_SIZE_F1_E=0x80000 # 512KiB
-FLASH_SIZE_F0=0x4000  # 16KiB
 
 SPI1= 0x40013000
 
@@ -499,17 +496,8 @@ class stlinkv2(object):
 
         self.core_id = self.get_core_id()
         if self.core_id == CORE_ID_CORTEX_M3:
-            self.chip_id = self.read_memory_u32(0xE0042000)
-            if self.chip_id == CHIP_ID_STM32F103xB:
-                self.chip_stm32 = True
-                self.flash_size = FLASH_SIZE_F1
-            elif self.chip_id == CHIP_ID_STM32F103xE:
-                self.chip_stm32 = True
-                self.flash_size = FLASH_SIZE_F1_E
-            else:
-                self.chip_stm32 = False
+            self.chip_stm32 = True
         elif self.core_id == CORE_ID_CORTEX_M0:
-            self.chip_id = 0
             self.chip_stm32 = False
         else:
             raise ValueError("Unknown core ID", self.core_id)
@@ -521,12 +509,27 @@ class stlinkv2(object):
             self.protection_feature = True
         else:
             self.rdp_key = RDP_KEY_F0
-            self.flash_size = FLASH_SIZE_F0
             self.flash_block_size = FLASH_BLOCK_SIZE_F0
             self.require_nrst = True
             self.external_spi_flash = False
             self.protection_feature = False
-        return (self.core_id, self.chip_id)
+        return self.core_id
+
+    def get_chip_id(self):
+        if self.chip_stm32:
+            self.chip_id = self.read_memory_u32(0xE0042000)
+            self.flash_size = (self.read_memory_u32(0x1ffff7e0) & 0xffff)*1024
+            if self.chip_id == CHIP_ID_STM32F103xB:
+                pass
+            elif self.chip_id == CHIP_ID_STM32F103xE:
+                pass
+            else:
+                raise ValueError("Unknown chip ID", self.chip_id)
+        else:
+            self.chip_id = self.read_memory_u32(0x40015800)
+            self.flash_size = (self.read_memory_u32(0x1ffff7cc) & 0xffff)*1024
+        print("Flash size: %dKiB" % (self.flash_size/1024))
+        return self.chip_id
 
     def get_rdp_key(self):
         return self.rdp_key
@@ -592,19 +595,7 @@ def main(show_help, erase_only, no_protect, spi_flash_check,
         raise ValueError("No ST-Link/V2 device found.", None)
 
     print("ST-Link/V2 version info: %d %d %d" % stl.version())
-    (core_id, chip_id) = stl.start()
-
-    # FST-01 chip id: 0x20036410
-    print("CORE: %08x, CHIP_ID: %08x" % (core_id, chip_id))
-    protection = stl.protection()
-    print("Flash ROM read protection: " + ("ON" if protection else "off"))
-    option_bytes = stl.option_bytes_read()
-    print("Option bytes: %08x" % option_bytes)
-    rdp_key = stl.get_rdp_key()
-    if (option_bytes & 0xff) == rdp_key:
-        ob_protection_enable = False
-    else:
-        ob_protection_enable = True
+    core_id = stl.start()
 
     stl.control_nrst(2)
     stl.enter_debug()
@@ -618,6 +609,20 @@ def main(show_help, erase_only, no_protect, spi_flash_check,
         status = stl.get_status()
         if status != 0x0081:
             raise ValueError("Status of core is not halt.", status)
+
+    chip_id = stl.get_chip_id()
+
+    # FST-01 chip id: 0x20036410
+    print("CORE: %08x, CHIP_ID: %08x" % (core_id, chip_id))
+    protection = stl.protection()
+    print("Flash ROM read protection: " + ("ON" if protection else "off"))
+    option_bytes = stl.option_bytes_read()
+    print("Option bytes: %08x" % option_bytes)
+    rdp_key = stl.get_rdp_key()
+    if (option_bytes & 0xff) == rdp_key:
+        ob_protection_enable = False
+    else:
+        ob_protection_enable = True
 
     if protection:
         if status_only:
@@ -692,7 +697,7 @@ def main(show_help, erase_only, no_protect, spi_flash_check,
             blk_size = 1024
         else:
             blk_size = size
-        data_received = data_received + stl.read_memory(0x08000000+off, 1024)
+        data_received = data_received + stl.read_memory(0x08000000+off, blk_size)
         size = size - blk_size
         off = off + blk_size
     compare(data, data_received)
