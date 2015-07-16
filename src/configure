@@ -255,6 +255,10 @@ SERIALNO_STR_LEN_DEFINE="#define SERIALNO_STR_LEN ${#SERIALNO}"
 if test "$sys1_compat" = "yes"; then
   CONFIG="$target:dfu=$with_dfu:debug=$debug:pinpad=$pinpad:certdo=$certdo:keygen=$keygen"
 else
+  # Override settings for common binary.  Safer side.
+  FLASH_PAGE_SIZE=2048
+  FLASH_SIZE=128
+  MEMORY_SIZE=20
   CONFIG="dfu=$with_dfu:debug=$debug:pinpad=$pinpad:certdo=$certdo:keygen=$keygen"
 fi
 
