@@ -33,8 +33,6 @@
 #include "stm32f103.h"
 #include "adc.h"
 
-#include "config.h"
-
 #define NEUG_CRC32_COUNTS 4
 
 #define STM32_ADC_ADC1_DMA_PRIORITY         2

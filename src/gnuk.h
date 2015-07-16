@@ -413,7 +413,7 @@ void flash_cnt123_write_internal (const uint8_t *p, int which, int v);
 void flash_do_write_internal (const uint8_t *p, int nr,
 			      const uint8_t *data, int len);
 
-extern const uint8_t gnukStringSerial[];
+extern const uint8_t gnuk_string_serial[];
 
 #define LED_ONESHOT		(1)
 #define LED_TWOSHOTS		(2)

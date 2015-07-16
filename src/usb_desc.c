@@ -315,7 +315,7 @@ static const uint8_t gnukConfigDescriptor[] = {
 
 
 /* USB String Descriptors */
-static const uint8_t gnukStringLangID[] = {
+static const uint8_t gnuk_string_lang_id[] = {
   4,				/* bLength */
   USB_STRING_DESCRIPTOR_TYPE,
   0x09, 0x04			/* LangID = 0x0409: US-English */
@@ -331,10 +331,10 @@ struct desc
 };
 
 static const struct desc string_descriptors[] = {
-  {gnukStringLangID, sizeof (gnukStringLangID)},
-  {gnukStringVendor, sizeof (gnukStringVendor)},
-  {gnukStringProduct, sizeof (gnukStringProduct)},
-  {gnukStringSerial, sizeof (gnukStringSerial)},
+  {gnuk_string_lang_id, sizeof (gnuk_string_lang_id)},
+  {gnuk_string_vendor, sizeof (gnuk_string_vendor)},
+  {gnuk_string_product, sizeof (gnuk_string_product)},
+  {gnuk_string_serial, sizeof (gnuk_string_serial)},
   {gnuk_revision_detail, sizeof (gnuk_revision_detail)},
   {gnuk_config_options, sizeof (gnuk_config_options)},
   {sys_version, sizeof (sys_version)},

@@ -126,7 +126,7 @@ extern void *USBthread (void *arg);
 static void
 device_initialize_once (void)
 {
-  const uint8_t *p = &gnukStringSerial[ID_OFFSET];
+  const uint8_t *p = &gnuk_string_serial[ID_OFFSET];
 
   if (p[0] == 0xff && p[1] == 0xff && p[2] == 0xff && p[3] == 0xff)
     {
