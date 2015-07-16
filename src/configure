@@ -27,11 +27,18 @@ target=FST_01
 verbose=no
 with_dfu=default
 debug=no
+sys1_compat=yes
 pinpad=no
 certdo=no
 keygen=no
-sys1_compat=yes
 hid_card_change=no
+
+# Revision number
+if test -d ../.git; then
+  REVISION=`git describe --dirty="-modified"` 
+else
+  REVISION=`cat ../VERSION`
+fi
 
 # Process each option
 for option; do
@@ -65,14 +72,14 @@ for option; do
     keygen=yes ;;
   --disable-keygen)
     keygen=no ;;
-  --enable-sys1-compat)
-    sys1_compat=yes ;;
-  --disable-sys1-compat)
-    sys1_compat=no ;;
   --enable-hid-card-change)
     hid_card_change=yes ;;
   --disable-hid-card-change)
     hid_card_change=no ;;
+  --enable-sys1-compat)
+    sys1_compat=yes ;;
+  --disable-sys1-compat)
+    sys1_compat=no ;;
   --with-dfu)
     with_dfu=yes ;;
   --without-dfu)
@@ -124,14 +131,13 @@ if test "$vidpid" = "none"; then
   exit 1
 fi
 
-TARGET_DEFINE="#define BOARD_$target 1"
 BOARD_HEADER_FILE=board-`echo $target | tr '_[:upper:]' '-[:lower:]'`.h
 echo Header file is: $BOARD_HEADER_FILE
 ln -sf ../chopstx/board/$BOARD_HEADER_FILE board.h
 
 # Flash page size in byte
 FLASH_PAGE_SIZE=1024
-# Flash memory size in KB
+# Flash memory size in KiB
 FLASH_SIZE=128
 # Memory size in KiB
 MEMORY_SIZE=20
@@ -175,7 +181,7 @@ fi
 # --with-dfu option
 if test "$with_dfu" = "yes"; then
   if test "$target" = "FST_01" -o "$target" = "FST_01_00"; then
-      echo "FST-01 doesn't have DFU loader, you should not enable this."
+      echo "FST-01 doesn't have DFU loader, you should not use --with-dfu."
       exit 1
   fi
   echo "Configured for DFU"
@@ -240,12 +246,6 @@ else
   echo "Card insert/removal by HID device is NOT supported"
 fi
 
-if test -d ../.git; then
-  REVISION=`git describe --dirty="-modified"` 
-else
-  REVISION=`cat ../VERSION`
-fi
-
 ### !!! Replace following string of "FSIJ" to yours !!! ####
 SERIALNO="FSIJ-`cat ../VERSION | sed -e 's%^[^/]*/%%'`-"
 
@@ -255,58 +255,73 @@ SERIALNO_STR_LEN_DEFINE="#define SERIALNO_STR_LEN ${#SERIALNO}"
 if test "$sys1_compat" = "yes"; then
   CONFIG="$target:dfu=$with_dfu:debug=$debug:pinpad=$pinpad:certdo=$certdo:keygen=$keygen"
 else
+  if test "$with_dfu" = "yes"; then
+    echo "Common binary can't support DFU loader, don't use --with-dfu."
+    exit 1
+  fi
   # Override settings for common binary.  Safer side.
   FLASH_PAGE_SIZE=2048
   FLASH_SIZE=128
   MEMORY_SIZE=20
-  CONFIG="dfu=$with_dfu:debug=$debug:pinpad=$pinpad:certdo=$certdo:keygen=$keygen"
+  CONFIG="common:debug=$debug:pinpad=$pinpad:certdo=$certdo:keygen=$keygen"
 fi
+
+output_vid_pid_version () {
+  echo $VIDPID | sed -n -e "s%^\([0-9a-f][0-9a-f]\)\([0-9a-f][0-9a-f]\):\([0-9a-f][0-9a-f]\)\([0-9a-f][0-9a-f]\)$%  0x\2, 0x\1, /* idVendor  */\n  0x\4, 0x\3, /* idProduct */%p"
+  echo $VERSION | sed -n -e "s%^\([0-9a-f][0-9a-f]\)\([0-9a-f][0-9a-f]\)$%  0x\2, 0x\1, /* bcdDevice  */%p"
+}
+
+output_vendor_product_serial_strings () {
+  prefix=$1
+
+  echo "static const uint8_t ${prefix}string_vendor[] = {"
+  echo "  ${#VENDOR}*2+2,			/* bLength */"
+  echo "  USB_STRING_DESCRIPTOR_TYPE,	/* bDescriptorType */"
+  echo "  /* Manufacturer: \"$VENDOR\" */"
+  echo $VENDOR | sed -n -e "s/\(........\)/\1\n/gp" | sed -n -e "s/\(.\)/'\1', 0, /g" -e "s/^/  /" -e "s/ $//p"
+  echo '};'
+  echo
+  echo "static const uint8_t ${prefix}string_product[] = {"
+  echo "  ${#PRODUCT}*2+2,			/* bLength */"
+  echo "  USB_STRING_DESCRIPTOR_TYPE,	/* bDescriptorType */"
+  echo "  /* Product name: \"$PRODUCT\" */"
+  echo $PRODUCT | sed -n -e "s/\(........\)/\1\n/gp" | sed -n -e "s/\(.\)/'\1', 0, /g" -e "s/^/  /" -e "s/ $//p"
+  echo '};'
+
+  if test -n "$prefix"; then
+  echo
+  echo "static uint8_t ${prefix}string_serial[] = {"
+  echo "  ${#SERIALNO}*2+2+16,			/* bLength */"
+  echo "  USB_STRING_DESCRIPTOR_TYPE,	/* bDescriptorType */"
+  echo "  /* Serial number: \"$SERIALNO\" */"
+  echo $SERIALNO | sed -n -e "s/\(........\)/\1\n/gp" | sed -n -e "s/\(.\)/'\1', 0, /g" -e "s/^/  /" -e "s/ $//p"
+  echo "  0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,"
+  echo "  0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,"
+  echo '};'
+  echo
+  echo '#ifdef USB_STRINGS_FOR_GNUK'
+  echo "static const uint8_t ${prefix}revision_detail[] = {"
+  echo "  ${#REVISION}*2+2,			/* bLength */"
+  echo "  USB_STRING_DESCRIPTOR_TYPE,	/* bDescriptorType */"
+  echo "  /* revision detail: \"$REVISION\" */"
+  echo $REVISION | sed -n -e "s/\(........\)/\1\n/gp" | sed -n -e "s/\(.\)/'\1', 0, /g" -e "s/^/  /" -e "s/ $//p"
+  echo '};'
+  echo
+  echo "static const uint8_t ${prefix}config_options[] = {"
+  echo "  ${#CONFIG}*2+2,			/* bLength */"
+  echo "  USB_STRING_DESCRIPTOR_TYPE,	/* bDescriptorType */"
+  echo "  /* configure options: \"$CONFIG\" */"
+  echo $CONFIG | sed -n -e "s/\(........\)/\1\n/gp" | sed -n -e "s/\(.\)/'\1', 0, /g" -e "s/^/  /" -e "s/ $//p"
+  echo '};'
+  echo '#endif'
+  fi
+}
 
 if !(IFS="	"
   while read VIDPID VERSION PRODUCT VENDOR; do
     if test "$vidpid" = "$VIDPID"; then
-      (echo $VIDPID | sed -n -e "s%^\([0-9a-f][0-9a-f]\)\([0-9a-f][0-9a-f]\):\([0-9a-f][0-9a-f]\)\([0-9a-f][0-9a-f]\)$%  0x\2, 0x\1, /* idVendor  */\n  0x\4, 0x\3, /* idProduct */%p"
-       echo $VERSION | sed -n -e "s%^\([0-9a-f][0-9a-f]\)\([0-9a-f][0-9a-f]\)$%  0x\2, 0x\1, /* bcdDevice  */%p"
-      ) > usb-vid-pid-ver.c.inc
-      (echo 'static const uint8_t gnukStringVendor[] = {'
-       echo "  ${#VENDOR}*2+2,			/* bLength */"
-       echo "  USB_STRING_DESCRIPTOR_TYPE,	/* bDescriptorType */"
-       echo "  /* Manufacturer: \"$VENDOR\" */"
-       echo $VENDOR | sed -n -e "s/\(........\)/\1\n/gp" | sed -n -e "s/\(.\)/'\1', 0, /g" -e "s/^/  /" -e "s/ $//p"
-       echo '};'
-       echo
-       echo 'static const uint8_t gnukStringProduct[] = {'
-       echo "  ${#PRODUCT}*2+2,			/* bLength */"
-       echo "  USB_STRING_DESCRIPTOR_TYPE,	/* bDescriptorType */"
-       echo "  /* Product name: \"$PRODUCT\" */"
-       echo $PRODUCT | sed -n -e "s/\(........\)/\1\n/gp" | sed -n -e "s/\(.\)/'\1', 0, /g" -e "s/^/  /" -e "s/ $//p"
-       echo '};'
-       echo
-       echo 'const uint8_t gnukStringSerial[] = {'
-       echo "  ${#SERIALNO}*2+2+16,			/* bLength */"
-       echo "  USB_STRING_DESCRIPTOR_TYPE,	/* bDescriptorType */"
-       echo "  /* Serial number: \"$SERIALNO\" */"
-       echo $SERIALNO | sed -n -e "s/\(........\)/\1\n/gp" | sed -n -e "s/\(.\)/'\1', 0, /g" -e "s/^/  /" -e "s/ $//p"
-       echo "  0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,"
-       echo "  0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,"
-       echo '};'
-       echo
-       echo '#ifdef USB_STRINGS_FOR_GNUK'
-       echo 'static const uint8_t gnuk_revision_detail[] = {'
-       echo "  ${#REVISION}*2+2,			/* bLength */"
-       echo "  USB_STRING_DESCRIPTOR_TYPE,	/* bDescriptorType */"
-       echo "  /* revision detail: \"$REVISION\" */"
-       echo $REVISION | sed -n -e "s/\(........\)/\1\n/gp" | sed -n -e "s/\(.\)/'\1', 0, /g" -e "s/^/  /" -e "s/ $//p"
-       echo '};'
-       echo
-       echo 'static const uint8_t gnuk_config_options[] = {'
-       echo "  ${#CONFIG}*2+2,			/* bLength */"
-       echo "  USB_STRING_DESCRIPTOR_TYPE,	/* bDescriptorType */"
-       echo "  /* configure options: \"$CONFIG\" */"
-       echo $CONFIG | sed -n -e "s/\(........\)/\1\n/gp" | sed -n -e "s/\(.\)/'\1', 0, /g" -e "s/^/  /" -e "s/ $//p"
-       echo '};'
-       echo '#endif'
-       ) >usb-strings.c.inc
+      output_vid_pid_version > usb-vid-pid-ver.c.inc
+      output_vendor_product_serial_strings gnuk_ >usb-strings.c.inc
       exit 0
     fi
   done; exit 1) < ../GNUK_USB_DEVICE_ID
@@ -317,14 +332,15 @@ then
 fi
 
 if test "$sys1_compat" = "no"; then
-   # Disable when you are sure that it's sys version 2.0.
-   # Note that Gnuk 1.0 and Neug (until 0.06) uses sys version 1.0.
+   # Disable when you are sure that it's sys version 2.1.
+   # Note that Gnuk 1.0 and NeuG (until 0.06) uses sys version 1.0.
    # Disabling the compatibility, executable will be target independent,
    # assuming the clock initialization will be done by SYS (before entry).
    have_sys_h="-DHAVE_SYS_H"
 else
    have_sys_h=""
 fi
+
 
 sed -e "s%@HAVE_SYS_H@%$have_sys_h%" \
     -e "s%@DEBUG_MAKE_OPTION@%$DEBUG_MAKE_OPTION%" \
@@ -357,6 +373,6 @@ sed -e "s/@DEBUG_DEFINE@/$DEBUG_DEFINE/" \
     -e "s/@PINPAD_MORE_DEFINE@/$PINPAD_MORE_DEFINE/" \
     -e "s/@CERTDO_DEFINE@/$CERTDO_DEFINE/" \
     -e "s/@HID_CARD_CHANGE_DEFINE@/$HID_CARD_CHANGE_DEFINE/" \
-    -e "s/@SERIALNO_STR_LEN@/$SERIALNO_STR_LEN_DEFINE/" \
+    -e "s/@SERIALNO_STR_LEN_DEFINE@/$SERIALNO_STR_LEN_DEFINE/" \
 	< config.h.in > config.h
 exit 0

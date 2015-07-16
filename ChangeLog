@@ -2,6 +2,7 @@
 
 	* src/configure (FLASH_PAGE_SIZE, FLASH_SIZE, MEMORY_SIZE)
 	[sys1_compat]: Use safe values for common binary.
+	(TARGET_DEFINE): Remove.
 
 2015-07-15  Niibe Yutaka  <gniibe@fsij.org>
 
