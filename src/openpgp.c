@@ -620,12 +620,7 @@ cmd_pgp_gakp (void)
     {
       if (!ac_check_status (AC_ADMIN_AUTHORIZED))
 	GPG_SECURITY_FAILURE ();
-#ifdef KEYGEN_SUPPORT
-      /* Generate key pair */
       gpg_do_keygen (apdu.cmd_apdu_data[0]);
-#else
-      GPG_FUNCTION_NOT_SUPPORTED ();
-#endif
     }
 }
 

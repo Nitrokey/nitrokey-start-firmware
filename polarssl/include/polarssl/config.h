@@ -209,9 +209,7 @@
  *
  * Enable the RSA prime-number generation code.
  */
-#ifdef KEYGEN_SUPPORT
 #define POLARSSL_GENPRIME
-#endif
 
 /**
  * \def POLARSSL_FS_IO

@@ -1,3 +1,13 @@
+2015-07-18  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/configure (keygen): It's always enabled.
+	* src/openpgp-do.c (gpg_do_keygen): Support key generation.
+	* src/openpgp.c (cmd_pgp_gakp): Likewise.
+	* src/call-rsa.c (rsa_genkey): Likewise.
+	* src/random.c (random_gen):  Likewise.
+	* src/Makefile.in (KEYGEN_SUPPORT): Remove.
+	* polarssl/include/polarssl/config.h (POLARSSL_GENPRIME): Define.
+
 2015-07-16  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/configure (FLASH_PAGE_SIZE, FLASH_SIZE, MEMORY_SIZE)

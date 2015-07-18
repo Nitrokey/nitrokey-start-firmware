@@ -204,7 +204,6 @@ rsa_verify (const uint8_t *pubkey, int pubkey_len,
 
 #define RSA_EXPONENT 0x10001
 
-#ifdef KEYGEN_SUPPORT
 uint8_t *
 rsa_genkey (int pubkey_len)
 {
@@ -245,4 +244,3 @@ rsa_genkey (int pubkey_len)
   else
     return p_q_modulus;
 }
-#endif

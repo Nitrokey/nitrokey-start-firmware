@@ -2030,7 +2030,6 @@ gpg_do_write_simple (uint8_t nr, const uint8_t *data, int size)
     *do_data_p = NULL;
 }
 
-#ifdef KEYGEN_SUPPORT
 void
 gpg_do_keygen (uint8_t kk_byte)
 {
@@ -2088,4 +2087,3 @@ gpg_do_keygen (uint8_t kk_byte)
 
   gpg_do_public_key (kk_byte);
 }
-#endif

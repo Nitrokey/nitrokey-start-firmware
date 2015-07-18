@@ -1,7 +1,8 @@
 /*
  * random.c -- get random bytes
  *
- * Copyright (C) 2010, 2011, 2012, 2013 Free Software Initiative of Japan
+ * Copyright (C) 2010, 2011, 2012, 2013, 2015
+ *               Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
  * This file is a part of Gnuk, a GnuPG USB Token implementation.
@@ -23,8 +24,6 @@
 
 #include <stdint.h>
 #include <string.h>
-
-#include "config.h"
 
 #include "gnuk.h"
 #include "neug.h"
@@ -85,7 +84,6 @@ random_get_salt (uint8_t *p)
 }
 
 
-#ifdef KEYGEN_SUPPORT
 /*
  * Random byte iterator
  */
@@ -120,4 +118,3 @@ random_gen (void *arg, unsigned char *out, size_t out_len)
 
   return 0;
 }
-#endif
