@@ -1,3 +1,9 @@
+2015-07-20  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/openpgp-do.c (gpg_do_keygen): Support ECC.
+	* src/call-ec.c (ecc_check_secret): New.
+	* src/ecc.c (check_secret): New.
+
 2015-07-18  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/configure (keygen): It's always enabled.

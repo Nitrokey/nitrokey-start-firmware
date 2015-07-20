@@ -124,3 +124,20 @@ FUNC(ecdh_decrypt) (const uint8_t *input, uint8_t *output,
 
   return r;
 }
+
+
+/**
+ * @brief Check if a secret d0 is valid or not
+ *
+ * @param D0	scalar D0: secret
+ * @param D1	scalar D1: secret candidate N-D0
+ *
+ * Return 0 on error.
+ * Return -1 when D1 should be used as the secret
+ * Return 1 when D0 should be used as the secret
+ */
+int
+FUNC(ecc_check_secret) (const uint8_t *d0, uint8_t *d1)
+{
+  return FUNC(check_secret) ((const bn256 *)d0, (bn256 *)d1);
+}

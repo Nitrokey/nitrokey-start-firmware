@@ -1,7 +1,7 @@
 /*
  * openpgp-do.c -- OpenPGP card Data Objects (DO) handling
  *
- * Copyright (C) 2010, 2011, 2012, 2013, 2014
+ * Copyright (C) 2010, 2011, 2012, 2013, 2014, 2015
  *               Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
@@ -2034,11 +2034,14 @@ void
 gpg_do_keygen (uint8_t kk_byte)
 {
   enum kind_of_key kk = kkb_to_kk (kk_byte);
-  int pubkey_len = gpg_get_algo_attr_key_size (kk, GPG_KEY_PUBLIC);
+  int attr = gpg_get_algo_attr (kk);;
+  int prvkey_len = gpg_get_algo_attr_key_size (kk, GPG_KEY_PRIVATE);
   const uint8_t *keystring_admin;
-  uint8_t *p_q_modulus;
-  const uint8_t *p_q;
-  const uint8_t *modulus;
+  uint8_t *p_q_modulus = NULL;
+  uint8_t d[64];
+  const uint8_t *rnd;
+  const uint8_t *prv;
+  const uint8_t *pubkey;
   int r;
 
   DEBUG_INFO ("Keygen\r\n");
@@ -2049,19 +2052,85 @@ gpg_do_keygen (uint8_t kk_byte)
   else
     keystring_admin = NULL;
 
-  p_q_modulus = rsa_genkey (pubkey_len);
-  if (p_q_modulus == NULL)
+  if (attr == ALGO_RSA2K || attr == ALGO_RSA4K)
     {
-      GPG_MEMORY_FAILURE ();
+      p_q_modulus = rsa_genkey (prvkey_len);
+      if (p_q_modulus == NULL)
+	{
+	  GPG_MEMORY_FAILURE ();
+	  return;
+	}
+
+      prv = p_q_modulus;
+      pubkey = p_q_modulus + prvkey_len;
+    }
+  else if (attr == ALGO_NISTP256R1 || attr == ALGO_SECP256K1)
+    {
+      uint8_t d1[32];
+      const uint8_t *p;
+      int i, r;
+
+      rnd = NULL;
+      do
+	{
+	  if (rnd)
+	    random_bytes_free (rnd);
+	  rnd = random_bytes_get ();
+	  if (attr == ALGO_NISTP256R1)
+	    r = ecc_check_secret_p256r1 (rnd, d1);
+	  else
+	    r = ecc_check_secret_p256k1 (rnd, d1);
+	}
+      while (r == 0);
+
+      /* Convert it to big endian */
+
+      if (r < 0)
+	p = (const uint8_t *)d1;
+      else
+	p = rnd;
+      for (i = 0; i < 32; i++)
+	d[32 - i - 1] = p[i];
+
+      random_bytes_free (rnd);      
+
+      prv = d;
+      pubkey = NULL; 
+    }
+  else if (attr == ALGO_ED25519)
+    {
+      rnd = random_bytes_get ();
+      sha512 (rnd, 32, d);
+      random_bytes_free (rnd);
+      d[0] &= 248;
+      d[31] &= 127;
+      d[31] |= 64;
+      prv = d;
+      pubkey = NULL; 
+    }
+  else if (attr == ALGO_CURVE25519)
+    {
+      rnd = random_bytes_get ();
+      memcpy (d, rnd, 32);
+      random_bytes_free (rnd);
+      d[0] &= 248;
+      d[31] &= 127;
+      d[31] |= 64;
+      prv = d;
+      pubkey = NULL; 
+    }
+  else
+    {
+      GPG_CONDITION_NOT_SATISFIED ();
       return;
     }
 
-  p_q = p_q_modulus;
-  modulus = p_q_modulus + pubkey_len;
-
-  r = gpg_do_write_prvkey (kk, p_q, pubkey_len, keystring_admin, modulus);
-  memset (p_q_modulus, 0, pubkey_len * 2);
-  free (p_q_modulus);
+  r = gpg_do_write_prvkey (kk, prv, prvkey_len, keystring_admin, pubkey);
+  if (p_q_modulus)
+    {
+      memset (p_q_modulus, 0, prvkey_len * 2);
+      free (p_q_modulus);
+    }
   if (r < 0)
     {
       GPG_ERROR ();

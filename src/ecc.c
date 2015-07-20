@@ -1,7 +1,8 @@
 /*                                                    -*- coding: utf-8 -*-
  * ecc.c - Elliptic curve over GF(prime)
  *
- * Copyright (C) 2011, 2013, 2014 Free Software Initiative of Japan
+ * Copyright (C) 2011, 2013, 2014, 2015
+ *               Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
  * This file is a part of Gnuk, a GnuPG USB Token implementation.
@@ -365,4 +366,33 @@ FUNC(ecdsa) (bn256 *r, bn256 *s, const bn256 *z, const bn256 *d)
 
 #undef tmp_k
 #undef borrow
+}
+
+
+/**
+ * @brief Check if a secret d0 is valid or not
+ *
+ * @param D0	scalar D0: secret
+ * @param D1	scalar D1: secret candidate N-D0
+ *
+ * Return 0 on error.
+ * Return -1 when D1 should be used as the secret
+ * Return 1 when D0 should be used as the secret
+ */
+int
+FUNC(check_secret) (const bn256 *d0, bn256 *d1)
+{
+  ac Q0[1], Q1[1];
+
+  if (bn256_is_zero (d0) || bn256_sub (d1, N, d0) <= 0)
+    /* == 0 or >= N, it's not valid.  */
+    return 0;
+
+  FUNC(compute_kG) (Q0, d0);
+  FUNC(compute_kG) (Q1, d1);
+
+  /*
+   * Jivsov compliant key check
+   */
+  return bn256_cmp (Q1[0].y, Q0[0].y);
 }
