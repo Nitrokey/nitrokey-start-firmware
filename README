@@ -1,24 +1,29 @@
 Gnuk - An Implementation of USB Cryptographic Token for GnuPG
 
-							  Version 1.1.5
-							     2015-06-03
+							  Version 1.1.6
+							     2015-07-21
 							   Niibe Yutaka
 				      Free Software Initiative of Japan
 
 Warning
 =======
 
-This is another experimental release of Gnuk, version 1.1.5, which has
+This is another experimental release of Gnuk, version 1.1.6, which has
 incompatible changes to Gnuk 1.0.x.  Specifically, it now supports
 overriding key import, but importing keys (or generating keys) results
 password reset.  Please update your documentation for Gnuk Token, so
 that the instruction of importing keys won't cause any confusion.  It
-has supports of ECDSA (with NIST P256 and secp256k1) and EdDSA with
-EdDSA, but this feature is pretty much experimental, and it requires
-development version of GnuPG with newest version of libgcrypt.  You
-will not able to keep using EdDSA keys, as the key format is subject
-to change.  It also support RSA-4096 experimentally, but users should
-know that it takes more than 8 second to sign/decrypt.
+has supports of ECDSA (with NIST P256 and secp256k1), EdDSA, and ECDH
+(with NIST P256, secp256k1, and Curve25519), but this ECC feature is
+pretty much experimental, and it requires development version of GnuPG
+with newest version of libgcrypt (Further, for Curve25519, it requires
+additional patches by me).
+
+It also support RSA-4096 experimentally, but users should know that it
+takes more than 8 second to sign/decrypt.
+
+You will not able to keep using Curve25519 keys, as the key format is
+subject to change.
 
 
 What's Gnuk?
@@ -114,17 +119,22 @@ Ab: That's because gnome-keyring-daemon interferes GnuPG.  Type:
     and at the tab of "Startup Programs", disable check buttons for
     "GPG Password Agent" and "SSH Key Agent".
 
-Qc: Do you know a good SWD debugger to connect FST-01 or something?
-Ac: ST-Link/V2 is cheap one.  We have a tool/stlinkv2.py as flash ROM
+Qc: With GNOME 3.x (x >= 8?), I can't use Gnuk Token at all.  Why?
+Ac: That's because gnome-keyring-daemon interferes GnuPG.  Please
+    disable the invocation of gnome-keyring-daemon.  In Debian
+    wheezy, it's in the files /etc/xdg/autostart/gnome-keyring-ssh.desktop
+    and /etc/xdg/autostart/gnome-keyring-gpg.desktop.
+    We have a line something like:
+
+        OnlyShowIn=GNOME;Unity;MATE;
+
+    Please edit this line to:
+
+        OnlyShowIn=
+
+Qd: Do you know a good SWD debugger to connect FST-01 or something?
+Ad: ST-Link/V2 is cheap one.  We have a tool/stlinkv2.py as flash ROM
     writer program.
-
-Qd: With GNOME 3.x (x >= 8?), I can't use Gnuk Token at all.  Why?
-Ad: Please set the configration variable OnlyShowIn as none.  Like:
-
-	OnlyShowIn=
-
-    In the files of /etc/xdg/autostart/gnome-keyring-gpg.desktop and
-                    /etc/xdg/autostart/gnome-keyring-ssh.desktop
 
 
 
@@ -135,10 +145,11 @@ Release notes
 This is third experimental release in version 1.1 series of Gnuk.
 
 While it is daily use by its developer, some newly introduced features
-(including ECDSA/EdDSA, key generation and firmware upgrade) should be
-considered experimental.  ECDSA/EdDSA is really experimental.
-Further, EdDSA is much experimental.  You won't be able to keep using
-the EdDSA key, as the key format of GnuPG is subject to change.
+(including ECDSA/EdDSA/ECDH, key generation and firmware upgrade)
+should be considered experimental.  ECDSA/EdDSA/ECDH is really
+experimental.  Further, ECDH on Curve25519 is much experimental.  You
+won't be able to keep using the key, since the key format of GnuPG is
+not defined and it's subject to change.
 
 Tested features are:
 
@@ -229,14 +240,14 @@ External source code
 
 Gnuk is distributed with external source code.
 
-* chopstx/  -- Chopstx 0.04
+* chopstx/  -- Chopstx 0.07
 
   We use Chopstx as the kernel for Gnuk.
 
   Chopstx is distributed under GPLv3+ (with a special exception).
 
 
-* polarssl/  -- PolarSSL 1.2.10
+* polarssl/  -- based on PolarSSL 1.2.10 (now mbedTLS)
 
   Souce code taken from: http://polarssl.org/
 
@@ -388,11 +399,10 @@ Flying Stone Tiny 01
 
 If you are using Flying Stone Tiny 01, you need a SWD writer.
 
-OpenOCD 0.6.1 now supports ST-Link/V2.  We can use it:
+OpenOCD 0.9 now supports ST-Link/V2.  We can use it:
 
   $ openocd -f interface/stlink-v2.cfg -f target/stm32f1x_stlink.cfg
 
-But it doesn't support option bytes handling (protection) yet.
 
 
 STBee

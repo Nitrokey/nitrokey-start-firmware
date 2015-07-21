@@ -2,15 +2,26 @@ Gnuk NEWS - User visible changes
 
 * Major changes in Gnuk 1.1.6
 
-  Released 2015-??-??
+  Released 2015-07-21
 
 ** USB SerialNumber String
 The way to determine a serial number of Gnuk Token has been changed.
 It uses the 96-bit unique bits of MCU, but the portion for use is
 changed.
 
-** STM32 Primer2 support and CQ STARM support are back.
+** Upgrade of Chopstx
+We use Chopstx 0.07, which supports STM32 Primer2 and CQ STARM, too.
 
+** Experimental Curve25519 support.
+
+Gnuk can support Curve25519 (for deecryption).  Note that this is
+pretty much experimental, and subjects to change.  The low level code
+is somehow stable, but there are no consensus in higer level.
+Especially, OID in the key attribute would be changed in future.
+
+** No --enable-keygen option
+It is now standard feature included always.  Note that it doesn't mean
+this feature is stable now.  It is becoming stable, hopefully.
 
 
 * Major changes in Gnuk 1.1.5

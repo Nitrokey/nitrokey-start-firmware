@@ -1,3 +1,7 @@
+2015-07-21  Niibe Yutaka  <gniibe@fsij.org>
+
+	* VERSION: 1.1.6.
+
 2015-07-20  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/openpgp-do.c (gpg_do_keygen): Support ECC.
