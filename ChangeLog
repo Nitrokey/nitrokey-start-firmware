@@ -1,3 +1,7 @@
+2015-07-23  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/configure (nl): New.  Follow the change of NeuG.
+
 2015-07-21  Niibe Yutaka  <gniibe@fsij.org>
 
 	* VERSION: 1.1.6.
