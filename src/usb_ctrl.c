@@ -63,10 +63,7 @@ vcom_port_data_setup (uint8_t req, uint8_t req_no, uint16_t value)
   if (USB_SETUP_GET (req))
     {
       if (req_no == USB_CDC_REQ_GET_LINE_CODING)
-	{
-	  usb_lld_set_data_to_send (&line_coding, sizeof(line_coding));
-	  return USB_SUCCESS;
-	}
+	return usb_lld_answer_control (&line_coding, sizeof(line_coding));
     }
   else  /* USB_SETUP_SET (req) */
     {
@@ -272,10 +269,7 @@ usb_cb_setup (uint8_t req, uint8_t req_no,
       if (USB_SETUP_GET (req))
 	{
 	  if (req_no == USB_FSIJ_GNUK_MEMINFO)
-	    {
-	      usb_lld_set_data_to_send (mem_info, sizeof (mem_info));
-	      return USB_SUCCESS;
-	    }
+	    return usb_lld_answer_control (mem_info, sizeof (mem_info));
 	}
       else /* SETUP_SET */
 	{
@@ -322,16 +316,10 @@ usb_cb_setup (uint8_t req, uint8_t req_no,
 	  if (USB_SETUP_GET (req))
 	    {
 	      if (req_no == USB_CCID_REQ_GET_CLOCK_FREQUENCIES)
-		{
-		  usb_lld_set_data_to_send (freq_table, sizeof (freq_table));
-		  return USB_SUCCESS;
-		}
+		return usb_lld_answer_control (freq_table, sizeof (freq_table));
 	      else if (req_no == USB_CCID_REQ_GET_DATA_RATES)
-		{
-		  usb_lld_set_data_to_send (data_rate_table,
-					    sizeof (data_rate_table));
-		  return USB_SUCCESS;
-		}
+		return usb_lld_answer_control (data_rate_table,
+					       sizeof (data_rate_table));
 	    }
 	  else
 	    {
@@ -347,16 +335,14 @@ usb_cb_setup (uint8_t req, uint8_t req_no,
 	  switch (req_no)
 	    {
 	    case USB_HID_REQ_GET_IDLE:
-	      usb_lld_set_data_to_send (&hid_idle_rate, 1);
-	      return USB_SUCCESS;
+	      return usb_lld_answer_control (&hid_idle_rate, 1);
 	    case USB_HID_REQ_SET_IDLE:
 	      usb_lld_set_data_to_recv (&hid_idle_rate, 1);
 	      return USB_SUCCESS;
 
 	    case USB_HID_REQ_GET_REPORT:
 	      /* Request of LED status and key press */
-	      usb_lld_set_data_to_send (&hid_report, 2);
-	      return USB_SUCCESS;
+	      return usb_lld_answer_control (&hid_report, 2);
 
 	    case USB_HID_REQ_SET_REPORT:
 	      /* Received LED set request */
@@ -384,10 +370,7 @@ usb_cb_setup (uint8_t req, uint8_t req_no,
 	  if (USB_SETUP_GET (req))
 	    {
 	      if (req_no == MSC_GET_MAX_LUN_COMMAND)
-		{
-		  usb_lld_set_data_to_send (lun_table, sizeof (lun_table));
-		  return USB_SUCCESS;
-		}
+		return usb_lld_answer_control (lun_table, sizeof (lun_table));
 	    }
 	  else
 	    if (req_no == MSC_MASS_STORAGE_RESET_COMMAND)
@@ -495,9 +478,7 @@ int usb_cb_interface (uint8_t cmd, uint16_t interface, uint16_t alt)
 	}
 
     case USB_GET_INTERFACE:
-      usb_lld_write (ENDP0, &zero, 1);
-      usb_lld_set_data_to_send (NULL, 1);
-      return USB_SUCCESS;
+      return usb_lld_answer_control (&zero, 1);
 
     default:
     case USB_QUERY_INTERFACE:

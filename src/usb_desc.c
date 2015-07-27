@@ -351,25 +351,16 @@ usb_cb_get_descriptor (uint8_t rcp, uint8_t desc_type, uint8_t desc_index,
   if (rcp == DEVICE_RECIPIENT)
     {
       if (desc_type == DEVICE_DESCRIPTOR)
-	{
-	  usb_lld_set_data_to_send (gnukDeviceDescriptor,
-				    sizeof (gnukDeviceDescriptor));
-	  return USB_SUCCESS;
-	}
+	return usb_lld_answer_control (gnukDeviceDescriptor,
+				       sizeof (gnukDeviceDescriptor));
       else if (desc_type == CONFIG_DESCRIPTOR)
-	{
-	  usb_lld_set_data_to_send (gnukConfigDescriptor,
-				    sizeof (gnukConfigDescriptor));
-	  return USB_SUCCESS;
-	}
+	return usb_lld_answer_control (gnukConfigDescriptor,
+				       sizeof (gnukConfigDescriptor));
       else if (desc_type == STRING_DESCRIPTOR)
 	{
 	  if (desc_index < NUM_STRING_DESC)
-	    {
-	      usb_lld_set_data_to_send (string_descriptors[desc_index].desc,
-					string_descriptors[desc_index].size);
-	      return USB_SUCCESS;
-	    }
+	    return usb_lld_answer_control (string_descriptors[desc_index].desc,
+					   string_descriptors[desc_index].size);
 	  else if (desc_index == NUM_STRING_DESC)
 	    {
 	      uint8_t usbbuf[64];
@@ -388,9 +379,7 @@ usb_cb_get_descriptor (uint8_t rcp, uint8_t desc_type, uint8_t desc_index,
 	      usbbuf[1] = USB_STRING_DESCRIPTOR_TYPE;
 	      if (len > length)
 		len = length;
-	      usb_lld_write (ENDP0, usbbuf, len);
-	      usb_lld_set_data_to_send (NULL, len);
-	      return USB_SUCCESS;
+	      return usb_lld_answer_control (usbbuf, len);
 	    }
 	}
     }
@@ -400,16 +389,9 @@ usb_cb_get_descriptor (uint8_t rcp, uint8_t desc_type, uint8_t desc_index,
       if (index == 1)
 	{
 	  if (desc_type == USB_DT_HID)
-	    {
-	      usb_lld_set_data_to_send (gnukConfigDescriptor+ICC_TOTAL_LENGTH+9,
-					9);
-	      return USB_SUCCESS;
-	    }
+	    return usb_lld_answer_control (gnukConfigDescriptor+ICC_TOTAL_LENGTH+9, 9);
 	  else if (desc_type == USB_DT_REPORT)
-	    {
-	      usb_lld_set_data_to_send (hid_report_desc, HID_REPORT_DESC_SIZE);
-	      return USB_SUCCESS;
-	    }
+	    return usb_lld_answer_control (hid_report_desc, HID_REPORT_DESC_SIZE);
 	}
       else
 #else

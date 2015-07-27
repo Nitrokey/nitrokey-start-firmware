@@ -488,11 +488,8 @@ static int std_none (uint8_t req,
 static int std_get_status (uint8_t req,
 			   uint16_t value, uint16_t index, uint16_t length)
 {
-  static uint16_t status_info;
   uint8_t rcp = req & RECIPIENT;
-
-  status_info = 0;		/* Reset Status Information */
-  data_p->addr = (uint8_t *)&status_info;
+  uint16_t status_info = 0;
 
   if (value != 0 || length != 2 || (index >> 8) != 0
       || (req & REQUEST_DIR) == 0)
@@ -517,8 +514,7 @@ static int std_get_status (uint8_t req,
 	  else /* Self-powered */
 	    status_info &= ~1;
 
-	  data_p->len = 2;
-	  return USB_SUCCESS;
+	  return usb_lld_answer_control (&status_info, 2);
 	}
     }
   else if (rcp == INTERFACE_RECIPIENT)
@@ -532,8 +528,7 @@ static int std_get_status (uint8_t req,
       if (r != USB_SUCCESS)
 	return USB_UNSUPPORT;
 
-      data_p->len = 2;
-      return USB_SUCCESS;
+      return usb_lld_answer_control (&status_info, 2);
     }
   else if (rcp == ENDPOINT_RECIPIENT)
     {
@@ -560,8 +555,7 @@ static int std_get_status (uint8_t req,
 	    status_info |= 1; /* OUT Endpoint stalled */
 	}
 
-	data_p->len = 2;
-	return USB_SUCCESS;
+      return usb_lld_answer_control (&status_info, 2);
     }
 
   return USB_UNSUPPORT;
@@ -712,11 +706,7 @@ static int std_get_configuration (uint8_t req, uint16_t value,
 
   (void)value;  (void)index;  (void)length;
   if (rcp == DEVICE_RECIPIENT)
-    {
-      data_p->addr = &dev_p->current_configuration;
-      data_p->len = 1;
-      return USB_SUCCESS;
-    }
+    return usb_lld_answer_control (&dev_p->current_configuration, 1);
 
   return USB_UNSUPPORT;
 }
@@ -845,30 +835,7 @@ static void handle_setup0 (void)
   else
     {
       if (USB_SETUP_GET (ctrl_p->bmRequestType))
-	{
-	  uint32_t len = ctrl_p->wLength;
-
-	  /* Restrict the data length to be the one host asks for */
-	  if (data_p->len > len)
-	    data_p->len = len;
-
-	  if (data_p->len != 0 && (data_p->len % USB_MAX_PACKET_SIZE) == 0)
-	    data_p->require_zlp = TRUE;
-	  else
-	    data_p->require_zlp = FALSE;
-
-	  if (data_p->addr == NULL)
-	    {
-	      /* usb_lld_wite was called already by the setup callback.  */
-	      dev_p->state = LAST_IN_DATA;
-	      data_p->len = 0;
-	    }
-	  else
-	    {
-	      dev_p->state = IN_DATA;
-	      handle_datastage_in ();
-	    }
-	}
+	;
       else if (ctrl_p->wLength == 0)
 	{
 	  dev_p->state = WAIT_STATUS_IN;
@@ -1121,7 +1088,7 @@ void usb_lld_set_feature (uint8_t feature)
   dev_p->current_feature = feature;
 }
 
-void usb_lld_set_data_to_send (const void *p, size_t len)
+void usb_lld_set_data_to_recv (const void *p, size_t len)
 {
   data_p->addr = (uint8_t *)p;
   data_p->len = len;
@@ -1198,4 +1165,52 @@ void usb_lld_from_pmabuf (void *dst, uint16_t addr, size_t n)
       w = *p;
       *d = (w & 0xff);
     }
+}
+
+
+/*
+ * BUF: Pointer to data memory.  Data memory should not be allocated
+ *      on stack when BUFLEN > USB_MAX_PACKET_SIZE.
+ *
+ * BUFLEN: size of the data.
+ */
+int
+usb_lld_answer_control (const void *buf, size_t buflen)
+{
+  uint32_t len_asked = ctrl_p->wLength;
+  uint32_t len;
+
+  data_p->addr = (void *)buf;
+  data_p->len = buflen;
+
+  /* Restrict the data length to be the one host asks for */
+  if (data_p->len > len_asked)
+    data_p->len = len_asked;
+
+  if (data_p->len != 0 && (data_p->len % USB_MAX_PACKET_SIZE) == 0)
+    data_p->require_zlp = TRUE;
+  else
+    data_p->require_zlp = FALSE;
+
+  if (data_p->len < USB_MAX_PACKET_SIZE)
+    {
+      len = data_p->len;
+      dev_p->state = LAST_IN_DATA;
+    }
+  else
+    {
+      len = USB_MAX_PACKET_SIZE;
+      dev_p->state = IN_DATA;
+    }
+
+  if (len)
+    {
+      usb_lld_to_pmabuf (data_p->addr, st103_get_tx_addr (ENDP0), len);
+      data_p->len -= len;
+      data_p->offset += len;
+    }
+
+  st103_set_tx_count (ENDP0, len);
+  st103_ep_set_tx_status (ENDP0, EP_TX_VALID);
+  return USB_SUCCESS;
 }
