@@ -163,7 +163,6 @@ int flash_write_binary (uint8_t file_id, const uint8_t *data,
 
 /* Linker set these two symbols */
 extern uint8_t ch_certificate_start;
-extern uint8_t random_bits_start;
 
 #define FIRMWARE_UPDATE_KEY_CONTENT_LEN 256	/* RSA-2048 (p and q) */
 

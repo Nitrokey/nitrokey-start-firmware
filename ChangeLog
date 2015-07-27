@@ -1,3 +1,8 @@
+2015-07-24  Niibe Yutaka  <gniibe@fsij.org>
+
+	* tool/gnuk_put_binary.py: Remove.
+	* tool/gnuk_remove_keys.py: Remove.
+
 2015-07-23  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/configure (nl): New.  Follow the change of NeuG.

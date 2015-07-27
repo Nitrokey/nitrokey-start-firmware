@@ -37,9 +37,3 @@ The tool ``../tool/gnuk_put_binary_libusb.py`` examines  environment variable of
   Configuration:  1
   Interface:  0
   d2 76 00 01 24 01 02 00 f5 17 00 00 00 01 00 00
-
-
-The example above is the case of libusb version.
-
-Use the tool ``../tool/gnuk_put_binary.py`` instead , for PC/SC Lite.
-You need PyScard for this.

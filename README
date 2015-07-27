@@ -208,6 +208,19 @@ Note that you need pinpad support for GnuPG to use PIN-pad enabled
 Gnuk.  The pinpad support for GnuPG is only available in version 2.
 
 
+Build system and Host system
+============================
+
+Makefile is written for GNU make.  You need Bash 4.x for configure.
+
+If your bash is not installed as /bin/bash, you need to run configure
+script prepending 'bash' before './configure'.
+
+Some tools are written in Python.  If your Python is not installed as
+/usr/bin/python, please prepend 'python' for your command invocation.
+Python 2.7 and PyUSB 0.4.3 is assumed.
+
+
 Souce code
 ==========
 
@@ -367,7 +380,8 @@ Here, you need to specify USB vendor ID and product ID.  For FSIJ's,
 it's: --vidpid=234b:0000 .  Please read section 'USB vendor ID and
 product ID' above.
 
-Type:
+
+Then, type:
 
   $ make
 
@@ -459,7 +473,7 @@ In case of PyUSB tool, you need to stop pcscd.
 
 If you use fixed serial number in the file 'GNUK_SERIAL_NUMBER', you can do:
 
-  $ EMAIL=<YOUR-EMAIL-ADDRESS> ../tool/gnuk_put_binary.py -s ../GNUK_SERIAL_NUMBER
+  $ EMAIL=<YOUR-EMAIL-ADDRESS> ../tool/gnuk_put_binary_usb.py -s ../GNUK_SERIAL_NUMBER
   Writing serial number
   ...
 
@@ -467,7 +481,7 @@ If you use fixed serial number in the file 'GNUK_SERIAL_NUMBER', you can do:
 
 If you have card holder certificate binary file, you can do:
 
-  $ ../tool/gnuk_put_binary.py ../../<YOUR-CERTIFICATE>.bin
+  $ ../tool/gnuk_put_binary_usb.py ../../<YOUR-CERTIFICATE>.bin
   ../../<YOUR-CERTIFICATE>.bin: <LENGTH-OF-YOUR-CERTIFICATE>
   Updating card holder certificate
   ...

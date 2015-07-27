@@ -489,11 +489,13 @@ static int
 do_hist_bytes (uint16_t tag, int with_tag)
 {
   /*
-   * Currently, we support no life cycle management.
-   * In case of Gnuk, user could flash the MCU, instead.
-   * Thus, just return the template as is.
+   * Currently, we support no life cycle management.  In case of Gnuk,
+   * user could flash the MCU with SWD/JTAG, instead.  It is also
+   * possible for user to do firmware upgrade through USB.
    *
-   * In future (when Gnuk will be onn the real smartcard),
+   * Thus, here, it just returns the template as is.
+   *
+   * In future (when Gnuk will be on the real smartcard),
    * we can support life cycle management by implementing
    * TERMINATE DF / ACTIVATE FILE and fix code around here.
    */
