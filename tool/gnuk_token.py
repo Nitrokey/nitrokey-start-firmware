@@ -68,10 +68,7 @@ class gnuk_token(object):
         if interface.interfaceSubClass != CCID_SUBCLASS:
             raise ValueError("Wrong interface sub class")
         self.__devhandle = device.open()
-        try:
-            self.__devhandle.setConfiguration(configuration)
-        except:
-            pass
+        self.__devhandle.setConfiguration(configuration.value)
         self.__devhandle.claimInterface(interface)
         self.__devhandle.setAltInterface(0)
 

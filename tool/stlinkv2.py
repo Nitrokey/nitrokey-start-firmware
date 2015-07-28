@@ -120,20 +120,20 @@ BLOCK_WRITE_TIMEOUT=80          # Increase this when you increase BLOCK_SIZE
 
 
 class TimeOutError(Exception):
-     def __init__(self, msg):
-         self.msg = msg
-     def __str__(self):
-         return repr(self.msg)
-     def __repr__(self):
-         return "TimeoutError(" + self.msg + ")"
+    def __init__(self, msg):
+        self.msg = msg
+    def __str__(self):
+        return repr(self.msg)
+    def __repr__(self):
+        return "TimeoutError(" + self.msg + ")"
 
 class OperationFailure(Exception):
-     def __init__(self, msg):
-         self.msg = msg
-     def __str__(self):
-         return repr(self.msg)
-     def __repr__(self):
-         return "OperationFailure(" + self.msg + ")"
+    def __init__(self, msg):
+        self.msg = msg
+    def __str__(self):
+        return repr(self.msg)
+    def __repr__(self):
+        return "OperationFailure(" + self.msg + ")"
 
 
 class stlinkv2(object):
@@ -148,10 +148,7 @@ class stlinkv2(object):
         if intf.interfaceClass != 0xff: # Vendor specific
             raise ValueError("Wrong interface class.", intf.interfaceClass)
         self.__devhandle = dev.open()
-        try:
-            self.__devhandle.setConfiguration(conf)
-        except:
-            pass
+        self.__devhandle.setConfiguration(conf.value)
         self.__devhandle.claimInterface(intf)
         # self.__devhandle.setAltInterface(0)  # This was not good for libusb-win32 with wrong arg intf, new correct value 0 would be OK
 
@@ -339,7 +336,7 @@ class stlinkv2(object):
     def option_bytes_write(self,addr,val):
         self.write_memory_u32(FLASH_KEYR, FLASH_KEY1)
         self.write_memory_u32(FLASH_KEYR, FLASH_KEY2)
-	self.write_memory_u32(FLASH_SR, FLASH_SR_EOP | FLASH_SR_WRPRTERR | FLASH_SR_PGERR)
+        self.write_memory_u32(FLASH_SR, FLASH_SR_EOP | FLASH_SR_WRPRTERR | FLASH_SR_PGERR)
 
         self.write_memory_u32(FLASH_OPTKEYR, FLASH_KEY1)
         self.write_memory_u32(FLASH_OPTKEYR, FLASH_KEY2)
@@ -363,13 +360,13 @@ class stlinkv2(object):
     def option_bytes_erase(self):
         self.write_memory_u32(FLASH_KEYR, FLASH_KEY1)
         self.write_memory_u32(FLASH_KEYR, FLASH_KEY2)
-	self.write_memory_u32(FLASH_SR, FLASH_SR_EOP | FLASH_SR_WRPRTERR | FLASH_SR_PGERR)
+        self.write_memory_u32(FLASH_SR, FLASH_SR_EOP | FLASH_SR_WRPRTERR | FLASH_SR_PGERR)
 
         self.write_memory_u32(FLASH_OPTKEYR, FLASH_KEY1)
         self.write_memory_u32(FLASH_OPTKEYR, FLASH_KEY2)
 
-	self.write_memory_u32(FLASH_CR, FLASH_CR_OPTER)
-	self.write_memory_u32(FLASH_CR, FLASH_CR_STRT | FLASH_CR_OPTER)
+        self.write_memory_u32(FLASH_CR, FLASH_CR_OPTER)
+        self.write_memory_u32(FLASH_CR, FLASH_CR_STRT | FLASH_CR_OPTER)
 
         i = 0
         while True:
@@ -381,7 +378,7 @@ class stlinkv2(object):
                 break
 
         self.write_memory_u32(FLASH_CR, FLASH_CR_LOCK)
-	if (status & FLASH_SR_EOP) == 0:
+        if (status & FLASH_SR_EOP) == 0:
             raise OperationFailure("option bytes erase")
 
     def flash_write_internal(self, addr, data, off, size):
@@ -404,7 +401,7 @@ class stlinkv2(object):
     def flash_write(self, addr, data):
         self.write_memory_u32(FLASH_KEYR, FLASH_KEY1)
         self.write_memory_u32(FLASH_KEYR, FLASH_KEY2)
-	self.write_memory_u32(FLASH_SR, FLASH_SR_EOP | FLASH_SR_WRPRTERR | FLASH_SR_PGERR)
+        self.write_memory_u32(FLASH_SR, FLASH_SR_EOP | FLASH_SR_WRPRTERR | FLASH_SR_PGERR)
 
         off = 0
         while True:
@@ -423,10 +420,10 @@ class stlinkv2(object):
     def flash_erase_all(self):
         self.write_memory_u32(FLASH_KEYR, FLASH_KEY1)
         self.write_memory_u32(FLASH_KEYR, FLASH_KEY2)
-	self.write_memory_u32(FLASH_SR, FLASH_SR_EOP | FLASH_SR_WRPRTERR | FLASH_SR_PGERR)
+        self.write_memory_u32(FLASH_SR, FLASH_SR_EOP | FLASH_SR_WRPRTERR | FLASH_SR_PGERR)
 
-	self.write_memory_u32(FLASH_CR, FLASH_CR_MER)
-	self.write_memory_u32(FLASH_CR, FLASH_CR_STRT | FLASH_CR_MER)
+        self.write_memory_u32(FLASH_CR, FLASH_CR_MER)
+        self.write_memory_u32(FLASH_CR, FLASH_CR_STRT | FLASH_CR_MER)
 
         i = 0
         while True:
@@ -440,18 +437,18 @@ class stlinkv2(object):
 
         self.write_memory_u32(FLASH_CR, FLASH_CR_LOCK)
 
-	if (status & FLASH_SR_EOP) == 0:
+        if (status & FLASH_SR_EOP) == 0:
             raise OperationFailure("flash erase all")
 
     def flash_erase_page(self, addr):
         self.write_memory_u32(FLASH_KEYR, FLASH_KEY1)
         self.write_memory_u32(FLASH_KEYR, FLASH_KEY2)
 
-	self.write_memory_u32(FLASH_SR, FLASH_SR_EOP | FLASH_SR_WRPRTERR | FLASH_SR_PGERR)
+        self.write_memory_u32(FLASH_SR, FLASH_SR_EOP | FLASH_SR_WRPRTERR | FLASH_SR_PGERR)
 
-	self.write_memory_u32(FLASH_CR, FLASH_CR_PER)
-	self.write_memory_u32(FLASH_AR, addr)
-	self.write_memory_u32(FLASH_CR, FLASH_CR_STRT | FLASH_CR_PER)
+        self.write_memory_u32(FLASH_CR, FLASH_CR_PER)
+        self.write_memory_u32(FLASH_AR, addr)
+        self.write_memory_u32(FLASH_CR, FLASH_CR_STRT | FLASH_CR_PER)
 
         i = 0
         while True:
@@ -464,7 +461,7 @@ class stlinkv2(object):
 
         self.write_memory_u32(FLASH_CR, FLASH_CR_LOCK)
 
-	if (status & FLASH_SR_EOP) == 0:
+        if (status & FLASH_SR_EOP) == 0:
             raise OperationFailure("flash page erase")
 
     def start(self):

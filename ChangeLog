@@ -1,5 +1,8 @@
 2015-07-28  Niibe Yutaka  <gniibe@fsij.org>
 
+	* tool/stlinkv2.py: Fix for Python3.
+	* tool/gpg_agent.py: Fix for Python3.
+
 	* src/usb-msc.c: Update from Fraucheky.
 
 	* src/usb_stm32f103.c (struct DATA_INFO): Remove offset.
