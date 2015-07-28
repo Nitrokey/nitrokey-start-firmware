@@ -26,6 +26,7 @@ from struct import *
 import sys, time
 import usb
 from colorama import init as colorama_init, Fore, Back, Style
+from array import array
 
 # INPUT: binary file
 
@@ -75,12 +76,9 @@ SPI1= 0x40013000
 def uint32(v):
     return v[0] + (v[1]<<8) + (v[2]<<16) + (v[3]<<24)
 
-prog_flash_write_body = "\x0D\x4A" + "\x0B\x48" + "\x0B\x49" + \
-    "\x09\x4C" + "\x01\x25" + "\x14\x26" + "\x00\x27" + "\x25\x61" + \
-    "\xC3\x5B" + "\xCB\x53" + "\xE3\x68" + "\x2B\x42" + "\xFC\xD1" + \
-    "\x33\x42" + "\x02\xD1" + "\x02\x37" + "\x97\x42" + "\xF5\xD1" + \
-    "\x00\x27" + "\x27\x61" + "\x00\xBE" + "\xC0\x46" + "\x00\x20\x02\x40" + \
-    "\x3C\x00\x00\x20"
+prog_flash_write_body = b"\x0D\x4A\x0B\x48\x0B\x49\x09\x4C\x01\x25\x14\x26\x00\x27\x25\x61" + \
+    b"\xC3\x5B\xCB\x53\xE3\x68\x2B\x42\xFC\xD1\x33\x42\x02\xD1\x02\x37\x97\x42\xF5\xD1" + \
+    b"\x00\x27\x27\x61\x00\xBE\xC0\x46\x00\x20\x02\x40\x3C\x00\x00\x20"
 #   .SRC_ADDR: 0x2000003C
 ## HERE comes: target_addr in 4-byte
 #   .TARGET_ADDR
@@ -90,11 +88,9 @@ prog_flash_write_body = "\x0D\x4A" + "\x0B\x48" + "\x0B\x49" + \
 def gen_prog_flash_write(addr,size):
     return prog_flash_write_body + pack("<I", addr) + pack("<I", size)
 
-prog_option_bytes_write_body = "\x0B\x48" + "\x0A\x49" + "\x08\x4A" + \
-     "\x10\x23" + "\x01\x24" + "\x13\x61" + "\x08\x80" + "\xD0\x68" + \
-     "\x20\x42" + "\xFC\xD1" + "\x02\x31" + "\xFF\x20" + "\x08\x80" + \
-     "\xD0\x68" + "\x20\x42" + "\xFC\xD1" + "\x00\x20" + "\x10\x61" + \
-     "\x00\xBE" + "\xC0\x46" + "\x00\x20\x02\x40"
+prog_option_bytes_write_body = b"\x0B\x48\x0A\x49\x08\x4A\x10\x23\x01\x24\x13\x61\x08\x80\xD0\x68" + \
+     b"\x20\x42\xFC\xD1\x02\x31\xFF\x20\x08\x80\xD0\x68\x20\x42\xFC\xD1\x00\x20\x10\x61" + \
+     b"\x00\xBE\xC0\x46\x00\x20\x02\x40"
 ## HERE comes: target_addr in 4-byte
 #   .TARGET_ADDR
 ## HERE comes: option_bytes in 4-byte
@@ -103,9 +99,8 @@ prog_option_bytes_write_body = "\x0B\x48" + "\x0A\x49" + "\x08\x4A" + \
 def gen_prog_option_bytes_write(addr,val):
     return prog_option_bytes_write_body + pack("<I", addr) + pack("<I", val)
 
-prog_blank_check_body = "\x04\x49" + "\x05\x4A" + "\x08\x68" + "\x01\x30" + \
-    "\x02\xD1" + "\x04\x31" + "\x91\x42" + "\xF9\xD1" + "\x00\xBE" + \
-    "\xC0\x46" + "\x00\x00\x00\x08"
+prog_blank_check_body = b"\x04\x49\x05\x4A\x08\x68\x01\x30\x02\xD1\x04\x31\x91\x42\xF9\xD1\x00\xBE\xC0\x46" + \
+                        b"\x00\x00\x00\x08"
 ## HERE comes: end_addr in 4-byte
 # .END_ADDR
 
@@ -149,7 +144,7 @@ class stlinkv2(object):
             raise ValueError("Wrong interface class.", intf.interfaceClass)
         self.__devhandle = dev.open()
         self.__devhandle.setConfiguration(conf.value)
-        self.__devhandle.claimInterface(intf)
+        self.__devhandle.claimInterface(intf.interfaceNumber)
         # self.__devhandle.setAltInterface(0)  # This was not good for libusb-win32 with wrong arg intf, new correct value 0 would be OK
 
     def shutdown(self):
@@ -166,76 +161,76 @@ class stlinkv2(object):
             self.__devhandle.bulkWrite(self.__bulkout, data, self.__timeout)
 
     def stl_mode(self):
-        v = self.execute_get("\xf5\x00", 2)
+        v = self.execute_get(b"\xf5\x00", 2)
         return (v[1] * 256 + v[0])
 
     def exit_from_debug_swd(self):
-        self.execute_put("\xf2\x21\x00")
+        self.execute_put(b"\xf2\x21\x00")
         time.sleep(1)
 
     def exit_from_dfu(self):
-        self.execute_put("\xf3\x07\x00")
+        self.execute_put(b"\xf3\x07\x00")
         time.sleep(1)
 
     def exit_from_debug_swim(self):
-        self.execute_put("\xf4\x01\x00")
+        self.execute_put(b"\xf4\x01\x00")
         time.sleep(1)
 
     def enter_swd(self):
-        self.execute_put("\xf2\x20\xa3")
+        self.execute_put(b"\xf2\x20\xa3")
         time.sleep(1)
 
     def get_status(self):
-        v = self.execute_get("\xf2\x01\x00", 2)
+        v = self.execute_get(b"\xf2\x01\x00", 2)
         return (v[1] << 8) + v[0]
     # RUN:128, HALT:129
 
     def enter_debug(self):
-        v = self.execute_get("\xf2\x02\x00", 2)
+        v = self.execute_get(b"\xf2\x02\x00", 2)
         return (v[1] << 8) + v[0]
 
     def exit_debug(self):
-        self.execute_put("\xf2\x21\x00")
+        self.execute_put(b"\xf2\x21\x00")
 
     def reset_sys(self):
-        v = self.execute_get("\xf2\x03\x00", 2)
+        v = self.execute_get(b"\xf2\x03\x00", 2)
         return (v[1] << 8) + v[0]
 
     def read_memory(self, addr, length):
-        return self.execute_get("\xf2\x07" + pack('<IH', addr, length), length)
+        return self.execute_get(b"\xf2\x07" + pack('<IH', addr, length), length)
 
     def read_memory_u32(self, addr):
-        return uint32(self.execute_get("\xf2\x07" + pack('<IH', addr, 4), 4))
+        return uint32(self.execute_get(b"\xf2\x07" + pack('<IH', addr, 4), 4))
 
     def write_memory(self, addr, data):
-        return self.execute_put("\xf2\x08" + pack('<IH', addr, len(data)), data)
+        return self.execute_put(b"\xf2\x08" + pack('<IH', addr, len(data)), data)
 
     def write_memory_u32(self, addr, data):
-        return self.execute_put("\xf2\x08" + pack('<IH', addr, 4),
+        return self.execute_put(b"\xf2\x08" + pack('<IH', addr, 4),
                                 pack('<I', data))
 
     def read_reg(self, regno):
-        return uint32(self.execute_get("\xf2\x05" + pack('<B', regno), 4))
+        return uint32(self.execute_get(b"\xf2\x05" + pack('<B', regno), 4))
 
     def write_reg(self, regno, value):
-        return self.execute_get("\xf2\x06" + pack('<BI', regno, value), 2)
+        return self.execute_get(b"\xf2\x06" + pack('<BI', regno, value), 2)
 
     def write_debug_reg(self, addr, value):
-        return self.execute_get("\xf2\x35" + pack('<II', addr, value), 2)
+        return self.execute_get(b"\xf2\x35" + pack('<II', addr, value), 2)
 
     def control_nrst(self, value):
-        return self.execute_get("\xf2\x3c" + pack('<B', value), 2)
+        return self.execute_get(b"\xf2\x3c" + pack('<B', value), 2)
 
     def run(self):
-        v = self.execute_get("\xf2\x09\x00", 2)
+        v = self.execute_get(b"\xf2\x09\x00", 2)
         return (v[1] << 8) + v[0]
 
     def get_core_id(self):
-        v = self.execute_get("\xf2\x22\x00", 4)
+        v = self.execute_get(b"\xf2\x22\x00", 4)
         return v[0] + (v[1]<<8) + (v[2]<<16) + (v[3]<<24)
 
     def version(self):
-        v = self.execute_get("\xf1", 6)
+        v = self.execute_get(b"\xf1", 6)
         val = (v[0] << 8) + v[1]
         return ((val >> 12) & 0x0f, (val >> 6) & 0x3f, val & 0x3f)
 
@@ -555,7 +550,7 @@ def stlinkv2_devices():
 def compare(data_original, data_in_device):
     i = 0 
     for d in data_original:
-        if ord(d) != data_in_device[i]:
+        if d != data_in_device[i]:
             raise ValueError("Verify failed at:", i)
         i += 1
 
@@ -686,7 +681,7 @@ def main(show_help, erase_only, no_protect, spi_flash_check,
     stl.flash_write(0x08000000, data)
 
     print("VERIFY")
-    data_received = ()
+    data_received = array('B')
     size = len(data)
     off = 0
     while size > 0:
@@ -694,10 +689,10 @@ def main(show_help, erase_only, no_protect, spi_flash_check,
             blk_size = 1024
         else:
             blk_size = size
-        data_received = data_received + stl.read_memory(0x08000000+off, blk_size)
+        data_received = data_received + array('B', stl.read_memory(0x08000000+off, blk_size))
         size = size - blk_size
         off = off + blk_size
-    compare(data, data_received)
+    compare(array('B', data), data_received)
 
     if not no_protect and stl.has_protection():
         print("PROTECT")
