@@ -1,7 +1,8 @@
 /*
  * usb-msc.c -- USB Mass Storage Class protocol handling
  *
- * Copyright (C) 2011, 2012, 2013 Free Software Initiative of Japan
+ * Copyright (C) 2011, 2012, 2013, 2015
+ *               Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
  * This file is a part of Gnuk, a GnuPG USB Token implementation.
@@ -170,11 +171,13 @@ EP6_OUT_Callback (void)
 }
 
 static const uint8_t scsi_inquiry_data_00[] = { 0, 0, 0, 0, 0 };
+static const uint8_t scsi_inquiry_data_83[] = { 0, 0x83, 0, 0 };
+
 
 static const uint8_t scsi_inquiry_data[] = {
   0x00,				/* Direct Access Device.      */
   0x80,				/* RMB = 1: Removable Medium. */
-  0x05,				/* Version: SPC-3.            */
+  0x00,				/* Version: not claim conformance.  */
   0x02,				/* Response format: SPC-3.    */
   36 - 4,			/* Additional Length.         */
   0x00,
@@ -330,6 +333,11 @@ msc_handle_command (void)
 
   CSW.dCSWTag = CBW.dCBWTag;
   switch (CBW.CBWCB[0]) {
+  case SCSI_REPORT_LUN:
+    buf[0]  = buf[1] = buf[2] = buf[3] = 0;
+    buf[4]  = buf[5] = buf[6] = buf[7] = 0;
+    msc_send_result (buf, 8);
+    goto done;
   case SCSI_REQUEST_SENSE:
     if (CBW.CBWCB[1] & 0x01) /* DESC */
       msc_send_result ((uint8_t *)&scsi_sense_data_desc,
@@ -345,10 +353,18 @@ msc_handle_command (void)
       }
     goto done;
   case SCSI_INQUIRY:
-    if (CBW.CBWCB[1] & 0x01) /* EVPD */
-      /* assume page 00 */
-      msc_send_result ((uint8_t *)&scsi_inquiry_data_00,
-		       sizeof scsi_inquiry_data_00);
+    if (CBW.CBWCB[1] & 0x01)
+      /* EVPD */
+      {
+	if (CBW.CBWCB[2] == 0x83)
+	  /* Handle the case Page Code 0x83 */
+	  msc_send_result ((uint8_t *)&scsi_inquiry_data_83,
+			   sizeof scsi_inquiry_data_83);
+	else
+	  /* Otherwise, assume page 00 */
+	  msc_send_result ((uint8_t *)&scsi_inquiry_data_00,
+			   sizeof scsi_inquiry_data_00);
+      }
     else
       msc_send_result ((uint8_t *)&scsi_inquiry_data,
 		       sizeof scsi_inquiry_data);
@@ -462,6 +478,7 @@ msc_handle_command (void)
 		  if (CBW.CBWCB[8]-- == 0)
 		    CBW.CBWCB[7]--;
 		  CSW.dCSWDataResidue += 512;
+		  lba++;
 		}
 	      else
 		{
@@ -507,6 +524,7 @@ msc_handle_command (void)
 		  if (CBW.CBWCB[8]-- == 0)
 		    CBW.CBWCB[7]--;
 		  CSW.dCSWDataResidue -= 512;
+		  lba++;
 		}
 	      else
 		{

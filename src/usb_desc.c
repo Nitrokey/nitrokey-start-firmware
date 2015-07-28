@@ -59,7 +59,7 @@ static const uint8_t hid_report_desc[] = {
 #define USB_ICC_DATA_SIZE 64
 
 /* USB Standard Device Descriptor */
-static const uint8_t gnukDeviceDescriptor[] = {
+static const uint8_t device_desc[] = {
   18,   /* bLength */
   USB_DEVICE_DESCRIPTOR_TYPE,     /* bDescriptorType */
   0x10, 0x01,   /* bcdUSB = 1.1 */
@@ -99,7 +99,7 @@ static const uint8_t gnukDeviceDescriptor[] = {
 
 
 /* Configuation Descriptor */
-static const uint8_t gnukConfigDescriptor[] = {
+static const uint8_t config_desc[] = {
   9,			   /* bLength: Configuation Descriptor size */
   USB_CONFIGURATION_DESCRIPTOR_TYPE,      /* bDescriptorType: Configuration */
   W_TOTAL_LENGTH, 0x00,   /* wTotalLength:no of returned bytes */
@@ -346,21 +346,20 @@ static const struct desc string_descriptors[] = {
 
 int
 usb_cb_get_descriptor (uint8_t rcp, uint8_t desc_type, uint8_t desc_index,
-		       uint16_t index, uint16_t length)
+		       struct control_info *detail)
 {
   if (rcp == DEVICE_RECIPIENT)
     {
       if (desc_type == DEVICE_DESCRIPTOR)
-	return usb_lld_answer_control (gnukDeviceDescriptor,
-				       sizeof (gnukDeviceDescriptor));
+	return usb_lld_reply_request (device_desc, sizeof (device_desc), detail);
       else if (desc_type == CONFIG_DESCRIPTOR)
-	return usb_lld_answer_control (gnukConfigDescriptor,
-				       sizeof (gnukConfigDescriptor));
+	return usb_lld_reply_request (config_desc, sizeof (config_desc), detail);
       else if (desc_type == STRING_DESCRIPTOR)
 	{
 	  if (desc_index < NUM_STRING_DESC)
-	    return usb_lld_answer_control (string_descriptors[desc_index].desc,
-					   string_descriptors[desc_index].size);
+	    return usb_lld_reply_request (string_descriptors[desc_index].desc,
+					  string_descriptors[desc_index].size,
+					  detail);
 	  else if (desc_index == NUM_STRING_DESC)
 	    {
 	      uint8_t usbbuf[64];
@@ -377,27 +376,24 @@ usb_cb_get_descriptor (uint8_t rcp, uint8_t desc_type, uint8_t desc_index,
 		}
 	      usbbuf[0] = len = i*2 + 2;
 	      usbbuf[1] = USB_STRING_DESCRIPTOR_TYPE;
-	      if (len > length)
-		len = length;
-	      return usb_lld_answer_control (usbbuf, len);
+	      return usb_lld_reply_request (usbbuf, len, detail);
 	    }
 	}
     }
+#ifdef HID_CARD_CHANGE_SUPPORT
   else if (rcp == INTERFACE_RECIPIENT)
     {
-#ifdef HID_CARD_CHANGE_SUPPORT
-      if (index == 1)
+      if (detail->index == 1)
 	{
 	  if (desc_type == USB_DT_HID)
-	    return usb_lld_answer_control (gnukConfigDescriptor+ICC_TOTAL_LENGTH+9, 9);
+	    return usb_lld_reply_request (config_desc+ICC_TOTAL_LENGTH+9, 9,
+					  detail);
 	  else if (desc_type == USB_DT_REPORT)
-	    return usb_lld_answer_control (hid_report_desc, HID_REPORT_DESC_SIZE);
+	    return usb_lld_reply_request (hid_report_desc, HID_REPORT_DESC_SIZE,
+					  detail);
 	}
-      else
-#else
-      (void)index;
-#endif
     }
+#endif
 
   return USB_UNSUPPORT;
 }

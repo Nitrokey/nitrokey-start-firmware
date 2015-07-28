@@ -55,15 +55,19 @@ enum
   USB_SUCCESS = 1,
 };
 
+struct control_info {
+  uint16_t value;
+  uint16_t index;
+  uint16_t len;
+};
+
 void usb_cb_device_reset (void);
-void usb_cb_ctrl_write_finish (uint8_t req, uint8_t req_no,
-			       uint16_t value, uint16_t index, uint16_t len);
-int usb_cb_setup (uint8_t req, uint8_t req_no, uint16_t value,
-		  uint16_t index, uint16_t len);
+int usb_cb_setup (uint8_t req, uint8_t req_no, struct control_info *detail);
+int usb_cb_interface (uint8_t cmd, struct control_info *detail);
 int usb_cb_get_descriptor (uint8_t rcp, uint8_t desc_type, uint8_t desc_index,
-			   uint16_t index, uint16_t length);
+			   struct control_info *detail);
 int usb_cb_handle_event (uint8_t event_type, uint16_t value);
-int usb_cb_interface (uint8_t cmd, uint16_t interface, uint16_t value);
+void usb_cb_ctrl_write_finish (uint8_t req, uint8_t req_no, uint16_t value);
 
 enum {
   USB_EVENT_ADDRESS,
@@ -89,7 +93,6 @@ enum DEVICE_STATE
   CONFIGURED
 };
 
-
 void usb_lld_init (uint8_t feature);
 void usb_lld_to_pmabuf (const void *src, uint16_t addr, size_t n);
 void usb_lld_from_pmabuf (void *dst, uint16_t addr, size_t n);
@@ -99,7 +102,8 @@ int usb_lld_tx_data_len (int ep_num);
 void usb_lld_txcpy (const void *src, int ep_num, int offset, size_t len);
 void usb_lld_tx_enable (int ep_num, size_t len);
 void usb_lld_write (uint8_t ep_num, const void *buf, size_t len);
-int usb_lld_answer_control (const void *buf, size_t buflen);
+int usb_lld_reply_request (const void *buf, size_t buflen,
+			   struct control_info *ctrl);
 void usb_lld_rx_enable (int ep_num);
 int usb_lld_rx_data_len (int ep_num);
 void usb_lld_rxcpy (uint8_t *dst, int ep_num, int offset, size_t len);

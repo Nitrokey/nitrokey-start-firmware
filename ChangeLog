@@ -1,13 +1,20 @@
+2015-07-28  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/usb-msc.c: Update from Fraucheky.
+
+	* src/usb_stm32f103.c (struct DATA_INFO): Remove offset.
+	(struct DEVICE_INFO): Integrate CONTROL_INFO.
+
 2015-07-27  Niibe Yutaka  <gniibe@fsij.org>
 
-	* src/usb_stm32f103.c (usb_lld_answer_control): New.
+	* src/usb_stm32f103.c (usb_lld_reply_request): New.
 	(usb_lld_set_data_to_send): Remove.
 	(usb_lld_set_data_to_recv): Not a macro but a function.
 	(std_get_status): Don't use statically allocated memory.
-	(std_get_configuration): Use usb_lld_answer_control.
+	(std_get_configuration): Use usb_lld_reply_request.
 	(handle_setup0): Follow the change.
 	* src/usb_ctrl.c (vcom_port_data_setup, usb_cb_setup)
-	(usb_cb_interface): Use	usb_lld_answer_control.
+	(usb_cb_interface): Use	usb_lld_reply_request.
 	* src/usb_desc.c (usb_cb_get_descriptor): Likewise.
 
 2015-07-24  Niibe Yutaka  <gniibe@fsij.org>
