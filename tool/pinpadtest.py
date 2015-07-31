@@ -434,3 +434,7 @@ if __name__ == '__main__':
 # 076b:3821 OmniKey AG CardMan 3821
 # OmniKey CardMan 3821 01 00
 # Works well with --pinmax 31 --pinmin 1
+
+# 046a:003e Cherry GmbH SmartTerminal ST-2xxx
+# Cherry ST-2000
+# Needs --add to function properly
