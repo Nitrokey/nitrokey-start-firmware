@@ -1,7 +1,8 @@
 /*
  * regnual.c -- Firmware installation for STM32F103 Flash ROM
  *
- * Copyright (C) 2012, 2013 Free Software Initiative of Japan
+ * Copyright (C) 2012, 2013, 2015
+ *               Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
  * This file is a part of Gnuk, a GnuPG USB Token implementation.
@@ -32,10 +33,16 @@
 extern void *memset (void *s, int c, size_t n);
 
 extern void set_led (int);
-extern uint8_t _flash_start,  _flash_end;
 extern int flash_write (uint32_t dst_addr, const uint8_t *src, size_t len);
 extern int flash_protect (void);
 extern void nvic_system_reset (void);
+
+
+#define FLASH_START_ADDR 0x08000000 /* Fixed for all STM32F1.  */
+#define FLASH_OFFSET     0x1000     /* First pages are not-writable.  */
+#define FLASH_START      (FLASH_START_ADDR+FLASH_OFFSET)
+#define FLASH_SIZE_REG   ((uint16_t *)0x1ffff7e0)
+static uint32_t flash_end;
 
 
 #define ENDP0_RXADDR        (0x40)
@@ -166,8 +173,7 @@ static uint32_t calc_crc32 (void)
 }
 
 
-void usb_cb_ctrl_write_finish (uint8_t req, uint8_t req_no, uint16_t value,
-			       uint16_t index, uint16_t len)
+void usb_cb_ctrl_write_finish (uint8_t req, uint8_t req_no, uint16_t value)
 {
   uint8_t type_rcp = req & (REQUEST_TYPE|RECIPIENT);
 
@@ -175,24 +181,21 @@ void usb_cb_ctrl_write_finish (uint8_t req, uint8_t req_no, uint16_t value,
     {
       if (req_no == USB_REGNUAL_SEND && value == 0)
 	result = calc_crc32 ();
-      else if (req_no == USB_REGNUAL_FLASH && len == 0 && index == 0)
+      else if (req_no == USB_REGNUAL_FLASH)
 	{
 	  uint32_t dst_addr = (0x08000000 + value * 0x100);
 
 	  result = flash_write (dst_addr, (const uint8_t *)mem, 256);
 	}
-      else if (req_no == USB_REGNUAL_PROTECT && len == 0
-	       && value == 0 && index == 0)
+      else if (req_no == USB_REGNUAL_PROTECT && value == 0)
 	result = flash_protect ();
-      else if (req_no == USB_REGNUAL_FINISH && len == 0
-	       && value == 0 && index == 0)
+      else if (req_no == USB_REGNUAL_FINISH && value == 0)
 	nvic_system_reset ();
     }
 }
 
 int
-usb_cb_setup (uint8_t req, uint8_t req_no,
-	      uint16_t value, uint16_t index, uint16_t len)
+usb_cb_setup (uint8_t req, uint8_t req_no, struct control_info *detail)
 {
   uint8_t type_rcp = req & (REQUEST_TYPE|RECIPIENT);
 
@@ -202,45 +205,42 @@ usb_cb_setup (uint8_t req, uint8_t req_no,
 	{
 	  if (req_no == USB_REGNUAL_MEMINFO)
 	    {
-	      static const uint8_t *mem_info[2];
+	      const uint8_t *mem_info[2];
 
-	      mem_info[0] = &_flash_start;
-	      mem_info[1] = &_flash_end;
-	      usb_lld_set_data_to_send (mem_info, sizeof (mem_info));
-	      return USB_SUCCESS;
+	      mem_info[0] = (const uint8_t *)FLASH_START;
+	      mem_info[1] = (const uint8_t *)flash_end;
+	      return usb_lld_reply_request (mem_info, sizeof (mem_info), detail);
 	    }
 	  else if (req_no == USB_REGNUAL_RESULT)
-	    {
-	      usb_lld_set_data_to_send (&result, sizeof (uint32_t));
-	      return USB_SUCCESS;
-	    }
+	    return usb_lld_reply_request (&result, sizeof (uint32_t), detail);
 	}
       else /* SETUP_SET */
 	{
 	  if (req_no == USB_REGNUAL_SEND)
 	    {
-	      if (value != 0 || index + len > 256)
+	      if (detail->value != 0 || detail->index + detail->len > 256)
 		return USB_UNSUPPORT;
 
-	      if (index + len < 256)
-		memset ((uint8_t *)mem + index + len, 0xff,
-			256 - (index + len));
+	      if (detail->index + detail->len < 256)
+		memset ((uint8_t *)mem + detail->index + detail->len, 0xff,
+			256 - (detail->index + detail->len));
 
-	      usb_lld_set_data_to_recv (mem + index, len);
+	      usb_lld_set_data_to_recv (mem + detail->index, detail->len);
 	      return USB_SUCCESS;
 	    }
-	  else if (req_no == USB_REGNUAL_FLASH && len == 0 && index == 0)
+	  else if (req_no == USB_REGNUAL_FLASH && detail->len == 0
+		   && detail->index == 0)
 	    {
-	      uint32_t dst_addr = (0x08000000 + value * 0x100);
+	      uint32_t dst_addr = (0x08000000 + detail->value * 0x100);
 
-	      if (dst_addr + 256 <= (uint32_t)&_flash_end)
+	      if (dst_addr + 256 <= flash_end)
 		return USB_SUCCESS;
 	    }
-	  else if (req_no == USB_REGNUAL_PROTECT && len == 0
-		   && value == 0 && index == 0)
+	  else if (req_no == USB_REGNUAL_PROTECT && detail->len == 0
+		   && detail->value == 0 && detail->index == 0)
 	    return USB_SUCCESS;
-	  else if (req_no == USB_REGNUAL_FINISH && len == 0
-		   && value == 0 && index == 0)
+	  else if (req_no == USB_REGNUAL_FINISH && detail->len == 0
+		   && detail->value == 0 && detail->index == 0)
 	    return USB_SUCCESS;
 	}
     }
@@ -250,25 +250,17 @@ usb_cb_setup (uint8_t req, uint8_t req_no,
 
 int
 usb_cb_get_descriptor (uint8_t rcp, uint8_t desc_type, uint8_t desc_index,
-		       uint16_t index, uint16_t length)
+		       struct control_info *detail)
 {
-  (void)index;
-  (void)length;
   if (rcp != DEVICE_RECIPIENT)
     return USB_UNSUPPORT;
 
   if (desc_type == DEVICE_DESCRIPTOR)
-    {
-      usb_lld_set_data_to_send (regnual_device_desc,
-				sizeof (regnual_device_desc));
-      return USB_SUCCESS;
-    }
+    return usb_lld_reply_request (regnual_device_desc,
+				  sizeof (regnual_device_desc), detail);
   else if (desc_type == CONFIG_DESCRIPTOR)
-    {
-      usb_lld_set_data_to_send (regnual_config_desc,
-				sizeof (regnual_config_desc));
-      return USB_SUCCESS;
-    }
+    return usb_lld_reply_request (regnual_config_desc,
+				     sizeof (regnual_config_desc), detail); 
   else if (desc_type == STRING_DESCRIPTOR)
     {
       const uint8_t *str;
@@ -281,12 +273,12 @@ usb_cb_get_descriptor (uint8_t rcp, uint8_t desc_type, uint8_t desc_index,
 	  size = sizeof (regnual_string_lang_id);
 	  break;
 	case 1:
-	  str = gnukStringVendor;
-	  size = sizeof (gnukStringVendor);
+	  str = gnuk_string_vendor;
+	  size = sizeof (gnuk_string_vendor);
 	  break;
 	case 2:
-	  str = gnukStringProduct;
-	  size = sizeof (gnukStringProduct);
+	  str = gnuk_string_product;
+	  size = sizeof (gnuk_string_product);
 	  break;
 	case 3:
 	  str = regnual_string_serial;
@@ -296,8 +288,7 @@ usb_cb_get_descriptor (uint8_t rcp, uint8_t desc_type, uint8_t desc_index,
 	  return USB_UNSUPPORT;
 	}
 
-      usb_lld_set_data_to_send (str, size);
-      return USB_SUCCESS;
+      return usb_lld_reply_request (str, size, detail);
     }
 
   return USB_UNSUPPORT;
@@ -319,9 +310,9 @@ int usb_cb_handle_event (uint8_t event_type, uint16_t value)
   return USB_UNSUPPORT;
 }
 
-int usb_cb_interface (uint8_t cmd, uint16_t interface, uint16_t alt)
+int usb_cb_interface (uint8_t cmd, struct control_info *detail)
 {
-  (void)cmd; (void)interface; (void)alt;
+  (void)cmd; (void)detail;
   return USB_UNSUPPORT;
 }
 
@@ -343,6 +334,7 @@ main (int argc, char *argv[])
 
   set_led (0);
 
+  flash_end = FLASH_START_ADDR + (*FLASH_SIZE_REG)*1024;
   usb_lld_init (regnual_config_desc[7]);
 
   while (1)

@@ -1,5 +1,9 @@
 2015-07-31  Niibe Yutaka  <gniibe@fsij.org>
 
+	* regnual/regnual.c (usb_cb_ctrl_write_finish, usb_cb_setup)
+	(usb_cb_get_descriptor, usb_cb_interface): Follow the change
+	of USB API.
+
 	* tool/stlinkv2.py: Support ST-Link/V2-1.
 
 2015-07-28  Niibe Yutaka  <gniibe@fsij.org>
