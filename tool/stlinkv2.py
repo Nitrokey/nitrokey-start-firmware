@@ -133,7 +133,10 @@ class OperationFailure(Exception):
 
 class stlinkv2(object):
     def __init__(self, dev):
-        self.__bulkout = 2
+        if dev.idProduct == USB_VENDOR_STLINKV2:
+            self.__bulkout = 2
+        else:
+            self.__bulkout = 1
         self.__bulkin  = 0x81
 
         self.__timeout = 1000   # 1 second
@@ -143,7 +146,13 @@ class stlinkv2(object):
         if intf.interfaceClass != 0xff: # Vendor specific
             raise ValueError("Wrong interface class.", intf.interfaceClass)
         self.__devhandle = dev.open()
-        self.__devhandle.setConfiguration(conf.value)
+        # ST-Link/V2-1 has other interfaces
+        # Some other processes or kernel would use it
+        # So, write access to configuration causes error
+        try:
+            self.__devhandle.setConfiguration(conf.value)
+        except:
+            pass
         self.__devhandle.claimInterface(intf.interfaceNumber)
         # self.__devhandle.setAltInterface(0)  # This was not good for libusb-win32 with wrong arg intf, new correct value 0 would be OK
 
@@ -535,6 +544,7 @@ class stlinkv2(object):
 
 USB_VENDOR_ST=0x0483            # 0x0483 SGS Thomson Microelectronics
 USB_VENDOR_STLINKV2=0x3748      # 0x3748 ST-LINK/V2
+USB_VENDOR_STLINKV2_1=0x374b    # 0x374b ST-LINK/V2_1
 
 def stlinkv2_devices():
     busses = usb.busses()
@@ -543,7 +553,7 @@ def stlinkv2_devices():
         for dev in devices:
             if dev.idVendor != USB_VENDOR_ST:
                 continue
-            if dev.idProduct != USB_VENDOR_STLINKV2:
+            if dev.idProduct != USB_VENDOR_STLINKV2 and dev.idProduct != USB_VENDOR_STLINKV2_1:
                 continue
             yield dev
 
