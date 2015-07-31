@@ -266,14 +266,14 @@ output_vendor_product_serial_strings () {
   echo "  ${#VENDOR}*2+2,			/* bLength */"
   echo "  USB_STRING_DESCRIPTOR_TYPE,	/* bDescriptorType */"
   echo "  /* Manufacturer: \"$VENDOR\" */"
-  echo $VENDOR | sed -n -e "s/\(........\)/\1\\${nl}/gp" | sed -n -e "s/\(.\)/'\1', 0, /g" -e "s/^/  /" -e "s/ $//p"
+  echo $VENDOR | sed -e "s/\(........\)/\1\\${nl}/g" | sed -n -e "s/\(.\)/'\1', 0, /g" -e "s/^/  /" -e "/^  ./s/ $//p"
   echo '};'
   echo
   echo "static const uint8_t ${prefix}string_product[] = {"
   echo "  ${#PRODUCT}*2+2,			/* bLength */"
   echo "  USB_STRING_DESCRIPTOR_TYPE,	/* bDescriptorType */"
   echo "  /* Product name: \"$PRODUCT\" */"
-  echo $PRODUCT | sed -n -e "s/\(........\)/\1\\${nl}/gp" | sed -n -e "s/\(.\)/'\1', 0, /g" -e "s/^/  /" -e "s/ $//p"
+  echo $PRODUCT | sed -e "s/\(........\)/\1\\${nl}/g" | sed -n -e "s/\(.\)/'\1', 0, /g" -e "s/^/  /" -e "/^  ./s/ $//p"
   echo '};'
 
   if test -n "$prefix"; then
@@ -282,7 +282,7 @@ output_vendor_product_serial_strings () {
   echo "  ${#SERIALNO}*2+2+16,			/* bLength */"
   echo "  USB_STRING_DESCRIPTOR_TYPE,	/* bDescriptorType */"
   echo "  /* Serial number: \"$SERIALNO\" */"
-  echo $SERIALNO | sed -n -e "s/\(........\)/\1\\${nl}/gp" | sed -n -e "s/\(.\)/'\1', 0, /g" -e "s/^/  /" -e "s/ $//p"
+  echo $SERIALNO | sed -e "s/\(........\)/\1\\${nl}/g" | sed -n -e "s/\(.\)/'\1', 0, /g" -e "s/^/  /" -e "/^  ./s/ $//p"
   echo "  0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,"
   echo "  0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,"
   echo '};'
@@ -292,14 +292,14 @@ output_vendor_product_serial_strings () {
   echo "  ${#REVISION}*2+2,			/* bLength */"
   echo "  USB_STRING_DESCRIPTOR_TYPE,	/* bDescriptorType */"
   echo "  /* revision detail: \"$REVISION\" */"
-  echo $REVISION | sed -n -e "s/\(........\)/\1\\${nl}/gp" | sed -n -e "s/\(.\)/'\1', 0, /g" -e "s/^/  /" -e "s/ $//p"
+  echo $REVISION | sed -e "s/\(........\)/\1\\${nl}/g" | sed -n -e "s/\(.\)/'\1', 0, /g" -e "s/^/  /" -e "/^  ./s/ $//p"
   echo '};'
   echo
   echo "static const uint8_t ${prefix}config_options[] = {"
   echo "  ${#CONFIG}*2+2,			/* bLength */"
   echo "  USB_STRING_DESCRIPTOR_TYPE,	/* bDescriptorType */"
   echo "  /* configure options: \"$CONFIG\" */"
-  echo $CONFIG | sed -n -e "s/\(........\)/\1\\${nl}/gp" | sed -n -e "s/\(.\)/'\1', 0, /g" -e "s/^/  /" -e "s/ $//p"
+  echo $CONFIG | sed -e "s/\(........\)/\1\\${nl}/g" | sed -n -e "s/\(.\)/'\1', 0, /g" -e "s/^/  /" -e "/^  ./s/ $//p"
   echo '};'
   echo '#endif'
   fi

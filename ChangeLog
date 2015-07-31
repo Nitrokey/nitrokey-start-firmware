@@ -1,5 +1,8 @@
 2015-07-31  Niibe Yutaka  <gniibe@fsij.org>
 
+	* src/configure (output_vendor_product_serial_strings): Fix sed
+	script when string is short.  Remove empty line.
+
 	* regnual/regnual.c (usb_cb_ctrl_write_finish, usb_cb_setup)
 	(usb_cb_get_descriptor, usb_cb_interface): Follow the change
 	of USB API.
