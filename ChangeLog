@@ -1,7 +1,13 @@
 2015-08-03  Niibe Yutaka  <gniibe@fsij.org>
 
+	* test/features/steps.py (set_msg): Python3 fix.
+	* test/generate_keys.py: Likewise.
+	* test/rsa_keys.py: Likewise.
+
 	* tool/gnuk_token.py (gnuk_token.download, gnuk_token.execute)
 	(regnual.download): Python3 fix.
+	(list_to_string): Remove.
+
 	* tool/upgrade_by_passwd.py (maian): Python3 fix.
 	* tool/usb_strings.py (main): Python3 fix.
 

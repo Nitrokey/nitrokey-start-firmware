@@ -14,10 +14,10 @@ def print_key_in_hex(k):
     q_str = hexlify(q)
     if int(p_str, 16)*int(q_str, 16) != int(n_str, 16):
         raise ValueError("wrong key", k)
-    print n_str
-    print e_str
-    print p_str
-    print q_str
+    print(n_str)
+    print(e_str)
+    print(p_str)
+    print(q_str)
 
 rng = Random.new().read
 key = RSA.generate(2048, rng)

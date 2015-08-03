@@ -66,7 +66,7 @@ def cmd_put_data_with_result(tag_str):
 
 @Given("a message (\".*\")")
 def set_msg(content_str_repr):
-    msg = ast.literal_eval(content_str_repr)
+    msg = ast.literal_eval(content_str_repr).encode('UTF-8')
     scc.digestinfo = rsa_keys.compute_digestinfo(msg)
 
 @Given("a public key from token for OPENPGP.(.*)")

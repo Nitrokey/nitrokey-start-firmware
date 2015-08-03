@@ -24,7 +24,7 @@ def calc_fpr(n,e):
     timestamp = int(time())
     timestamp_data = pack('>I', timestamp)
     m_len = 6 + 2 + 256 + 2 + 4
-    m = '\x99' + pack('>H', m_len) + '\x04' + timestamp_data + '\x01' + \
+    m = b'\x99' + pack('>H', m_len) + b'\x04' + timestamp_data + b'\x01' + \
         pack('>H', 2048) + n + pack('>H', 17) + e
     fpr = sha1(m).digest()
     return (fpr, timestamp_data)
@@ -42,39 +42,39 @@ key[2] = read_key_from_file('rsa-aut.key')
 (fpr[2], timestamp[2]) = calc_fpr(key[2][0], key[2][1])
 
 def build_privkey_template(openpgp_keyno, keyno):
-    n_str = key[keyno][0]
-    e_str = '\x00' + key[keyno][1]
-    p_str = key[keyno][2]
-    q_str = key[keyno][3]
+    n_bytes = key[keyno][0]
+    e_bytes = b'\x00' + key[keyno][1]
+    p_bytes = key[keyno][2]
+    q_bytes = key[keyno][3]
 
     if openpgp_keyno == 1:
-        keyspec = '\xb6'
+        keyspec = b'\xb6'
     elif openpgp_keyno == 2:
-        keyspec = '\xb8'
+        keyspec = b'\xb8'
     else:
-        keyspec = '\xa4'
+        keyspec = b'\xa4'
 
-    key_template = '\x91\x04'+ '\x92\x81\x80' + '\x93\x81\x80' 
+    key_template = b'\x91\x04'+ b'\x92\x81\x80' + b'\x93\x81\x80' 
 
-    exthdr = keyspec + '\x00' + '\x7f\x48' + '\x08' + key_template
+    exthdr = keyspec + b'\x00' + b'\x7f\x48' + b'\x08' + key_template
 
-    suffix = '\x5f\x48' + '\x82\x01\x04'
+    suffix = b'\x5f\x48' + b'\x82\x01\x04'
 
-    t = '\x4d' + '\x82\01\16' + exthdr + suffix + e_str + p_str + q_str
+    t = b'\x4d' + b'\x82\01\16' + exthdr + suffix + e_bytes + p_bytes + q_bytes
     return t
 
 def build_privkey_template_for_remove(openpgp_keyno):
     if openpgp_keyno == 1:
-        keyspec = '\xb6'
+        keyspec = b'\xb6'
     elif openpgp_keyno == 2:
-        keyspec = '\xb8'
+        keyspec = b'\xb8'
     else:
-        keyspec = '\xa4'
-    return '\x4d\02' + keyspec + '\0x00'
+        keyspec = b'\xa4'
+    return b'\x4d\02' + keyspec + b'\0x00'
 
 def compute_digestinfo(msg):
     digest = sha256(msg).digest()
-    prefix = '\x30\31\x30\x0d\x06\x09\x60\x86\x48\x01\x65\x03\x04\x02\x01\x05\x00\x04\x20'
+    prefix = b'\x30\31\x30\x0d\x06\x09\x60\x86\x48\x01\x65\x03\x04\x02\x01\x05\x00\x04\x20'
     return prefix + digest
 
 # egcd and modinv are from wikibooks
@@ -95,14 +95,14 @@ def modinv(a, m):
         return x % m
 
 def pkcs1_pad_for_sign(digestinfo):
-    byte_repr = '\x00' + '\x01' + string.ljust('', 256 - 19 - 32 - 3, '\xff') \
-        + '\x00' + digestinfo
+    byte_repr = b'\x00' + b'\x01' + bytes.ljust(b'', 256 - 19 - 32 - 3, b'\xff') \
+        + b'\x00' + digestinfo
     return int(hexlify(byte_repr), 16)
 
 def pkcs1_pad_for_crypt(msg):
     padlen = 256 - 3 - len(msg)
-    byte_repr = '\x00' + '\x02' \
-        + string.replace(urandom(padlen),'\x00','\x01') + '\x00' + msg
+    byte_repr = b'\x00' + b'\x02' \
+        + bytes.replace(urandom(padlen), b'\x00', b'\x01') + b'\x00' + msg
     return int(hexlify(byte_repr), 16)
 
 def compute_signature(keyno, digestinfo):
@@ -136,13 +136,13 @@ def encrypt(keyno, plaintext):
     e = key[keyno][4]
     n = key[keyno][7]
     m = pkcs1_pad_for_crypt(plaintext)
-    return '\x00' + integer_to_bytes_256(pow(m, e, n))
+    return b'\x00' + integer_to_bytes_256(pow(m, e, n))
 
 def encrypt_with_pubkey(pubkey_info, plaintext):
     n = int(hexlify(pubkey_info[0]), 16)
     e = int(hexlify(pubkey_info[1]), 16)
     m = pkcs1_pad_for_crypt(plaintext)
-    return '\x00' + integer_to_bytes_256(pow(m, e, n))
+    return b'\x00' + integer_to_bytes_256(pow(m, e, n))
 
 def verify_signature(pubkey_info, digestinfo, sig):
     n = int(hexlify(pubkey_info[0]), 16)
