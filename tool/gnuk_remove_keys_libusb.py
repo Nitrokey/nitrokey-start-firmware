@@ -36,17 +36,17 @@ def main(passwd):
     for (dev, config, intf) in gnuk_devices():
         try:
             gnuk = gnuk_token(dev, config, intf)
-            print "Device: ", dev.filename
-            print "Configuration: ", config.value
-            print "Interface: ", intf.interfaceNumber
+            print("Device: %s" % dev.filename)
+            print("Configuration: %d" % config.value)
+            print("Interface: %d" % intf.interfaceNumber)
             break
         except:
             pass
     if gnuk.icc_get_status() == 2:
-        raise ValueError, "No ICC present"
+        raise ValueError("No ICC present")
     elif gnuk.icc_get_status() == 1:
         gnuk.icc_power_on()
-    gnuk.cmd_verify(BY_ADMIN, passwd)
+    gnuk.cmd_verify(BY_ADMIN, passwd.encode('UTF-8'))
     gnuk.cmd_select_openpgp()
     gnuk.cmd_put_data_remove(0x00, 0xc7) # FP_SIG
     gnuk.cmd_put_data_remove(0x00, 0xce) # KGTIME_SIG

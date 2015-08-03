@@ -3,7 +3,7 @@
 """
 gnuk_upgrade.py - a tool to upgrade firmware of Gnuk Token
 
-Copyright (C) 2012, 2015 Free Software Initiative of Japan
+Copyright (C) 2012, 2015  Free Software Initiative of Japan
 Author: NIIBE Yutaka <gniibe@fsij.org>
 
 This file is a part of Gnuk, a GnuPG USB Token implementation.

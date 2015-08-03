@@ -1,7 +1,8 @@
 """
 gnuk_token.py - a library for Gnuk Token
 
-Copyright (C) 2011, 2012, 2013 Free Software Initiative of Japan
+Copyright (C) 2011, 2012, 2013, 2015
+              Free Software Initiative of Japan
 Author: NIIBE Yutaka <gniibe@fsij.org>
 
 This file is a part of Gnuk, a GnuPG USB Token implementation.
@@ -23,6 +24,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 from struct import *
 import string, binascii
 import usb, time
+from array import array
 
 # USB class, subclass, protocol
 CCID_CLASS = 0x0B
@@ -49,9 +51,6 @@ def iso7816_compose(ins, p1, p2, data, cls=0x00, le=None):
         else:
             return pack('>BBBBB', cls, ins, p1, p2, data_len) \
                 + data + pack('>B', le)
-
-def list_to_string(l):
-    return string.join([chr(c) for c in l], '')
 
 # This class only supports Gnuk (for now) 
 class gnuk_token(object):
@@ -152,10 +151,11 @@ class gnuk_token(object):
                                     timeout = 10)
 
     def icc_get_result(self):
-        msg = self.__devhandle.bulkRead(self.__bulkin, 1024, self.__timeout)
-        if len(msg) < 10:
-            print(msg)
+        usbmsg = self.__devhandle.bulkRead(self.__bulkin, 1024, self.__timeout)
+        if len(usbmsg) < 10:
+            print(usbmsg)
             raise ValueError("icc_get_result")
+        msg = array('B', usbmsg)
         msg_type = msg[0]
         data_len = msg[1] + (msg[2]<<8) + (msg[3]<<16) + (msg[4]<<24)
         slot = msg[5]
@@ -168,7 +168,7 @@ class gnuk_token(object):
         return (status, chain, data)
 
     def icc_get_status(self):
-        msg = icc_compose(0x65, 0, 0, self.__seq, 0, "")
+        msg = icc_compose(0x65, 0, 0, self.__seq, 0, b"")
         self.__devhandle.bulkWrite(self.__bulkout, msg, self.__timeout)
         self.increment_seq()
         status, chain, data = self.icc_get_result()
@@ -176,16 +176,16 @@ class gnuk_token(object):
         return status
 
     def icc_power_on(self):
-        msg = icc_compose(0x62, 0, 0, self.__seq, 0, "")
+        msg = icc_compose(0x62, 0, 0, self.__seq, 0, b"")
         self.__devhandle.bulkWrite(self.__bulkout, msg, self.__timeout)
         self.increment_seq()
         status, chain, data = self.icc_get_result()
         # XXX: check status, chain
-        self.atr = list_to_string(data) # ATR
+        self.atr = data
         return self.atr
 
     def icc_power_off(self):
-        msg = icc_compose(0x63, 0, 0, self.__seq, 0, "")
+        msg = icc_compose(0x63, 0, 0, self.__seq, 0, b"")
         self.__devhandle.bulkWrite(self.__bulkout, msg, self.__timeout)
         self.increment_seq()
         status, chain, data = self.icc_get_result()
@@ -207,7 +207,7 @@ class gnuk_token(object):
         elif chain == 1:
             d = data_rcv
             while True:
-                msg = icc_compose(0x6f, 0, 0, self.__seq, 0x10, "")
+                msg = icc_compose(0x6f, 0, 0, self.__seq, 0x10, b"")
                 self.__devhandle.bulkWrite(self.__bulkout, msg, self.__timeout)
                 self.increment_seq()
                 status, chain, data_rcv = self.icc_get_result()
@@ -224,14 +224,14 @@ class gnuk_token(object):
             raise ValueError("icc_send_cmd")
 
     def cmd_get_response(self, expected_len):
-        result = []
+        result = array('B')
         while True:
-            cmd_data = iso7816_compose(0xc0, 0x00, 0x00, '') + pack('>B', expected_len)
+            cmd_data = iso7816_compose(0xc0, 0x00, 0x00, b'') + pack('>B', expected_len)
             response = self.icc_send_cmd(cmd_data)
             result += response[:-2]
             sw = response[-2:]
             if sw[0] == 0x90 and sw[1] == 0x00:
-                return list_to_string(result)
+                return result
             elif sw[0] != 0x61:
                 raise ValueError("%02x%02x" % (sw[0], sw[1]))
             else:
@@ -247,7 +247,7 @@ class gnuk_token(object):
         return True
 
     def cmd_read_binary(self, fileid):
-        cmd_data = iso7816_compose(0xb0, 0x80+fileid, 0x00, '')
+        cmd_data = iso7816_compose(0xb0, 0x80+fileid, 0x00, b'')
         sw = self.icc_send_cmd(cmd_data)
         if len(sw) != 2:
             raise ValueError(sw)
@@ -291,7 +291,7 @@ class gnuk_token(object):
             count += 1
 
     def cmd_select_openpgp(self):
-        cmd_data = iso7816_compose(0xa4, 0x04, 0x0c, "\xD2\x76\x00\x01\x24\x01")
+        cmd_data = iso7816_compose(0xa4, 0x04, 0x0c, b"\xD2\x76\x00\x01\x24\x01")
         sw = self.icc_send_cmd(cmd_data)
         if len(sw) != 2:
             raise ValueError, sw
@@ -300,7 +300,7 @@ class gnuk_token(object):
         return True
 
     def cmd_get_data(self, tagh, tagl):
-        cmd_data = iso7816_compose(0xca, tagh, tagl, "")
+        cmd_data = iso7816_compose(0xca, tagh, tagl, b"")
         sw = self.icc_send_cmd(cmd_data)
         if len(sw) != 2:
             raise ValueError, sw
@@ -391,11 +391,11 @@ class gnuk_token(object):
 
     def cmd_genkey(self, keyno):
         if keyno == 1:
-            data = '\xb6\x00'
+            data = b'\xb6\x00'
         elif keyno == 2:
-            data = '\xb8\x00'
+            data = b'\xb8\x00'
         else:
-            data = '\xa4\x00'
+            data = b'\xa4\x00'
         cmd_data = iso7816_compose(0x47, 0x80, 0, data)
         sw = self.icc_send_cmd(cmd_data)
         if len(sw) != 2:
@@ -409,11 +409,11 @@ class gnuk_token(object):
 
     def cmd_get_public_key(self, keyno):
         if keyno == 1:
-            data = '\xb6\x00'
+            data = b'\xb6\x00'
         elif keyno == 2:
-            data = '\xb8\x00'
+            data = b'\xb8\x00'
         else:
-            data = '\xa4\x00'
+            data = b'\xa4\x00'
         cmd_data = iso7816_compose(0x47, 0x81, 0, data)
         sw = self.icc_send_cmd(cmd_data)
         if len(sw) != 2:
@@ -424,19 +424,19 @@ class gnuk_token(object):
         return (pk[9:9+256], pk[9+256+2:9+256+2+3])
 
     def cmd_put_data_remove(self, tagh, tagl):
-        cmd_data = iso7816_compose(0xda, tagh, tagl, "")
+        cmd_data = iso7816_compose(0xda, tagh, tagl, b"")
         sw = self.icc_send_cmd(cmd_data)
         if sw[0] != 0x90 and sw[1] != 0x00:
             raise ValueError, ("%02x%02x" % (sw[0], sw[1]))
 
     def cmd_put_data_key_import_remove(self, keyno):
         if keyno == 1:
-            keyspec = "\xb6\x00"      # SIG
+            keyspec = b"\xb6\x00"      # SIG
         elif keyno == 2:
-            keyspec = "\xb8\x00"      # DEC
+            keyspec = b"\xb8\x00"      # DEC
         else:
-            keyspec = "\xa4\x00"      # AUT
-        cmd_data = iso7816_compose(0xdb, 0x3f, 0xff, "\x4d\x02" +  keyspec)
+            keyspec = b"\xa4\x00"      # AUT
+        cmd_data = iso7816_compose(0xdb, 0x3f, 0xff, b"\x4d\x02" +  keyspec)
         sw = self.icc_send_cmd(cmd_data)
         if sw[0] != 0x90 and sw[1] != 0x00:
             raise ValueError, ("%02x%02x" % (sw[0], sw[1]))

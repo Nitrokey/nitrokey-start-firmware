@@ -44,7 +44,7 @@ def main(keyno, passwd, data_regnual, data_upgrade):
     rsa_raw_pubkey = rsa.get_raw_pubkey(rsa_key)
 
     gnuk = get_gnuk_device()
-    gnuk.cmd_verify(BY_ADMIN, passwd)
+    gnuk.cmd_verify(BY_ADMIN, passwd.encode('UTF-8'))
     gnuk.cmd_write_binary(1+keyno, rsa_raw_pubkey, False)
 
     gnuk.cmd_select_openpgp()

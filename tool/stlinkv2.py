@@ -3,7 +3,7 @@
 """
 stlinkv2.py - a tool to control ST-Link/V2
 
-Copyright (C) 2012, 2013, 2015 Free Software Initiative of Japan
+Copyright (C) 2012, 2013, 2015  Free Software Initiative of Japan
 Author: NIIBE Yutaka <gniibe@fsij.org>
 
 This file is a part of Gnuk, a GnuPG USB Token implementation.

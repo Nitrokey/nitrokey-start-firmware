@@ -1,7 +1,7 @@
 """
 gpg_agent.py - a library to connect gpg-agent
 
-Copyright (C) 2013, 2015 Free Software Initiative of Japan
+Copyright (C) 2013, 2015  Free Software Initiative of Japan
 Author: NIIBE Yutaka <gniibe@fsij.org>
 
 This file is a part of Gnuk, a GnuPG USB Token implementation.

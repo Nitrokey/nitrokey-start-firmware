@@ -39,25 +39,25 @@ def main(fileid, is_update, data, passwd):
     for (dev, config, intf) in gnuk_devices():
         try:
             gnuk = gnuk_token(dev, config, intf)
-            print "Device: ", dev.filename
-            print "Configuration: ", config.value
-            print "Interface: ", intf.interfaceNumber
+            print("Device: %s" % dev.filename)
+            print("Configuration: %d" % config.value)
+            print("Interface: %d" % intf.interfaceNumber)
             break
         except:
             pass
     if gnuk.icc_get_status() == 2:
-        raise ValueError, "No ICC present"
+        raise ValueError("No ICC present")
     elif gnuk.icc_get_status() == 1:
         gnuk.icc_power_on()
-    gnuk.cmd_verify(BY_ADMIN, passwd)
+    gnuk.cmd_verify(BY_ADMIN, passwd.encode('UTF-8'))
     gnuk.cmd_write_binary(fileid, data, is_update)
     gnuk.cmd_select_openpgp()
     if fileid == 0:
         data_in_device = gnuk.cmd_get_data(0x00, 0x4f)
         for d in data_in_device:
-            print "%02x" % ord(d),
-        print
-        compare(data + '\x00\x00', data_in_device[8:])
+            print("%02x" % d, end=' ')
+        print()
+        compare(data + b'\x00\x00', data_in_device[8:])
     elif fileid >= 1 and fileid <= 4:
         data_in_device = gnuk.cmd_read_binary(fileid)
         compare(data, data_in_device)
@@ -90,23 +90,23 @@ if __name__ == '__main__':
                 serial_data_hex = field[1].replace(':','')
         f.close()
         if not serial_data_hex:
-            print "No serial number"
+            print("No serial number")
             exit(1)
-        print "Writing serial number"
+        print("Writing serial number")
         data = binascii.unhexlify(serial_data_hex)
     elif sys.argv[1] == '-k':   # firmware update key
         keyno = sys.argv[2]
         fileid = 1 + int(keyno)
         filename = sys.argv[3]
-        f = open(filename)
+        f = open(filename, "rb")
         data = f.read()
         f.close()
     else:
         fileid = 5              # Card holder certificate
         filename = sys.argv[1]
-        f = open(filename)
+        f = open(filename, "rb")
         data = f.read()
         f.close()
-        print "%s: %d" % (filename, len(data))
-        print "Updating card holder certificate"
+        print("%s: %d" % (filename, len(data)))
+        print("Updating card holder certificate")
     main(fileid, is_update, data, passwd)
