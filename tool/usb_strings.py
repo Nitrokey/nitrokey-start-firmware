@@ -3,7 +3,7 @@
 """
 usb_strings.py - a tool to dump USB string
 
-Copyright (C) 2012 Free Software Initiative of Japan
+Copyright (C) 2012, 2015 Free Software Initiative of Japan
 Author: NIIBE Yutaka <gniibe@fsij.org>
 
 This file is a part of Gnuk, a GnuPG USB Token implementation.
@@ -27,7 +27,7 @@ import usb, sys
 USB_VENDOR_FSIJ=0x234b
 USB_PRODUCT_GNUK=0x0000
 
-def gnuk_devices():
+def gnuk_devices_by_vidpid():
     busses = usb.busses()
     for bus in busses:
         devices = bus.devices
@@ -43,11 +43,11 @@ field = ['', 'Vendor', 'Product', 'Serial', 'Revision', 'Config', 'Sys', 'Board'
 def main(n):
     for dev in gnuk_devices():
         handle = dev.open()
-        print "Device: ", dev.filename
+        print("Device: " % dev.filename)
         try:
             for i in range(1,n):
-                str = handle.getString(i, 512)
-                print "%10s: %s" % (field[i], str)
+                s = handle.getString(i, 512)
+                print("%10s: %s" % (field[i], s.decode('UTF-8')))
         except:
             pass
         del dev

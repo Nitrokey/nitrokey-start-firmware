@@ -79,16 +79,16 @@ def gpg_sign(keygrip, hash):
 def main(keyno,keygrip, data_regnual, data_upgrade):
     l = len(data_regnual)
     if (l & 0x03) != 0:
-        data_regnual = data_regnual.ljust(l + 4 - (l & 0x03), chr(0))
+        data_regnual = data_regnual.ljust(l + 4 - (l & 0x03), b'\x00')
     crc32code = crc32(data_regnual)
-    print "CRC32: %04x\n" % crc32code
+    print("CRC32: %04x\n" % crc32code)
     data_regnual += pack('<I', crc32code)
     for (dev, config, intf) in gnuk_devices():
         try:
             icc = gnuk_token(dev, config, intf)
-            print "Device: ", dev.filename
-            print "Configuration: ", config.value
-            print "Interface: ", intf.interfaceNumber
+            print("Device: %s" % dev.filename)
+            print("Configuration: %d" % config.value)
+            print("Interface: %d" % intf.interfaceNumber)
             break
         except:
             icc = None
@@ -102,10 +102,10 @@ def main(keyno,keygrip, data_regnual, data_upgrade):
     icc.cmd_external_authenticate(keyno, signed)
     icc.stop_gnuk()
     mem_info = icc.mem_info()
-    print "%08x:%08x" % mem_info
-    print "Downloading flash upgrade program..."
+    print("%08x:%08x" % mem_info)
+    print("Downloading flash upgrade program...")
     icc.download(mem_info[0], data_regnual)
-    print "Run flash upgrade program..."
+    print("Run flash upgrade program...")
     icc.execute(mem_info[0] + len(data_regnual) - 4)
     #
     time.sleep(3)
@@ -113,20 +113,20 @@ def main(keyno,keygrip, data_regnual, data_upgrade):
     del icc
     icc = None
     #
-    print "Wait 3 seconds..."
+    print("Wait 3 seconds...")
     time.sleep(3)
     # Then, send upgrade program...
     reg = None
     for dev in gnuk_devices_by_vidpid():
         try:
             reg = regnual(dev)
-            print "Device: ", dev.filename
+            print("Device: %d" % dev.filename)
             break
         except:
             pass
     mem_info = reg.mem_info()
-    print "%08x:%08x" % mem_info
-    print "Downloading the program"
+    print("%08x:%08x" % mem_info)
+    print("Downloading the program")
     reg.download(mem_info[0], data_upgrade)
     reg.protect()
     reg.finish()
@@ -143,12 +143,12 @@ if __name__ == '__main__':
         sys.argv.pop(1)
     filename_regnual = sys.argv[1]
     filename_upgrade = sys.argv[2]
-    f = open(filename_regnual)
+    f = open(filename_regnual, "rb")
     data_regnual = f.read()
     f.close()
-    print "%s: %d" % (filename_regnual, len(data_regnual))
-    f = open(filename_upgrade)
+    print("%s: %d" % (filename_regnual, len(data_regnual)))
+    f = open(filename_upgrade, "rb")
     data_upgrade = f.read()
     f.close()
-    print "%s: %d" % (filename_upgrade, len(data_upgrade))
+    print("%s: %d" % (filename_upgrade, len(data_upgrade)))
     main(keyno, keygrip, data_regnual, data_upgrade[4096:])

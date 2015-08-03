@@ -1,3 +1,10 @@
+2015-08-03  Niibe Yutaka  <gniibe@fsij.org>
+
+	* tool/gnuk_token.py (gnuk_token.download, gnuk_token.execute)
+	(regnual.download): Python3 fix.
+	* tool/upgrade_by_passwd.py (maian): Python3 fix.
+	* tool/usb_strings.py (main): Python3 fix.
+
 2015-07-31  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/configure (output_vendor_product_serial_strings): Fix sed

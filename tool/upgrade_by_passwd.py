@@ -110,11 +110,11 @@ if __name__ == '__main__':
         passwd = getpass("Admin password: ")
     filename_regnual = sys.argv[1]
     filename_upgrade = sys.argv[2]
-    f = open(filename_regnual)
+    f = open(filename_regnual,"rb")
     data_regnual = f.read()
     f.close()
     print("%s: %d" % (filename_regnual, len(data_regnual)))
-    f = open(filename_upgrade)
+    f = open(filename_upgrade,"rb")
     data_upgrade = f.read()
     f.close()
     print("%s: %d" % (filename_upgrade, len(data_upgrade)))
