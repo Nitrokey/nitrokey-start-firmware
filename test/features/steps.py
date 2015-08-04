@@ -7,6 +7,7 @@ import ast
 
 import gnuk_token as gnuk
 import rsa_keys
+from array import array
 
 @Before
 def ini(sc):
@@ -26,7 +27,7 @@ def cmd_change_reference_data(who_str,pass_str):
 
 @Given("cmd_put_data with (.*) and (\".*\")")
 def cmd_put_data(tag_str,content_str_repr):
-    content_str = ast.literal_eval(content_str_repr)
+    content_str = ast.literal_eval("b" + content_str_repr + "")
     tag = int(tag_str, 16)
     tagh = tag >> 8
     tagl = tag & 0xff
@@ -93,7 +94,7 @@ def compute_signature_on_host(keyno_str):
 
 @Given("a plain text (\".*\")")
 def set_plaintext(content_str_repr):
-    scc.plaintext = ast.literal_eval(content_str_repr)
+    scc.plaintext = ast.literal_eval("b" + content_str_repr + "")
 
 @Given("encrypt it on host with RSA key pair (.*)$")
 def encrypt_on_host(keyno_str):
@@ -106,7 +107,7 @@ def encrypt_on_host_public_key():
 
 @Given("let a token decrypt encrypted data")
 def decrypt():
-    scc.result = ftc.token.cmd_pso_longdata(0x80, 0x86, scc.ciphertext)
+    scc.result = ftc.token.cmd_pso_longdata(0x80, 0x86, scc.ciphertext).tostring()
 
 @Given("USB version string of the token")
 def usb_version_string():
@@ -129,7 +130,7 @@ def remove_key(openpgp_keyno_str):
 def generate_key(openpgp_keyno_str):
     openpgp_keyno = int(openpgp_keyno_str)
     pubkey_info = ftc.token.cmd_genkey(openpgp_keyno)
-    scc.data = rsa_keys.calc_fpr(pubkey_info[0], pubkey_info[1])
+    scc.data = rsa_keys.calc_fpr(pubkey_info[0].tostring(), pubkey_info[1].tostring())
 
 @When("put the first data to (.*)")
 def cmd_put_data_first_with_result(tag_str):
@@ -148,8 +149,8 @@ def cmd_put_data_second_with_result(tag_str):
 
 @Then("you should get: (.*)")
 def check_result(v):
-    value = ast.literal_eval("'" + v + "'")
-    assert_equal(scc.result, value)
+    value = ast.literal_eval("b'" + v + "'")
+    assert_equal(scc.result, array('B', value))
 
 @Then("it should get success")
 def check_success():
@@ -157,7 +158,7 @@ def check_success():
 
 @Then("you should get NULL")
 def check_null():
-    assert_equal(scc.result, "")
+    assert_equal(scc.result, array('B'))
 
 @Then("data should match: (.*)")
 def check_regexp(re):

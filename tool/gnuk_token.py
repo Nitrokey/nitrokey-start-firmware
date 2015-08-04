@@ -305,7 +305,7 @@ class gnuk_token(object):
         if len(sw) != 2:
             raise ValueError, sw
         if sw[0] == 0x90 and sw[1] == 0x00:
-            return ""
+            return array('B')
         elif sw[0] != 0x61:
             raise ValueError("%02x%02x" % (sw[0], sw[1]))
         return self.cmd_get_response(sw[1])
@@ -358,7 +358,7 @@ class gnuk_token(object):
         if len(sw) != 2:
             raise ValueError(sw)
         if sw[0] == 0x90 and sw[1] == 0x00:
-            return ""
+            return array('B')
         elif sw[0] != 0x61:
             raise ValueError("%02x%02x" % (sw[0], sw[1]))
         return self.cmd_get_response(sw[1])
@@ -384,7 +384,7 @@ class gnuk_token(object):
         if len(sw) != 2:
             raise ValueError(sw)
         if sw[0] == 0x90 and sw[1] == 0x00:
-            return ""
+            return array('B')
         elif sw[0] != 0x61:
             raise ValueError("%02x%02x" % (sw[0], sw[1]))
         return self.cmd_get_response(sw[1])
@@ -401,7 +401,7 @@ class gnuk_token(object):
         if len(sw) != 2:
             raise ValueError(sw)
         if sw[0] == 0x90 and sw[1] == 0x00:
-            return ""
+            return array('B')
         elif sw[0] != 0x61:
             raise ValueError("%02x%02x" % (sw[0], sw[1]))
         pk = self.cmd_get_response(sw[1])
