@@ -22,7 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 from struct import *
-import string, binascii
+import binascii
 import usb, time
 from array import array
 
@@ -294,7 +294,7 @@ class gnuk_token(object):
         cmd_data = iso7816_compose(0xa4, 0x04, 0x0c, b"\xD2\x76\x00\x01\x24\x01")
         sw = self.icc_send_cmd(cmd_data)
         if len(sw) != 2:
-            raise ValueError, sw
+            raise ValueError(sw)
         if not (sw[0] == 0x90 and sw[1] == 0x00):
             raise ValueError("%02x%02x" % (sw[0], sw[1]))
         return True
@@ -303,7 +303,7 @@ class gnuk_token(object):
         cmd_data = iso7816_compose(0xca, tagh, tagl, b"")
         sw = self.icc_send_cmd(cmd_data)
         if len(sw) != 2:
-            raise ValueError, sw
+            raise ValueError(sw)
         if sw[0] == 0x90 and sw[1] == 0x00:
             return array('B')
         elif sw[0] != 0x61:
@@ -427,7 +427,7 @@ class gnuk_token(object):
         cmd_data = iso7816_compose(0xda, tagh, tagl, b"")
         sw = self.icc_send_cmd(cmd_data)
         if sw[0] != 0x90 and sw[1] != 0x00:
-            raise ValueError, ("%02x%02x" % (sw[0], sw[1]))
+            raise ValueError("%02x%02x" % (sw[0], sw[1]))
 
     def cmd_put_data_key_import_remove(self, keyno):
         if keyno == 1:
@@ -439,7 +439,7 @@ class gnuk_token(object):
         cmd_data = iso7816_compose(0xdb, 0x3f, 0xff, b"\x4d\x02" +  keyspec)
         sw = self.icc_send_cmd(cmd_data)
         if sw[0] != 0x90 and sw[1] != 0x00:
-            raise ValueError, ("%02x%02x" % (sw[0], sw[1]))
+            raise ValueError("%02x%02x" % (sw[0], sw[1]))
 
     def cmd_get_challenge(self):
         cmd_data = iso7816_compose(0x84, 0x00, 0x00, '')

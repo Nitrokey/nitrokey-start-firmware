@@ -48,7 +48,7 @@ def main(keyno, passwd, data_regnual, data_upgrade):
     gnuk.cmd_write_binary(1+keyno, rsa_raw_pubkey, False)
 
     gnuk.cmd_select_openpgp()
-    challenge = gnuk.cmd_get_challenge()
+    challenge = gnuk.cmd_get_challenge().tostring()
     digestinfo = binascii.unhexlify(SHA256_OID_PREFIX) + challenge
     signed = rsa.compute_signature(rsa_key, digestinfo)
     signed_bytes = rsa.integer_to_bytes_256(signed)

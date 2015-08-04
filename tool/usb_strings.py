@@ -41,9 +41,9 @@ def gnuk_devices_by_vidpid():
 field = ['', 'Vendor', 'Product', 'Serial', 'Revision', 'Config', 'Sys', 'Board']
 
 def main(n):
-    for dev in gnuk_devices():
+    for dev in gnuk_devices_by_vidpid():
         handle = dev.open()
-        print("Device: " % dev.filename)
+        print("Device: %s" % dev.filename)
         try:
             for i in range(1,n):
                 s = handle.getString(i, 512)

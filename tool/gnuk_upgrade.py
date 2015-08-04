@@ -23,7 +23,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 from struct import *
-import sys, time, os, binascii, string
+import sys, time, os, binascii
 
 # INPUT: binary files (regnual_image, upgrade_firmware_image)
 
@@ -32,12 +32,6 @@ import sys, time, os, binascii, string
 import usb
 
 from gnuk_token import *
-
-def to_string(t):
-    result = ""
-    for c in t:
-        result += chr(c)
-    return result
 
 from subprocess import check_output
 
@@ -97,8 +91,8 @@ def main(keyno,keygrip, data_regnual, data_upgrade):
     elif icc.icc_get_status() == 1:
         icc.icc_power_on()
     icc.cmd_select_openpgp()
-    challenge = icc.cmd_get_challenge()
-    signed = gpg_sign(keygrip, binascii.hexlify(to_string(challenge)))
+    challenge = icc.cmd_get_challenge().tostring()
+    signed = gpg_sign(keygrip, binascii.hexlify(challenge))
     icc.cmd_external_authenticate(keyno, signed)
     icc.stop_gnuk()
     mem_info = icc.mem_info()

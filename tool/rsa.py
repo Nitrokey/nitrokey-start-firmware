@@ -1,5 +1,4 @@
 from binascii import hexlify, unhexlify
-import string
 from os import urandom
 
 def read_key_from_file(file):
@@ -35,8 +34,9 @@ def modinv(a, m):
         return x % m
 
 def pkcs1_pad_for_sign(digestinfo):
-    byte_repr = '\x00' + '\x01' + string.ljust('', 256 - 19 - 32 - 3, '\xff') \
-        + '\x00' + digestinfo
+    byte_repr = b'\x00' + b'\x01' \
+                + bytes.ljust(b'', 256 - 19 - 32 - 3, b'\xff') \
+                + b'\x00' + digestinfo
     return int(hexlify(byte_repr), 16)
 
 def compute_signature(key, digestinfo):
@@ -64,7 +64,7 @@ def integer_to_bytes_256(i):
     s = s.rstrip('L')
     if len(s) & 1:
         s = '0' + s
-    return string.rjust(unhexlify(s), 256, '\x00')
+    return bytes.rjust(unhexlify(s), 256, b'\x00')
 
 def get_raw_pubkey(key):
     return key[0]
