@@ -92,6 +92,7 @@ Configuration:
 			   STM8S_DISCOVERY
 			   STBEE
 			   FST_01
+			   NITROKEY_LITE
   --enable-debug	debug with virtual COM port	[no]
   --enable-pinpad={cir,dial}
 			PIN entry support		[no]

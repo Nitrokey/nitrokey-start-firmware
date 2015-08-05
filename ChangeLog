@@ -1,3 +1,11 @@
+2015-08-06  Mateusz Zalega <mateusz@nitrokey.com>
+
+	* boards/NITROKEY_LITE/*: New.
+
+	* src/configure (help-string): Add Nitrokey Lite.
+
+	* GNUK_USB_DEVICE_ID: Add Nitrokey Lite.
+
 2013-10-08  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/openpgp.c (modify_binary): Allow odd size of certificate.
