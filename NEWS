@@ -1,8 +1,16 @@
 Gnuk NEWS - User visible changes
 
+* Major changes in Gnuk 1.1.7
+
+  Released 2015-08-05, by NIIBE Yutaka
+
+** Upgrade of Chopstx
+We use Chopstx 0.08, which supports STM32 Nucleo and ST Dongle.
+
+
 * Major changes in Gnuk 1.1.6
 
-  Released 2015-07-21
+  Released 2015-07-21, by NIIBE Yutaka
 
 ** USB SerialNumber String
 The way to determine a serial number of Gnuk Token has been changed.
