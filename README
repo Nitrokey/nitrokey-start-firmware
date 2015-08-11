@@ -306,7 +306,7 @@ Gnuk is distributed with external source code.
 USB vendor ID and product ID (USB device ID)
 ============================================
 
-When you have a vender ID and assign a product ID for Gnuk, edit the
+When you have a vendor ID and assign a product ID for Gnuk, edit the
 file GNUK_USB_DEVICE_ID and add an entry for yours.  In this case,
 please contact Niibe, so that it is listed to the file in the official
 release of the source code.

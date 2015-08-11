@@ -68,7 +68,7 @@ static const uint8_t regnual_config_desc[] = {
   9,
   USB_CONFIGURATION_DESCRIPTOR_TYPE, /* bDescriptorType: Configuration */
   18, 0,			/* wTotalLength: no of returned bytes */
-  1,			/* bNumInterfaces: single vender interface */
+  1,			/* bNumInterfaces: single vendor interface */
   0x01,			/* bConfigurationValue: Configuration value */
   0x00,			/* iConfiguration: None */
 #if defined(USB_SELF_POWERED)
