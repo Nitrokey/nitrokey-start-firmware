@@ -791,7 +791,7 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data, int key_len,
   r = flash_key_write (key_addr, (const uint8_t *)kdi.data,
 		       modulus_allocated_here? modulus_allocated_here:modulus);
   if (modulus_allocated_here)
-    modulus_free (modulus);
+    modulus_free (modulus_allocated_here);
 
   if (r < 0)
     {
