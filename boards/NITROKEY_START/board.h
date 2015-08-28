@@ -28,7 +28,7 @@
 #define _BOARD_H_
 
 /*
- * Setup for the NITROKEY-LITE board.
+ * Setup for the NITROKEY-START board.
  */
 #define	SET_USB_CONDITION(en) en	/* To connect USB, call palSetPad */
 #define	SET_LED_CONDITION(on) on	/* To emit light, call palSetPad */
@@ -40,8 +40,8 @@
 /*
  * Board identifier.
  */
-#define BOARD_NITROKEY_LITE
-#define BOARD_NAME "NITROKEY_LITE"
+#define BOARD_NITROKEY_START
+#define BOARD_NAME "NITROKEY_START"
 
 /*
  * Board frequencies.
