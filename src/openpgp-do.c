@@ -631,16 +631,19 @@ do_openpgpcard_aid (uint16_t tag, int with_tag)
 
   if (vid == 0xffff || vid == 0x0000)
     {
-      const uint8_t *u = unique_device_id ();
+      const uint8_t *u = unique_device_id () + 8;
 
       memcpy (res_p, openpgpcard_aid, 8);
       res_p += 8;
 
-      /* vid == 0xfffe: serial number is random byte */
+      /* vid == 0xfffe: serial number is four random bytes */
       *res_p++ = 0xff;
       *res_p++ = 0xfe;
-      memcpy (res_p, u, 4);
-      res_p += 4;
+
+      *res_p++ = u[3];
+      *res_p++ = u[2];
+      *res_p++ = u[1];
+      *res_p++ = u[0];
     }
   else
     {

@@ -1,3 +1,10 @@
+2015-09-04  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/openpgp-do.c (do_openpgpcard_aid): Use upper bytes of unique
+	ID of MCU; same as USB serial number.
+
+	* src/configure (help): Add NITROKEY_START.
+
 2015-08-26  Mateusz Zalega  <mateusz@nitrokey.com>
 
 	* GNUK_USB_DEVICE_ID: Add Nitrokey Start.
