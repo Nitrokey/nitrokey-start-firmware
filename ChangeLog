@@ -1,9 +1,13 @@
+2015-09-08  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/configure (help): Add ST_DONGLE and ST_NUCLEO_F103.
+
 2015-09-04  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/openpgp-do.c (do_openpgpcard_aid): Use upper bytes of unique
 	ID of MCU; same as USB serial number.
 
-	* src/configure (help): Add NITROKEY_START.
+	* src/configure (help): Add NITROKEY_START.a
 
 2015-08-26  Mateusz Zalega  <mateusz@nitrokey.com>
 
