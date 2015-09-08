@@ -107,6 +107,8 @@ Configuration:
 			   STBEE
 			   STBEE_MINI
 			   MAPLE_MINI
+			   ST_DONGLE
+			   ST_NUCLEO_F103
 			   NITROKEY_START
 			   CQ_STARM
 			   FST_01_00 (unreleased version with 8MHz XTAL)
