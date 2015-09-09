@@ -5,7 +5,7 @@ Gnuk NEWS - User visible changes
   Released 2015-09-??, by NIIBE Yutaka
 
 ** Upgrade of Chopstx
-We use Chopstx 0.09, which supports Nitroky-Start.
+We use Chopstx 0.09, which supports Nitrokey-Start.
 
 ** Card serial number
 The way to determine a serial number of Gnuk Token for card has been

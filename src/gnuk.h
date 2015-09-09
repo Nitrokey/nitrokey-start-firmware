@@ -24,17 +24,18 @@ extern struct apdu apdu;
 void ccid_card_change_signal (int how);
 
 /* CCID thread */
-#define EV_RX_DATA_READY (1) /* USB Rx data available  */
-#define EV_EXEC_FINISHED (2) /* OpenPGP Execution finished */
-#define EV_TX_FINISHED   (4) /* CCID Tx finished  */
-#define EV_CARD_CHANGE   (8)
+#define EV_RX_DATA_READY   1 /* USB Rx data available  */
+#define EV_EXEC_FINISHED   2 /* OpenPGP Execution finished */
+#define EV_TX_FINISHED     4 /* CCID Tx finished  */
+#define EV_CARD_CHANGE     8
+#define EV_RESET          16
 
 /* OpenPGPcard thread */
-#define EV_PINPAD_INPUT_DONE    (1)
-#define EV_EXIT                 (2)
-#define EV_CMD_AVAILABLE        (4)
-#define EV_VERIFY_CMD_AVAILABLE (8)
-#define EV_MODIFY_CMD_AVAILABLE (16)
+#define EV_PINPAD_INPUT_DONE      1
+#define EV_EXIT                   2
+#define EV_CMD_AVAILABLE          4
+#define EV_VERIFY_CMD_AVAILABLE   8
+#define EV_MODIFY_CMD_AVAILABLE  16
 
 /* Maximum cmd apdu data is key import 24+4+256+256 (proc_key_import) */
 #define MAX_CMD_APDU_DATA_SIZE (24+4+256+256) /* without header */
@@ -416,12 +417,13 @@ void flash_do_write_internal (const uint8_t *p, int nr,
 
 extern const uint8_t gnuk_string_serial[];
 
-#define LED_ONESHOT		(1)
-#define LED_TWOSHOTS		(2)
-#define LED_SHOW_STATUS		(4)
-#define LED_START_COMMAND	(8)
-#define LED_FINISH_COMMAND	(16)
-#define LED_FATAL		(32)
+#define LED_ONESHOT		 1
+#define LED_TWOSHOTS		 2
+#define LED_SHOW_STATUS		 4
+#define LED_START_COMMAND	 8
+#define LED_FINISH_COMMAND	16
+#define LED_FATAL		32
+#define LED_RESET		64
 void led_blink (int spec);
 
 #if defined(PINPAD_SUPPORT)

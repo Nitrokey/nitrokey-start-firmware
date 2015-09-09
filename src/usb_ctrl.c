@@ -1,7 +1,8 @@
 /*
  * usb_ctrl.c - USB control pipe device specific code for Gnuk
  *
- * Copyright (C) 2010, 2011, 2012, 2013 Free Software Initiative of Japan
+ * Copyright (C) 2010, 2011, 2012, 2013, 2015
+ *               Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
  * This file is a part of Gnuk, a GnuPG USB Token implementation.
@@ -57,6 +58,8 @@ static struct line_coding line_coding = {
   0x08    /* bits:      8         */
 };
 
+#define CDC_CTRL_DTR            0x0001
+
 static int
 vcom_port_data_setup (uint8_t req, uint8_t req_no, struct control_info *detail)
 {
@@ -76,7 +79,7 @@ vcom_port_data_setup (uint8_t req, uint8_t req_no, struct control_info *detail)
 	{
 	  uint8_t connected_saved = stdout.connected;
 
-	  if (detail->value != 0)
+	  if ((detail->value & CDC_CTRL_DTR) != 0)
 	    {
 	      if (stdout.connected == 0)
 		/* It's Open call */
@@ -212,6 +215,7 @@ usb_cb_device_reset (void)
     gnuk_setup_endpoints_for_interface (i, 0);
 
   bDeviceState = ATTACHED;
+  led_blink (LED_RESET);	/* Notify the main.  */
 }
 
 #define USB_CCID_REQ_ABORT			0x01
