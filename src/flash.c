@@ -338,7 +338,7 @@ uint8_t *
 flash_key_alloc (enum kind_of_key kk)
 {
   uint8_t *k, *k0 = flash_key_getpage (kk);
-  int i; 
+  int i;
   int key_size = gpg_get_algo_attr_key_size (kk, GPG_KEY_STORAGE);
 
   /* Seek free space in the page.  */

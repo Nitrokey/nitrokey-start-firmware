@@ -27,7 +27,7 @@
 
 /**
  * @brief X = A mod B (using MU=(1<<(256)+MU_lower)) (Barret reduction)
- * 
+ *
  */
 void
 mod_reduce (bn256 *X, const bn512 *A, const bn256 *B, const bn256 *MU_lower)
@@ -145,7 +145,7 @@ mod_reduce (bn256 *X, const bn512 *A, const bn256 *B, const bn256 *MU_lower)
 
 /**
  * @brief C = X^(-1) mod N
- * 
+ *
  * Assume X and N are co-prime (or N is prime).
  * NOTE: If X==0, it return 0.
  *

@@ -1,7 +1,7 @@
 /*
  * usb-icc.c -- USB CCID protocol handling
  *
- * Copyright (C) 2010, 2011, 2012, 2013, 2014
+ * Copyright (C) 2010, 2011, 2012, 2013, 2014, 2015
  *               Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
@@ -256,10 +256,7 @@ static void ccid_init (struct ccid *c, struct ep_in *epi, struct ep_out *epo,
 
   c->icc_state = ICC_STATE_NOCARD;
   c->state = APDU_STATE_WAIT_COMMAND;
-  /*
-   * Note: a is not yet initialized yet, we can't use c->a->cmd_apdu_data here.
-   */
-  c->p = &icc_buffer[5];
+  c->p = a->cmd_apdu_data;
   c->len = MAX_CMD_APDU_DATA_SIZE;
   c->err = 0;
   memset (&c->icc_header, 0, sizeof (struct icc_header));
@@ -748,7 +745,7 @@ const size_t __stacksize_gpg = (size_t)&__process3_stack_size__;
 
 
 /* Send back ATR (Answer To Reset) */
-enum icc_state
+static enum icc_state
 icc_power_on (struct ccid *c)
 {
   size_t size_atr = sizeof (ATR);
@@ -814,7 +811,7 @@ icc_send_status (struct ccid *c)
 #endif
 }
 
-enum icc_state
+static enum icc_state
 icc_power_off (struct ccid *c)
 {
   if (c->application)
@@ -1310,6 +1307,25 @@ EP2_IN_Callback (void)
 }
 
 
+void
+ccid_card_change_signal (int how)
+{
+  struct ccid *c = &ccid;
+
+  if (how == CARD_CHANGE_TOGGLE
+      || (c->icc_state == ICC_STATE_NOCARD && how == CARD_CHANGE_INSERT)
+      || (c->icc_state != ICC_STATE_NOCARD && how == CARD_CHANGE_REMOVE))
+    eventflag_signal (&c->ccid_comm, EV_CARD_CHANGE);
+}
+
+void
+ccid_usb_reset (void)
+{
+  struct ccid *c = &ccid;
+  eventflag_signal (&c->ccid_comm, EV_USB_RESET);
+}
+
+
 #define USB_ICC_TIMEOUT (1950*1000)
 
 #define GPG_THREAD_TERMINATED 0xffff
@@ -1326,18 +1342,6 @@ USBthread (void *arg)
   return ccid_thread (thd);
 }
 
-void
-ccid_card_change_signal (int how)
-{
-  struct ccid *c = &ccid;
-
-  if (how == CARD_CHANGE_TOGGLE
-      || (c->icc_state == ICC_STATE_NOCARD && how == CARD_CHANGE_INSERT)
-      || (c->icc_state != ICC_STATE_NOCARD && how == CARD_CHANGE_REMOVE))
-    eventflag_signal (&c->ccid_comm, EV_CARD_CHANGE);
-}
-
-
 #define NOTIFY_SLOT_CHANGE 0x50
 
 static void * __attribute__ ((noinline))
@@ -1353,8 +1357,8 @@ ccid_thread (chopstx_t thd)
 
   epi_init (epi, ENDP1, notify_tx, c);
   epo_init (epo, ENDP1, notify_icc, c);
-  ccid_init (c, epi, epo, a, thd);
   apdu_init (a);
+  ccid_init (c, epi, epo, a, thd);
 
   icc_prepare_receive (c);
   while (1)
@@ -1363,7 +1367,9 @@ ccid_thread (chopstx_t thd)
 
       m = eventflag_wait_timeout (&c->ccid_comm, USB_ICC_TIMEOUT);
 
-      if (m == EV_CARD_CHANGE)
+      if (m == EV_USB_RESET)
+	break;
+      else if (m == EV_CARD_CHANGE)
 	{
 	  if (c->icc_state == ICC_STATE_NOCARD)
 	    { /* Inserted!  */
@@ -1447,9 +1453,11 @@ ccid_thread (chopstx_t thd)
 
   if (c->application)
     {
+      chopstx_cancel (c->application);
       chopstx_join (c->application, NULL);
       c->application = 0;
     }
 
+  icc_state_p = NULL;
   return NULL;
 }

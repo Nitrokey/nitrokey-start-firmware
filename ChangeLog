@@ -1,6 +1,14 @@
+2015-09-09  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/main.c (main): Handle LED_USB_RESET.
+
+	* src/usb-icc.c (ccid_usb_reset): New.
+	(ccid_thread): Upon receival of EV_USB_RESET, finish
+	the thread, canceling the card thread.
+
 2015-09-08  Niibe Yutaka  <gniibe@fsij.org>
 
-	* src/gnuk.h (EV_RESET, LED_RESET): New.
+	* src/gnuk.h (EV_USB_RESET, LED_USB_RESET): New.
 
 	* src/usb_ctrl.c (CDC_CTRL_DTR): New.
 	(vcom_port_data_setup): Distinguish detail->value for DTR.

@@ -33,7 +33,7 @@
  * References:
  *
  * [1] D. J. Bernstein. Curve25519: new Diffie-Hellman speed records.
- *     Proceedings of PKC 2006, to appear. 
+ *     Proceedings of PKC 2006, to appear.
  *     http://cr.yp.to/papers.html#curve25519. Date: 2006.02.09.
  *
  * [2] D. J. Bernstein. Can we avoid tests for zero in fast
@@ -46,7 +46,7 @@
  * IMPLEMENTATION NOTE
  *
  * (0) We assume that the processor has no cache, nor branch target
- *     prediction.  Thus, we don't avoid indexing by secret value. 
+ *     prediction.  Thus, we don't avoid indexing by secret value.
  *     We don't avoid conditional jump if both cases have same timing,
  *     either.
  *

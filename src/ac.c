@@ -169,7 +169,7 @@ verify_admin_00 (const uint8_t *pw, int buf_len, int pw_len_known,
   pw_len = ks[0] & PW_LEN_MASK;
   salt = KS_GET_SALT (ks);
   salt_len = SALT_SIZE;
-  
+
   if ((pw_len_known >= 0 && pw_len_known != pw_len) || buf_len < pw_len)
     return -1;
 

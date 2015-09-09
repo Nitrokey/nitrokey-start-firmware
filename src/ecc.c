@@ -34,7 +34,7 @@
  *     Pages 250-265, Springer-Verlag London, UK, 2001
  *     ISBN:3-540-41898-9
  *
- * [3] Mustapha Hedabou, Pierre Pinel, Lucien Bénéteau, 
+ * [3] Mustapha Hedabou, Pierre Pinel, Lucien Bénéteau,
  *     A comb method to render ECC resistant against Side Channel Attacks,
  *     2004
  */

@@ -215,7 +215,7 @@ usb_cb_device_reset (void)
     gnuk_setup_endpoints_for_interface (i, 0);
 
   bDeviceState = ATTACHED;
-  led_blink (LED_RESET);	/* Notify the main.  */
+  led_blink (LED_USB_RESET);	/* Notify the main.  */
 }
 
 #define USB_CCID_REQ_ABORT			0x01

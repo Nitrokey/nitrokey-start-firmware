@@ -1,7 +1,7 @@
 /*
  * sha512.c -- Compute SHA-512 hash (for little endian architecture).
  *
- * This module is written by gniibe, following the API of sha256.c. 
+ * This module is written by gniibe, following the API of sha256.c.
  *
  * Copyright (C) 2014 Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>

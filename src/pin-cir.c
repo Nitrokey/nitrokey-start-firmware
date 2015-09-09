@@ -1044,7 +1044,7 @@ cir_init (void)
   TIMx->PSC = 72 - 1;		/* 1 MHz */
   TIMx->ARR = 18000;		/* 18 ms */
   /* Generate UEV to upload PSC and ARR */
-  TIMx->EGR = TIM_EGR_UG;	
+  TIMx->EGR = TIM_EGR_UG;
 
   chopstx_create (PRIO_TIM, __stackaddr_tim, __stacksize_tim, tim_main, NULL);
   chopstx_create (PRIO_EXT, __stackaddr_ext, __stacksize_ext, ext_main, NULL);

@@ -201,7 +201,7 @@ gpg_get_pw1_lifetime (void)
 /*
  * Representation of algorithm attributes:
  *    0: ALGO_ATTR_<>_P == NULL : RSA-2048
- *    N: ALGO_ATTR_<>_P != NULL : 
+ *    N: ALGO_ATTR_<>_P != NULL :
  *
  */
 static const uint8_t *algo_attr_sig_p;
@@ -2097,10 +2097,10 @@ gpg_do_keygen (uint8_t kk_byte)
       for (i = 0; i < 32; i++)
 	d[32 - i - 1] = p[i];
 
-      random_bytes_free (rnd);      
+      random_bytes_free (rnd);
 
       prv = d;
-      pubkey = NULL; 
+      pubkey = NULL;
     }
   else if (attr == ALGO_ED25519)
     {
@@ -2111,7 +2111,7 @@ gpg_do_keygen (uint8_t kk_byte)
       d[31] &= 127;
       d[31] |= 64;
       prv = d;
-      pubkey = NULL; 
+      pubkey = NULL;
     }
   else if (attr == ALGO_CURVE25519)
     {
@@ -2122,7 +2122,7 @@ gpg_do_keygen (uint8_t kk_byte)
       d[31] &= 127;
       d[31] |= 64;
       prv = d;
-      pubkey = NULL; 
+      pubkey = NULL;
     }
   else
     {

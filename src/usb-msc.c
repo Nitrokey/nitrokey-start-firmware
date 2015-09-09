@@ -319,7 +319,7 @@ msc_handle_command (void)
       /* Error occured, ignore the request and go into error state */
       msc_state = MSC_ERROR;
       usb_lld_stall_rx (ENDP6);
-      goto done; 
+      goto done;
     }
 
   n = ep6_out.rxcnt;

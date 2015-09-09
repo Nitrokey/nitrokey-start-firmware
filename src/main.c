@@ -71,7 +71,7 @@ _write (const char *s, int len)
       packet_len =
 	(len < VIRTUAL_COM_PORT_DATA_SIZE) ? len : VIRTUAL_COM_PORT_DATA_SIZE;
 
-      chopstx_mutex_lock (&stdout.m_dev);     
+      chopstx_mutex_lock (&stdout.m_dev);
       usb_lld_write (ENDP3, s, packet_len);
       chopstx_cond_wait (&stdout.cond_dev, &stdout.m_dev);
       chopstx_mutex_unlock (&stdout.m_dev);
@@ -290,7 +290,7 @@ const size_t __stacksize_usb = (size_t)&__process4_stack_size__;
 
 #define PRIO_CCID 3
 #define PRIO_USB  4
-#define PRIO_MAIN 5 
+#define PRIO_MAIN 5
 
 extern void *usb_intr (void *arg);
 
@@ -390,6 +390,13 @@ main (int argc, char *argv[])
 	  break;
 	case LED_FATAL:
 	  display_fatal_code ();
+	  break;
+	case LED_USB_RESET:
+	  ccid_reset ();
+	  chopstx_join (ccid_thd, NULL);
+	  /* Invoke the CCID thread again.  */
+	  ccid_thd = chopstx_create (PRIO_CCID, __stackaddr_ccid,
+				     __stacksize_ccid, USBthread, NULL);
 	  break;
 	default:
 	  if ((m = emit_led (LED_TIMEOUT_ZERO, LED_TIMEOUT_STOP)))

@@ -1036,7 +1036,7 @@ cmd_internal_authenticate (void)
       result_len = pubkey_len;
       r = rsa_sign (apdu.cmd_apdu_data, res_APDU, len,
 		    &kd[GPG_KEY_FOR_AUTHENTICATION], pubkey_len);
-    }	  
+    }
   else if (attr == ALGO_NISTP256R1)
     {
       if (len != ECDSA_HASH_LEN)
