@@ -90,7 +90,7 @@
 #define NEUG_ADC_SETTING1_SQR3  ADC_SQR3_SQ1_N(ADC_CHANNEL_VREFINT)     \
                               | ADC_SQR3_SQ2_N(ADC_CHANNEL_SENSOR)      \
                               | ADC_SQR3_SQ3_N(ADC_CHANNEL_SENSOR)      \
-                              | ADC_SQR3_SQ4_N(ADC_CHANNEL_VREFINT)     
+                              | ADC_SQR3_SQ4_N(ADC_CHANNEL_VREFINT)
 #define NEUG_ADC_SETTING1_NUM_CHANNELS 4
 
 
@@ -149,7 +149,7 @@ get_adc_config (uint32_t config[4])
 
     case BOARD_ID_OLIMEX_STM32_H103:
     case BOARD_ID_STBEE:
-      config[0] = ADC_SMPR1_SMP_AN10(ADC_SAMPLE_1P5) 
+      config[0] = ADC_SMPR1_SMP_AN10(ADC_SAMPLE_1P5)
 		| ADC_SMPR1_SMP_AN11(ADC_SAMPLE_1P5);
       config[1] = 0;
       config[3] = ADC_SQR3_SQ1_N(ADC_CHANNEL_IN10)
@@ -171,6 +171,7 @@ get_adc_config (uint32_t config[4])
     case BOARD_ID_STM8S_DISCOVERY:
     case BOARD_ID_ST_DONGLE:
     case BOARD_ID_ST_NUCLEO_F103:
+    case BOARD_ID_NITROKEY_START:
     default:
       config[0] = 0;
       config[1] = ADC_SMPR2_SMP_AN0(ADC_SAMPLE_1P5)
