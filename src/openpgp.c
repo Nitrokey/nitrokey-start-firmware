@@ -817,6 +817,7 @@ cmd_pso (void)
   int attr;
   int pubkey_len;
   unsigned int result_len = 0;
+  int cs;
 
   DEBUG_INFO (" - PSO: ");
   DEBUG_WORD ((uint32_t)&r);
@@ -853,9 +854,11 @@ cmd_pso (void)
 
 	  DEBUG_BINARY (kd[GPG_KEY_FOR_SIGNING].data, pubkey_len);
 
+	  cs = chopstx_setcancelstate (0);
 	  result_len = pubkey_len;
 	  r = rsa_sign (apdu.cmd_apdu_data, res_APDU, len,
 			&kd[GPG_KEY_FOR_SIGNING], pubkey_len);
+	  chopstx_setcancelstate (cs);
 	}
       else if (attr == ALGO_NISTP256R1 || attr == ALGO_SECP256K1)
 	{
@@ -867,6 +870,7 @@ cmd_pso (void)
 	      return;
 	    }
 
+	  cs = chopstx_setcancelstate (0);
 	  result_len = ECDSA_SIGNATURE_LENGTH;
 	  if (attr == ALGO_NISTP256R1)
 	    r = ecdsa_sign_p256r1 (apdu.cmd_apdu_data, res_APDU,
@@ -874,6 +878,7 @@ cmd_pso (void)
 	  else			/* ALGO_SECP256K1 */
 	    r = ecdsa_sign_p256k1 (apdu.cmd_apdu_data, res_APDU,
 				   kd[GPG_KEY_FOR_SIGNING].data);
+	  chopstx_setcancelstate (cs);
 	}
       else if (attr == ALGO_ED25519)
 	{
@@ -886,11 +891,13 @@ cmd_pso (void)
 	      return;
 	    }
 
+	  cs = chopstx_setcancelstate (0);
 	  result_len = EDDSA_SIGNATURE_LENGTH;
 	  r = eddsa_sign_25519 (apdu.cmd_apdu_data, len, output,
 				kd[GPG_KEY_FOR_SIGNING].data,
 				kd[GPG_KEY_FOR_SIGNING].data+32,
 				kd[GPG_KEY_FOR_SIGNING].pubkey);
+	  chopstx_setcancelstate (cs);
 	  memcpy (res_APDU, output, EDDSA_SIGNATURE_LENGTH);
 	}
       else
@@ -932,8 +939,10 @@ cmd_pso (void)
 	      GPG_CONDITION_NOT_SATISFIED ();
 	      return;
 	    }
+	  cs = chopstx_setcancelstate (0);
 	  r = rsa_decrypt (apdu.cmd_apdu_data+1, res_APDU, len,
 			   &kd[GPG_KEY_FOR_DECRYPTION], &result_len);
+	  chopstx_setcancelstate (cs);
 	}
       else if (attr == ALGO_NISTP256R1 || attr == ALGO_SECP256K1)
 	{
@@ -947,6 +956,7 @@ cmd_pso (void)
 	      return;
 	    }
 
+	  cs = chopstx_setcancelstate (0);
 	  result_len = 65;
 	  if (attr == ALGO_NISTP256R1)
 	    r = ecdh_decrypt_p256r1 (apdu.cmd_apdu_data + header, res_APDU,
@@ -954,6 +964,7 @@ cmd_pso (void)
 	  else
 	    r = ecdh_decrypt_p256k1 (apdu.cmd_apdu_data + header, res_APDU,
 				     kd[GPG_KEY_FOR_DECRYPTION].data);
+	  chopstx_setcancelstate (cs);
 	}
       else if (attr == ALGO_CURVE25519)
 	{
@@ -965,9 +976,11 @@ cmd_pso (void)
 	      return;
 	    }
 
+	  cs = chopstx_setcancelstate (0);
 	  result_len = 32;
 	  r = ecdh_decrypt_curve25519 (apdu.cmd_apdu_data + header, res_APDU,
 				       kd[GPG_KEY_FOR_DECRYPTION].data);
+	  chopstx_setcancelstate (cs);
 	}
       else
 	{
@@ -1003,6 +1016,7 @@ cmd_internal_authenticate (void)
   int len = apdu.cmd_apdu_data_len;
   int r = -1;
   unsigned int result_len = 0;
+  int cs;
 
   DEBUG_INFO (" - INTERNAL AUTHENTICATE\r\n");
 
@@ -1033,9 +1047,11 @@ cmd_internal_authenticate (void)
 	  return;
 	}
 
+      cs = chopstx_setcancelstate (0);
       result_len = pubkey_len;
       r = rsa_sign (apdu.cmd_apdu_data, res_APDU, len,
 		    &kd[GPG_KEY_FOR_AUTHENTICATION], pubkey_len);
+      chopstx_setcancelstate (cs);
     }
   else if (attr == ALGO_NISTP256R1)
     {
@@ -1046,9 +1062,11 @@ cmd_internal_authenticate (void)
 	  return;
 	}
 
+      cs = chopstx_setcancelstate (0);
       result_len = ECDSA_SIGNATURE_LENGTH;
       r = ecdsa_sign_p256r1 (apdu.cmd_apdu_data, res_APDU,
 			     kd[GPG_KEY_FOR_AUTHENTICATION].data);
+      chopstx_setcancelstate (cs);
     }
   else if (attr == ALGO_SECP256K1)
     {
@@ -1059,9 +1077,11 @@ cmd_internal_authenticate (void)
 	  return;
 	}
 
+      cs = chopstx_setcancelstate (0);
       result_len = ECDSA_SIGNATURE_LENGTH;
       r = ecdsa_sign_p256k1 (apdu.cmd_apdu_data, res_APDU,
 			     kd[GPG_KEY_FOR_AUTHENTICATION].data);
+      chopstx_setcancelstate (cs);
     }
   else if (attr == ALGO_ED25519)
     {
@@ -1074,11 +1094,13 @@ cmd_internal_authenticate (void)
 	  return;
 	}
 
+      cs = chopstx_setcancelstate (0);
       result_len = EDDSA_SIGNATURE_LENGTH;
       r = eddsa_sign_25519 (apdu.cmd_apdu_data, len, output,
 			    kd[GPG_KEY_FOR_AUTHENTICATION].data,
 			    kd[GPG_KEY_FOR_AUTHENTICATION].data+32,
 			    kd[GPG_KEY_FOR_AUTHENTICATION].pubkey);
+      chopstx_setcancelstate (cs);
       memcpy (res_APDU, output, EDDSA_SIGNATURE_LENGTH);
     }
 
@@ -1322,7 +1344,11 @@ process_command_apdu (void)
       break;
 
   if (i < NUM_CMDS)
-    cmds[i].cmd_handler ();
+    {
+      chopstx_setcancelstate (1);
+      cmds[i].cmd_handler ();
+      chopstx_setcancelstate (0);
+    }
   else
     {
       DEBUG_INFO (" - ??");
@@ -1355,10 +1381,10 @@ card_thread (chopstx_t thd, struct eventflag *ccid_comm)
 
   while (1)
     {
-      eventmask_t m = eventflag_wait (openpgp_comm);
 #if defined(PINPAD_SUPPORT)
       int len, pw_len, newpw_len;
 #endif
+      eventmask_t m = eventflag_wait (openpgp_comm);
 
       DEBUG_INFO ("GPG!: ");
 
