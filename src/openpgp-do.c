@@ -25,7 +25,6 @@
 #include <stdint.h>
 #include <string.h>
 #include <stdlib.h>
-#include <chopstx.h>
 
 #include "config.h"
 
@@ -2060,10 +2059,7 @@ gpg_do_keygen (uint8_t kk_byte)
 
   if (attr == ALGO_RSA2K || attr == ALGO_RSA4K)
     {
-      int cs = chopstx_setcancelstate (0); /* Allow cancellation.  */
-      /* XXX: We need to free up the allocated memory on cancellation.  */
       p_q_modulus = rsa_genkey (prvkey_len);
-      chopstx_setcancelstate (cs);
       if (p_q_modulus == NULL)
 	{
 	  GPG_MEMORY_FAILURE ();

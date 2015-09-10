@@ -854,11 +854,9 @@ cmd_pso (void)
 
 	  DEBUG_BINARY (kd[GPG_KEY_FOR_SIGNING].data, pubkey_len);
 
-	  cs = chopstx_setcancelstate (0);
 	  result_len = pubkey_len;
 	  r = rsa_sign (apdu.cmd_apdu_data, res_APDU, len,
 			&kd[GPG_KEY_FOR_SIGNING], pubkey_len);
-	  chopstx_setcancelstate (cs);
 	}
       else if (attr == ALGO_NISTP256R1 || attr == ALGO_SECP256K1)
 	{
@@ -939,10 +937,8 @@ cmd_pso (void)
 	      GPG_CONDITION_NOT_SATISFIED ();
 	      return;
 	    }
-	  cs = chopstx_setcancelstate (0);
 	  r = rsa_decrypt (apdu.cmd_apdu_data+1, res_APDU, len,
 			   &kd[GPG_KEY_FOR_DECRYPTION], &result_len);
-	  chopstx_setcancelstate (cs);
 	}
       else if (attr == ALGO_NISTP256R1 || attr == ALGO_SECP256K1)
 	{
@@ -1047,11 +1043,9 @@ cmd_internal_authenticate (void)
 	  return;
 	}
 
-      cs = chopstx_setcancelstate (0);
       result_len = pubkey_len;
       r = rsa_sign (apdu.cmd_apdu_data, res_APDU, len,
 		    &kd[GPG_KEY_FOR_AUTHENTICATION], pubkey_len);
-      chopstx_setcancelstate (cs);
     }
   else if (attr == ALGO_NISTP256R1)
     {

@@ -1,0 +1,131 @@
+Please refer:
+
+    How can I reflash FST-01 with SWD port?:
+    http://www.gniibe.org/FST-01/q_and_a/swd-debugger.html
+
+
+Installing newer version of Gnuk onto FST-01 with Gnuk 1.0.1
+============================================================
+
+Please note that the feature of firmware upgrade is somewhat
+experimental.  I haven't got any success reports yet, but it's only
+used by me, so far.  When you will get some failure during your
+firmware installation, you will need SWD debugger.  YOU HAVE BEEN
+WARNED.  It is best to try firmware upgrade after you get a SWD
+debugger.
+
+
+The firmare upgrade feature of Gnuk
+------------------------------------
+
+Gnuk supports firmware upgrade by reGNUal.  It works in the following
+steps.
+
+1. User registers RSA public key to Gnuk Token for firmware upgrade
+
+2. When User wants firmware upgrade, user sends
+   the GET_CHALLENGE command then the EXTERNAL_AUTHENTICATE command
+   to Gnuk Token from host PC to authenticate.
+   The EXTERNAL_AUTHENTICATE command message consists of
+   signature (of challenge) by corresponding RSA private key.
+
+3. When Gnuk Token receives the EXTERNAL_AUTHENTICATE command message
+   and validates signature successfully, Gnuk finishes its normal
+   operation and goes to enter mode of loading special program onto RAM.
+
+4. Host PC sends reflashing program (reGNUal) to Gnuk Token.
+
+5. Gnuk clears up all content of flash ROM (but first 4KiB of system)
+   at the end of receiving special program and transfers its control
+   to reGNUal.
+
+6. reGNUal on Gnuk Token receives new firmware image from host PC and writes
+   to each page.
+
+7. Done.
+
+
+Host PC setting for Gnuk
+------------------------
+
+You need proper configuration for permission of Gnuk Token (udev
+setting).  It should have lines something like: ::
+
+  # Gnuk Token by FSIJ
+
+  SUBSYSTEMS=="usb", ACTION=="add", \
+    ATTRS{idVendor}=="234b", ATTRS{idProduct}=="0000", \
+    ENV{ID_SMARTCARD_READER}="1", ENV{ID_SMARTCARD_READER_DRIVER}="gnupg"
+
+I have those lines in /etc/udev/rules.d/69-gnuk.rules.
+
+
+Building another version (newer) of Gnuk
+----------------------------------------
+
+Please see README of Gnuk for detail, but it's like configure
+and make:  ::
+
+  $ pwd
+  /home/user/src/gnuk
+  $ cd src
+  $ ./configure --vidpid=234b:0000
+  $ make
+
+Please take care of configure options.  The default target in 1.0.x
+series is Olimex STM32 H103 (not FST-01).  The default target in 1.1.8
+is FST-01.
+
+
+Then you get build/gnuk.elf and build/gnuk.bin.
+
+Invoking configure with FSIJ's USB ID (234b:0000) means that you are
+using FSIJ's USB ID (for reGNUal in this case).  Please note that FSIJ
+only allows use of its USB ID for specific situations.  Please read
+README of Gnuk about that.
+
+
+Bulding reGNUal
+---------------
+
+You need to compile reGNUal. ::
+
+  $ cd ../regnual
+  $ make
+
+Then, you should have regnual.bin.  Note that 'configure' of Gnuk
+itself is needed before compiling reGNUal.
+
+
+upgrade_by_passwd.py
+--------------------
+
+In the source code distribution of 1.0.4 (or current development
+version) of Gnuk, there is a tool named 'upgrade_by_passwd.py'.
+
+This is an easy tool to hide lengthy steps from user and to allow user
+firmware upgrade only by password of Gnuk Token.
+
+Before running the script, you need to kill scdaemon: ::
+
+  $ gpg-connect-agent "SCD KILLSCD" "SCD BYE" /bye
+
+The command line invokation above assumes that you properly configure
+your environment for Gnuk Token.
+
+
+How to run the script: ::
+
+  $ cd tool
+  $ ./upgrade_by_passwd.py ../regnual/regnual.bin ../src/build/gnuk.bin
+
+Then, the script on your host PC invoke the steps described above, and
+you will get new version of Gnuk installed.
+
+You can also specify -p option to enter your password (other than
+factory setting).
+
+If you already have configured another upgrade key installed, you can
+specify different slot by -k ``<slot_no>`` option.  SLOT_NO can be 0
+to 3.
+-- 

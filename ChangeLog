@@ -1,9 +1,15 @@
+2015-09-10  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/call-rsa.c (rsa_cleanup): New.
+	(rsa_sign, rsa_decrypt, rsa_genkey): Alloc cancellation.
+	* src/openpgp.c (cmd_pso, cmd_internal_authenticate): Cancellation
+	is handled by each functions in case of RSA.
+
 2015-09-09  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/openpgp.c (process_command_apdu): Protect command execution
 	against cancelling the execution thread.
 	(cmd_pso, cmd_internal_authenticate): Allow cancellation.
-	* src/openpgp-do.c (gpg_do_keygen): Allow cancellation.
 
 	* src/main.c (main): Handle LED_USB_RESET.
 
