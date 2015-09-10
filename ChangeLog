@@ -7,6 +7,9 @@
 
 2015-09-09  Niibe Yutaka  <gniibe@fsij.org>
 
+	* src/sys.h: Update from Chopstx.
+	* src/adc_stm32f103.c: Update from NeuG.
+
 	* src/openpgp.c (process_command_apdu): Protect command execution
 	against cancelling the execution thread.
 	(cmd_pso, cmd_internal_authenticate): Allow cancellation.
