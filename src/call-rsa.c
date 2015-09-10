@@ -38,7 +38,7 @@
 static rsa_context rsa_ctx;
 static struct chx_cleanup clp;
 
-sttic void
+static void
 rsa_cleanup (void *arg)
 {
   free (arg);
@@ -90,7 +90,7 @@ rsa_sign (const uint8_t *raw_message, uint8_t *output, int msg_len,
 				       msg_len, raw_message, temp);
       memcpy (output, temp, pubkey_len);
       chopstx_setcancelstate (cs);
-      chopstx_cleanup_pop (&clp);
+      chopstx_cleanup_pop (0);
     }
 
   rsa_free (&rsa_ctx);
@@ -181,7 +181,7 @@ rsa_decrypt (const uint8_t *input, uint8_t *output, int msg_len,
 					 RSA_PRIVATE, output_len_p, input,
 					 output, MAX_RES_APDU_DATA_SIZE);
       chopstx_setcancelstate (cs);
-      chopstx_cleanup_pop (&clp);
+      chopstx_cleanup_pop (0);
     }
 
   rsa_free (&rsa_ctx);
@@ -264,7 +264,7 @@ rsa_genkey (int pubkey_len)
   if (ret != 0)
     {
       chopstx_setcancelstate (cs);
-      chopstx_cleanup_pop (&clp);
+      chopstx_cleanup_pop (0);
       free (p_q_modulus);
       rsa_free (&rsa_ctx);
       return NULL;
@@ -276,7 +276,7 @@ rsa_genkey (int pubkey_len)
 
  cleanup:
   chopstx_setcancelstate (cs);
-  chopstx_cleanup_pop (&clp);
+  chopstx_cleanup_pop (0);
   rsa_free (&rsa_ctx);
   if (ret != 0)
       return NULL;
