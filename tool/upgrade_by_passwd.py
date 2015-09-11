@@ -32,7 +32,7 @@ BY_ADMIN = 3
 
 KEYNO_FOR_AUTH=2 
 
-def main(keyno, passwd, data_regnual, data_upgrade):
+def main(wait_e, keyno, passwd, data_regnual, data_upgrade):
     l = len(data_regnual)
     if (l & 0x03) != 0:
         data_regnual = data_regnual.ljust(l + 4 - (l & 0x03), chr(0))
@@ -67,17 +67,20 @@ def main(keyno, passwd, data_regnual, data_upgrade):
     del gnuk
     gnuk = None
     #
+    reg = None
+    while reg == None:
+        print("Wait %d seconds..." % wait_e)
+        time.sleep(wait_e)
+        for dev in gnuk_devices_by_vidpid():
+            try:
+                reg = regnual(dev)
+                print("Device: %s" % dev.filename)
+                break
+            except:
+                pass
     print("Wait 3 seconds...")
     time.sleep(3)
     # Then, send upgrade program...
-    reg = None
-    for dev in gnuk_devices_by_vidpid():
-        try:
-            reg = regnual(dev)
-            print("Device: %s" % dev.filename)
-            break
-        except:
-            pass
     mem_info = reg.mem_info()
     print("%08x:%08x" % mem_info)
     print("Downloading the program")
@@ -89,6 +92,9 @@ def main(keyno, passwd, data_regnual, data_upgrade):
 
 from getpass import getpass
 
+# This should be event driven, not guessing some period.
+DEFAULT_WAIT_FOR_REENUMERATION=3
+
 if __name__ == '__main__':
     if os.getcwd() != os.path.dirname(os.path.abspath(__file__)):
         print("Please change working directory to: %s" % os.path.dirname(os.path.abspath(__file__)))
@@ -96,11 +102,15 @@ if __name__ == '__main__':
 
     keyno = 0
     passwd = None
+    wait_e = DEFAULT_WAIT_FOR_REENUMERATION
     while len(sys.argv) > 3:
         option = sys.argv[1]
         sys.argv.pop(1)
         if option == '-f':      # F for Factory setting
             passwd = DEFAULT_PW3
+        elif option == '-e':    # E for Enumeration
+            wait_e = int(sys.argv[1])
+            sys.argv.pop(1)
         elif option == '-k':    # K for Key number
             keyno = int(sys.argv[1])
             sys.argv.pop(1)
@@ -119,4 +129,4 @@ if __name__ == '__main__':
     f.close()
     print("%s: %d" % (filename_upgrade, len(data_upgrade)))
     # First 4096-byte in data_upgrade is SYS, so, skip it.
-    main(keyno, passwd, data_regnual, data_upgrade[4096:])
+    main(wait_e, keyno, passwd, data_regnual, data_upgrade[4096:])

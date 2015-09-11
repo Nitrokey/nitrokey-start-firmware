@@ -1,3 +1,8 @@
+2015-09-11  Niibe Yutaka  <gniibe@fsij.org>
+
+	* tool/upgrade_by_passwd.py (main): Loop until finding reGNUal
+	device.
+
 2015-09-10  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/call-rsa.c (rsa_cleanup): New.
