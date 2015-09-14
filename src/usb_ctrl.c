@@ -280,7 +280,7 @@ usb_cb_setup (uint8_t req, uint8_t req_no, struct control_info *detail)
 
 	  if (req_no == USB_FSIJ_GNUK_DOWNLOAD)
 	    {
-	      if (icc_state_p == NULL || *icc_state_p != ICC_STATE_EXITED)
+	      if (*icc_state_p != ICC_STATE_EXITED)
 		return USB_UNSUPPORT;
 
 	      if (addr < &_regnual_start || addr + detail->len > __heap_end__)
@@ -294,7 +294,7 @@ usb_cb_setup (uint8_t req, uint8_t req_no, struct control_info *detail)
 	    }
 	  else if (req_no == USB_FSIJ_GNUK_EXEC && detail->len == 0)
 	    {
-	      if (icc_state_p == NULL || *icc_state_p != ICC_STATE_EXITED)
+	      if (*icc_state_p != ICC_STATE_EXITED)
 		return USB_UNSUPPORT;
 
 	      if (((uint32_t)addr & 0x03))
@@ -398,12 +398,12 @@ usb_cb_ctrl_write_finish (uint8_t req, uint8_t req_no, uint16_t value)
     {
       if (USB_SETUP_SET (req) && req_no == USB_FSIJ_GNUK_EXEC)
 	{
-	  if (icc_state_p == NULL || *icc_state_p != ICC_STATE_EXITED)
+	  if (*icc_state_p != ICC_STATE_EXITED)
 	    return;
 
 	  (void)value; (void)index;
 	  usb_lld_prepare_shutdown (); /* No further USB communication */
-	  *icc_state_p = ICC_STATE_EXEC_REQUESTED;
+	  led_blink (LED_GNUK_EXEC);	/* Notify the main.  */
 	}
     }
 #ifdef HID_CARD_CHANGE_SUPPORT

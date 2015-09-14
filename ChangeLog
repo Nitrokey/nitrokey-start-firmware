@@ -1,3 +1,9 @@
+2015-09-14  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/gnuk.h (LED_GNUK_EXEC): New.
+	* src/main.c, src/usb-icc.c, src/usb_ctrl.c: icc_state_p access
+	clean up.
+
 2015-09-11  Niibe Yutaka  <gniibe@fsij.org>
 
 	* tool/upgrade_by_passwd.py (main): Loop until finding reGNUal

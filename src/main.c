@@ -210,13 +210,8 @@ static eventmask_t emit_led (int on_time, int off_time)
 
 static eventmask_t display_status_code (void)
 {
-  enum icc_state icc_state;
   eventmask_t m;
-
-  if (icc_state_p == NULL)
-    icc_state = ICC_STATE_START;
-  else
-    icc_state = *icc_state_p;
+  enum icc_state icc_state = *icc_state_p;
 
   if (icc_state == ICC_STATE_START)
     return emit_led (LED_TIMEOUT_ONE, LED_TIMEOUT_STOP);
@@ -331,8 +326,8 @@ main (int argc, char *argv[])
   stdout_init ();
 #endif
 
-  ccid_thd = chopstx_create (PRIO_CCID, __stackaddr_ccid,
-			     __stacksize_ccid, USBthread, NULL);
+  ccid_thd = chopstx_create (PRIO_CCID, __stackaddr_ccid, __stacksize_ccid,
+			     USBthread, NULL);
 
 #ifdef PINPAD_CIR_SUPPORT
   cir_init ();
@@ -357,9 +352,6 @@ main (int argc, char *argv[])
   while (1)
     {
       eventmask_t m;
-
-      if (icc_state_p != NULL && *icc_state_p == ICC_STATE_EXEC_REQUESTED)
-	break;
 
       m = eventflag_wait_timeout (&led_event, MAIN_TIMEOUT_INTERVAL);
     got_it:
@@ -398,6 +390,8 @@ main (int argc, char *argv[])
 	  ccid_thd = chopstx_create (PRIO_CCID, __stackaddr_ccid,
 				     __stacksize_ccid, USBthread, NULL);
 	  break;
+	case LED_GNUK_EXEC:
+	  goto exec;
 	default:
 	  if ((m = emit_led (LED_TIMEOUT_ZERO, LED_TIMEOUT_STOP)))
 	    goto got_it;
@@ -415,6 +409,7 @@ main (int argc, char *argv[])
 #endif
     }
 
+ exec:
   random_fini ();
 
   set_led (1);

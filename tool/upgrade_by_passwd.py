@@ -78,8 +78,6 @@ def main(wait_e, keyno, passwd, data_regnual, data_upgrade):
                 break
             except:
                 pass
-    print("Wait 3 seconds...")
-    time.sleep(3)
     # Then, send upgrade program...
     mem_info = reg.mem_info()
     print("%08x:%08x" % mem_info)
@@ -92,8 +90,8 @@ def main(wait_e, keyno, passwd, data_regnual, data_upgrade):
 
 from getpass import getpass
 
-# This should be event driven, not guessing some period.
-DEFAULT_WAIT_FOR_REENUMERATION=3
+# This should be event driven, not guessing some period, or polling.
+DEFAULT_WAIT_FOR_REENUMERATION=1
 
 if __name__ == '__main__':
     if os.getcwd() != os.path.dirname(os.path.abspath(__file__)):

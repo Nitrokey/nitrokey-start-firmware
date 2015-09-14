@@ -179,8 +179,6 @@ struct icc_header {
 } __attribute__((packed));
 
 
-enum icc_state *icc_state_p;
-
 /* Data structure handled by CCID layer */
 struct ccid {
   enum icc_state icc_state;
@@ -1297,6 +1295,7 @@ icc_handle_timeout (struct ccid *c)
 }
 
 static struct ccid ccid;
+enum icc_state *icc_state_p = &ccid.icc_state;
 
 /*
  * Another Tx done callback
@@ -1458,6 +1457,5 @@ ccid_thread (chopstx_t thd)
       c->application = 0;
     }
 
-  icc_state_p = NULL;
   return NULL;
 }
