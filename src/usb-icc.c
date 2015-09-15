@@ -1350,10 +1350,8 @@ ccid_thread (chopstx_t thd)
   struct ep_out *epo = &endpoint_out;
   struct ccid *c = &ccid;
   struct apdu *a = &apdu;
-  uint8_t int_msg[2];
 
-  int_msg[0] = NOTIFY_SLOT_CHANGE;
-
+ reset:
   epi_init (epi, ENDP1, notify_tx, c);
   epo_init (epo, ENDP1, notify_icc, c);
   apdu_init (a);
@@ -1367,9 +1365,20 @@ ccid_thread (chopstx_t thd)
       m = eventflag_wait_timeout (&c->ccid_comm, USB_ICC_TIMEOUT);
 
       if (m == EV_USB_RESET)
-	break;
+	{
+	  if (c->application)
+	    {
+	      chopstx_cancel (c->application);
+	      chopstx_join (c->application, NULL);
+	      c->application = 0;
+	    }
+	  goto reset;
+	}
       else if (m == EV_CARD_CHANGE)
 	{
+	  uint8_t int_msg[2];
+
+	  int_msg[0] = NOTIFY_SLOT_CHANGE;
 	  if (c->icc_state == ICC_STATE_NOCARD)
 	    { /* Inserted!  */
 	      c->icc_state = ICC_STATE_START;
@@ -1452,7 +1461,6 @@ ccid_thread (chopstx_t thd)
 
   if (c->application)
     {
-      chopstx_cancel (c->application);
       chopstx_join (c->application, NULL);
       c->application = 0;
     }
