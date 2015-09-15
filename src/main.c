@@ -385,10 +385,6 @@ main (int argc, char *argv[])
 	  break;
 	case LED_USB_RESET:
 	  ccid_usb_reset ();
-	  chopstx_join (ccid_thd, NULL);
-	  /* Invoke the CCID thread again.  */
-	  ccid_thd = chopstx_create (PRIO_CCID, __stackaddr_ccid,
-				     __stacksize_ccid, USBthread, NULL);
 	  break;
 	case LED_GNUK_EXEC:
 	  goto exec;

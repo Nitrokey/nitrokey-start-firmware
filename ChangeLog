@@ -1,5 +1,8 @@
 2015-09-15  Niibe Yutaka  <gniibe@fsij.org>
 
+	* chopstx: Update to 0.10.
+
+	* src/main.c (main): Don't join after calling ccid_usb_reset.
 	* src/usb-icc.c (ccid_thread): Don't finish on reset, but
 	keep running.
 

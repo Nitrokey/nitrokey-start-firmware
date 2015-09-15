@@ -5,7 +5,7 @@ Gnuk NEWS - User visible changes
   Released 2015-09-??, by NIIBE Yutaka
 
 ** Upgrade of Chopstx
-We use Chopstx 0.09, which supports Nitrokey-Start.
+We use Chopstx 0.10, which supports Nitrokey-Start.
 
 ** Card serial number
 The way to determine a serial number of Gnuk Token for card has been
@@ -35,7 +35,7 @@ We use Chopstx 0.07, which supports STM32 Primer2 and CQ STARM, too.
 
 ** Experimental Curve25519 support.
 
-Gnuk can support Curve25519 (for deecryption).  Note that this is
+Gnuk can support Curve25519 (for decryption).  Note that this is
 pretty much experimental, and subjects to change.  The low level code
 is somehow stable, but there are no consensus in higer level.
 Especially, OID in the key attribute would be changed in future.
