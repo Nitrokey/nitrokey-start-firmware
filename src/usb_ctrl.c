@@ -211,8 +211,9 @@ usb_cb_device_reset (void)
   usb_lld_setup_endpoint (ENDP0, EP_CONTROL, 0, ENDP0_RXADDR, ENDP0_TXADDR,
 			  GNUK_MAX_PACKET_SIZE);
 
+  /* Stop the interface */
   for (i = 0; i < NUM_INTERFACES; i++)
-    gnuk_setup_endpoints_for_interface (i, 0);
+    gnuk_setup_endpoints_for_interface (i, 1);
 
   bDeviceState = ATTACHED;
   led_blink (LED_USB_RESET);	/* Notify the main.  */

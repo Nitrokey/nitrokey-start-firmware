@@ -1,5 +1,7 @@
 2015-09-15  Niibe Yutaka  <gniibe@fsij.org>
 
+	* src/usb_ctrl.c (usb_cb_device_reset): Stop the interface.
+
 	* src/usb_stm32f103.c (std_set_interface): Bug fix for conf.
 
 	* src/gnuk.ld.in (__process3_stack_size__): Increase stack size of
