@@ -12,9 +12,10 @@
 
 	* src/gnuk.ld.in (__process3_stack_size__): Increase stack size of
 	GPG thread.
+	(__process2_stack_size__): Increase stack size of RNG.
+	(__process4_stack_size__): Increase stack size of USB.
 	(__main_stack_size__): Decrease stack size of exception handlers.
 	(__process1_stack_size__): Decrease stack size of CCID.
-	(__process2_stack_size__): Decrease stack size of RNG.
 
 2015-09-14  Niibe Yutaka  <gniibe@fsij.org>
 
