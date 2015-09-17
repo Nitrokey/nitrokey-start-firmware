@@ -1,26 +1,25 @@
 Gnuk - An Implementation of USB Cryptographic Token for GnuPG
 
-							  Version 1.1.7
-							     2015-08-05
+							  Version 1.1.8
+							     2015-09-17
 							   Niibe Yutaka
 				      Free Software Initiative of Japan
 
 Warning
 =======
 
-This is another experimental release of Gnuk, version 1.1.7, which has
+This is another experimental release of Gnuk, version 1.1.8, which has
 incompatible changes to Gnuk 1.0.x.  Specifically, it now supports
 overriding key import, but importing keys (or generating keys) results
 password reset.  Please update your documentation for Gnuk Token, so
 that the instruction of importing keys won't cause any confusion.  It
 has supports of ECDSA (with NIST P256 and secp256k1), EdDSA, and ECDH
 (with NIST P256, secp256k1, and Curve25519), but this ECC feature is
-pretty much experimental, and it requires development version of GnuPG
-with newest version of libgcrypt (Further, for Curve25519, it requires
-additional patches by me).
+pretty much experimental, and it requires modern GnuPG with
+development version of libgcrypt.
 
-It also support RSA-4096 experimentally, but users should know that it
-takes more than 8 second to sign/decrypt.
+It also supports RSA-4096 experimentally, but users should know that
+it takes more than 8 second to sign/decrypt.
 
 You will not able to keep using Curve25519 keys, as the key format is
 subject to change.
@@ -48,9 +47,9 @@ FAQ
 ===
 
 Q0: How Gnuk USB Token is superior than other solutions (OpenPGP
-    card 2.0, GPF Crypto Stick, etc.) ?
+    card 2.0, YubiKey, etc.) ?
     http://www.g10code.de/p-card.html
-    http://www.privacyfoundation.de/crypto_stick/
+    https://www.yubico.com/
 A0: Good points of Gnuk are:
     * If you have skill of electronics and like DIY, you can build
       Gnuk Token cheaper (see Q8-A8).
@@ -63,21 +62,23 @@ A0: Good points of Gnuk are:
 	    "for Free Software"; Gnuk supports GnuPG.
 
 Q1: What kind of key algorithm is supported?
-A1: Gnuk version 1.0 only supports RSA 2048.
+A1: Gnuk version 1.0 only supports RSA-2048.
     Development version of Gnuk (1.1.x) supports 256-bit ECDSA and EdDSA,
-    as well as RSA 4096-bit.  But it takes long time to sign with RSA 4096.
+    as well as RSA 4096-bit.  But it takes long time to sign with RSA-4096.
 
 Q2: How long does it take for digital signing?
-A2: It takes a second and a half or so. 
+A2: It takes a second and a half or so for RSA-2048. 
 
 Q3: What's your recommendation for target board?
 A3: Orthodox choice is Olimex STM32-H103.
     FST-01 (Flying Stone Tiny 01) is available for sale, and it is a
     kind of the best choice, hopefully.
+    If you have a skill of electronics, STM32 Nucleo F103 is the best
+    choice for experiment.
 
 Q4: What's version of GnuPG are you using?
-A4: In Debian GNU/Linux system, I use gnupg 1.4.12-7 and gnupg-agent
-    2.0.20-1.
+A4: In Debian GNU/Linux system, I use GnuPG modern 2.1.x in
+    experimental.
 
 Q5: What's version of pcscd and libccid are you using?
 A5: I don't use them, pcscd and libccid are optional, you can use Gnuk
@@ -94,8 +95,11 @@ A6: You need a target board plus a JTAG/SWD debugger.  If you just
 Q7: How much does it cost?
 A7: Olimex STM32-H103 plus ARM-USB-TINY-H cost 70 Euro or so.
 
+Q8: How much does it cost for DIY version?
+A8: STM32 Nucleo F103 costs about $10 USD.
+
 Q9: I got an error like "gpg: selecting openpgp failed: ec=6.108", what's up?
-A9: GnuPG's SCDaemon has problems for handling insertion/removal of
+A9: Older GnuPG's SCDaemon has problems for handling insertion/removal of
     card/reader.  When your newly inserted token is not found by
     GnuPG, try killing scdaemon and let it to be invoked again.  I do:
 
@@ -134,15 +138,14 @@ Ac: That's because gnome-keyring-daemon interferes GnuPG.  Please
 
 Qd: Do you know a good SWD debugger to connect FST-01 or something?
 Ad: ST-Link/V2 is cheap one.  We have a tool/stlinkv2.py as flash ROM
-    writer program.
-
-
+    writer program.  STM32 Nucleo F103 comes with the valiant of
+    ST-Link/V2.
 
 
 Release notes
 =============
 
-This is seventh experimental release in version 1.1 series of Gnuk.
+This is eighth experimental release in version 1.1 series of Gnuk.
 
 While it is daily use by its developer, some newly introduced features
 (including ECDSA/EdDSA/ECDH, key generation and firmware upgrade)
@@ -197,12 +200,12 @@ DfuSe is for experiment only, because it is impossible for DfuSe to
 disable read from flash.  For real use, please consider killing DfuSe
 and enabling read protection using JTAG debugger.
 
-For PIN-pad support, I connect a consumer IR receive module to FST-01,
-and use controller for TV.  PIN verification is supported by this
-configuration.  Yes, it is not secure at all, since it is very easy to
-monitor IR output of the controllers.  It is just an experiment.  Note
-that hardware needed for this experiment is only a consumer IR receive
-module which is as cheap as 50 JPY.
+For experimental PIN-pad support, I connect a consumer IR receive
+module to FST-01, and use controller for TV.  PIN verification is
+supported by this configuration.  Yes, it is not secure at all, since
+it is very easy to monitor IR output of the controllers.  It is just
+an experiment.  Note that hardware needed for this experiment is only
+a consumer IR receive module which is as cheap as 50 JPY.
 
 Note that you need pinpad support for GnuPG to use PIN-pad enabled
 Gnuk.  The pinpad support for GnuPG is only available in version 2.
@@ -253,7 +256,7 @@ External source code
 
 Gnuk is distributed with external source code.
 
-* chopstx/  -- Chopstx 0.07
+* chopstx/  -- Chopstx 0.10
 
   We use Chopstx as the kernel for Gnuk.
 
@@ -363,10 +366,16 @@ How to compile
 
 You need GNU toolchain and newlib for 'arm-none-eabi' target.
 
-There is "gcc-arm-embedded" project.  See:
+On Debian we can install the packages of gcc-arm-none-eabi,
+gdb-arm-none-eabi and its friends.  I'm using:
 
-    https://launchpad.net/gcc-arm-embedded/
+	binutils-arm-none-eabi	2.25-5+5+b1
+	gcc-arm-none-eabi 	15:4.9.3+svn227297-1
+	gdb-arm-none-eabi 	7.7.1+dfsg-5+8
+	libnewlib-arm-none-eabi	2.2.0+git20150830.5a3d536-1
 
+Or else, see https://launchpad.net/gcc-arm-embedded for preparation of
+GNU Toolchain for 'arm-none-eabi' target.
 
 Change directory to `src':
 
@@ -582,8 +591,8 @@ I put Chopstx as a submodule of Git.  Please do this:
   $ git submodule init
   $ git submodule update
 
-We have migrated from ChibiOS/RT to Chopstx.  If you have old code of
-ChibiOS/RT, you need:
+We have migrated from ChibiOS/RT to Chopstx in Gnuk 1.1.  If you have
+old code of ChibiOS/RT, you need:
 
     Edit .git/config to remove chibios reference
     git rm --cached chibios

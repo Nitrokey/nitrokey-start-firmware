@@ -1,3 +1,7 @@
+2015-09-17  Niibe Yutaka  <gniibe@fsij.org>
+
+	* VERSION: 1.1.8.
+
 2015-09-15  Niibe Yutaka  <gniibe@fsij.org>
 
 	* chopstx: Update to 0.10.
@@ -64,7 +68,7 @@
 	* src/openpgp-do.c (do_openpgpcard_aid): Use upper bytes of unique
 	ID of MCU; same as USB serial number.
 
-	* src/configure (help): Add NITROKEY_START.a
+	* src/configure (help): Add NITROKEY_START.
 
 2015-08-26  Mateusz Zalega  <mateusz@nitrokey.com>
 
