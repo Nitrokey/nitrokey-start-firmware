@@ -758,7 +758,7 @@ rw_algorithm_attr (uint16_t tag, int with_tag,
 	algo = ALGO_CURVE25519;
 
       if (algo < 0)
-	return 0;		/* Error */
+	return 0;		/* Error.  */
       else if (algo == ALGO_RSA2K && *algo_attr_pp != NULL)
 	{
 	  gpg_do_delete_prvkey (kk, CLEAN_PAGE_FULL);
@@ -766,7 +766,8 @@ rw_algorithm_attr (uint16_t tag, int with_tag,
 	  if (*algo_attr_pp != NULL)
 	    return 0;
 	}
-      else if (*algo_attr_pp == NULL || (*algo_attr_pp)[1] != algo)
+      else if ((algo != ALGO_RSA2K && *algo_attr_pp == NULL)
+	       || (*algo_attr_pp)[1] != algo)
 	{
 	  gpg_do_delete_prvkey (kk, CLEAN_PAGE_FULL);
 	  *algo_attr_pp = flash_enum_write (kk_to_nr (kk), algo);
@@ -1388,7 +1389,7 @@ proc_key_import (const uint8_t *data, int len)
       uint8_t hash[64];
 
       if (len - 12 != 32)
-	return 1;		/* Error.  */
+	return 0;		/* Error.  */
 
       sha512 (&data[12], 32, hash);
       hash[0] &= 248;
@@ -1402,7 +1403,7 @@ proc_key_import (const uint8_t *data, int len)
       int i;
 
       if (len - 12 != 32)
-	return 1;		/* Error.  */
+	return 0;		/* Error.  */
 
       for (i = 0; i < 32; i++)
 	priv[31-i] = data[12+i];

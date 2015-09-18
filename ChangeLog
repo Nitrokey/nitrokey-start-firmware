@@ -1,3 +1,10 @@
+2015-09-18  Niibe Yutaka  <gniibe@fsij.org>
+
+	* VERSION: 1.1.9.
+
+	* src/openpgp-do.c (proc_key_import): Fix error return.
+	(rw_algorithm_attr): Check it's not ALGO_RSA2K.
+
 2015-09-17  Niibe Yutaka  <gniibe@fsij.org>
 
 	* VERSION: 1.1.8.

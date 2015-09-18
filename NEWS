@@ -1,5 +1,14 @@
 Gnuk NEWS - User visible changes
 
+* Major changes in Gnuk 1.1.9
+
+  Released 2015-09-18, by NIIBE Yutaka
+
+** Bug fix for Ed25519 and Curve25519
+When registering key, wrong operations were not detected correctly.
+This is fixed.
+
+
 * Major changes in Gnuk 1.1.8
 
   Released 2015-09-17, by NIIBE Yutaka
