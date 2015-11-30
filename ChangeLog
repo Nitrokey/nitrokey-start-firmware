@@ -1,3 +1,7 @@
+2015-11-30  perillamint <perillamint@gentoo.moe>
+
+	* src/openpgp.c (card_thread): Fix offset of bConfirmPIN.
+
 2015-09-18  Niibe Yutaka  <gniibe@fsij.org>
 
 	* VERSION: 1.1.9.

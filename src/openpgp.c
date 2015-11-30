@@ -1407,7 +1407,7 @@ card_thread (chopstx_t thd, struct eventflag *ccid_comm)
       else if (m == EV_MODIFY_CMD_AVAILABLE)
 	{
 #if defined(PINPAD_SUPPORT)
-	  uint8_t bConfirmPIN = apdu.cmd_apdu_data[5];
+	  uint8_t bConfirmPIN = apdu.cmd_apdu_data[0];
 	  uint8_t *p = apdu.cmd_apdu_data;
 
 	  if (INS (apdu) != INS_CHANGE_REFERENCE_DATA
