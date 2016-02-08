@@ -1,7 +1,7 @@
 /*
  * modp256k1.c -- modulo arithmetic for p256k1
  *
- * Copyright (C) 2014 Free Software Initiative of Japan
+ * Copyright (C) 2014, 2016 Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
  * This file is a part of Gnuk, a GnuPG USB Token implementation.
@@ -55,12 +55,12 @@ const bn256 p256k1 = { {0xfffffc2f, 0xfffffffe, 0xffffffff, 0xffffffff,
 /*
  * Implementation Note.
  *
- * It's not always modulo p256k1.  The representation is redundant
- * during computation.  For example, when we add the prime - 1 and 1,
- * it won't overflow to 2^256, and the result is represented within
- * 256-bit.
+ * It's always modulo p256k1.
  *
- * It is guaranteed that modp256k1_reduce reduces to modulo p256k1.
+ * Once, I tried redundant representation which caused wrong
+ * calculation.  Implementation could be correct with redundant
+ * representation, but it found that it's more expensive.
+ *
  */
 
 /**
@@ -69,14 +69,16 @@ const bn256 p256k1 = { {0xfffffc2f, 0xfffffffe, 0xffffffff, 0xffffffff,
 void
 modp256k1_add (bn256 *X, const bn256 *A, const bn256 *B)
 {
-  uint32_t carry;
+  uint32_t cond;
   bn256 tmp[1];
 
-  carry = bn256_add (X, A, B);
-  if (carry)
-    bn256_sub (X, X, P256K1);
+  cond = (bn256_add (X, A, B) == 0);
+  cond &= bn256_sub (tmp, X, P256K1);
+  if (cond)
+    /* No-carry AND borrow */
+    memcpy (tmp, tmp, sizeof (bn256));
   else
-    bn256_sub (tmp, X, P256K1);
+    memcpy (X, tmp, sizeof (bn256));
 }
 
 /**
@@ -89,10 +91,11 @@ modp256k1_sub (bn256 *X, const bn256 *A, const bn256 *B)
   bn256 tmp[1];
 
   borrow = bn256_sub (X, A, B);
+  bn256_add (tmp, X, P256K1);
   if (borrow)
-    bn256_add (X, X, P256K1);
+    memcpy (X, tmp, sizeof (bn256));
   else
-    bn256_add (tmp, X, P256K1);
+    memcpy (tmp, tmp, sizeof (bn256));
 }
 
 /**

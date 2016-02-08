@@ -1,7 +1,8 @@
 /*
  * modp256r1.c -- modulo arithmetic for p256r1
  *
- * Copyright (C) 2011, 2013, 2014 Free Software Initiative of Japan
+ * Copyright (C) 2011, 2013, 2014, 2016
+ *               Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
  * This file is a part of Gnuk, a GnuPG USB Token implementation.
@@ -49,12 +50,12 @@ const bn256 p256r1 = { {0xffffffff, 0xffffffff, 0xffffffff, 0x00000000,
 /*
  * Implementation Note.
  *
- * It's not always modulo p256r1.  The representation is redundant
- * during computation.  For example, when we add the prime - 1 and 1,
- * it won't overflow to 2^256, and the result is represented within
- * 256-bit.
+ * It's always modulo p256r1.
  *
- * It is guaranteed that modp256r1_reduce reduces to modulo p256r1.
+ * Once, I tried redundant representation which caused wrong
+ * calculation.  Implementation could be correct with redundant
+ * representation, but it found that it's more expensive.
+ *
  */
 
 /**
@@ -63,14 +64,16 @@ const bn256 p256r1 = { {0xffffffff, 0xffffffff, 0xffffffff, 0x00000000,
 void
 modp256r1_add (bn256 *X, const bn256 *A, const bn256 *B)
 {
-  uint32_t carry;
+  uint32_t cond;
   bn256 tmp[1];
 
-  carry = bn256_add (X, A, B);
-  if (carry)
-    bn256_sub (X, X, P256R1);
+  cond = (bn256_add (X, A, B) == 0);
+  cond &= bn256_sub (tmp, X, P256R1);
+  if (cond)
+    /* No-carry AND borrow */
+    memcpy (tmp, tmp, sizeof (bn256));
   else
-    bn256_sub (tmp, X, P256R1);
+    memcpy (X, tmp, sizeof (bn256));
 }
 
 /**
@@ -83,10 +86,11 @@ modp256r1_sub (bn256 *X, const bn256 *A, const bn256 *B)
   bn256 tmp[1];
 
   borrow = bn256_sub (X, A, B);
+  bn256_add (tmp, X, P256R1);
   if (borrow)
-    bn256_add (X, X, P256R1);
+    memcpy (X, tmp, sizeof (bn256));
   else
-    bn256_add (tmp, X, P256R1);
+    memcpy (tmp, tmp, sizeof (bn256));
 }
 
 /**
@@ -95,7 +99,7 @@ modp256r1_sub (bn256 *X, const bn256 *A, const bn256 *B)
 void
 modp256r1_reduce (bn256 *X, const bn512 *A)
 {
-  bn256 tmp[1];
+  bn256 tmp[1], tmp0[1];
   uint32_t borrow;
 
 #define S1 X
@@ -116,6 +120,11 @@ modp256r1_reduce (bn256 *X, const bn512 *A)
   S1->word[2] = A->word[2];
   S1->word[1] = A->word[1];
   S1->word[0] = A->word[0];
+  borrow = bn256_sub (tmp0, S1, P256R1);
+  if (borrow)
+    memcpy (tmp0, tmp0, sizeof (bn256));
+  else
+    memcpy (S1, tmp0, sizeof (bn256));
   /* X = S1 */
 
   S2->word[7] = A->word[15];
@@ -155,6 +164,11 @@ modp256r1_reduce (bn256 *X, const bn512 *A)
   S5->word[2] = A->word[11];
   S5->word[1] = A->word[10];
   S5->word[0] = A->word[9];
+  borrow = bn256_sub (tmp0, S5, P256R1);
+  if (borrow)
+    memcpy (tmp0, tmp0, sizeof (bn256));
+  else
+    memcpy (S5, tmp0, sizeof (bn256));
   /* X += S5 */
   modp256r1_add (X, X, S5);
 
@@ -164,6 +178,11 @@ modp256r1_reduce (bn256 *X, const bn512 *A)
   S6->word[2] = A->word[13];
   S6->word[1] = A->word[12];
   S6->word[0] = A->word[11];
+  borrow = bn256_sub (tmp0, S6, P256R1);
+  if (borrow)
+    memcpy (tmp0, tmp0, sizeof (bn256));
+  else
+    memcpy (S6, tmp0, sizeof (bn256));
   /* X -= S6 */
   modp256r1_sub (X, X, S6);
 
@@ -174,6 +193,11 @@ modp256r1_reduce (bn256 *X, const bn512 *A)
   S7->word[2] = A->word[14];
   S7->word[1] = A->word[13];
   S7->word[0] = A->word[12];
+  borrow = bn256_sub (tmp0, S7, P256R1);
+  if (borrow)
+    memcpy (tmp0, tmp0, sizeof (bn256));
+  else
+    memcpy (S7, tmp0, sizeof (bn256));
   /* X -= S7 */
   modp256r1_sub (X, X, S7);
 

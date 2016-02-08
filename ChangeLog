@@ -1,3 +1,11 @@
+2016-02-08  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/modp256r1.c (modp256r1_add, modp256r1_sub): Keep the result
+	less than P256R1.
+	(modp256r1_reduce): Fix wrong calculation.
+	* src/modp256k1.c (modp256k1_add, modp256k1_sub): Likewise.
+	Thanks to Aidan Thornton.
+
 2016-02-05  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/configure: Add submodule check suggested by Elliott
