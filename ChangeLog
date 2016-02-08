@@ -1,4 +1,9 @@
-2015-11-30  perillamint <perillamint@gentoo.moe>
+2016-02-05  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/configure: Add submodule check suggested by Elliott
+	Mitchell.
+
+2015-11-30  perillamint  <perillamint@gentoo.moe>
 
 	* src/openpgp.c (card_thread): Fix offset of bConfirmPIN.
 
