@@ -1,3 +1,8 @@
+2016-02-09  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/openpgp.c (s2k): Include the unique ID of MCU into the
+	computation of S2K function.
+
 2016-02-08  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/modp256r1.c (modp256r1_add, modp256r1_sub): Keep the result

@@ -1,5 +1,17 @@
 Gnuk NEWS - User visible changes
 
+* Major changes in Gnuk 1.2.0
+
+  Released 2016-02-xx, by NIIBE Yutaka
+
+** S2K algorithm change to defeat "copycat" service of MCU.
+Even if the existence of some services copying MCU, your private key
+will not be controled by others.
+
+** Bug fix for secp256k1 and NIST P-256.
+Bugs in basic computation were fixed.
+
+
 * Major changes in Gnuk 1.1.9
 
   Released 2015-09-18, by NIIBE Yutaka

@@ -1,7 +1,7 @@
 /*
  * openpgp.c -- OpenPGP card protocol support
  *
- * Copyright (C) 2010, 2011, 2012, 2013, 2014, 2015
+ * Copyright (C) 2010, 2011, 2012, 2013, 2014, 2015, 2016
  *               Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
@@ -437,8 +437,11 @@ s2k (const unsigned char *salt, size_t slen,
 {
   sha256_context ctx;
   size_t count = S2KCOUNT;
+  const uint8_t *unique = unique_device_id ();
 
   sha256_start (&ctx);
+
+  sha256_update (&ctx, unique, 12);
 
   while (count > slen + ilen)
     {
