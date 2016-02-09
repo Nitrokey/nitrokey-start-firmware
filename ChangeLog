@@ -1,3 +1,12 @@
+2016-02-09  gniibe  <gniibe@fsij.org>
+
+	* polarssl/library/bignum.c (mpi_exp_mod): Fix to our local
+	change.  Thanks to Aidan Thornton for failure test case.
+
+	Fix of mpi_div_mpi from upstream.
+	* polarssl/library/bignum.c (int_clz, int_div_int): New.
+	(mpi_div_mpi): Use int_div_int.
+
 2016-02-09  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/openpgp.c (s2k): Include the unique ID of MCU into the

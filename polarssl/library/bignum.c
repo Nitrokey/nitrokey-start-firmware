@@ -224,6 +224,24 @@ size_t mpi_lsb( const mpi *X )
 }
 
 /*
+ * Count leading zero bits in a given integer
+ */
+static size_t int_clz( const t_uint x )
+{
+    size_t j;
+    t_uint mask = (t_uint) 1 << (biL - 1);
+
+    for( j = 0; j < biL; j++ )
+    {
+        if( x & mask ) break;
+
+        mask >>= 1;
+    }
+
+    return j;
+}
+
+/*
  * Return the number of most significant bits
  */
 size_t mpi_msb( const mpi *X )
@@ -1103,6 +1121,100 @@ int mpi_mul_int( mpi *X, const mpi *A, t_sint b )
 }
 
 /*
+ * Unsigned integer divide - 64bit dividend and 32bit divisor
+ */
+static t_uint int_div_int(t_uint u1, t_uint u0, t_uint d, t_uint *r)
+{
+#if defined(POLARSSL_HAVE_UDBL)
+    t_udbl dividend, quotient;
+#else
+    const t_uint radix = (t_uint) 1 << biH;
+    const t_uint uint_halfword_mask = ( (t_uint) 1 << biH ) - 1;
+    t_uint d0, d1, q0, q1, rAX, r0, quotient;
+    t_uint u0_msw, u0_lsw;
+    size_t s;
+#endif
+
+    /*
+     * Check for overflow
+     */
+    if(( 0 == d ) || ( u1 >= d ))
+    {
+        if (r != NULL) *r = (~0);
+
+        return (~0);
+    }
+
+#if defined(POLARSSL_HAVE_UDBL)
+    dividend  = (t_udbl) u1 << biL;
+    dividend |= (t_udbl) u0;
+    quotient = dividend / d;
+    if( quotient > ( (t_udbl) 1 << biL ) - 1 )
+        quotient = ( (t_udbl) 1 << biL ) - 1;
+
+    if( r != NULL )
+        *r = (t_uint)( dividend - (quotient * d ) );
+
+    return (t_uint) quotient;
+#else
+
+    /*
+     * Algorithm D, Section 4.3.1 - The Art of Computer Programming
+     *   Vol. 2 - Seminumerical Algorithms, Knuth
+     */
+
+    /*
+     * Normalize the divisor, d, and dividend, u0, u1
+     */
+    s = int_clz( d );
+    d = d << s;
+
+    u1 = u1 << s;
+    u1 |= ( u0 >> ( biL - s ) ) & ( -(t_sint)s >> ( biL - 1 ) );
+    u0 =  u0 << s;
+
+    d1 = d >> biH;
+    d0 = d & uint_halfword_mask;
+
+    u0_msw = u0 >> biH;
+    u0_lsw = u0 & uint_halfword_mask;
+
+    /*
+     * Find the first quotient and remainder
+     */
+    q1 = u1 / d1;
+    r0 = u1 - d1 * q1;
+
+    while( q1 >= radix || ( q1 * d0 > radix * r0 + u0_msw ) )
+    {
+        q1 -= 1;
+        r0 += d1;
+
+        if ( r0 >= radix ) break;
+    }
+
+    rAX = (u1 * radix) + (u0_msw - q1 * d);
+    q0 = rAX / d1;
+    r0 = rAX - q0 * d1;
+
+    while( q0 >= radix || ( q0 * d0 > radix * r0 + u0_lsw ) )
+    {
+        q0 -= 1;
+        r0 += d1;
+
+        if ( r0 >= radix ) break;
+    }
+
+    if (r != NULL)
+        *r = (rAX * radix + u0_lsw - q0 * d) >> s;
+
+    quotient = q1 * radix + q0;
+
+    return quotient;
+#endif
+}
+
+/*
  * Division by mpi: A = Q * B + R  (HAC 14.20)
  */
 int mpi_div_mpi( mpi *Q, mpi *R, const mpi *A, const mpi *B )
@@ -1159,57 +1271,7 @@ int mpi_div_mpi( mpi *Q, mpi *R, const mpi *A, const mpi *B )
             Z.p[i - t - 1] = ~0;
         else
         {
-#if defined(POLARSSL_HAVE_UDBL)
-            t_udbl r;
-
-            r  = (t_udbl) X.p[i] << biL;
-            r |= (t_udbl) X.p[i - 1];
-            r /= Y.p[t];
-            if( r > ((t_udbl) 1 << biL) - 1)
-                r = ((t_udbl) 1 << biL) - 1;
-
-            Z.p[i - t - 1] = (t_uint) r;
-#else
-            /*
-             * __udiv_qrnnd_c, from gmp/longlong.h
-             */
-            t_uint q0, q1, r0, r1;
-            t_uint d0, d1, d, m;
-
-            d  = Y.p[t];
-            d0 = ( d << biH ) >> biH;
-            d1 = ( d >> biH );
-
-            q1 = X.p[i] / d1;
-            r1 = X.p[i] - d1 * q1;
-            r1 <<= biH;
-            r1 |= ( X.p[i - 1] >> biH );
-
-            m = q1 * d0;
-            if( r1 < m )
-            {
-                q1--, r1 += d;
-                while( r1 >= d && r1 < m )
-                    q1--, r1 += d;
-            }
-            r1 -= m;
-
-            q0 = r1 / d1;
-            r0 = r1 - d1 * q0;
-            r0 <<= biH;
-            r0 |= ( X.p[i - 1] << biH ) >> biH;
-
-            m = q0 * d0;
-            if( r0 < m )
-            {
-                q0--, r0 += d;
-                while( r0 >= d && r0 < m )
-                    q0--, r0 += d;
-            }
-            r0 -= m;
-
-            Z.p[i - t - 1] = ( q1 << biH ) | q0;
-#endif
+            Z.p[i - t - 1] = int_div_int( X.p[i], X.p[i-1], Y.p[t], NULL);
         }
 
         Z.p[i - t - 1]++;
@@ -1584,6 +1646,7 @@ int mpi_exp_mod( mpi *X, const mpi *A, const mpi *E, const mpi *N, mpi *_RR )
         memset (d, 0, 2 * N->n * ciL); /* Set D zero. */
         mpi_sub_hlp( N->n, N->p, d + N->n);
         MPI_CHK( mpi_mod_mpi( &RR, &T, N ) );
+        MPI_CHK( mpi_grow( &RR, N->n ) );
 
         if( _RR != NULL )
             memcpy( _RR, &RR, sizeof( mpi ) );
