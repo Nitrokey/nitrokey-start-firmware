@@ -4,12 +4,20 @@ Gnuk NEWS - User visible changes
 
   Released 2016-02-xx, by NIIBE Yutaka
 
+** Support authentication status reset by VERIFY command.
+This feature is described in the OpenPGPcard specification V2.2 and
+V3.1, which allow user to reset authentication status.
+
 ** S2K algorithm change to defeat "copycat" service of MCU.
 Even if the existence of some services copying MCU, your private key
 will not be controled by others.
 
 ** Bug fix for secp256k1 and NIST P-256.
 Bugs in basic computation were fixed.
+
+** Bug fix for bignum routines.
+Bignum routine update from upstream (failure doesn't occur for our RSA
+computation, though).  Another fix for mpi_exp_mod.
 
 
 * Major changes in Gnuk 1.1.9

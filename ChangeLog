@@ -1,7 +1,10 @@
-2016-02-09  gniibe  <gniibe@fsij.org>
+2016-02-09  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/openpgp.c (cmd_verify): Support VERIFY reset, which is
+	described in the specification V2.2 and V3.1.
 
 	* polarssl/library/bignum.c (mpi_exp_mod): Fix to our local
-	change.  Thanks to Aidan Thornton for failure test case.
+	change.  Thanks to Aidan Thornton for the failure test case.
 
 	Fix of mpi_div_mpi from upstream.
 	* polarssl/library/bignum.c (int_clz, int_div_int): New.

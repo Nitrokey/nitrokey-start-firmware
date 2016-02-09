@@ -138,6 +138,7 @@ static void
 cmd_verify (void)
 {
   int len;
+  uint8_t p1 = P1 (apdu);
   uint8_t p2 = P2 (apdu);
   int r;
   const uint8_t *pw;
@@ -149,22 +150,36 @@ cmd_verify (void)
   pw = apdu.cmd_apdu_data;
 
   if (len == 0)
-    {				/* This is to examine status.  */
-      if (p2 == 0x81)
-	r = ac_check_status (AC_PSO_CDS_AUTHORIZED);
-      else if (p2 == 0x82)
-	r = ac_check_status (AC_OTHER_AUTHORIZED);
-      else
-	r = ac_check_status (AC_ADMIN_AUTHORIZED);
+    {
+      if (p1 == 0)
+	{			/* This is to examine status.  */
+	  if (p2 == 0x81)
+	    r = ac_check_status (AC_PSO_CDS_AUTHORIZED);
+	  else if (p2 == 0x82)
+	    r = ac_check_status (AC_OTHER_AUTHORIZED);
+	  else
+	    r = ac_check_status (AC_ADMIN_AUTHORIZED);
 
-      if (r)
-	GPG_SUCCESS ();	/* If authentication done already, return success.  */
-      else
-	{		 /* If not, return retry counter, encoded.  */
-	  r = gpg_pw_get_retry_counter (p2);
-	  set_res_sw (0x63, 0xc0 | (r&0x0f));
+	  if (r)
+	    GPG_SUCCESS ();	/* If authentication done already, return success.  */
+	  else
+	    {		 /* If not, return retry counter, encoded.  */
+	      r = gpg_pw_get_retry_counter (p2);
+	      set_res_sw (0x63, 0xc0 | (r&0x0f));
+	    }
 	}
-
+      else if (p1 == 0xff)
+	{			/* Reset the status.  */
+	  if (p2 == 0x81)
+	    ac_reset_pso_cds ();
+	  else if (p2 == 0x82)
+	    ac_reset_other ();
+	  else
+	    ac_reset_admin ();
+	  GPG_SUCCESS ();
+	}
+      else
+	GPG_BAD_P1_P2 ();
       return;
     }
 
