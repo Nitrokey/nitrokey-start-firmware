@@ -61,7 +61,7 @@ static const uint8_t hid_report_desc[] = {
 /* USB Standard Device Descriptor */
 static const uint8_t device_desc[] = {
   18,   /* bLength */
-  USB_DEVICE_DESCRIPTOR_TYPE,     /* bDescriptorType */
+  DEVICE_DESCRIPTOR,     /* bDescriptorType */
   0x10, 0x01,   /* bcdUSB = 1.1 */
   0x00,   /* bDeviceClass: 0 means deferred to interface */
   0x00,   /* bDeviceSubClass */
@@ -101,9 +101,9 @@ static const uint8_t device_desc[] = {
 /* Configuation Descriptor */
 static const uint8_t config_desc[] = {
   9,			   /* bLength: Configuation Descriptor size */
-  USB_CONFIGURATION_DESCRIPTOR_TYPE,      /* bDescriptorType: Configuration */
-  W_TOTAL_LENGTH, 0x00,   /* wTotalLength:no of returned bytes */
-  NUM_INTERFACES,   /* bNumInterfaces: */
+  CONFIG_DESCRIPTOR,	   /* bDescriptorType: Configuration */
+  W_TOTAL_LENGTH, 0x00,	   /* wTotalLength:no of returned bytes */
+  NUM_INTERFACES,	   /* bNumInterfaces: */
   0x01,   /* bConfigurationValue: Configuration value */
   0x00,   /* iConfiguration: Index of string descriptor describing the configuration */
   USB_INITIAL_FEATURE,  /* bmAttributes*/
@@ -111,7 +111,7 @@ static const uint8_t config_desc[] = {
 
   /* Interface Descriptor */
   9,			         /* bLength: Interface Descriptor size */
-  USB_INTERFACE_DESCRIPTOR_TYPE, /* bDescriptorType: Interface */
+  INTERFACE_DESCRIPTOR,		 /* bDescriptorType: Interface */
   ICC_INTERFACE,	         /* bInterfaceNumber: Index of this interface */
   0,			         /* Alternate setting for this interface */
   3,			         /* bNumEndpoints: Bulk-IN, Bulk-OUT, Intr-IN */
@@ -167,21 +167,21 @@ static const uint8_t config_desc[] = {
   1,			  /* bMaxCCIDBusySlots: 1 */
   /*Endpoint IN1 Descriptor*/
   7,			       /* bLength: Endpoint Descriptor size */
-  USB_ENDPOINT_DESCRIPTOR_TYPE,	/* bDescriptorType: Endpoint */
+  ENDPOINT_DESCRIPTOR,	       /* bDescriptorType: Endpoint */
   0x81,				/* bEndpointAddress: (IN1) */
   0x02,				/* bmAttributes: Bulk */
   USB_ICC_DATA_SIZE, 0x00,      /* wMaxPacketSize: */
   0x00,				/* bInterval */
   /*Endpoint OUT1 Descriptor*/
   7,			       /* bLength: Endpoint Descriptor size */
-  USB_ENDPOINT_DESCRIPTOR_TYPE,	/* bDescriptorType: Endpoint */
+  ENDPOINT_DESCRIPTOR,	       /* bDescriptorType: Endpoint */
   0x01,				/* bEndpointAddress: (OUT1) */
   0x02,				/* bmAttributes: Bulk */
   USB_ICC_DATA_SIZE, 0x00,	/* wMaxPacketSize: */
   0x00,				/* bInterval */
   /*Endpoint IN2 Descriptor*/
   7,			       /* bLength: Endpoint Descriptor size */
-  USB_ENDPOINT_DESCRIPTOR_TYPE,	/* bDescriptorType: Endpoint */
+  ENDPOINT_DESCRIPTOR,	       /* bDescriptorType: Endpoint */
   0x82,				/* bEndpointAddress: (IN2) */
   0x03,				/* bmAttributes: Interrupt */
   0x04, 0x00,			/* wMaxPacketSize: 4 */
@@ -190,7 +190,7 @@ static const uint8_t config_desc[] = {
 #ifdef HID_CARD_CHANGE_SUPPORT
   /* Interface Descriptor */
   9,			         /* bLength: Interface Descriptor size */
-  USB_INTERFACE_DESCRIPTOR_TYPE, /* bDescriptorType: Interface */
+  INTERFACE_DESCRIPTOR, /* bDescriptorType: Interface */
   HID_INTERFACE,  /* bInterfaceNumber: Number of Interface */
   0x00,		  /* bAlternateSetting: Alternate setting */
   0x01,		  /* bNumEndpoints: One endpoint used */
@@ -209,7 +209,7 @@ static const uint8_t config_desc[] = {
 
   /*Endpoint IN7 Descriptor*/
   7,                            /* bLength: Endpoint Descriptor size */
-  USB_ENDPOINT_DESCRIPTOR_TYPE,	/* bDescriptorType: Endpoint */
+  ENDPOINT_DESCRIPTOR,		/* bDescriptorType: Endpoint */
   0x87,				/* bEndpointAddress: (IN7) */
   0x03,				/* bmAttributes: Interrupt */
   0x02, 0x00,			/* wMaxPacketSize: 2 */
@@ -219,7 +219,7 @@ static const uint8_t config_desc[] = {
 #ifdef ENABLE_VIRTUAL_COM_PORT
   /* Interface Descriptor */
   9,			      /* bLength: Interface Descriptor size */
-  USB_INTERFACE_DESCRIPTOR_TYPE, /* bDescriptorType: Interface */
+  INTERFACE_DESCRIPTOR,	      /* bDescriptorType: Interface */
   VCOM_INTERFACE_0,	 /* bInterfaceNumber: Index of Interface */
   0x00,		  /* bAlternateSetting: Alternate setting */
   0x01,		  /* bNumEndpoints: One endpoints used */
@@ -251,7 +251,7 @@ static const uint8_t config_desc[] = {
   VCOM_INTERFACE_1,	 /* bSlaveInterface0: Data Class Interface */
   /*Endpoint 4 Descriptor*/
   7,			       /* bLength: Endpoint Descriptor size */
-  USB_ENDPOINT_DESCRIPTOR_TYPE,	   /* bDescriptorType: Endpoint */
+  ENDPOINT_DESCRIPTOR,	       /* bDescriptorType: Endpoint */
   0x84,				   /* bEndpointAddress: (IN4) */
   0x03,				   /* bmAttributes: Interrupt */
   VIRTUAL_COM_PORT_INT_SIZE, 0x00, /* wMaxPacketSize: */
@@ -259,7 +259,7 @@ static const uint8_t config_desc[] = {
 
   /*Data class interface descriptor*/
   9,			       /* bLength: Endpoint Descriptor size */
-  USB_INTERFACE_DESCRIPTOR_TYPE, /* bDescriptorType: */
+  INTERFACE_DESCRIPTOR,	       /* bDescriptorType: */
   VCOM_INTERFACE_1,	 /* bInterfaceNumber: Index of Interface */
   0x00,			   /* bAlternateSetting: Alternate setting */
   0x02,			   /* bNumEndpoints: Two endpoints used */
@@ -269,14 +269,14 @@ static const uint8_t config_desc[] = {
   0x00,			   /* iInterface: */
   /*Endpoint 5 Descriptor*/
   7,			       /* bLength: Endpoint Descriptor size */
-  USB_ENDPOINT_DESCRIPTOR_TYPE,	    /* bDescriptorType: Endpoint */
+  ENDPOINT_DESCRIPTOR,	       /* bDescriptorType: Endpoint */
   0x05,				    /* bEndpointAddress: (OUT5) */
   0x02,				    /* bmAttributes: Bulk */
   VIRTUAL_COM_PORT_DATA_SIZE, 0x00, /* wMaxPacketSize: */
   0x00,			     /* bInterval: ignore for Bulk transfer */
   /*Endpoint 3 Descriptor*/
   7,			       /* bLength: Endpoint Descriptor size */
-  USB_ENDPOINT_DESCRIPTOR_TYPE,	    /* bDescriptorType: Endpoint */
+  ENDPOINT_DESCRIPTOR,	       /* bDescriptorType: Endpoint */
   0x83,				    /* bEndpointAddress: (IN3) */
   0x02,				    /* bmAttributes: Bulk */
   VIRTUAL_COM_PORT_DATA_SIZE, 0x00, /* wMaxPacketSize: */
@@ -285,7 +285,7 @@ static const uint8_t config_desc[] = {
 #ifdef PINPAD_DND_SUPPORT
   /* Interface Descriptor.*/
   9,			      /* bLength: Interface Descriptor size */
-  USB_INTERFACE_DESCRIPTOR_TYPE, /* bDescriptorType: Interface */
+  INTERFACE_DESCRIPTOR,	      /* bDescriptorType: Interface */
   MSC_INTERFACE,		/* bInterfaceNumber. */
   0x00,				/* bAlternateSetting.               */
   0x02,				/* bNumEndpoints.                   */
@@ -298,14 +298,14 @@ static const uint8_t config_desc[] = {
   0x00,				/* iInterface.                      */
   /* Endpoint Descriptor.*/
   7,			        /* bLength: Endpoint Descriptor size */
-  USB_ENDPOINT_DESCRIPTOR_TYPE,	/* bDescriptorType: Endpoint */
+  ENDPOINT_DESCRIPTOR,		/* bDescriptorType: Endpoint */
   0x86,				/* bEndpointAddress: (IN6)   */
   0x02,				/* bmAttributes (Bulk).             */
   0x40, 0x00,			/* wMaxPacketSize.                  */
   0x00,				/* bInterval (ignored for bulk).    */
   /* Endpoint Descriptor.*/
   7,			        /* bLength: Endpoint Descriptor size */
-  USB_ENDPOINT_DESCRIPTOR_TYPE,	/* bDescriptorType: Endpoint */
+  ENDPOINT_DESCRIPTOR,		/* bDescriptorType: Endpoint */
   0x06,				/* bEndpointAddress: (OUT6)    */
   0x02,			        /* bmAttributes (Bulk).             */
   0x40, 0x00,		        /* wMaxPacketSize.                  */
@@ -317,7 +317,7 @@ static const uint8_t config_desc[] = {
 /* USB String Descriptors */
 static const uint8_t gnuk_string_lang_id[] = {
   4,				/* bLength */
-  USB_STRING_DESCRIPTOR_TYPE,
+  STRING_DESCRIPTOR,
   0x09, 0x04			/* LangID = 0x0409: US-English */
 };
 
@@ -346,20 +346,20 @@ static const struct desc string_descriptors[] = {
 
 int
 usb_cb_get_descriptor (uint8_t rcp, uint8_t desc_type, uint8_t desc_index,
-		       struct control_info *detail)
+		       struct req_args *arg)
 {
   if (rcp == DEVICE_RECIPIENT)
     {
       if (desc_type == DEVICE_DESCRIPTOR)
-	return usb_lld_reply_request (device_desc, sizeof (device_desc), detail);
+	return usb_lld_reply_request (device_desc, sizeof (device_desc), arg);
       else if (desc_type == CONFIG_DESCRIPTOR)
-	return usb_lld_reply_request (config_desc, sizeof (config_desc), detail);
+	return usb_lld_reply_request (config_desc, sizeof (config_desc), arg);
       else if (desc_type == STRING_DESCRIPTOR)
 	{
 	  if (desc_index < NUM_STRING_DESC)
 	    return usb_lld_reply_request (string_descriptors[desc_index].desc,
 					  string_descriptors[desc_index].size,
-					  detail);
+					  arg);
 	  else if (desc_index == NUM_STRING_DESC)
 	    {
 	      uint8_t usbbuf[64];
@@ -375,22 +375,22 @@ usb_cb_get_descriptor (uint8_t rcp, uint8_t desc_type, uint8_t desc_index,
 		  usbbuf[i*2+3] = 0;
 		}
 	      usbbuf[0] = len = i*2 + 2;
-	      usbbuf[1] = USB_STRING_DESCRIPTOR_TYPE;
-	      return usb_lld_reply_request (usbbuf, len, detail);
+	      usbbuf[1] = STRING_DESCRIPTOR;
+	      return usb_lld_reply_request (usbbuf, len, arg);
 	    }
 	}
     }
 #ifdef HID_CARD_CHANGE_SUPPORT
   else if (rcp == INTERFACE_RECIPIENT)
     {
-      if (detail->index == 1)
+      if (arg->index == HID_INTERFACE)
 	{
 	  if (desc_type == USB_DT_HID)
 	    return usb_lld_reply_request (config_desc+ICC_TOTAL_LENGTH+9, 9,
-					  detail);
+					  arg);
 	  else if (desc_type == USB_DT_REPORT)
 	    return usb_lld_reply_request (hid_report_desc, HID_REPORT_DESC_SIZE,
-					  detail);
+					  arg);
 	}
     }
 #endif

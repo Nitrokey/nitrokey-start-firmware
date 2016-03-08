@@ -1,7 +1,7 @@
 /*
  * usb_ctrl.c - USB control pipe device specific code for Gnuk
  *
- * Copyright (C) 2010, 2011, 2012, 2013, 2015
+ * Copyright (C) 2010, 2011, 2012, 2013, 2015, 2016
  *               Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
@@ -61,12 +61,12 @@ static struct line_coding line_coding = {
 #define CDC_CTRL_DTR            0x0001
 
 static int
-vcom_port_data_setup (uint8_t req, uint8_t req_no, struct control_info *detail)
+vcom_port_data_setup (uint8_t req, uint8_t req_no, struct req_args *arg)
 {
   if (USB_SETUP_GET (req))
     {
       if (req_no == USB_CDC_REQ_GET_LINE_CODING)
-	return usb_lld_reply_request (&line_coding, sizeof(line_coding), detail);
+	return usb_lld_reply_request (&line_coding, sizeof(line_coding), arg);
     }
   else  /* USB_SETUP_SET (req) */
     {
@@ -79,7 +79,7 @@ vcom_port_data_setup (uint8_t req, uint8_t req_no, struct control_info *detail)
 	{
 	  uint8_t connected_saved = stdout.connected;
 
-	  if ((detail->value & CDC_CTRL_DTR) != 0)
+	  if ((arg->value & CDC_CTRL_DTR) != 0)
 	    {
 	      if (stdout.connected == 0)
 		/* It's Open call */
@@ -264,7 +264,7 @@ static int download_check_crc32 (const uint32_t *end_p)
 }
 
 int
-usb_cb_setup (uint8_t req, uint8_t req_no, struct control_info *detail)
+usb_cb_setup (uint8_t req, uint8_t req_no, struct req_args *arg)
 {
   uint8_t type_rcp = req & (REQUEST_TYPE|RECIPIENT);
 
@@ -273,27 +273,29 @@ usb_cb_setup (uint8_t req, uint8_t req_no, struct control_info *detail)
       if (USB_SETUP_GET (req))
 	{
 	  if (req_no == USB_FSIJ_GNUK_MEMINFO)
-	    return usb_lld_reply_request (mem_info, sizeof (mem_info), detail);
+	    return usb_lld_reply_request (mem_info, sizeof (mem_info), arg);
 	}
       else /* SETUP_SET */
 	{
-	  uint8_t *addr = (uint8_t *)(0x20000000 + detail->value * 0x100 + detail->index);
+	  uint8_t *addr = (uint8_t *)(0x20000000 + arg->value * 0x100
+				      + arg->index);
 
 	  if (req_no == USB_FSIJ_GNUK_DOWNLOAD)
 	    {
 	      if (*icc_state_p != ICC_STATE_EXITED)
 		return USB_UNSUPPORT;
 
-	      if (addr < &_regnual_start || addr + detail->len > __heap_end__)
+	      if (addr < &_regnual_start || addr + arg->len > __heap_end__)
 		return USB_UNSUPPORT;
 
-	      if (detail->index + detail->len < 256)
-		memset (addr + detail->index + detail->len, 0, 256 - (detail->index + detail->len));
+	      if (arg->index + arg->len < 256)
+		memset (addr + arg->index + arg->len, 0,
+			256 - (arg->index + arg->len));
 
-	      usb_lld_set_data_to_recv (addr, detail->len);
+	      usb_lld_set_data_to_recv (addr, arg->len);
 	      return USB_SUCCESS;
 	    }
-	  else if (req_no == USB_FSIJ_GNUK_EXEC && detail->len == 0)
+	  else if (req_no == USB_FSIJ_GNUK_EXEC && arg->len == 0)
 	    {
 	      if (*icc_state_p != ICC_STATE_EXITED)
 		return USB_UNSUPPORT;
@@ -303,28 +305,28 @@ usb_cb_setup (uint8_t req, uint8_t req_no, struct control_info *detail)
 
 	      return download_check_crc32 ((uint32_t *)addr);
 	    }
-	  else if (req_no == USB_FSIJ_GNUK_CARD_CHANGE && detail->len == 0)
+	  else if (req_no == USB_FSIJ_GNUK_CARD_CHANGE && arg->len == 0)
 	    {
-	      if (detail->value != 0 && detail->value != 1 && detail->value != 2)
+	      if (arg->value != 0 && arg->value != 1 && arg->value != 2)
 		return USB_UNSUPPORT;
 
-	      ccid_card_change_signal (detail->value);
+	      ccid_card_change_signal (arg->value);
 	      return USB_SUCCESS;
 	    }
 	}
     }
   else if (type_rcp == (CLASS_REQUEST | INTERFACE_RECIPIENT))
     {
-      if (detail->index == ICC_INTERFACE)
+      if (arg->index == ICC_INTERFACE)
 	{
 	  if (USB_SETUP_GET (req))
 	    {
 	      if (req_no == USB_CCID_REQ_GET_CLOCK_FREQUENCIES)
 		return usb_lld_reply_request (freq_table, sizeof (freq_table),
-					      detail);
+					      arg);
 	      else if (req_no == USB_CCID_REQ_GET_DATA_RATES)
 		return usb_lld_reply_request (data_rate_table,
-					      sizeof (data_rate_table), detail);
+					      sizeof (data_rate_table), arg);
 	    }
 	  else
 	    {
@@ -335,24 +337,24 @@ usb_cb_setup (uint8_t req, uint8_t req_no, struct control_info *detail)
 	    }
 	}
 #ifdef HID_CARD_CHANGE_SUPPORT
-      else if (index == HID_INTERFACE)
+      else if (arg->index == HID_INTERFACE)
 	{
 	  switch (req_no)
 	    {
 	    case USB_HID_REQ_GET_IDLE:
-	      return usb_lld_reply_request (&hid_idle_rate, 1, detail);
+	      return usb_lld_reply_request (&hid_idle_rate, 1, arg);
 	    case USB_HID_REQ_SET_IDLE:
-	      usb_lld_set_data_to_recv (&hid_idle_rate, 1, detail);
+	      usb_lld_set_data_to_recv (&hid_idle_rate, 1);
 	      return USB_SUCCESS;
 
 	    case USB_HID_REQ_GET_REPORT:
 	      /* Request of LED status and key press */
-	      return usb_lld_reply_request (&hid_report, 2, detail);
+	      return usb_lld_reply_request (&hid_report, 2, arg);
 
 	    case USB_HID_REQ_SET_REPORT:
 	      /* Received LED set request */
-	      if (detail->len == 1)
-		usb_lld_set_data_to_recv (&hid_report, detail->len);
+	      if (arg->len == 1)
+		usb_lld_set_data_to_recv (&hid_report, arg->len);
 	      return USB_SUCCESS;
 
 	    case USB_HID_REQ_GET_PROTOCOL:
@@ -366,17 +368,17 @@ usb_cb_setup (uint8_t req, uint8_t req_no, struct control_info *detail)
 	}
 #endif
 #ifdef ENABLE_VIRTUAL_COM_PORT
-      else if (index == VCOM_INTERFACE_0)
-	return vcom_port_data_setup (req, req_no, detail);
+      else if (arg->index == VCOM_INTERFACE_0)
+	return vcom_port_data_setup (req, req_no, arg);
 #endif
 #ifdef PINPAD_DND_SUPPORT
-      else if (index == MSC_INTERFACE)
+      else if (arg->index == MSC_INTERFACE)
 	{
 	  if (USB_SETUP_GET (req))
 	    {
 	      if (req_no == MSC_GET_MAX_LUN_COMMAND)
 		return usb_lld_reply_request (lun_table, sizeof (lun_table),
-					      detail);
+					      arg);
 	    }
 	  else
 	    if (req_no == MSC_MASS_STORAGE_RESET_COMMAND)
@@ -391,7 +393,7 @@ usb_cb_setup (uint8_t req, uint8_t req_no, struct control_info *detail)
 
 
 void
-usb_cb_ctrl_write_finish (uint8_t req, uint8_t req_no, uint16_t value)
+usb_cb_ctrl_write_finish (uint8_t req, uint8_t req_no, struct req_args *arg)
 {
   uint8_t type_rcp = req & (REQUEST_TYPE|RECIPIENT);
 
@@ -402,7 +404,7 @@ usb_cb_ctrl_write_finish (uint8_t req, uint8_t req_no, uint16_t value)
 	  if (*icc_state_p != ICC_STATE_EXITED)
 	    return;
 
-	  (void)value; (void)index;
+	  (void)arg;
 	  usb_lld_prepare_shutdown (); /* No further USB communication */
 	  led_blink (LED_GNUK_EXEC);	/* Notify the main.  */
 	}
@@ -410,7 +412,7 @@ usb_cb_ctrl_write_finish (uint8_t req, uint8_t req_no, uint16_t value)
 #ifdef HID_CARD_CHANGE_SUPPORT
   else if (type_rcp == (CLASS_REQUEST | INTERFACE_RECIPIENT))
     {
-      if (index == HID_INTERFACE && req_no == USB_HID_REQ_SET_REPORT)
+      if (arg->index == HID_INTERFACE && req_no == USB_HID_REQ_SET_REPORT)
 	{
 	  if ((hid_report ^ hid_report_saved) & HID_LED_STATUS_CARDCHANGE)
 	    ccid_card_change_signal (CARD_CHANGE_TOGGLE);
@@ -464,11 +466,11 @@ int usb_cb_handle_event (uint8_t event_type, uint16_t value)
   return USB_UNSUPPORT;
 }
 
-int usb_cb_interface (uint8_t cmd, struct control_info *detail)
+int usb_cb_interface (uint8_t cmd, struct req_args *arg)
 {
   const uint8_t zero = 0;
-  uint16_t interface = detail->index;
-  uint16_t alt = detail->value;
+  uint16_t interface = arg->index;
+  uint16_t alt = arg->value;
 
   if (interface >= NUM_INTERFACES)
     return USB_UNSUPPORT;
@@ -485,7 +487,7 @@ int usb_cb_interface (uint8_t cmd, struct control_info *detail)
 	}
 
     case USB_GET_INTERFACE:
-      return usb_lld_reply_request (&zero, 1, detail);
+      return usb_lld_reply_request (&zero, 1, arg);
 
     case USB_QUERY_INTERFACE:
     default:

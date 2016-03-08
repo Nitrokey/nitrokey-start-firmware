@@ -1,3 +1,26 @@
+2016-03-08  Niibe Yutaka  <gniibe@fsij.org>
+
+	* tool/gnuk_token.py (gnuk_token.__init__, regnual.__init__):
+	Don't call setConfiguration method.
+
+	* src/usb_lld.h (usb_cb_ctrl_write_finish): Change the API of
+	callback, which possibly needs INDEX, VALUE, and LEN parameters.
+	(usb_lld_set_data_to_recv): Fix the type of P.
+	(USB_DEVICE_DESCRIPTOR_TYPE, USB_CONFIGURATION_DESCRIPTOR_TYPE)
+	(USB_STRING_DESCRIPTOR_TYPE, USB_INTERFACE_DESCRIPTOR_TYPE)
+	(USB_ENDPOINT_DESCRIPTOR_TYPE): Remove, as we have the enumeration
+	values for same things.
+
+	* src/usb_stm32f103.c (handle_in0): Follow the change.
+	* src/usb_ctrl.c (usb_cb_ctrl_write_finish): Likewise.
+
+	* src/usb_desc.c (usb_cb_get_descriptor): Use HID_INTERFACE.
+	(device_desc, config_desc, string_descriptors)
+	(usb_cb_get_descriptor): Use the enumeration types.
+	* src/configure: Use the enumeration types.
+
+	* regnual/regnual.c: Follow the change of usb_lld.h.
+
 2016-02-09  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/openpgp.c (cmd_verify): Support VERIFY reset, which is

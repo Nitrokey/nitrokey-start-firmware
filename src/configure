@@ -276,14 +276,14 @@ output_vendor_product_serial_strings () {
 
   echo "static const uint8_t ${prefix}string_vendor[] = {"
   echo "  ${#VENDOR}*2+2,			/* bLength */"
-  echo "  USB_STRING_DESCRIPTOR_TYPE,	/* bDescriptorType */"
+  echo "  STRING_DESCRIPTOR,		/* bDescriptorType */"
   echo "  /* Manufacturer: \"$VENDOR\" */"
   echo $VENDOR | sed -e "s/\(........\)/\1\\${nl}/g" | sed -n -e "s/\(.\)/'\1', 0, /g" -e "s/^/  /" -e "/^  ./s/ $//p"
   echo '};'
   echo
   echo "static const uint8_t ${prefix}string_product[] = {"
   echo "  ${#PRODUCT}*2+2,			/* bLength */"
-  echo "  USB_STRING_DESCRIPTOR_TYPE,	/* bDescriptorType */"
+  echo "  STRING_DESCRIPTOR,		/* bDescriptorType */"
   echo "  /* Product name: \"$PRODUCT\" */"
   echo $PRODUCT | sed -e "s/\(........\)/\1\\${nl}/g" | sed -n -e "s/\(.\)/'\1', 0, /g" -e "s/^/  /" -e "/^  ./s/ $//p"
   echo '};'
@@ -292,7 +292,7 @@ output_vendor_product_serial_strings () {
   echo
   echo "uint8_t ${prefix}string_serial[] = {"
   echo "  ${#SERIALNO}*2+2+16,			/* bLength */"
-  echo "  USB_STRING_DESCRIPTOR_TYPE,	/* bDescriptorType */"
+  echo "  STRING_DESCRIPTOR,		/* bDescriptorType */"
   echo "  /* Serial number: \"$SERIALNO\" */"
   echo $SERIALNO | sed -e "s/\(........\)/\1\\${nl}/g" | sed -n -e "s/\(.\)/'\1', 0, /g" -e "s/^/  /" -e "/^  ./s/ $//p"
   echo "  0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,"
@@ -302,14 +302,14 @@ output_vendor_product_serial_strings () {
   echo '#ifdef USB_STRINGS_FOR_GNUK'
   echo "static const uint8_t ${prefix}revision_detail[] = {"
   echo "  ${#REVISION}*2+2,			/* bLength */"
-  echo "  USB_STRING_DESCRIPTOR_TYPE,	/* bDescriptorType */"
+  echo "  STRING_DESCRIPTOR,		/* bDescriptorType */"
   echo "  /* revision detail: \"$REVISION\" */"
   echo $REVISION | sed -e "s/\(........\)/\1\\${nl}/g" | sed -n -e "s/\(.\)/'\1', 0, /g" -e "s/^/  /" -e "/^  ./s/ $//p"
   echo '};'
   echo
   echo "static const uint8_t ${prefix}config_options[] = {"
   echo "  ${#CONFIG}*2+2,			/* bLength */"
-  echo "  USB_STRING_DESCRIPTOR_TYPE,	/* bDescriptorType */"
+  echo "  STRING_DESCRIPTOR,		/* bDescriptorType */"
   echo "  /* configure options: \"$CONFIG\" */"
   echo $CONFIG | sed -e "s/\(........\)/\1\\${nl}/g" | sed -n -e "s/\(.\)/'\1', 0, /g" -e "s/^/  /" -e "/^  ./s/ $//p"
   echo '};'

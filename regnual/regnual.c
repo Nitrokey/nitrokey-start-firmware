@@ -1,7 +1,7 @@
 /*
  * regnual.c -- Firmware installation for STM32F103 Flash ROM
  *
- * Copyright (C) 2012, 2013, 2015
+ * Copyright (C) 2012, 2013, 2015, 2016
  *               Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
@@ -51,7 +51,7 @@ static uint32_t flash_end;
 /* USB Standard Device Descriptor */
 static const uint8_t regnual_device_desc[] = {
   18,   /* bLength */
-  USB_DEVICE_DESCRIPTOR_TYPE,     /* bDescriptorType */
+  DEVICE_DESCRIPTOR,     /* bDescriptorType */
   0x10, 0x01,   /* bcdUSB = 1.1 */
   0xFF,   /* bDeviceClass: VENDOR */
   0x00,   /* bDeviceSubClass */
@@ -66,8 +66,8 @@ static const uint8_t regnual_device_desc[] = {
 
 static const uint8_t regnual_config_desc[] = {
   9,
-  USB_CONFIGURATION_DESCRIPTOR_TYPE, /* bDescriptorType: Configuration */
-  18, 0,			/* wTotalLength: no of returned bytes */
+  CONFIG_DESCRIPTOR,	/* bDescriptorType: Configuration */
+  18, 0,		/* wTotalLength: no of returned bytes */
   1,			/* bNumInterfaces: single vendor interface */
   0x01,			/* bConfigurationValue: Configuration value */
   0x00,			/* iConfiguration: None */
@@ -80,8 +80,8 @@ static const uint8_t regnual_config_desc[] = {
 
   /* Interface Descriptor */
   9,
-  USB_INTERFACE_DESCRIPTOR_TYPE, /* bDescriptorType: Interface */
-  0,				 /* bInterfaceNumber: Index of this interface */
+  INTERFACE_DESCRIPTOR,	    /* bDescriptorType: Interface */
+  0,		            /* bInterfaceNumber: Index of this interface */
   0,			    /* Alternate setting for this interface */
   0,			    /* bNumEndpoints: None */
   0xFF,
@@ -92,7 +92,7 @@ static const uint8_t regnual_config_desc[] = {
 
 static const uint8_t regnual_string_lang_id[] = {
   4,				/* bLength */
-  USB_STRING_DESCRIPTOR_TYPE,
+  STRING_DESCRIPTOR,
   0x09, 0x04			/* LangID = 0x0409: US-English */
 };
 
@@ -100,7 +100,7 @@ static const uint8_t regnual_string_lang_id[] = {
 
 static const uint8_t regnual_string_serial[] = {
   8*2+2,
-  USB_STRING_DESCRIPTOR_TYPE,
+  STRING_DESCRIPTOR,
   /* FSIJ-0.0 */
   'F', 0, 'S', 0, 'I', 0, 'J', 0, '-', 0, 
   '0', 0, '.', 0, '0', 0,
@@ -173,29 +173,30 @@ static uint32_t calc_crc32 (void)
 }
 
 
-void usb_cb_ctrl_write_finish (uint8_t req, uint8_t req_no, uint16_t value)
+void usb_cb_ctrl_write_finish (uint8_t req, uint8_t req_no,
+			       struct req_args *detail)
 {
   uint8_t type_rcp = req & (REQUEST_TYPE|RECIPIENT);
 
   if (type_rcp == (VENDOR_REQUEST | DEVICE_RECIPIENT) && USB_SETUP_SET (req))
     {
-      if (req_no == USB_REGNUAL_SEND && value == 0)
+      if (req_no == USB_REGNUAL_SEND && detail->value == 0)
 	result = calc_crc32 ();
       else if (req_no == USB_REGNUAL_FLASH)
 	{
-	  uint32_t dst_addr = (0x08000000 + value * 0x100);
+	  uint32_t dst_addr = (0x08000000 + detail->value * 0x100);
 
 	  result = flash_write (dst_addr, (const uint8_t *)mem, 256);
 	}
-      else if (req_no == USB_REGNUAL_PROTECT && value == 0)
+      else if (req_no == USB_REGNUAL_PROTECT && detail->value == 0)
 	result = flash_protect ();
-      else if (req_no == USB_REGNUAL_FINISH && value == 0)
+      else if (req_no == USB_REGNUAL_FINISH && detail->value == 0)
 	nvic_system_reset ();
     }
 }
 
 int
-usb_cb_setup (uint8_t req, uint8_t req_no, struct control_info *detail)
+usb_cb_setup (uint8_t req, uint8_t req_no, struct req_args *detail)
 {
   uint8_t type_rcp = req & (REQUEST_TYPE|RECIPIENT);
 
@@ -250,7 +251,7 @@ usb_cb_setup (uint8_t req, uint8_t req_no, struct control_info *detail)
 
 int
 usb_cb_get_descriptor (uint8_t rcp, uint8_t desc_type, uint8_t desc_index,
-		       struct control_info *detail)
+		       struct req_args *detail)
 {
   if (rcp != DEVICE_RECIPIENT)
     return USB_UNSUPPORT;
@@ -310,7 +311,7 @@ int usb_cb_handle_event (uint8_t event_type, uint16_t value)
   return USB_UNSUPPORT;
 }
 
-int usb_cb_interface (uint8_t cmd, struct control_info *detail)
+int usb_cb_interface (uint8_t cmd, struct req_args *detail)
 {
   (void)cmd; (void)detail;
   return USB_UNSUPPORT;
