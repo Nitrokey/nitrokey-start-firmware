@@ -199,13 +199,7 @@ usb_cb_device_reset (void)
 {
   int i;
 
-  /* Set DEVICE as not configured */
-  usb_lld_set_configuration (0);
-
-  /* Current Feature initialization */
-  usb_lld_set_feature (USB_INITIAL_FEATURE);
-
-  usb_lld_reset ();
+  usb_lld_reset (USB_INITIAL_FEATURE);
 
   /* Initialize Endpoint 0 */
   usb_lld_setup_endpoint (ENDP0, EP_CONTROL, 0, ENDP0_RXADDR, ENDP0_TXADDR,
