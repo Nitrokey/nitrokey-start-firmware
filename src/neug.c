@@ -582,8 +582,8 @@ rng (void *arg)
   chopstx_cond_init (&mode_cond);
 
   /* Enable ADCs */
-  adc_start ();
   chopstx_claim_irq (&adc_intr, INTR_REQ_DMA1_Channel1);
+  adc_start ();
 
   ep_init (mode);
   while (!rng_should_terminate)
@@ -641,7 +641,6 @@ rng (void *arg)
     }
 
   adc_stop ();
-  chopstx_release_irq (&adc_intr);
 
   return NULL;
 }

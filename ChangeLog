@@ -1,3 +1,8 @@
+2016-05-13  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/neug.c (rng): Call chopstx_claim_irq before adc_start.
+	Remove call of chopstx_release_irq.
+
 2016-05-12  Niibe Yutaka  <gniibe@fsij.org>
 
 	* chopstx: Update
