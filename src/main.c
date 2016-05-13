@@ -96,47 +96,6 @@ _write (const char *s, int size)
 
 extern void *USBthread (void *arg);
 
-extern void EP1_IN_Callback (void);
-extern void EP2_IN_Callback (void);
-extern void EP1_OUT_Callback (void);
-extern void EP6_IN_Callback (void);
-
-void
-usb_cb_rx_ready (uint8_t ep_num)
-{
-  if (ep_num == ENDP1)
-    EP1_OUT_Callback ();
-#ifdef DEBUG
-  else if (ep_num == ENDP5)
-    {
-      chopstx_mutex_lock (&stdout.m_dev);
-      usb_lld_rx_enable (ep_num);
-      chopstx_mutex_unlock (&stdout.m_dev);
-    }
-#endif
-}
-
-void
-usb_cb_tx_done (uint8_t ep_num)
-{
-  if (ep_num == ENDP1)
-    EP1_IN_Callback ();
-  else if (ep_num == ENDP2)
-    EP2_IN_Callback ();
-#ifdef DEBUG
-  else if (ep_num == ENDP3)
-    {
-      chopstx_mutex_lock (&stdout.m_dev);
-      chopstx_cond_signal (&stdout.cond_dev);
-      chopstx_mutex_unlock (&stdout.m_dev);
-    }
-#endif
-#ifdef PINPAD_SUPPORT
-  else if (ep_num == ENDP6)
-    EP6_IN_Callback ();
-#endif
-}
-
 
 /*
  * main thread does 1-bit LED display output
