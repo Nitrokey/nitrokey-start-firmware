@@ -1,5 +1,8 @@
 2016-05-16  Niibe Yutaka  <gniibe@fsij.org>
 
+	* regnual/regnual.c (usb_cb_rx_ready, usb_cb_tx_done)
+	(usb_cb_device_reset): Follow the change of USB API.
+
 	* chopstx: Update.
 	* src/sys.c: Update from Chopstx.
 
@@ -16,7 +19,7 @@
 	* src/usb_stm32f103.c: Likewise.
 
 	* src/usb_ctrl.c (usb_intr): Follow the change of USB API.
-	* src/main.c (usb_cb_rx_ready, usb_cb_tx_done): Likewise.
+	(usb_cb_rx_ready, usb_cb_tx_done): Likewise.
 
 	* src/adc.h: Remove unused declarations.
 

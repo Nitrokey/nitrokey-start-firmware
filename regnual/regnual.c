@@ -110,13 +110,7 @@ static const uint8_t regnual_string_serial[] = {
 void
 usb_cb_device_reset (void)
 {
-  /* Set DEVICE as not configured */
-  usb_lld_set_configuration (0);
-
-  /* Current Feature initialization */
-  usb_lld_set_feature (regnual_config_desc[7]);
-
-  usb_lld_reset ();
+  usb_lld_reset (regnual_config_desc[7]);
 
   /* Initialize Endpoint 0 */
   usb_lld_setup_endpoint (ENDP0, EP_CONTROL, 0, ENDP0_RXADDR, ENDP0_TXADDR,
@@ -317,6 +311,15 @@ int usb_cb_interface (uint8_t cmd, struct req_args *detail)
   return USB_UNSUPPORT;
 }
 
+void usb_cb_rx_ready (uint8_t ep_num)
+{
+  (void)ep_num;
+}
+
+void usb_cb_tx_done (uint8_t ep_num)
+{
+  (void)ep_num;
+}
 
 static void wait (int count)
 {
