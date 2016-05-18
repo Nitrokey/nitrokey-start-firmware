@@ -1,7 +1,7 @@
 /*
  * usb-icc.c -- USB CCID protocol handling
  *
- * Copyright (C) 2010, 2011, 2012, 2013, 2014, 2015
+ * Copyright (C) 2010, 2011, 2012, 2013, 2014, 2015, 2016
  *               Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
@@ -248,7 +248,7 @@ static void ccid_reset (struct ccid *c)
 }
 
 static void ccid_init (struct ccid *c, struct ep_in *epi, struct ep_out *epo,
-		       struct apdu *a, chopstx_t thd)
+		       struct apdu *a)
 {
   icc_state_p = &c->icc_state;
 
@@ -260,9 +260,9 @@ static void ccid_init (struct ccid *c, struct ep_in *epi, struct ep_out *epo,
   memset (&c->icc_header, 0, sizeof (struct icc_header));
   c->sw1sw2[0] = 0x90;
   c->sw1sw2[1] = 0x00;
-  eventflag_init (&c->ccid_comm, thd);
+  eventflag_init (&c->ccid_comm);
   c->application = 0;
-  eventflag_init (&c->openpgp_comm, 0);
+  eventflag_init (&c->openpgp_comm);
   c->epi = epi;
   c->epo = epo;
   c->a = a;
@@ -1329,33 +1329,23 @@ ccid_usb_reset (void)
 
 #define GPG_THREAD_TERMINATED 0xffff
 
-static void *ccid_thread (chopstx_t) __attribute__ ((noinline));
-
-void * __attribute__ ((naked))
-USBthread (void *arg)
-{
-  chopstx_t thd;
-  (void)arg;
-
-  asm ("mov	%0, sp" : "=r" (thd));
-  return ccid_thread (thd);
-}
-
 #define NOTIFY_SLOT_CHANGE 0x50
 
-static void * __attribute__ ((noinline))
-ccid_thread (chopstx_t thd)
+void *
+ccid_thread (void *arg)
 {
   struct ep_in *epi = &endpoint_in;
   struct ep_out *epo = &endpoint_out;
   struct ccid *c = &ccid;
   struct apdu *a = &apdu;
 
+  (void)arg;
+
  reset:
   epi_init (epi, ENDP1, notify_tx, c);
   epo_init (epo, ENDP1, notify_icc, c);
   apdu_init (a);
-  ccid_init (c, epi, epo, a, thd);
+  ccid_init (c, epi, epo, a);
 
   icc_prepare_receive (c);
   while (1)

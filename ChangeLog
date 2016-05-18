@@ -1,5 +1,9 @@
 2016-05-18  Niibe Yutaka  <gniibe@fsij.org>
 
+	* src/gnuk.ld.in: Tweak thread size.
+	* src/main.c (main): Use chopstx_setpriority.
+	* src/usb-icc.c (ccid_init): Use new eventflag API.
+
 	* regnual/regnual.c (nvic_enable_intr): New.
 	(main): Call nvic_enable_intr.
 

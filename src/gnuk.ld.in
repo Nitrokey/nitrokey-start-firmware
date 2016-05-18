@@ -2,11 +2,11 @@
  * ST32F103 memory setup.
  */
 __main_stack_size__      = 0x0080;      /* Exception handlers     */
-__process0_stack_size__  = 0x0100;      /* main */
-__process1_stack_size__  = 0x0120;      /* ccid */
-__process2_stack_size__  = 0x01a0;      /* rng */
+__process0_stack_size__  = 0x0180;      /* main */
+__process1_stack_size__  = 0x0160;      /* ccid */
+__process2_stack_size__  = 0x0140;      /* rng */
 __process3_stack_size__  = 0x1640;      /* gpg */
-__process4_stack_size__  = 0x0120;      /* intr: usb */
+__process4_stack_size__  = 0x0100;      /* intr: usb */
 __process5_stack_size__  = @MSC_SIZE@;  /* msc */
 __process6_stack_size__  = @TIM_SIZE@;  /* intr: timer */
 __process7_stack_size__  = @EXT_SIZE@;  /* intr: ext */

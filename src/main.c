@@ -94,7 +94,7 @@ _write (const char *s, int size)
 }
 #endif
 
-extern void *USBthread (void *arg);
+extern void *ccid_thread (void *arg);
 
 
 /*
@@ -304,7 +304,7 @@ main (int argc, char *argv[])
 
   adc_init ();
 
-  eventflag_init (&led_event, chopstx_main);
+  eventflag_init (&led_event);
 
   random_init ();
 
@@ -313,7 +313,7 @@ main (int argc, char *argv[])
 #endif
 
   ccid_thd = chopstx_create (PRIO_CCID, __stackaddr_ccid, __stacksize_ccid,
-			     USBthread, NULL);
+			     ccid_thread, NULL);
 
 #ifdef PINPAD_CIR_SUPPORT
   cir_init ();
@@ -325,7 +325,7 @@ main (int argc, char *argv[])
   usb_thd = chopstx_create (PRIO_USB, __stackaddr_usb, __stacksize_usb,
 			    usb_intr, NULL);
 
-  chopstx_main_init (PRIO_MAIN);
+  chopstx_setpriority (PRIO_MAIN);
 
   while (1)
     {
