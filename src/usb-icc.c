@@ -849,7 +849,6 @@ icc_send_status (struct ccid *c)
   c->epi->tx_done = 1;
   usb_lld_write (c->epi->ep_num, icc_reply, ICC_MSG_HEADER_SIZE);
 
-  led_blink (LED_SHOW_STATUS);
 #ifdef DEBUG_MORE
   DEBUG_INFO ("St\r\n");
 #endif
@@ -1331,12 +1330,12 @@ icc_handle_timeout (struct ccid *c)
     {
     case ICC_STATE_EXECUTE:
       icc_send_data_block_time_extension (c);
-      led_blink (LED_ONESHOT);
       break;
     default:
       break;
     }
 
+  led_blink (LED_SHOW_STATUS);
   return next_state;
 }
 

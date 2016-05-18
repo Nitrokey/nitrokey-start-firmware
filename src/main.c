@@ -41,8 +41,6 @@
 /*
  * main thread does 1-bit LED display output
  */
-#define MAIN_TIMEOUT_INTERVAL	(5000*1000)
-
 #define LED_TIMEOUT_INTERVAL	(75*1000)
 #define LED_TIMEOUT_ZERO	(25*1000)
 #define LED_TIMEOUT_ONE		(100*1000)
@@ -122,59 +120,38 @@ static void display_fatal_code (void)
 
 static uint8_t led_inverted;
 
-static eventmask_t emit_led (int on_time, int off_time)
+static void emit_led (int on_time, int off_time)
 {
-  eventmask_t m;
-
   set_led (!led_inverted);
-  m = eventflag_wait_timeout (&led_event, on_time);
+  chopstx_usec_wait (on_time);
   set_led (led_inverted);
-  if (m) return m;
-  if ((m = eventflag_wait_timeout (&led_event, off_time)))
-    return m;
-  return 0;
+  chopstx_usec_wait (off_time);
 }
 
-static eventmask_t display_status_code (void)
+static void display_status_code (void)
 {
-  eventmask_t m;
   enum icc_state icc_state = *icc_state_p;
 
   if (icc_state == ICC_STATE_START)
-    return emit_led (LED_TIMEOUT_ONE, LED_TIMEOUT_STOP);
+    emit_led (LED_TIMEOUT_ONE, LED_TIMEOUT_STOP);
   else
-    /* OpenPGP card thread  running */
+    /* OpenPGP card thread is running */
     {
-      if ((m = emit_led ((auth_status & AC_ADMIN_AUTHORIZED)?
-			  LED_TIMEOUT_ONE : LED_TIMEOUT_ZERO,
-			  LED_TIMEOUT_INTERVAL)))
-	return m;
-      if ((m = emit_led ((auth_status & AC_OTHER_AUTHORIZED)?
-			  LED_TIMEOUT_ONE : LED_TIMEOUT_ZERO,
-			  LED_TIMEOUT_INTERVAL)))
-	return m;
-      if ((m = emit_led ((auth_status & AC_PSO_CDS_AUTHORIZED)?
-			  LED_TIMEOUT_ONE : LED_TIMEOUT_ZERO,
-			  LED_TIMEOUT_INTERVAL)))
-	return m;
+      emit_led ((auth_status & AC_ADMIN_AUTHORIZED)?
+		LED_TIMEOUT_ONE : LED_TIMEOUT_ZERO, LED_TIMEOUT_INTERVAL);
+      emit_led ((auth_status & AC_OTHER_AUTHORIZED)?
+		LED_TIMEOUT_ONE : LED_TIMEOUT_ZERO, LED_TIMEOUT_INTERVAL);
+      emit_led ((auth_status & AC_PSO_CDS_AUTHORIZED)?
+		LED_TIMEOUT_ONE : LED_TIMEOUT_ZERO, LED_TIMEOUT_INTERVAL);
 
       if (icc_state == ICC_STATE_WAIT)
-	{
-	  if ((m = eventflag_wait_timeout (&led_event, LED_TIMEOUT_STOP * 2)))
-	    return m;
-	}
+	chopstx_usec_wait (LED_TIMEOUT_STOP * 2);
       else
 	{
-	  if ((m = eventflag_wait_timeout (&led_event, LED_TIMEOUT_INTERVAL)))
-	    return m;
-
-	  if ((m = emit_led (icc_state == ICC_STATE_RECEIVE?
-			      LED_TIMEOUT_ONE : LED_TIMEOUT_ZERO,
-			      LED_TIMEOUT_STOP)))
-	    return m;
+	  chopstx_usec_wait (LED_TIMEOUT_INTERVAL);
+	  emit_led (icc_state == ICC_STATE_RECEIVE?
+		    LED_TIMEOUT_ONE : LED_TIMEOUT_ZERO, LED_TIMEOUT_STOP);
 	}
-
-      return 0;
     }
 }
 
@@ -221,7 +198,6 @@ extern uint32_t bDeviceState;
 int
 main (int argc, char *argv[])
 {
-  unsigned int count = 0;
   uint32_t entry;
   chopstx_t ccid_thd;
 
@@ -267,56 +243,37 @@ main (int argc, char *argv[])
     {
       eventmask_t m;
 
-      m = eventflag_wait_timeout (&led_event, MAIN_TIMEOUT_INTERVAL);
-    got_it:
-      count++;
+      m = eventflag_wait (&led_event);
       switch (m)
 	{
 	case LED_ONESHOT:
-	  if ((m = emit_led (100*1000, MAIN_TIMEOUT_INTERVAL))) goto got_it;
+	  emit_led (100*1000, LED_TIMEOUT_STOP);
 	  break;
 	case LED_TWOSHOTS:
-	  if ((m = emit_led (50*1000, 50*1000))) goto got_it;
-	  if ((m = emit_led (50*1000, MAIN_TIMEOUT_INTERVAL))) goto got_it;
+	  emit_led (50*1000, 50*1000);
+	  emit_led (50*1000, LED_TIMEOUT_STOP);
 	  break;
 	case LED_SHOW_STATUS:
-	  if ((count & 0x07) != 0) continue; /* Display once for eight times */
-	  if ((m = display_status_code ())) goto got_it;
+	  display_status_code ();
 	  break;
 	case LED_START_COMMAND:
 	  set_led (1);
 	  led_inverted = 1;
 	  break;
 	case LED_FINISH_COMMAND:
-	  m = eventflag_wait_timeout (&led_event, LED_TIMEOUT_STOP);
+	  chopstx_usec_wait (LED_TIMEOUT_STOP);
 	  led_inverted = 0;
 	  set_led (0);
-	  if (m)
-	    goto got_it;
 	  break;
 	case LED_FATAL:
 	  display_fatal_code ();
 	  break;
-	case LED_USB_RESET:
-	  ccid_usb_reset ();
-	  break;
 	case LED_GNUK_EXEC:
 	  goto exec;
 	default:
-	  if ((m = emit_led (LED_TIMEOUT_ZERO, LED_TIMEOUT_STOP)))
-	    goto got_it;
+	  emit_led (LED_TIMEOUT_ZERO, LED_TIMEOUT_STOP);
 	  break;
 	}
-
-#ifdef DEBUG_MORE
-      if (stdout.connected && (count % 10) == 0)
-	{
-	  DEBUG_SHORT (count / 10);
-	  _write ("\r\nThis is Gnuk on STM32F103.\r\n"
-		  "Testing USB driver.\n\n"
-		  "Hello world\r\n\r\n", 30+21+15);
-	}
-#endif
     }
 
  exec:
