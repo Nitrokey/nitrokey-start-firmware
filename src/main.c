@@ -37,65 +37,6 @@
 #include "random.h"
 #include "stm32f103.h"
 
-#ifdef DEBUG
-#include "debug.h"
-
-struct stdout stdout;
-
-static void
-stdout_init (void)
-{
-  chopstx_mutex_init (&stdout.m);
-  chopstx_mutex_init (&stdout.m_dev);
-  chopstx_cond_init (&stdout.cond_dev);
-  stdout.connected = 0;
-}
-
-void
-_write (const char *s, int len)
-{
-  int packet_len;
-
-  if (len == 0)
-    return;
-
-  chopstx_mutex_lock (&stdout.m);
-
-  chopstx_mutex_lock (&stdout.m_dev);
-  if (!stdout.connected)
-    chopstx_cond_wait (&stdout.cond_dev, &stdout.m_dev);
-  chopstx_mutex_unlock (&stdout.m_dev);
-
-  do
-    {
-      packet_len =
-	(len < VIRTUAL_COM_PORT_DATA_SIZE) ? len : VIRTUAL_COM_PORT_DATA_SIZE;
-
-      chopstx_mutex_lock (&stdout.m_dev);
-      usb_lld_write (ENDP3, s, packet_len);
-      chopstx_cond_wait (&stdout.cond_dev, &stdout.m_dev);
-      chopstx_mutex_unlock (&stdout.m_dev);
-
-      s += packet_len;
-      len -= packet_len;
-    }
-  /* Send a Zero-Length-Packet if the last packet is full size.  */
-  while (len != 0 || packet_len == VIRTUAL_COM_PORT_DATA_SIZE);
-
-  chopstx_mutex_unlock (&stdout.m);
-}
-
-#else
-void
-_write (const char *s, int size)
-{
-  (void)s;
-  (void)size;
-}
-#endif
-
-extern void *ccid_thread (void *arg);
-
 
 /*
  * main thread does 1-bit LED display output
@@ -261,19 +202,13 @@ calculate_regnual_entry_address (const uint8_t *addr)
 }
 
 extern uint8_t __process1_stack_base__, __process1_stack_size__;
-extern uint8_t __process4_stack_base__, __process4_stack_size__;
-
 const uint32_t __stackaddr_ccid = (uint32_t)&__process1_stack_base__;
 const size_t __stacksize_ccid = (size_t)&__process1_stack_size__;
 
-const uint32_t __stackaddr_usb = (uint32_t)&__process4_stack_base__;
-const size_t __stacksize_usb = (size_t)&__process4_stack_size__;
-
 #define PRIO_CCID 3
-#define PRIO_USB  4
 #define PRIO_MAIN 5
 
-extern void *usb_intr (void *arg);
+extern void *ccid_thread (void *arg);
 
 static void gnuk_malloc_init (void);
 
@@ -282,16 +217,12 @@ extern uint32_t bDeviceState;
 
 /*
  * Entry point.
- *
- * NOTE: the main function is already a thread in the system on entry.
- *       See the hwinit1_common function.
  */
 int
 main (int argc, char *argv[])
 {
   unsigned int count = 0;
   uint32_t entry;
-  chopstx_t usb_thd;
   chopstx_t ccid_thd;
 
   (void)argc;
@@ -321,9 +252,6 @@ main (int argc, char *argv[])
 #ifdef PINPAD_DND_SUPPORT
   msc_init ();
 #endif
-
-  usb_thd = chopstx_create (PRIO_USB, __stackaddr_usb, __stacksize_usb,
-			    usb_intr, NULL);
 
   chopstx_setpriority (PRIO_MAIN);
 
@@ -400,9 +328,6 @@ main (int argc, char *argv[])
   /* Finish application.  */
   chopstx_join (ccid_thd, NULL);
 
-  chopstx_cancel (usb_thd);
-  chopstx_join (usb_thd, NULL);
-
   /* Set vector */
   SCB->VTOR = (uint32_t)&_regnual_start;
   entry = calculate_regnual_entry_address (&_regnual_start);
@@ -444,6 +369,8 @@ main (int argc, char *argv[])
 void
 fatal (uint8_t code)
 {
+  extern void _write (const char *s, int len);
+
   fatal_code = code;
   eventflag_signal (&led_event, LED_FATAL);
   _write ("fatal\r\n", 7);

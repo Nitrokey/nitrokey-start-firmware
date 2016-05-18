@@ -29,8 +29,14 @@
 
 #include "config.h"
 
+#ifdef DEBUG
+#include "debug.h"
+struct stdout stdout;
+#endif
+
 #include "gnuk.h"
 #include "usb_lld.h"
+#include "usb_conf.h"
 
 /*
  * USB buffer size of USB-CCID driver
@@ -353,7 +359,7 @@ static void get_sw1sw2 (struct ep_in *epi, size_t len)
 /*
  * Tx done callback
  */
-void
+static void
 EP1_IN_Callback (void)
 {
   struct ep_in *epi = &endpoint_in;
@@ -630,7 +636,7 @@ icc_prepare_receive (struct ccid *c)
  * Rx ready callback
  */
 
-void
+static void
 EP1_OUT_Callback (void)
 {
   struct ep_out *epo = &endpoint_out;
@@ -670,6 +676,46 @@ EP1_OUT_Callback (void)
     epo->notify (epo);
 }
 
+
+extern void EP6_IN_Callback (void);
+
+void
+usb_cb_rx_ready (uint8_t ep_num)
+{
+  if (ep_num == ENDP1)
+    EP1_OUT_Callback ();
+#ifdef DEBUG
+  else if (ep_num == ENDP5)
+    {
+      chopstx_mutex_lock (&stdout.m_dev);
+      usb_lld_rx_enable (ep_num);
+      chopstx_mutex_unlock (&stdout.m_dev);
+    }
+#endif
+}
+
+void
+usb_cb_tx_done (uint8_t ep_num)
+{
+  if (ep_num == ENDP1)
+    EP1_IN_Callback ();
+  else if (ep_num == ENDP2)
+    {
+      /* INTERRUPT Transfer done */
+    }
+#ifdef DEBUG
+  else if (ep_num == ENDP3)
+    {
+      chopstx_mutex_lock (&stdout.m_dev);
+      chopstx_cond_signal (&stdout.cond_dev);
+      chopstx_mutex_unlock (&stdout.m_dev);
+    }
+#endif
+#ifdef PINPAD_SUPPORT
+  else if (ep_num == ENDP6)
+    EP6_IN_Callback ();
+#endif
+}
 
 /*
  * ATR (Answer To Reset) string
@@ -1297,15 +1343,6 @@ icc_handle_timeout (struct ccid *c)
 static struct ccid ccid;
 enum icc_state *icc_state_p = &ccid.icc_state;
 
-/*
- * Another Tx done callback
- */
-void
-EP2_IN_Callback (void)
-{
-}
-
-
 void
 ccid_card_change_signal (int how)
 {
@@ -1331,15 +1368,22 @@ ccid_usb_reset (void)
 
 #define NOTIFY_SLOT_CHANGE 0x50
 
+#define INTR_REQ_USB 20
+
 void *
 ccid_thread (void *arg)
 {
+  chopstx_intr_t interrupt;
+
   struct ep_in *epi = &endpoint_in;
   struct ep_out *epo = &endpoint_out;
   struct ccid *c = &ccid;
   struct apdu *a = &apdu;
 
   (void)arg;
+  usb_lld_init (USB_INITIAL_FEATURE);
+  chopstx_claim_irq (&interrupt, INTR_REQ_USB);
+  usb_interrupt_handler ();
 
  reset:
   epi_init (epi, ENDP1, notify_tx, c);
@@ -1351,8 +1395,16 @@ ccid_thread (void *arg)
   while (1)
     {
       eventmask_t m;
+      uint32_t timeout = USB_ICC_TIMEOUT;
+      chopstx_poll_cond_t poll_desc;
 
-      m = eventflag_wait_timeout (&c->ccid_comm, USB_ICC_TIMEOUT);
+      eventflag_set_poll_desc (&c->ccid_comm, &poll_desc);
+      chopstx_poll (&timeout, 2, &interrupt, &poll_desc);
+      if (interrupt.ready)
+	usb_interrupt_handler ();
+
+      if (poll_desc.ready)
+	m = eventflag_wait (&c->ccid_comm);
 
       if (m == EV_USB_RESET)
 	{
@@ -1457,3 +1509,57 @@ ccid_thread (void *arg)
 
   return NULL;
 }
+
+
+#ifdef DEBUG
+static void
+stdout_init (void)
+{
+  chopstx_mutex_init (&stdout.m);
+  chopstx_mutex_init (&stdout.m_dev);
+  chopstx_cond_init (&stdout.cond_dev);
+  stdout.connected = 0;
+}
+
+void
+_write (const char *s, int len)
+{
+  int packet_len;
+
+  if (len == 0)
+    return;
+
+  chopstx_mutex_lock (&stdout.m);
+
+  chopstx_mutex_lock (&stdout.m_dev);
+  if (!stdout.connected)
+    chopstx_cond_wait (&stdout.cond_dev, &stdout.m_dev);
+  chopstx_mutex_unlock (&stdout.m_dev);
+
+  do
+    {
+      packet_len =
+	(len < VIRTUAL_COM_PORT_DATA_SIZE) ? len : VIRTUAL_COM_PORT_DATA_SIZE;
+
+      chopstx_mutex_lock (&stdout.m_dev);
+      usb_lld_write (ENDP3, s, packet_len);
+      chopstx_cond_wait (&stdout.cond_dev, &stdout.m_dev);
+      chopstx_mutex_unlock (&stdout.m_dev);
+
+      s += packet_len;
+      len -= packet_len;
+    }
+  /* Send a Zero-Length-Packet if the last packet is full size.  */
+  while (len != 0 || packet_len == VIRTUAL_COM_PORT_DATA_SIZE);
+
+  chopstx_mutex_unlock (&stdout.m);
+}
+
+#else
+void
+_write (const char *s, int size)
+{
+  (void)s;
+  (void)size;
+}
+#endif
