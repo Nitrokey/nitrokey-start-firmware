@@ -64,6 +64,12 @@ static const uint8_t regnual_device_desc[] = {
   0x01    /* bNumConfigurations */
 };
 
+#if defined(USB_SELF_POWERED)
+#define REGNUAL_FEATURE_INIT 0xC0  /* self powered */
+#else
+#define REGNUAL_FEATURE_INIT 0x80  /* bus powered */
+#endif
+
 static const uint8_t regnual_config_desc[] = {
   9,
   CONFIG_DESCRIPTOR,	/* bDescriptorType: Configuration */
@@ -71,12 +77,8 @@ static const uint8_t regnual_config_desc[] = {
   1,			/* bNumInterfaces: single vendor interface */
   0x01,			/* bConfigurationValue: Configuration value */
   0x00,			/* iConfiguration: None */
-#if defined(USB_SELF_POWERED)
-  0xC0,				/* bmAttributes: self powered */
-#else
-  0x80,				/* bmAttributes: bus powered */
-#endif
-  50,				/* MaxPower 100 mA */
+  REGNUAL_FEATURE_INIT, /* bmAttributes: bus powered */
+  50,			/* MaxPower 100 mA */
 
   /* Interface Descriptor */
   9,
@@ -110,7 +112,7 @@ static const uint8_t regnual_string_serial[] = {
 void
 usb_cb_device_reset (void)
 {
-  usb_lld_reset (regnual_config_desc[7]);
+  usb_lld_reset (REGNUAL_FEATURE_INIT);
 
   /* Initialize Endpoint 0 */
   usb_lld_setup_endpoint (ENDP0, EP_CONTROL, 0, ENDP0_RXADDR, ENDP0_TXADDR,
@@ -168,29 +170,29 @@ static uint32_t calc_crc32 (void)
 
 
 void usb_cb_ctrl_write_finish (uint8_t req, uint8_t req_no,
-			       struct req_args *detail)
+			       struct req_args *arg)
 {
   uint8_t type_rcp = req & (REQUEST_TYPE|RECIPIENT);
 
   if (type_rcp == (VENDOR_REQUEST | DEVICE_RECIPIENT) && USB_SETUP_SET (req))
     {
-      if (req_no == USB_REGNUAL_SEND && detail->value == 0)
+      if (req_no == USB_REGNUAL_SEND && arg->value == 0)
 	result = calc_crc32 ();
       else if (req_no == USB_REGNUAL_FLASH)
 	{
-	  uint32_t dst_addr = (0x08000000 + detail->value * 0x100);
+	  uint32_t dst_addr = (0x08000000 + arg->value * 0x100);
 
 	  result = flash_write (dst_addr, (const uint8_t *)mem, 256);
 	}
-      else if (req_no == USB_REGNUAL_PROTECT && detail->value == 0)
+      else if (req_no == USB_REGNUAL_PROTECT && arg->value == 0)
 	result = flash_protect ();
-      else if (req_no == USB_REGNUAL_FINISH && detail->value == 0)
+      else if (req_no == USB_REGNUAL_FINISH && arg->value == 0)
 	nvic_system_reset ();
     }
 }
 
 int
-usb_cb_setup (uint8_t req, uint8_t req_no, struct req_args *detail)
+usb_cb_setup (uint8_t req, uint8_t req_no, struct req_args *arg)
 {
   uint8_t type_rcp = req & (REQUEST_TYPE|RECIPIENT);
 
@@ -204,38 +206,38 @@ usb_cb_setup (uint8_t req, uint8_t req_no, struct req_args *detail)
 
 	      mem_info[0] = (const uint8_t *)FLASH_START;
 	      mem_info[1] = (const uint8_t *)flash_end;
-	      return usb_lld_reply_request (mem_info, sizeof (mem_info), detail);
+	      return usb_lld_reply_request (mem_info, sizeof (mem_info), arg);
 	    }
 	  else if (req_no == USB_REGNUAL_RESULT)
-	    return usb_lld_reply_request (&result, sizeof (uint32_t), detail);
+	    return usb_lld_reply_request (&result, sizeof (uint32_t), arg);
 	}
       else /* SETUP_SET */
 	{
 	  if (req_no == USB_REGNUAL_SEND)
 	    {
-	      if (detail->value != 0 || detail->index + detail->len > 256)
+	      if (arg->value != 0 || arg->index + arg->len > 256)
 		return USB_UNSUPPORT;
 
-	      if (detail->index + detail->len < 256)
-		memset ((uint8_t *)mem + detail->index + detail->len, 0xff,
-			256 - (detail->index + detail->len));
+	      if (arg->index + arg->len < 256)
+		memset ((uint8_t *)mem + arg->index + arg->len, 0xff,
+			256 - (arg->index + arg->len));
 
-	      usb_lld_set_data_to_recv (mem + detail->index, detail->len);
+	      usb_lld_set_data_to_recv (mem + arg->index, arg->len);
 	      return USB_SUCCESS;
 	    }
-	  else if (req_no == USB_REGNUAL_FLASH && detail->len == 0
-		   && detail->index == 0)
+	  else if (req_no == USB_REGNUAL_FLASH && arg->len == 0
+		   && arg->index == 0)
 	    {
-	      uint32_t dst_addr = (0x08000000 + detail->value * 0x100);
+	      uint32_t dst_addr = (0x08000000 + arg->value * 0x100);
 
 	      if (dst_addr + 256 <= flash_end)
 		return USB_SUCCESS;
 	    }
-	  else if (req_no == USB_REGNUAL_PROTECT && detail->len == 0
-		   && detail->value == 0 && detail->index == 0)
+	  else if (req_no == USB_REGNUAL_PROTECT && arg->len == 0
+		   && arg->value == 0 && arg->index == 0)
 	    return USB_SUCCESS;
-	  else if (req_no == USB_REGNUAL_FINISH && detail->len == 0
-		   && detail->value == 0 && detail->index == 0)
+	  else if (req_no == USB_REGNUAL_FINISH && arg->len == 0
+		   && arg->value == 0 && arg->index == 0)
 	    return USB_SUCCESS;
 	}
     }
@@ -245,17 +247,17 @@ usb_cb_setup (uint8_t req, uint8_t req_no, struct req_args *detail)
 
 int
 usb_cb_get_descriptor (uint8_t rcp, uint8_t desc_type, uint8_t desc_index,
-		       struct req_args *detail)
+		       struct req_args *arg)
 {
   if (rcp != DEVICE_RECIPIENT)
     return USB_UNSUPPORT;
 
   if (desc_type == DEVICE_DESCRIPTOR)
     return usb_lld_reply_request (regnual_device_desc,
-				  sizeof (regnual_device_desc), detail);
+				  sizeof (regnual_device_desc), arg);
   else if (desc_type == CONFIG_DESCRIPTOR)
     return usb_lld_reply_request (regnual_config_desc,
-				     sizeof (regnual_config_desc), detail); 
+				     sizeof (regnual_config_desc), arg); 
   else if (desc_type == STRING_DESCRIPTOR)
     {
       const uint8_t *str;
@@ -283,7 +285,7 @@ usb_cb_get_descriptor (uint8_t rcp, uint8_t desc_type, uint8_t desc_index,
 	  return USB_UNSUPPORT;
 	}
 
-      return usb_lld_reply_request (str, size, detail);
+      return usb_lld_reply_request (str, size, arg);
     }
 
   return USB_UNSUPPORT;
@@ -305,9 +307,9 @@ int usb_cb_handle_event (uint8_t event_type, uint16_t value)
   return USB_UNSUPPORT;
 }
 
-int usb_cb_interface (uint8_t cmd, struct req_args *detail)
+int usb_cb_interface (uint8_t cmd, struct req_args *arg)
 {
-  (void)cmd; (void)detail;
+  (void)cmd; (void)arg;
   return USB_UNSUPPORT;
 }
 
@@ -331,6 +333,30 @@ static void wait (int count)
 
 #define WAIT 2400000
 
+/* NVIC: Nested Vectored Interrupt Controller.  */
+struct NVIC {
+  volatile uint32_t ISER[8];
+  uint32_t unused1[24];
+  volatile uint32_t ICER[8];
+  uint32_t unused2[24];
+  volatile uint32_t ISPR[8];
+  uint32_t unused3[24];
+  volatile uint32_t ICPR[8];
+  uint32_t unused4[24];
+  volatile uint32_t IABR[8];
+  uint32_t unused5[56];
+  volatile uint32_t IPR[60];
+};
+static struct NVIC *const NVIC = (struct NVIC *const)0xE000E100;
+#define NVIC_ISER(n)	(NVIC->ISER[n >> 5])
+
+static void nvic_enable_intr (uint8_t irq_num)
+{
+  NVIC_ISER (irq_num) = 1 << (irq_num & 0x1f);
+}
+
+#define USB_LP_CAN1_RX0_IRQn	 20
+
 int
 main (int argc, char *argv[])
 {
@@ -339,7 +365,14 @@ main (int argc, char *argv[])
   set_led (0);
 
   flash_end = FLASH_START_ADDR + (*FLASH_SIZE_REG)*1024;
-  usb_lld_init (regnual_config_desc[7]);
+
+  /*
+   * NVIC interrupt priority was set by Gnuk.
+   * USB interrupt is disabled by NVIC setting.
+   * We enable the interrupt again by nvic_enable_intr.
+   */
+  usb_lld_init (REGNUAL_FEATURE_INIT);
+  nvic_enable_intr (USB_LP_CAN1_RX0_IRQn);
 
   while (1)
     {

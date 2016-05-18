@@ -1,3 +1,10 @@
+2016-05-18  Niibe Yutaka  <gniibe@fsij.org>
+
+	* regnual/regnual.c (nvic_enable_intr): New.
+	(main): Call nvic_enable_intr.
+
+	* chopstx: Update.
+
 2016-05-16  Niibe Yutaka  <gniibe@fsij.org>
 
 	* regnual/regnual.c (usb_cb_rx_ready, usb_cb_tx_done)
