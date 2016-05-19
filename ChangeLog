@@ -1,5 +1,8 @@
 2016-05-19  Niibe Yutaka  <gniibe@fsij.org>
 
+	* src/usb-ccid.c: Rename from usb-icc.c.
+	* src/Makefile.in (CSRC): Follow the change.
+
 	* chopstx: Update to 0.11.
 
 	* src/gnuk.h (LED_START_COMMAND, LED_FINISH_COMMAND): Change the

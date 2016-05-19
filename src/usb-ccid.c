@@ -1,5 +1,5 @@
 /*
- * usb-icc.c -- USB CCID protocol handling
+ * usb-ccid.c -- USB CCID protocol handling
  *
  * Copyright (C) 2010, 2011, 2012, 2013, 2014, 2015, 2016
  *               Free Software Initiative of Japan
