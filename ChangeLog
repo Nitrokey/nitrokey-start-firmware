@@ -1,5 +1,7 @@
 2016-05-19  Niibe Yutaka  <gniibe@fsij.org>
 
+	* chopstx: Update to 0.11.
+
 	* src/gnuk.h (LED_START_COMMAND, LED_FINISH_COMMAND): Change the
 	values for a case both flags will be handled.
 
