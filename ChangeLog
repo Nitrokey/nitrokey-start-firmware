@@ -1,3 +1,8 @@
+2016-05-19  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/gnuk.h (LED_START_COMMAND, LED_FINISH_COMMAND): Change the
+	values for a case both flags will be handled.
+
 2016-05-18  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/gnuk.ld.in: Tweak thread size.

@@ -421,8 +421,8 @@ extern const uint8_t gnuk_string_serial[];
 #define LED_ONESHOT		  1
 #define LED_TWOSHOTS		  2
 #define LED_SHOW_STATUS		  4
-#define LED_START_COMMAND	  8
-#define LED_FINISH_COMMAND	 16
+#define LED_FINISH_COMMAND	  8
+#define LED_START_COMMAND	 16
 #define LED_FATAL		 32
 #define LED_GNUK_EXEC		 64
 void led_blink (int spec);

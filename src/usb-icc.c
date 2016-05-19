@@ -266,9 +266,7 @@ static void ccid_init (struct ccid *c, struct ep_in *epi, struct ep_out *epo,
   memset (&c->icc_header, 0, sizeof (struct icc_header));
   c->sw1sw2[0] = 0x90;
   c->sw1sw2[1] = 0x00;
-  eventflag_init (&c->ccid_comm);
   c->application = 0;
-  eventflag_init (&c->openpgp_comm);
   c->epi = epi;
   c->epo = epo;
   c->a = a;
@@ -1373,6 +1371,7 @@ void *
 ccid_thread (void *arg)
 {
   chopstx_intr_t interrupt;
+  uint32_t timeout;
 
   struct ep_in *epi = &endpoint_in;
   struct ep_out *epo = &endpoint_out;
@@ -1380,9 +1379,13 @@ ccid_thread (void *arg)
   struct apdu *a = &apdu;
 
   (void)arg;
+
+  eventflag_init (&ccid.ccid_comm);
+  eventflag_init (&ccid.openpgp_comm);
+
   usb_lld_init (USB_INITIAL_FEATURE);
   chopstx_claim_irq (&interrupt, INTR_REQ_USB);
-  usb_interrupt_handler ();
+  usb_interrupt_handler ();	/* For old SYS < 3.0 */
 
  reset:
   epi_init (epi, ENDP1, notify_tx, c);
@@ -1394,16 +1397,18 @@ ccid_thread (void *arg)
   while (1)
     {
       eventmask_t m;
-      uint32_t timeout = USB_ICC_TIMEOUT;
       chopstx_poll_cond_t poll_desc;
 
-      eventflag_set_poll_desc (&c->ccid_comm, &poll_desc);
+      eventflag_prepare_poll (&c->ccid_comm, &poll_desc);
       chopstx_poll (&timeout, 2, &interrupt, &poll_desc);
       if (interrupt.ready)
-	usb_interrupt_handler ();
+	{
+	  usb_interrupt_handler ();
+	  continue;
+	}
 
-      if (poll_desc.ready)
-	m = eventflag_wait (&c->ccid_comm);
+      timeout = USB_ICC_TIMEOUT;
+      m = eventflag_get (&c->ccid_comm);
 
       if (m == EV_USB_RESET)
 	{

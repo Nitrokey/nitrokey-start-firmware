@@ -2,8 +2,8 @@
  * ST32F103 memory setup.
  */
 __main_stack_size__      = 0x0080;      /* Exception handlers     */
-__process0_stack_size__  = 0x0120;      /* main */
-__process1_stack_size__  = 0x0160;      /* ccid */
+__process0_stack_size__  = 0x0100;      /* main */
+__process1_stack_size__  = 0x0180;      /* ccid */
 __process2_stack_size__  = 0x0160;      /* rng */
 __process3_stack_size__  = 0x1640;      /* gpg */
 __process4_stack_size__  = 0;           /* --- */
