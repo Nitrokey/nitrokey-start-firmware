@@ -1,6 +1,10 @@
 2016-05-19  Niibe Yutaka  <gniibe@fsij.org>
 
+	* src/usb_ctrl.c (usb_cb_ctrl_write_finish): Set bDeviceState.
+
 	* src/usb-ccid.c: Rename from usb-icc.c.
+	(ccid_thread): Handle reGNUal upgrade.
+
 	* src/Makefile.in (CSRC): Follow the change.
 
 	* chopstx: Update to 0.11.

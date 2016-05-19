@@ -1370,6 +1370,7 @@ ccid_usb_reset (void)
 void *
 ccid_thread (void *arg)
 {
+  extern uint32_t bDeviceState;
   chopstx_intr_t interrupt;
   uint32_t timeout;
 
@@ -1509,6 +1510,13 @@ ccid_thread (void *arg)
     {
       chopstx_join (c->application, NULL);
       c->application = 0;
+    }
+
+  /* Loading reGNUal.  */
+  while (bDeviceState != UNCONNECTED)
+    {
+      chopstx_poll (NULL, 1, &interrupt);
+      usb_interrupt_handler ();
     }
 
   return NULL;

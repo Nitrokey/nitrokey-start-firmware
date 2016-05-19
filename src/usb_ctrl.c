@@ -391,6 +391,7 @@ usb_cb_ctrl_write_finish (uint8_t req, uint8_t req_no, struct req_args *arg)
 {
   uint8_t type_rcp = req & (REQUEST_TYPE|RECIPIENT);
 
+  (void)arg;
   if (type_rcp == (VENDOR_REQUEST | DEVICE_RECIPIENT))
     {
       if (USB_SETUP_SET (req) && req_no == USB_FSIJ_GNUK_EXEC)
@@ -398,7 +399,7 @@ usb_cb_ctrl_write_finish (uint8_t req, uint8_t req_no, struct req_args *arg)
 	  if (*icc_state_p != ICC_STATE_EXITED)
 	    return;
 
-	  (void)arg;
+	  bDeviceState = UNCONNECTED;
 	  usb_lld_prepare_shutdown (); /* No further USB communication */
 	  led_blink (LED_GNUK_EXEC);	/* Notify the main.  */
 	}
