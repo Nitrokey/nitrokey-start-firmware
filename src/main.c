@@ -158,6 +158,12 @@ static void display_status_code (void)
 void
 led_blink (int spec)
 {
+  if (spec == LED_START_COMMAND || spec == LED_FINISH_COMMAND)
+    {
+      led_inverted = (spec == LED_START_COMMAND);
+      spec = LED_SYNC;
+    }
+
   eventflag_signal (&led_event, spec);
 }
 
@@ -256,17 +262,11 @@ main (int argc, char *argv[])
 	case LED_SHOW_STATUS:
 	  display_status_code ();
 	  break;
-	case LED_START_COMMAND:
-	  set_led (1);
-	  led_inverted = 1;
-	  chopstx_usec_wait (LED_TIMEOUT_STOP);
-	  break;
-	case LED_FINISH_COMMAND:
-	  led_inverted = 0;
-	  set_led (0);
-	  break;
 	case LED_FATAL:
 	  display_fatal_code ();
+	  break;
+	case LED_SYNC:
+	  set_led (led_inverted);
 	  break;
 	case LED_GNUK_EXEC:
 	  goto exec;
