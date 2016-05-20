@@ -1,28 +1,27 @@
 Gnuk - An Implementation of USB Cryptographic Token for GnuPG
 
-							  Version 1.1.9
-							     2015-09-18
+							  Version 1.2.0
+							     2016-05-20
 							   Niibe Yutaka
 				      Free Software Initiative of Japan
 
-Warning
-=======
+Release Notes
+=============
 
-This is another experimental release of Gnuk, version 1.1.9, which has
+This is new release of Gnuk, version 1.2.0, which has major
 incompatible changes to Gnuk 1.0.x.  Specifically, it now supports
 overriding key import, but importing keys (or generating keys) results
 password reset.  Please update your documentation for Gnuk Token, so
-that the instruction of importing keys won't cause any confusion.  It
-has supports of ECDSA (with NIST P256 and secp256k1), EdDSA, and ECDH
-(with NIST P256, secp256k1, and Curve25519), but this ECC feature is
-pretty much experimental, and it requires modern GnuPG with
-development version of libgcrypt.
+that the instruction of importing keys won't cause any confusion.
 
-It also supports RSA-4096 experimentally, but users should know that
-it takes more than 8 second to sign/decrypt.
+It has supports of EdDSA, ECDSA (with NIST P256 and secp256k1), and
+ECDH (with NIST P256, secp256k1, and X25519), but this ECC feature is
+somehow experimental, and it requires modern GnuPG 2.1.x with
+libgcrypt 1.7.0 or later.
 
-You will not able to keep using Curve25519 keys, as the key format is
-subject to change.
+It also supports RSA-4096, but users should know that it takes more
+than 8 seconds to sign/decrypt.  Key generation of RSA-4096 just fails,
+because the device doesn't have enough memory.
 
 
 What's Gnuk?
@@ -63,11 +62,12 @@ A0: Good points of Gnuk are:
 
 Q1: What kind of key algorithm is supported?
 A1: Gnuk version 1.0 only supports RSA-2048.
-    Development version of Gnuk (1.1.x) supports 256-bit ECDSA and EdDSA,
-    as well as RSA 4096-bit.  But it takes long time to sign with RSA-4096.
+    Gnuk version 1.2.x supports 256-bit EdDSA and ECDSA, as well as
+    RSA-4096.  But it takes long time to sign with RSA-4096.
 
 Q2: How long does it take for digital signing?
 A2: It takes a second and a half or so for RSA-2048. 
+    It takes more than 8 secondd for RSA-4096.
 
 Q3: What's your recommendation for target board?
 A3: Orthodox choice is Olimex STM32-H103.
@@ -77,7 +77,7 @@ A3: Orthodox choice is Olimex STM32-H103.
     choice for experiment.
 
 Q4: What's version of GnuPG are you using?
-A4: In Debian GNU/Linux system, I use GnuPG modern 2.1.x in
+A4: In Debian GNU/Linux system, I use GnuPG modern 2.1.12 in
     experimental.
 
 Q5: What's version of pcscd and libccid are you using?
@@ -139,22 +139,14 @@ Ac: That's because gnome-keyring-daemon interferes GnuPG.  Please
 Qd: Do you know a good SWD debugger to connect FST-01 or something?
 Ad: ST-Link/V2 is cheap one.  We have a tool/stlinkv2.py as flash ROM
     writer program.  STM32 Nucleo F103 comes with the valiant of
-    ST-Link/V2.
+    ST-Link/V2.  However, the firmware of ST-Link/V2 is proprietary.
+    Now, I develop BBG-SWD, SWD debugger by BeagleBone Green.
 
 
-Release notes
-=============
+Tested features
+===============
 
-This is ninth experimental release in version 1.1 series of Gnuk.
-
-While it is daily use by its developer, some newly introduced features
-(including ECDSA/EdDSA/ECDH, key generation and firmware upgrade)
-should be considered experimental.  ECDSA/EdDSA/ECDH is really
-experimental.  Further, ECDH on Curve25519 is much experimental.  You
-won't be able to keep using the key, since the key format of GnuPG is
-not defined and it's subject to change.
-
-Tested features are:
+Gnuk is tested by test suite.  Please see the test directory.
 
 	* Personalization of the card
 	  * Changing Login name, URL, Name, Sex, Language, etc.
@@ -171,10 +163,10 @@ Tested features are:
 	* Modify with pin pad
 	* Card holder certificate (read)
 	* Removal of keys
-	* Key generation on device side
+	* Key generation on device side for RSA-2048
 	* Overriding key import
 
-Original features of Gnuk, tested lightly:
+Original features of Gnuk, tested manually lightly:
 
 	* OpenPGP card serial number setup
 	* Card holder certificate (write by UPDATE BINARY)
@@ -182,12 +174,12 @@ Original features of Gnuk, tested lightly:
 
 It is known not-working well:
 
-        * It is known that the combination of libccid 1.4.1 (or newer)
-	  with libusb 1.0.8 (or older) has a minor problem.  It is
-	  rare but it is possible for USB communication to be failed,
-	  because of a bug in libusb implementation.  Use libusbx
-	  1.0.9 or newer, or don't use PC/SC, but use internal CCID
-	  driver of GnuPG.
+        * It is known that the specific combination of libccid 1.4.1
+	  (or newer) with libusb 1.0.8 (or older) had a minor problem.
+	  It is rare but it is possible for USB communication to be
+	  failed, because of a bug in libusb implementation.  Use
+	  libusbx 1.0.9 or newer, or don't use PC/SC, but use internal
+	  CCID driver of GnuPG.
 
 
 Targets
@@ -256,7 +248,7 @@ External source code
 
 Gnuk is distributed with external source code.
 
-* chopstx/  -- Chopstx 0.10
+* chopstx/  -- Chopstx 0.11
 
   We use Chopstx as the kernel for Gnuk.
 
@@ -369,9 +361,9 @@ You need GNU toolchain and newlib for 'arm-none-eabi' target.
 On Debian we can install the packages of gcc-arm-none-eabi,
 gdb-arm-none-eabi and its friends.  I'm using:
 
-	binutils-arm-none-eabi	2.25-5+5+b1
-	gcc-arm-none-eabi 	15:4.9.3+svn227297-1
-	gdb-arm-none-eabi 	7.7.1+dfsg-5+8
+	binutils-arm-none-eabi	2.26-4+8
+	gcc-arm-none-eabi 	15:4.9.3+svn231177-1
+	gdb-arm-none-eabi 	7.10-1+9
 	libnewlib-arm-none-eabi	2.2.0+git20150830.5a3d536-1
 
 Or else, see https://launchpad.net/gcc-arm-embedded for preparation of
@@ -459,11 +451,13 @@ to access the contents.  If you want to protect, killing DfuSe and
 accessing by JTAG debugger is recommended.
 
 
-How to configure
-================
+(Optional) Configure serial number and X.509 certificate
+========================================================
 
-You need python and pyscard (python-pyscard package in Debian) or
-PyUSB 0.4.3 (python-usb package in Debian).
+This is completely optional.
+
+For this procedure, you need python and pyscard (python-pyscard
+package in Debian) or PyUSB 0.4.3 (python-usb package in Debian).
 
 (1) [pyscard] Stop scdaemon
     [PyUSB] Stop the pcsc daemon.
@@ -616,7 +610,7 @@ Your Contributions
 ==================
 
 FSIJ welcomes your contributions.  Please assign your copyright
-to FSIJ (if possible).
+to FSIJ (if possible), as I do.
 
 
 Foot note

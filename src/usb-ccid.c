@@ -847,6 +847,7 @@ icc_send_status (struct ccid *c)
   c->epi->tx_done = 1;
   usb_lld_write (c->epi->ep_num, icc_reply, ICC_MSG_HEADER_SIZE);
 
+  led_blink (LED_SHOW_STATUS);
 #ifdef DEBUG_MORE
   DEBUG_INFO ("St\r\n");
 #endif
@@ -1333,7 +1334,7 @@ icc_handle_timeout (struct ccid *c)
       break;
     }
 
-  led_blink (LED_SHOW_STATUS);
+  led_blink (LED_ONESHOT);
   return next_state;
 }
 
@@ -1394,6 +1395,7 @@ ccid_thread (void *arg)
   apdu_init (a);
   ccid_init (c, epi, epo, a);
 
+  timeout = USB_ICC_TIMEOUT;
   icc_prepare_receive (c);
   while (1)
     {

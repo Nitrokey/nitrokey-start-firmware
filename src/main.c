@@ -259,9 +259,9 @@ main (int argc, char *argv[])
 	case LED_START_COMMAND:
 	  set_led (1);
 	  led_inverted = 1;
+	  chopstx_usec_wait (LED_TIMEOUT_STOP);
 	  break;
 	case LED_FINISH_COMMAND:
-	  chopstx_usec_wait (LED_TIMEOUT_STOP);
 	  led_inverted = 0;
 	  set_led (0);
 	  break;
