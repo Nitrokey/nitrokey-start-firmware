@@ -1,5 +1,8 @@
 2016-05-31  NIIBE Yutaka  <gniibe@fsij.org>
 
+	* src/usb_stm32f103.c, src/stm32f103.h: Remove.
+	* src/adc_stm32f103.c, src/sys.c: Remove.
+
 	* src/usb_ctrl.c (usb_cb_interface): call ccid_usb_reset.
 	(usb_cb_handle_event): Likewise.
 
