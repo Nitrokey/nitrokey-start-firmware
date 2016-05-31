@@ -210,7 +210,7 @@ usb_cb_device_reset (void)
     gnuk_setup_endpoints_for_interface (i, 1);
 
   bDeviceState = ATTACHED;
-  ccid_usb_reset ();
+  ccid_usb_reset (1);
 }
 
 #define USB_CCID_REQ_ABORT			0x01
@@ -439,7 +439,6 @@ int usb_cb_handle_event (uint8_t event_type, uint16_t value)
 	  usb_lld_set_configuration (value);
 	  for (i = 0; i < NUM_INTERFACES; i++)
 	    gnuk_setup_endpoints_for_interface (i, 0);
-	  ccid_card_change_signal (CCID_CARD_INIT);
 	  bDeviceState = CONFIGURED;
 	}
       else if (current_conf != value)
@@ -451,6 +450,7 @@ int usb_cb_handle_event (uint8_t event_type, uint16_t value)
 	  for (i = 0; i < NUM_INTERFACES; i++)
 	    gnuk_setup_endpoints_for_interface (i, 1);
 	  bDeviceState = ADDRESSED;
+	  ccid_usb_reset (1);
 	}
       /* Do nothing when current_conf == value */
       return USB_SUCCESS;
@@ -478,6 +478,7 @@ int usb_cb_interface (uint8_t cmd, struct req_args *arg)
       else
 	{
 	  gnuk_setup_endpoints_for_interface (interface, 0);
+	  ccid_usb_reset (0);
 	  return USB_SUCCESS;
 	}
 

@@ -1,7 +1,11 @@
 2016-05-31  NIIBE Yutaka  <gniibe@fsij.org>
 
+	* src/usb_ctrl.c (usb_cb_interface): call ccid_usb_reset.
+	(usb_cb_handle_event): Likewise.
+
 	* src/usb-ccid.c (ccid_thread): Handle RESET->CONFIGURE process
 	correctly.
+	(ccid_thread): Handle SET_INTERFACE correctly.
 
 	* polarssl/library/aes.c (FT0, FT1, FT2): Add "weak" flag.
 

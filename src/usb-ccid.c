@@ -258,7 +258,7 @@ static void ccid_init (struct ccid *c, struct ep_in *epi, struct ep_out *epo,
 {
   ccid_state_p = &c->ccid_state;
 
-  c->ccid_state = CCID_STATE_NOCARD;
+  c->ccid_state = CCID_STATE_START;
   c->state = APDU_STATE_WAIT_COMMAND;
   c->p = a->cmd_apdu_data;
   c->len = MAX_CMD_APDU_DATA_SIZE;
@@ -766,7 +766,8 @@ static void ccid_error (struct ccid *c, int offset)
   if (c->ccid_state == CCID_STATE_NOCARD)
     ccid_reply[CCID_MSG_STATUS_OFFSET] = 2; /* 2: No ICC present */
   else if (c->ccid_state == CCID_STATE_START)
-    ccid_reply[CCID_MSG_STATUS_OFFSET] = 1; /* 1: ICC present but not activated */
+    /* 1: ICC present but not activated */
+    ccid_reply[CCID_MSG_STATUS_OFFSET] = 1;
   else
     ccid_reply[CCID_MSG_STATUS_OFFSET] = 0; /* An ICC is present and active */
   ccid_reply[CCID_MSG_STATUS_OFFSET] |= CCID_CMD_STATUS_ERROR; /* Failed */
@@ -837,7 +838,8 @@ ccid_send_status (struct ccid *c)
   if (c->ccid_state == CCID_STATE_NOCARD)
     ccid_reply[CCID_MSG_STATUS_OFFSET] = 2; /* 2: No ICC present */
   else if (c->ccid_state == CCID_STATE_START)
-    ccid_reply[CCID_MSG_STATUS_OFFSET] = 1; /* 1: ICC present but not activated */
+    /* 1: ICC present but not activated */
+    ccid_reply[CCID_MSG_STATUS_OFFSET] = 1;
   else
     ccid_reply[CCID_MSG_STATUS_OFFSET] = 0; /* An ICC is present and active */
   ccid_reply[CCID_MSG_ERROR_OFFSET] = 0x00;
@@ -1354,10 +1356,10 @@ ccid_card_change_signal (int how)
 }
 
 void
-ccid_usb_reset (void)
+ccid_usb_reset (int all)
 {
   struct ccid *c = &ccid;
-  eventflag_signal (&c->ccid_comm, EV_USB_RESET);
+  eventflag_signal (&c->ccid_comm, all?EV_USB_RESET:EV_USB_INTERFACE);
 }
 
 
@@ -1375,6 +1377,8 @@ ccid_thread (void *arg)
   extern uint32_t bDeviceState;
   chopstx_intr_t interrupt;
   uint32_t timeout;
+  eventmask_t m;
+  chopstx_poll_cond_t poll_desc;
 
   struct ep_in *epi = &endpoint_in;
   struct ep_out *epo = &endpoint_out;
@@ -1398,18 +1402,22 @@ ccid_thread (void *arg)
 
   while (bDeviceState != CONFIGURED)
     {
-      chopstx_poll (NULL, 1, &interrupt);
-      usb_interrupt_handler ();
+      eventflag_prepare_poll (&c->ccid_comm, &poll_desc);
+      chopstx_poll (NULL, 2, &interrupt, &poll_desc);
+      if (interrupt.ready)
+	{
+	  usb_interrupt_handler ();
+	  continue;
+	}
+      m = eventflag_get (&c->ccid_comm);
+      /* Ignore event while not-configured.  */
     }
 
-  ccid.ccid_comm.flags = 0;
+ interface:
   timeout = USB_CCID_TIMEOUT;
   ccid_prepare_receive (c);
   while (1)
     {
-      eventmask_t m;
-      chopstx_poll_cond_t poll_desc;
-
       eventflag_prepare_poll (&c->ccid_comm, &poll_desc);
       chopstx_poll (&timeout, 2, &interrupt, &poll_desc);
       if (interrupt.ready)
@@ -1431,6 +1439,11 @@ ccid_thread (void *arg)
 	    }
 	  goto reset;
 	}
+      else if (m == EV_USB_INTERFACE)
+	/* Upon receivable of SET_INTERFACE, we reset endpoint to RX_NAK.
+	 * Thus, we need to prepare receive again.
+	 */
+	goto interface;
       else if (m == EV_CARD_CHANGE)
 	{
 	  uint8_t int_msg[2];
