@@ -1356,10 +1356,31 @@ ccid_card_change_signal (int how)
 }
 
 void
-ccid_usb_reset (int all)
+ccid_usb_reset (int full)
 {
   struct ccid *c = &ccid;
-  eventflag_signal (&c->ccid_comm, all?EV_USB_RESET:EV_USB_INTERFACE);
+
+  eventflag_signal (&c->ccid_comm,
+		    full ? EV_USB_DEVICE_RESET : EV_USB_SET_INTERFACE);
+}
+
+
+#define NOTIFY_SLOT_CHANGE 0x50
+static void
+ccid_notify_slot_change (struct ccid *c)
+{
+  uint8_t msg;
+  uint8_t notification[2];
+
+  if (c->ccid_state == CCID_STATE_NOCARD)
+    msg = 0x02;
+  else
+    msg = 0x03;
+
+  notification[0] = NOTIFY_SLOT_CHANGE;
+  notification[1] = msg;
+  usb_lld_write (ENDP2, notification, sizeof notification);
+  led_blink (LED_TWOSHOTS);
 }
 
 
@@ -1367,7 +1388,6 @@ ccid_usb_reset (int all)
 
 #define GPG_THREAD_TERMINATED 0xffff
 
-#define NOTIFY_SLOT_CHANGE 0x50
 
 #define INTR_REQ_USB 20
 
@@ -1394,7 +1414,7 @@ ccid_thread (void *arg)
   chopstx_claim_irq (&interrupt, INTR_REQ_USB);
   usb_interrupt_handler ();	/* For old SYS < 3.0 */
 
- reset:
+ device_reset:
   epi_init (epi, ENDP1, notify_tx, c);
   epo_init (epo, ENDP1, notify_icc, c);
   apdu_init (a);
@@ -1413,9 +1433,10 @@ ccid_thread (void *arg)
       /* Ignore event while not-configured.  */
     }
 
- interface:
+ interface_reset:
   timeout = USB_CCID_TIMEOUT;
   ccid_prepare_receive (c);
+  ccid_notify_slot_change (c);
   while (1)
     {
       eventflag_prepare_poll (&c->ccid_comm, &poll_desc);
@@ -1429,7 +1450,7 @@ ccid_thread (void *arg)
       timeout = USB_CCID_TIMEOUT;
       m = eventflag_get (&c->ccid_comm);
 
-      if (m == EV_USB_RESET)
+      if (m == EV_USB_DEVICE_RESET)
 	{
 	  if (c->application)
 	    {
@@ -1437,23 +1458,18 @@ ccid_thread (void *arg)
 	      chopstx_join (c->application, NULL);
 	      c->application = 0;
 	    }
-	  goto reset;
+	  goto device_reset;
 	}
-      else if (m == EV_USB_INTERFACE)
-	/* Upon receivable of SET_INTERFACE, we reset endpoint to RX_NAK.
+      else if (m == EV_USB_SET_INTERFACE)
+	/* Upon receival of SET_INTERFACE, the endpoint is reset to RX_NAK.
 	 * Thus, we need to prepare receive again.
 	 */
-	goto interface;
+	goto interface_reset;
       else if (m == EV_CARD_CHANGE)
 	{
-	  uint8_t int_msg[2];
-
-	  int_msg[0] = NOTIFY_SLOT_CHANGE;
 	  if (c->ccid_state == CCID_STATE_NOCARD)
-	    { /* Inserted!  */
-	      c->ccid_state = CCID_STATE_START;
-	      int_msg[1] = 0x03;
-	    }
+	    /* Inserted!  */
+	    c->ccid_state = CCID_STATE_START;
 	  else
 	    { /* Removed!  */
 	      if (c->application)
@@ -1464,11 +1480,9 @@ ccid_thread (void *arg)
 		}
 
 	      c->ccid_state = CCID_STATE_NOCARD;
-	      int_msg[1] = 0x02;
 	    }
 
-	  usb_lld_write (ENDP2, int_msg, sizeof int_msg);
-	  led_blink (LED_TWOSHOTS);
+	  ccid_notify_slot_change (c);
 	}
       else if (m == EV_RX_DATA_READY)
 	c->ccid_state = ccid_handle_data (c);

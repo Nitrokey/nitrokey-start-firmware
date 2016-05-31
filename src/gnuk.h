@@ -28,9 +28,9 @@ void ccid_usb_reset (int);
 #define EV_RX_DATA_READY   1 /* USB Rx data available  */
 #define EV_EXEC_FINISHED   2 /* OpenPGP Execution finished */
 #define EV_TX_FINISHED     4 /* CCID Tx finished  */
-#define EV_CARD_CHANGE     8
-#define EV_USB_INTERFACE  16
-#define EV_USB_RESET      32
+#define EV_CARD_CHANGE         8
+#define EV_USB_SET_INTERFACE  16
+#define EV_USB_DEVICE_RESET   32
 
 /* OpenPGPcard thread */
 #define EV_PINPAD_INPUT_DONE      1

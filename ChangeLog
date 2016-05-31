@@ -1,3 +1,9 @@
+2016-06-01  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/usb-ccid.c (ccid_notify_slot_change): New.
+	(ccid_thread): Call ccid_notify_slot_change at
+	interface_reset and EV_CARD_CHANGE.
+
 2016-05-31  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* src/usb_stm32f103.c, src/stm32f103.h: Remove.
