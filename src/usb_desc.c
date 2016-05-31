@@ -53,10 +53,10 @@ static const uint8_t hid_report_desc[] = {
 };
 #endif
 
-#define USB_ICC_INTERFACE_CLASS 0x0B
-#define USB_ICC_INTERFACE_SUBCLASS 0x00
-#define USB_ICC_INTERFACE_BULK_PROTOCOL 0x00
-#define USB_ICC_DATA_SIZE 64
+#define USB_CCID_INTERFACE_CLASS 0x0B
+#define USB_CCID_INTERFACE_SUBCLASS 0x00
+#define USB_CCID_INTERFACE_BULK_PROTOCOL 0x00
+#define USB_CCID_DATA_SIZE 64
 
 /* USB Standard Device Descriptor */
 static const uint8_t device_desc[] = {
@@ -74,7 +74,7 @@ static const uint8_t device_desc[] = {
   0x01    /* bNumConfigurations */
 };
 
-#define ICC_TOTAL_LENGTH (9+9+54+7+7+7)
+#define CCID_TOTAL_LENGTH (9+9+54+7+7+7)
 
 #ifdef HID_CARD_CHANGE_SUPPORT
 #define HID_TOTAL_LENGTH (9+9+7)
@@ -94,7 +94,7 @@ static const uint8_t device_desc[] = {
 #define MSC_TOTAL_LENGTH   0
 #endif
 
-#define W_TOTAL_LENGTH (ICC_TOTAL_LENGTH + HID_TOTAL_LENGTH     \
+#define W_TOTAL_LENGTH (CCID_TOTAL_LENGTH + HID_TOTAL_LENGTH     \
 			+ VCOM_TOTAL_LENGTH + MSC_TOTAL_LENGTH)
 
 
@@ -112,12 +112,12 @@ static const uint8_t config_desc[] = {
   /* Interface Descriptor */
   9,			         /* bLength: Interface Descriptor size */
   INTERFACE_DESCRIPTOR,		 /* bDescriptorType: Interface */
-  ICC_INTERFACE,	         /* bInterfaceNumber: Index of this interface */
+  CCID_INTERFACE,	         /* bInterfaceNumber: Index of this interface */
   0,			         /* Alternate setting for this interface */
   3,			         /* bNumEndpoints: Bulk-IN, Bulk-OUT, Intr-IN */
-  USB_ICC_INTERFACE_CLASS,
-  USB_ICC_INTERFACE_SUBCLASS,
-  USB_ICC_INTERFACE_BULK_PROTOCOL,
+  USB_CCID_INTERFACE_CLASS,
+  USB_CCID_INTERFACE_SUBCLASS,
+  USB_CCID_INTERFACE_BULK_PROTOCOL,
   0,				 /* string index for interface */
 
   /* ICC Descriptor */
@@ -170,14 +170,14 @@ static const uint8_t config_desc[] = {
   ENDPOINT_DESCRIPTOR,	       /* bDescriptorType: Endpoint */
   0x81,				/* bEndpointAddress: (IN1) */
   0x02,				/* bmAttributes: Bulk */
-  USB_ICC_DATA_SIZE, 0x00,      /* wMaxPacketSize: */
+  USB_CCID_DATA_SIZE, 0x00,      /* wMaxPacketSize: */
   0x00,				/* bInterval */
   /*Endpoint OUT1 Descriptor*/
   7,			       /* bLength: Endpoint Descriptor size */
   ENDPOINT_DESCRIPTOR,	       /* bDescriptorType: Endpoint */
   0x01,				/* bEndpointAddress: (OUT1) */
   0x02,				/* bmAttributes: Bulk */
-  USB_ICC_DATA_SIZE, 0x00,	/* wMaxPacketSize: */
+  USB_CCID_DATA_SIZE, 0x00,	/* wMaxPacketSize: */
   0x00,				/* bInterval */
   /*Endpoint IN2 Descriptor*/
   7,			       /* bLength: Endpoint Descriptor size */
@@ -388,7 +388,7 @@ usb_cb_get_descriptor (uint8_t rcp, uint8_t desc_type, uint8_t desc_index,
       if (arg->index == HID_INTERFACE)
 	{
 	  if (desc_type == USB_DT_HID)
-	    return usb_lld_reply_request (config_desc+ICC_TOTAL_LENGTH+9, 9,
+	    return usb_lld_reply_request (config_desc+CCID_TOTAL_LENGTH+9, 9,
 					  arg);
 	  else if (desc_type == USB_DT_REPORT)
 	    return usb_lld_reply_request (hid_report_desc, HID_REPORT_DESC_SIZE,

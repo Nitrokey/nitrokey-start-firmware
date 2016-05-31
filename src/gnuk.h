@@ -43,7 +43,7 @@ void ccid_usb_reset (void);
 /* Maximum res apdu data is public key 5+9+512 (gpg_do_public_key) */
 #define MAX_RES_APDU_DATA_SIZE (5+9+512) /* without trailer */
 
-#define ICC_MSG_HEADER_SIZE	10
+#define CCID_MSG_HEADER_SIZE	10
 
 #define res_APDU apdu.res_apdu_data
 #define res_APDU_size apdu.res_apdu_data_len
@@ -51,22 +51,22 @@ void ccid_usb_reset (void);
 /* USB buffer size of LL (Low-level): size of single Bulk transaction */
 #define USB_LL_BUF_SIZE 64
 
-enum icc_state {
-  ICC_STATE_NOCARD,		/* No card available */
-  ICC_STATE_START,		/* Initial */
-  ICC_STATE_WAIT,		/* Waiting APDU */
+enum ccid_state {
+  CCID_STATE_NOCARD,		/* No card available */
+  CCID_STATE_START,		/* Initial */
+  CCID_STATE_WAIT,		/* Waiting APDU */
 				/* Busy1, Busy2, Busy3, Busy5 */
-  ICC_STATE_EXECUTE,		/* Busy4 */
-  ICC_STATE_RECEIVE,		/* APDU Received Partially */
-  ICC_STATE_SEND,		/* APDU Sent Partially */
+  CCID_STATE_EXECUTE,		/* Busy4 */
+  CCID_STATE_RECEIVE,		/* APDU Received Partially */
+  CCID_STATE_SEND,		/* APDU Sent Partially */
 
-  ICC_STATE_EXITED,		/* ICC Thread Terminated */
-  ICC_STATE_EXEC_REQUESTED,	/* Exec requested */
+  CCID_STATE_EXITED,		/* ICC Thread Terminated */
+  CCID_STATE_EXEC_REQUESTED,	/* Exec requested */
 };
 
 #define CCID_CARD_INIT CARD_CHANGE_INSERT
 
-extern enum icc_state *icc_state_p;
+extern enum ccid_state *ccid_state_p;
 
 extern volatile uint8_t auth_status;
 #define AC_NONE_AUTHORIZED	0x00

@@ -137,45 +137,45 @@ static void epo_init (struct ep_out *epo, int ep_num,
  * The buffer will be filled by multiple RX packets (Bulk-OUT)
  * or will be used for multiple TX packets (Bulk-IN)
  */
-static uint8_t icc_buffer[USB_BUF_SIZE];
+static uint8_t ccid_buffer[USB_BUF_SIZE];
 
-#define ICC_SET_PARAMS		0x61 /* non-ICCD command  */
-#define ICC_POWER_ON		0x62
-#define ICC_POWER_OFF		0x63
-#define ICC_SLOT_STATUS		0x65 /* non-ICCD command */
-#define ICC_SECURE		0x69 /* non-ICCD command */
-#define ICC_GET_PARAMS		0x6C /* non-ICCD command */
-#define ICC_RESET_PARAMS	0x6D /* non-ICCD command */
-#define ICC_XFR_BLOCK		0x6F
-#define ICC_DATA_BLOCK_RET	0x80
-#define ICC_SLOT_STATUS_RET	0x81 /* non-ICCD result */
-#define ICC_PARAMS_RET		0x82 /* non-ICCD result */
+#define CCID_SET_PARAMS		0x61 /* non-ICCD command  */
+#define CCID_POWER_ON		0x62
+#define CCID_POWER_OFF		0x63
+#define CCID_SLOT_STATUS	0x65 /* non-ICCD command */
+#define CCID_SECURE		0x69 /* non-ICCD command */
+#define CCID_GET_PARAMS		0x6C /* non-ICCD command */
+#define CCID_RESET_PARAMS	0x6D /* non-ICCD command */
+#define CCID_XFR_BLOCK		0x6F
+#define CCID_DATA_BLOCK_RET	0x80
+#define CCID_SLOT_STATUS_RET	0x81 /* non-ICCD result */
+#define CCID_PARAMS_RET		0x82 /* non-ICCD result */
 
-#define ICC_MSG_SEQ_OFFSET	6
-#define ICC_MSG_STATUS_OFFSET	7
-#define ICC_MSG_ERROR_OFFSET	8
-#define ICC_MSG_CHAIN_OFFSET	9
-#define ICC_MSG_DATA_OFFSET	10	/* == ICC_MSG_HEADER_SIZE */
-#define ICC_MAX_MSG_DATA_SIZE	USB_BUF_SIZE
+#define CCID_MSG_SEQ_OFFSET	6
+#define CCID_MSG_STATUS_OFFSET	7
+#define CCID_MSG_ERROR_OFFSET	8
+#define CCID_MSG_CHAIN_OFFSET	9
+#define CCID_MSG_DATA_OFFSET	10	/* == CCID_MSG_HEADER_SIZE */
+#define CCID_MAX_MSG_DATA_SIZE	USB_BUF_SIZE
 
-#define ICC_STATUS_RUN		0x00
-#define ICC_STATUS_PRESENT	0x01
-#define ICC_STATUS_NOTPRESENT	0x02
-#define ICC_CMD_STATUS_OK	0x00
-#define ICC_CMD_STATUS_ERROR	0x40
-#define ICC_CMD_STATUS_TIMEEXT	0x80
+#define CCID_STATUS_RUN		0x00
+#define CCID_STATUS_PRESENT	0x01
+#define CCID_STATUS_NOTPRESENT	0x02
+#define CCID_CMD_STATUS_OK	0x00
+#define CCID_CMD_STATUS_ERROR	0x40
+#define CCID_CMD_STATUS_TIMEEXT	0x80
 
-#define ICC_ERROR_XFR_OVERRUN	0xFC
+#define CCID_ERROR_XFR_OVERRUN	0xFC
 
 /*
  * Since command-byte is at offset 0,
  * error with offset 0 means "command not supported".
  */
-#define ICC_OFFSET_CMD_NOT_SUPPORTED 0
-#define ICC_OFFSET_DATA_LEN 1
-#define ICC_OFFSET_PARAM 8
+#define CCID_OFFSET_CMD_NOT_SUPPORTED 0
+#define CCID_OFFSET_DATA_LEN 1
+#define CCID_OFFSET_PARAM 8
 
-struct icc_header {
+struct ccid_header {
   uint8_t msg_type;
   uint32_t data_len;
   uint8_t slot;
@@ -187,14 +187,14 @@ struct icc_header {
 
 /* Data structure handled by CCID layer */
 struct ccid {
-  enum icc_state icc_state;
+  enum ccid_state ccid_state;
   uint8_t state;
   uint8_t *p;
   size_t len;
 
   uint8_t err;
 
-  struct icc_header icc_header;
+  struct ccid_header ccid_header;
 
   uint8_t sw1sw2[2];
   uint8_t chained_cls_ins_p1_p2[4];
@@ -256,14 +256,14 @@ static void ccid_reset (struct ccid *c)
 static void ccid_init (struct ccid *c, struct ep_in *epi, struct ep_out *epo,
 		       struct apdu *a)
 {
-  icc_state_p = &c->icc_state;
+  ccid_state_p = &c->ccid_state;
 
-  c->icc_state = ICC_STATE_NOCARD;
+  c->ccid_state = CCID_STATE_NOCARD;
   c->state = APDU_STATE_WAIT_COMMAND;
   c->p = a->cmd_apdu_data;
   c->len = MAX_CMD_APDU_DATA_SIZE;
   c->err = 0;
-  memset (&c->icc_header, 0, sizeof (struct icc_header));
+  memset (&c->ccid_header, 0, sizeof (struct ccid_header));
   c->sw1sw2[0] = 0x90;
   c->sw1sw2[1] = 0x00;
   c->application = 0;
@@ -298,13 +298,13 @@ static void ccid_init (struct ccid *c, struct ep_in *epi, struct ep_out *epo,
 static void apdu_init (struct apdu *a)
 {
   a->seq = 0;			/* will be set by lower layer */
-  a->cmd_apdu_head = &icc_buffer[0];
-  a->cmd_apdu_data = &icc_buffer[5];
+  a->cmd_apdu_head = &ccid_buffer[0];
+  a->cmd_apdu_data = &ccid_buffer[5];
   a->cmd_apdu_data_len = 0;	/* will be set by lower layer */
   a->expected_res_size = 0;	/* will be set by lower layer */
 
   a->sw = 0x9000;		     /* will be set by upper layer */
-  a->res_apdu_data = &icc_buffer[5]; /* will be set by upper layer */
+  a->res_apdu_data = &ccid_buffer[5]; /* will be set by upper layer */
   a->res_apdu_data_len = 0;	     /* will be set by upper layer */
 }
 
@@ -410,10 +410,10 @@ static void notify_icc (struct ep_out *epo)
   eventflag_signal (&c->ccid_comm, EV_RX_DATA_READY);
 }
 
-static int end_icc_rx (struct ep_out *epo, size_t orig_len)
+static int end_ccid_rx (struct ep_out *epo, size_t orig_len)
 {
   (void)orig_len;
-  if (epo->cnt < sizeof (struct icc_header))
+  if (epo->cnt < sizeof (struct ccid_header))
     /* short packet, just ignore */
     return 1;
 
@@ -426,11 +426,11 @@ static int end_abdata (struct ep_out *epo, size_t orig_len)
   struct ccid *c = (struct ccid *)epo->priv;
   size_t len = epo->cnt;
 
-  if (orig_len == USB_LL_BUF_SIZE && len < c->icc_header.data_len)
+  if (orig_len == USB_LL_BUF_SIZE && len < c->ccid_header.data_len)
     /* more packet comes */
     return 1;
 
-  if (len != c->icc_header.data_len)
+  if (len != c->ccid_header.data_len)
     epo->err = 1;
 
   return 0;
@@ -442,7 +442,7 @@ static int end_cmd_apdu_head (struct ep_out *epo, size_t orig_len)
 
   (void)orig_len;
 
-  if (epo->cnt < 4 || epo->cnt != c->icc_header.data_len)
+  if (epo->cnt < 4 || epo->cnt != c->ccid_header.data_len)
     {
       epo->err = 1;
       return 0;
@@ -500,11 +500,11 @@ static int end_cmd_apdu_data (struct ep_out *epo, size_t orig_len)
   size_t len = epo->cnt;
 
   if (orig_len == USB_LL_BUF_SIZE
-      && CMD_APDU_HEAD_SIZE + len < c->icc_header.data_len)
+      && CMD_APDU_HEAD_SIZE + len < c->ccid_header.data_len)
     /* more packet comes */
     return 1;
 
-  if (CMD_APDU_HEAD_SIZE + len != c->icc_header.data_len)
+  if (CMD_APDU_HEAD_SIZE + len != c->ccid_header.data_len)
     goto error;
 
   if (len == c->a->cmd_apdu_head[4])
@@ -543,7 +543,7 @@ static void nomore_data (struct ep_out *epo, size_t len)
 
 #define INS_GET_RESPONSE 0xc0
 
-static void icc_cmd_apdu_data (struct ep_out *epo, size_t len)
+static void ccid_cmd_apdu_data (struct ep_out *epo, size_t len)
 {
   struct ccid *c = (struct ccid *)epo->priv;
 
@@ -591,20 +591,20 @@ static void icc_cmd_apdu_data (struct ep_out *epo, size_t len)
   epo->next_buf = nomore_data;
 }
 
-static void icc_abdata (struct ep_out *epo, size_t len)
+static void ccid_abdata (struct ep_out *epo, size_t len)
 {
   struct ccid *c = (struct ccid *)epo->priv;
 
   (void)len;
-  c->a->seq = c->icc_header.seq;
-  if (c->icc_header.msg_type == ICC_XFR_BLOCK)
+  c->a->seq = c->ccid_header.seq;
+  if (c->ccid_header.msg_type == CCID_XFR_BLOCK)
     {
-      c->a->seq = c->icc_header.seq;
+      c->a->seq = c->ccid_header.seq;
       epo->end_rx = end_cmd_apdu_head;
       epo->buf = c->a->cmd_apdu_head;
       epo->buf_len = 5;
       epo->cnt = 0;
-      epo->next_buf = icc_cmd_apdu_data;
+      epo->next_buf = ccid_cmd_apdu_data;
     }
   else
     {
@@ -618,14 +618,14 @@ static void icc_abdata (struct ep_out *epo, size_t len)
 
 
 static void
-icc_prepare_receive (struct ccid *c)
+ccid_prepare_receive (struct ccid *c)
 {
   c->epo->err = 0;
-  c->epo->buf = (uint8_t *)&c->icc_header;
-  c->epo->buf_len = sizeof (struct icc_header);
+  c->epo->buf = (uint8_t *)&c->ccid_header;
+  c->epo->buf_len = sizeof (struct ccid_header);
   c->epo->cnt = 0;
-  c->epo->next_buf = icc_abdata;
-  c->epo->end_rx = end_icc_rx;
+  c->epo->next_buf = ccid_abdata;
+  c->epo->end_rx = end_ccid_rx;
   usb_lld_rx_enable (c->epo->ep_num);
   DEBUG_INFO ("Rx ready\r\n");
 }
@@ -752,31 +752,31 @@ static const uint8_t ATR[] = {
 /*
  * Send back error
  */
-static void icc_error (struct ccid *c, int offset)
+static void ccid_error (struct ccid *c, int offset)
 {
-  uint8_t icc_reply[ICC_MSG_HEADER_SIZE];
+  uint8_t ccid_reply[CCID_MSG_HEADER_SIZE];
 
-  icc_reply[0] = ICC_SLOT_STATUS_RET; /* Any value should be OK */
-  icc_reply[1] = 0x00;
-  icc_reply[2] = 0x00;
-  icc_reply[3] = 0x00;
-  icc_reply[4] = 0x00;
-  icc_reply[5] = 0x00;	/* Slot */
-  icc_reply[ICC_MSG_SEQ_OFFSET] = c->icc_header.seq;
-  if (c->icc_state == ICC_STATE_NOCARD)
-    icc_reply[ICC_MSG_STATUS_OFFSET] = 2; /* 2: No ICC present */
-  else if (c->icc_state == ICC_STATE_START)
-    icc_reply[ICC_MSG_STATUS_OFFSET] = 1; /* 1: ICC present but not activated */
+  ccid_reply[0] = CCID_SLOT_STATUS_RET; /* Any value should be OK */
+  ccid_reply[1] = 0x00;
+  ccid_reply[2] = 0x00;
+  ccid_reply[3] = 0x00;
+  ccid_reply[4] = 0x00;
+  ccid_reply[5] = 0x00;	/* Slot */
+  ccid_reply[CCID_MSG_SEQ_OFFSET] = c->ccid_header.seq;
+  if (c->ccid_state == CCID_STATE_NOCARD)
+    ccid_reply[CCID_MSG_STATUS_OFFSET] = 2; /* 2: No ICC present */
+  else if (c->ccid_state == CCID_STATE_START)
+    ccid_reply[CCID_MSG_STATUS_OFFSET] = 1; /* 1: ICC present but not activated */
   else
-    icc_reply[ICC_MSG_STATUS_OFFSET] = 0; /* An ICC is present and active */
-  icc_reply[ICC_MSG_STATUS_OFFSET] |= ICC_CMD_STATUS_ERROR; /* Failed */
-  icc_reply[ICC_MSG_ERROR_OFFSET] = offset;
-  icc_reply[ICC_MSG_CHAIN_OFFSET] = 0x00;
+    ccid_reply[CCID_MSG_STATUS_OFFSET] = 0; /* An ICC is present and active */
+  ccid_reply[CCID_MSG_STATUS_OFFSET] |= CCID_CMD_STATUS_ERROR; /* Failed */
+  ccid_reply[CCID_MSG_ERROR_OFFSET] = offset;
+  ccid_reply[CCID_MSG_CHAIN_OFFSET] = 0x00;
 
   /* This is a single packet Bulk-IN transaction */
   c->epi->buf = NULL;
   c->epi->tx_done = 1;
-  usb_lld_write (c->epi->ep_num, icc_reply, ICC_MSG_HEADER_SIZE);
+  usb_lld_write (c->epi->ep_num, ccid_reply, CCID_MSG_HEADER_SIZE);
 }
 
 extern void *openpgp_card_thread (void *arg);
@@ -788,65 +788,65 @@ const size_t __stacksize_gpg = (size_t)&__process3_stack_size__;
 
 
 /* Send back ATR (Answer To Reset) */
-static enum icc_state
-icc_power_on (struct ccid *c)
+static enum ccid_state
+ccid_power_on (struct ccid *c)
 {
   size_t size_atr = sizeof (ATR);
-  uint8_t p[ICC_MSG_HEADER_SIZE];
+  uint8_t p[CCID_MSG_HEADER_SIZE];
 
   if (c->application == 0)
     c->application = chopstx_create (PRIO_GPG, __stackaddr_gpg,
 				     __stacksize_gpg, openpgp_card_thread,
 				     (void *)&c->ccid_comm);
 
-  p[0] = ICC_DATA_BLOCK_RET;
+  p[0] = CCID_DATA_BLOCK_RET;
   p[1] = size_atr;
   p[2] = 0x00;
   p[3] = 0x00;
   p[4] = 0x00;
   p[5] = 0x00;	/* Slot */
-  p[ICC_MSG_SEQ_OFFSET] = c->icc_header.seq;
-  p[ICC_MSG_STATUS_OFFSET] = 0x00;
-  p[ICC_MSG_ERROR_OFFSET] = 0x00;
-  p[ICC_MSG_CHAIN_OFFSET] = 0x00;
+  p[CCID_MSG_SEQ_OFFSET] = c->ccid_header.seq;
+  p[CCID_MSG_STATUS_OFFSET] = 0x00;
+  p[CCID_MSG_ERROR_OFFSET] = 0x00;
+  p[CCID_MSG_CHAIN_OFFSET] = 0x00;
 
-  usb_lld_txcpy (p, c->epi->ep_num, 0, ICC_MSG_HEADER_SIZE);
-  usb_lld_txcpy (ATR, c->epi->ep_num, ICC_MSG_HEADER_SIZE, size_atr);
+  usb_lld_txcpy (p, c->epi->ep_num, 0, CCID_MSG_HEADER_SIZE);
+  usb_lld_txcpy (ATR, c->epi->ep_num, CCID_MSG_HEADER_SIZE, size_atr);
 
   /* This is a single packet Bulk-IN transaction */
   c->epi->buf = NULL;
   c->epi->tx_done = 1;
-  usb_lld_tx_enable (c->epi->ep_num, ICC_MSG_HEADER_SIZE + size_atr);
+  usb_lld_tx_enable (c->epi->ep_num, CCID_MSG_HEADER_SIZE + size_atr);
   DEBUG_INFO ("ON\r\n");
 
-  return ICC_STATE_WAIT;
+  return CCID_STATE_WAIT;
 }
 
 static void
-icc_send_status (struct ccid *c)
+ccid_send_status (struct ccid *c)
 {
-  uint8_t icc_reply[ICC_MSG_HEADER_SIZE];
+  uint8_t ccid_reply[CCID_MSG_HEADER_SIZE];
 
-  icc_reply[0] = ICC_SLOT_STATUS_RET;
-  icc_reply[1] = 0x00;
-  icc_reply[2] = 0x00;
-  icc_reply[3] = 0x00;
-  icc_reply[4] = 0x00;
-  icc_reply[5] = 0x00;	/* Slot */
-  icc_reply[ICC_MSG_SEQ_OFFSET] = c->icc_header.seq;
-  if (c->icc_state == ICC_STATE_NOCARD)
-    icc_reply[ICC_MSG_STATUS_OFFSET] = 2; /* 2: No ICC present */
-  else if (c->icc_state == ICC_STATE_START)
-    icc_reply[ICC_MSG_STATUS_OFFSET] = 1; /* 1: ICC present but not activated */
+  ccid_reply[0] = CCID_SLOT_STATUS_RET;
+  ccid_reply[1] = 0x00;
+  ccid_reply[2] = 0x00;
+  ccid_reply[3] = 0x00;
+  ccid_reply[4] = 0x00;
+  ccid_reply[5] = 0x00;	/* Slot */
+  ccid_reply[CCID_MSG_SEQ_OFFSET] = c->ccid_header.seq;
+  if (c->ccid_state == CCID_STATE_NOCARD)
+    ccid_reply[CCID_MSG_STATUS_OFFSET] = 2; /* 2: No ICC present */
+  else if (c->ccid_state == CCID_STATE_START)
+    ccid_reply[CCID_MSG_STATUS_OFFSET] = 1; /* 1: ICC present but not activated */
   else
-    icc_reply[ICC_MSG_STATUS_OFFSET] = 0; /* An ICC is present and active */
-  icc_reply[ICC_MSG_ERROR_OFFSET] = 0x00;
-  icc_reply[ICC_MSG_CHAIN_OFFSET] = 0x00;
+    ccid_reply[CCID_MSG_STATUS_OFFSET] = 0; /* An ICC is present and active */
+  ccid_reply[CCID_MSG_ERROR_OFFSET] = 0x00;
+  ccid_reply[CCID_MSG_CHAIN_OFFSET] = 0x00;
 
   /* This is a single packet Bulk-IN transaction */
   c->epi->buf = NULL;
   c->epi->tx_done = 1;
-  usb_lld_write (c->epi->ep_num, icc_reply, ICC_MSG_HEADER_SIZE);
+  usb_lld_write (c->epi->ep_num, ccid_reply, CCID_MSG_HEADER_SIZE);
 
   led_blink (LED_SHOW_STATUS);
 #ifdef DEBUG_MORE
@@ -854,8 +854,8 @@ icc_send_status (struct ccid *c)
 #endif
 }
 
-static enum icc_state
-icc_power_off (struct ccid *c)
+static enum ccid_state
+ccid_power_off (struct ccid *c)
 {
   if (c->application)
     {
@@ -864,17 +864,17 @@ icc_power_off (struct ccid *c)
       c->application = 0;
     }
 
-  c->icc_state = ICC_STATE_START; /* This status change should be here */
-  icc_send_status (c);
+  c->ccid_state = CCID_STATE_START; /* This status change should be here */
+  ccid_send_status (c);
   DEBUG_INFO ("OFF\r\n");
-  return ICC_STATE_START;
+  return CCID_STATE_START;
 }
 
 static void
-icc_send_data_block_internal (struct ccid *c, uint8_t status, uint8_t error)
+ccid_send_data_block_internal (struct ccid *c, uint8_t status, uint8_t error)
 {
   int tx_size = USB_LL_BUF_SIZE;
-  uint8_t p[ICC_MSG_HEADER_SIZE];
+  uint8_t p[CCID_MSG_HEADER_SIZE];
   size_t len;
 
   if (status == 0)
@@ -882,50 +882,50 @@ icc_send_data_block_internal (struct ccid *c, uint8_t status, uint8_t error)
   else
     len = 0;
 
-  p[0] = ICC_DATA_BLOCK_RET;
+  p[0] = CCID_DATA_BLOCK_RET;
   p[1] = len & 0xFF;
   p[2] = (len >> 8)& 0xFF;
   p[3] = (len >> 16)& 0xFF;
   p[4] = (len >> 24)& 0xFF;
   p[5] = 0x00;	/* Slot */
-  p[ICC_MSG_SEQ_OFFSET] = c->a->seq;
-  p[ICC_MSG_STATUS_OFFSET] = status;
-  p[ICC_MSG_ERROR_OFFSET] = error;
-  p[ICC_MSG_CHAIN_OFFSET] = 0;
+  p[CCID_MSG_SEQ_OFFSET] = c->a->seq;
+  p[CCID_MSG_STATUS_OFFSET] = status;
+  p[CCID_MSG_ERROR_OFFSET] = error;
+  p[CCID_MSG_CHAIN_OFFSET] = 0;
 
-  usb_lld_txcpy (p, c->epi->ep_num, 0, ICC_MSG_HEADER_SIZE);
+  usb_lld_txcpy (p, c->epi->ep_num, 0, CCID_MSG_HEADER_SIZE);
   if (len == 0)
     {
-      usb_lld_tx_enable (c->epi->ep_num, ICC_MSG_HEADER_SIZE);
+      usb_lld_tx_enable (c->epi->ep_num, CCID_MSG_HEADER_SIZE);
       return;
     }
 
-  if (ICC_MSG_HEADER_SIZE + len <= USB_LL_BUF_SIZE)
+  if (CCID_MSG_HEADER_SIZE + len <= USB_LL_BUF_SIZE)
     {
       usb_lld_txcpy (c->a->res_apdu_data, c->epi->ep_num,
-		     ICC_MSG_HEADER_SIZE, c->a->res_apdu_data_len);
+		     CCID_MSG_HEADER_SIZE, c->a->res_apdu_data_len);
       usb_lld_txcpy (c->sw1sw2, c->epi->ep_num,
-		     ICC_MSG_HEADER_SIZE + c->a->res_apdu_data_len, 2);
+		     CCID_MSG_HEADER_SIZE + c->a->res_apdu_data_len, 2);
       c->epi->buf = NULL;
-      if (ICC_MSG_HEADER_SIZE + len < USB_LL_BUF_SIZE)
+      if (CCID_MSG_HEADER_SIZE + len < USB_LL_BUF_SIZE)
 	c->epi->tx_done = 1;
-      tx_size = ICC_MSG_HEADER_SIZE + len;
+      tx_size = CCID_MSG_HEADER_SIZE + len;
     }
-  else if (ICC_MSG_HEADER_SIZE + len - 1 == USB_LL_BUF_SIZE)
+  else if (CCID_MSG_HEADER_SIZE + len - 1 == USB_LL_BUF_SIZE)
     {
       usb_lld_txcpy (c->a->res_apdu_data, c->epi->ep_num,
-		     ICC_MSG_HEADER_SIZE, c->a->res_apdu_data_len);
+		     CCID_MSG_HEADER_SIZE, c->a->res_apdu_data_len);
       usb_lld_txcpy (c->sw1sw2, c->epi->ep_num,
-		     ICC_MSG_HEADER_SIZE + c->a->res_apdu_data_len, 1);
+		     CCID_MSG_HEADER_SIZE + c->a->res_apdu_data_len, 1);
       c->epi->buf = &c->sw1sw2[1];
       c->epi->cnt = 1;
       c->epi->buf_len = 1;
       c->epi->next_buf = no_buf;
     }
-  else if (ICC_MSG_HEADER_SIZE + len - 2 == USB_LL_BUF_SIZE)
+  else if (CCID_MSG_HEADER_SIZE + len - 2 == USB_LL_BUF_SIZE)
     {
       usb_lld_txcpy (c->a->res_apdu_data, c->epi->ep_num,
-		     ICC_MSG_HEADER_SIZE, c->a->res_apdu_data_len);
+		     CCID_MSG_HEADER_SIZE, c->a->res_apdu_data_len);
       c->epi->buf = &c->sw1sw2[0];
       c->epi->cnt = 0;
       c->epi->buf_len = 2;
@@ -933,12 +933,12 @@ icc_send_data_block_internal (struct ccid *c, uint8_t status, uint8_t error)
     }
   else
     {
-      usb_lld_txcpy (c->a->res_apdu_data, c->epi->ep_num, ICC_MSG_HEADER_SIZE,
-		     USB_LL_BUF_SIZE - ICC_MSG_HEADER_SIZE);
-      c->epi->buf = c->a->res_apdu_data + USB_LL_BUF_SIZE - ICC_MSG_HEADER_SIZE;
-      c->epi->cnt = USB_LL_BUF_SIZE - ICC_MSG_HEADER_SIZE;
+      usb_lld_txcpy (c->a->res_apdu_data, c->epi->ep_num, CCID_MSG_HEADER_SIZE,
+		     USB_LL_BUF_SIZE - CCID_MSG_HEADER_SIZE);
+      c->epi->buf = c->a->res_apdu_data + USB_LL_BUF_SIZE - CCID_MSG_HEADER_SIZE;
+      c->epi->cnt = USB_LL_BUF_SIZE - CCID_MSG_HEADER_SIZE;
       c->epi->buf_len = c->a->res_apdu_data_len
-	- (USB_LL_BUF_SIZE - ICC_MSG_HEADER_SIZE);
+	- (USB_LL_BUF_SIZE - CCID_MSG_HEADER_SIZE);
       c->epi->next_buf = get_sw1sw2;
     }
 
@@ -949,41 +949,41 @@ icc_send_data_block_internal (struct ccid *c, uint8_t status, uint8_t error)
 }
 
 static void
-icc_send_data_block (struct ccid *c)
+ccid_send_data_block (struct ccid *c)
 {
-  icc_send_data_block_internal (c, 0, 0);
+  ccid_send_data_block_internal (c, 0, 0);
 }
 
 static void
-icc_send_data_block_time_extension (struct ccid *c)
+ccid_send_data_block_time_extension (struct ccid *c)
 {
-  icc_send_data_block_internal (c, ICC_CMD_STATUS_TIMEEXT, 1);
+  ccid_send_data_block_internal (c, CCID_CMD_STATUS_TIMEEXT, 1);
 }
 
 static void
-icc_send_data_block_0x9000 (struct ccid *c)
+ccid_send_data_block_0x9000 (struct ccid *c)
 {
-  uint8_t p[ICC_MSG_HEADER_SIZE+2];
+  uint8_t p[CCID_MSG_HEADER_SIZE+2];
   size_t len = 2;
 
-  p[0] = ICC_DATA_BLOCK_RET;
+  p[0] = CCID_DATA_BLOCK_RET;
   p[1] = len & 0xFF;
   p[2] = (len >> 8)& 0xFF;
   p[3] = (len >> 16)& 0xFF;
   p[4] = (len >> 24)& 0xFF;
   p[5] = 0x00;	/* Slot */
-  p[ICC_MSG_SEQ_OFFSET] = c->a->seq;
-  p[ICC_MSG_STATUS_OFFSET] = 0;
-  p[ICC_MSG_ERROR_OFFSET] = 0;
-  p[ICC_MSG_CHAIN_OFFSET] = 0;
-  p[ICC_MSG_CHAIN_OFFSET+1] = 0x90;
-  p[ICC_MSG_CHAIN_OFFSET+2] = 0x00;
+  p[CCID_MSG_SEQ_OFFSET] = c->a->seq;
+  p[CCID_MSG_STATUS_OFFSET] = 0;
+  p[CCID_MSG_ERROR_OFFSET] = 0;
+  p[CCID_MSG_CHAIN_OFFSET] = 0;
+  p[CCID_MSG_CHAIN_OFFSET+1] = 0x90;
+  p[CCID_MSG_CHAIN_OFFSET+2] = 0x00;
 
-  usb_lld_txcpy (p, c->epi->ep_num, 0, ICC_MSG_HEADER_SIZE + len);
+  usb_lld_txcpy (p, c->epi->ep_num, 0, CCID_MSG_HEADER_SIZE + len);
   c->epi->buf = NULL;
   c->epi->tx_done = 1;
 
-  usb_lld_tx_enable (c->epi->ep_num, ICC_MSG_HEADER_SIZE + len);
+  usb_lld_tx_enable (c->epi->ep_num, CCID_MSG_HEADER_SIZE + len);
 #ifdef DEBUG_MORE
   DEBUG_INFO ("DATA\r\n");
 #endif
@@ -993,43 +993,43 @@ icc_send_data_block_0x9000 (struct ccid *c)
  * Reply to the host for "GET RESPONSE".
  */
 static void
-icc_send_data_block_gr (struct ccid *c, size_t chunk_len)
+ccid_send_data_block_gr (struct ccid *c, size_t chunk_len)
 {
   int tx_size = USB_LL_BUF_SIZE;
-  uint8_t p[ICC_MSG_HEADER_SIZE];
+  uint8_t p[CCID_MSG_HEADER_SIZE];
   size_t len = chunk_len + 2;
 
-  p[0] = ICC_DATA_BLOCK_RET;
+  p[0] = CCID_DATA_BLOCK_RET;
   p[1] = len & 0xFF;
   p[2] = (len >> 8)& 0xFF;
   p[3] = (len >> 16)& 0xFF;
   p[4] = (len >> 24)& 0xFF;
   p[5] = 0x00;	/* Slot */
-  p[ICC_MSG_SEQ_OFFSET] = c->a->seq;
-  p[ICC_MSG_STATUS_OFFSET] = 0;
-  p[ICC_MSG_ERROR_OFFSET] = 0;
-  p[ICC_MSG_CHAIN_OFFSET] = 0;
+  p[CCID_MSG_SEQ_OFFSET] = c->a->seq;
+  p[CCID_MSG_STATUS_OFFSET] = 0;
+  p[CCID_MSG_ERROR_OFFSET] = 0;
+  p[CCID_MSG_CHAIN_OFFSET] = 0;
 
-  usb_lld_txcpy (p, c->epi->ep_num, 0, ICC_MSG_HEADER_SIZE);
+  usb_lld_txcpy (p, c->epi->ep_num, 0, CCID_MSG_HEADER_SIZE);
 
   set_sw1sw2 (c, chunk_len);
 
-  if (chunk_len <= USB_LL_BUF_SIZE - ICC_MSG_HEADER_SIZE)
+  if (chunk_len <= USB_LL_BUF_SIZE - CCID_MSG_HEADER_SIZE)
     {
       int size_for_sw;
 
-      if (chunk_len <= USB_LL_BUF_SIZE - ICC_MSG_HEADER_SIZE - 2)
+      if (chunk_len <= USB_LL_BUF_SIZE - CCID_MSG_HEADER_SIZE - 2)
 	size_for_sw = 2;
-      else if (chunk_len == USB_LL_BUF_SIZE - ICC_MSG_HEADER_SIZE - 1)
+      else if (chunk_len == USB_LL_BUF_SIZE - CCID_MSG_HEADER_SIZE - 1)
 	size_for_sw = 1;
       else
 	size_for_sw = 0;
 
-      usb_lld_txcpy (c->p, c->epi->ep_num, ICC_MSG_HEADER_SIZE, chunk_len);
+      usb_lld_txcpy (c->p, c->epi->ep_num, CCID_MSG_HEADER_SIZE, chunk_len);
       if (size_for_sw)
 	usb_lld_txcpy (c->sw1sw2, c->epi->ep_num,
-		       ICC_MSG_HEADER_SIZE + chunk_len, size_for_sw);
-      tx_size = ICC_MSG_HEADER_SIZE + chunk_len + size_for_sw;
+		       CCID_MSG_HEADER_SIZE + chunk_len, size_for_sw);
+      tx_size = CCID_MSG_HEADER_SIZE + chunk_len + size_for_sw;
       if (size_for_sw == 2)
 	{
 	  c->epi->buf = NULL;
@@ -1047,11 +1047,11 @@ icc_send_data_block_gr (struct ccid *c, size_t chunk_len)
     }
   else
     {
-      usb_lld_txcpy (c->p, c->epi->ep_num, ICC_MSG_HEADER_SIZE,
-		     USB_LL_BUF_SIZE - ICC_MSG_HEADER_SIZE);
-      c->epi->buf = c->p + USB_LL_BUF_SIZE - ICC_MSG_HEADER_SIZE;
+      usb_lld_txcpy (c->p, c->epi->ep_num, CCID_MSG_HEADER_SIZE,
+		     USB_LL_BUF_SIZE - CCID_MSG_HEADER_SIZE);
+      c->epi->buf = c->p + USB_LL_BUF_SIZE - CCID_MSG_HEADER_SIZE;
       c->epi->cnt = 0;
-      c->epi->buf_len = chunk_len - (USB_LL_BUF_SIZE - ICC_MSG_HEADER_SIZE);
+      c->epi->buf_len = chunk_len - (USB_LL_BUF_SIZE - CCID_MSG_HEADER_SIZE);
       c->epi->next_buf = get_sw1sw2;
     }
 
@@ -1065,9 +1065,9 @@ icc_send_data_block_gr (struct ccid *c, size_t chunk_len)
 
 
 static void
-icc_send_params (struct ccid *c)
+ccid_send_params (struct ccid *c)
 {
-  uint8_t p[ICC_MSG_HEADER_SIZE];
+  uint8_t p[CCID_MSG_HEADER_SIZE];
   const uint8_t params[] =  {
     0x11,   /* bmFindexDindex */
     0x11, /* bmTCCKST1 */
@@ -1078,89 +1078,89 @@ icc_send_params (struct ccid *c)
     0    /* bNadValue */
   };
 
-  p[0] = ICC_PARAMS_RET;
+  p[0] = CCID_PARAMS_RET;
   p[1] = 0x07;	/* Length = 0x00000007 */
   p[2] = 0;
   p[3] = 0;
   p[4] = 0;
   p[5] = 0x00;	/* Slot */
-  p[ICC_MSG_SEQ_OFFSET] = c->icc_header.seq;
-  p[ICC_MSG_STATUS_OFFSET] = 0;
-  p[ICC_MSG_ERROR_OFFSET] = 0;
-  p[ICC_MSG_CHAIN_OFFSET] = 0x01;  /* ProtocolNum: T=1 */
+  p[CCID_MSG_SEQ_OFFSET] = c->ccid_header.seq;
+  p[CCID_MSG_STATUS_OFFSET] = 0;
+  p[CCID_MSG_ERROR_OFFSET] = 0;
+  p[CCID_MSG_CHAIN_OFFSET] = 0x01;  /* ProtocolNum: T=1 */
 
-  usb_lld_txcpy (p, c->epi->ep_num, 0, ICC_MSG_HEADER_SIZE);
-  usb_lld_txcpy (params, c->epi->ep_num, ICC_MSG_HEADER_SIZE, sizeof params);
+  usb_lld_txcpy (p, c->epi->ep_num, 0, CCID_MSG_HEADER_SIZE);
+  usb_lld_txcpy (params, c->epi->ep_num, CCID_MSG_HEADER_SIZE, sizeof params);
 
   /* This is a single packet Bulk-IN transaction */
   c->epi->buf = NULL;
   c->epi->tx_done = 1;
-  usb_lld_tx_enable (c->epi->ep_num, ICC_MSG_HEADER_SIZE + sizeof params);
+  usb_lld_tx_enable (c->epi->ep_num, CCID_MSG_HEADER_SIZE + sizeof params);
 #ifdef DEBUG_MORE
   DEBUG_INFO ("PARAMS\r\n");
 #endif
 }
 
 
-static enum icc_state
-icc_handle_data (struct ccid *c)
+static enum ccid_state
+ccid_handle_data (struct ccid *c)
 {
-  enum icc_state next_state = c->icc_state;
+  enum ccid_state next_state = c->ccid_state;
 
   if (c->err != 0)
     {
       ccid_reset (c);
-      icc_error (c, ICC_OFFSET_DATA_LEN);
+      ccid_error (c, CCID_OFFSET_DATA_LEN);
       return next_state;
     }
 
-  switch (c->icc_state)
+  switch (c->ccid_state)
     {
-    case ICC_STATE_NOCARD:
-      if (c->icc_header.msg_type == ICC_SLOT_STATUS)
-	icc_send_status (c);
+    case CCID_STATE_NOCARD:
+      if (c->ccid_header.msg_type == CCID_SLOT_STATUS)
+	ccid_send_status (c);
       else
 	{
 	  DEBUG_INFO ("ERR00\r\n");
-	  icc_error (c, ICC_OFFSET_CMD_NOT_SUPPORTED);
+	  ccid_error (c, CCID_OFFSET_CMD_NOT_SUPPORTED);
 	}
       break;
-    case ICC_STATE_START:
-      if (c->icc_header.msg_type == ICC_POWER_ON)
+    case CCID_STATE_START:
+      if (c->ccid_header.msg_type == CCID_POWER_ON)
 	{
 	  ccid_reset (c);
-	  next_state = icc_power_on (c);
+	  next_state = ccid_power_on (c);
 	}
-      else if (c->icc_header.msg_type == ICC_POWER_OFF)
+      else if (c->ccid_header.msg_type == CCID_POWER_OFF)
 	{
 	  ccid_reset (c);
-	  next_state = icc_power_off (c);
+	  next_state = ccid_power_off (c);
 	}
-      else if (c->icc_header.msg_type == ICC_SLOT_STATUS)
-	icc_send_status (c);
+      else if (c->ccid_header.msg_type == CCID_SLOT_STATUS)
+	ccid_send_status (c);
       else
 	{
 	  DEBUG_INFO ("ERR01\r\n");
-	  icc_error (c, ICC_OFFSET_CMD_NOT_SUPPORTED);
+	  ccid_error (c, CCID_OFFSET_CMD_NOT_SUPPORTED);
 	}
       break;
-    case ICC_STATE_WAIT:
-      if (c->icc_header.msg_type == ICC_POWER_ON)
+    case CCID_STATE_WAIT:
+      if (c->ccid_header.msg_type == CCID_POWER_ON)
 	{
 	  /* Not in the spec., but pcscd/libccid */
 	  ccid_reset (c);
-	  next_state = icc_power_on (c);
+	  next_state = ccid_power_on (c);
 	}
-      else if (c->icc_header.msg_type == ICC_POWER_OFF)
+      else if (c->ccid_header.msg_type == CCID_POWER_OFF)
 	{
 	  ccid_reset (c);
-	  next_state = icc_power_off (c);
+	  next_state = ccid_power_off (c);
 	}
-      else if (c->icc_header.msg_type == ICC_SLOT_STATUS)
-	icc_send_status (c);
-      else if (c->icc_header.msg_type == ICC_XFR_BLOCK)
+      else if (c->ccid_header.msg_type == CCID_SLOT_STATUS)
+	ccid_send_status (c);
+      else if (c->ccid_header.msg_type == CCID_XFR_BLOCK)
 	{
-	  if (c->icc_header.param == 0)
+	  if (c->ccid_header.param == 0)
 	    {
 	      if ((c->a->cmd_apdu_head[0] & 0x10) == 0)
 		{
@@ -1179,10 +1179,10 @@ icc_handle_data (struct ccid *c)
 		      if (c->len <= c->a->expected_res_size)
 			len = c->len;
 
-		      icc_send_data_block_gr (c, len);
+		      ccid_send_data_block_gr (c, len);
 		      if (c->len == 0)
 			c->state = APDU_STATE_RESULT;
-		      c->icc_state = ICC_STATE_WAIT;
+		      c->ccid_state = CCID_STATE_WAIT;
 		      DEBUG_INFO ("GET Response.\r\n");
 		    }
 		  else
@@ -1191,10 +1191,10 @@ icc_handle_data (struct ccid *c)
 
 		      c->a->sw = 0x9000;
 		      c->a->res_apdu_data_len = 0;
-		      c->a->res_apdu_data = &icc_buffer[5];
+		      c->a->res_apdu_data = &ccid_buffer[5];
 
 		      eventflag_signal (&c->openpgp_comm, EV_CMD_AVAILABLE);
-		      next_state = ICC_STATE_EXECUTE;
+		      next_state = CCID_STATE_EXECUTE;
 		    }
 		}
 	      else
@@ -1208,27 +1208,27 @@ icc_handle_data (struct ccid *c)
 
 		  c->p += c->a->cmd_apdu_head[4];
 		  c->len -= c->a->cmd_apdu_head[4];
-		  icc_send_data_block_0x9000 (c);
+		  ccid_send_data_block_0x9000 (c);
 		  DEBUG_INFO ("CMD chaning...\r\n");
 		}
 	    }
 	  else
 	    {		     /* ICC block chaining is not supported. */
 	      DEBUG_INFO ("ERR02\r\n");
-	      icc_error (c, ICC_OFFSET_PARAM);
+	      ccid_error (c, CCID_OFFSET_PARAM);
 	    }
 	}
-      else if (c->icc_header.msg_type == ICC_SET_PARAMS
-	       || c->icc_header.msg_type == ICC_GET_PARAMS
-	       || c->icc_header.msg_type == ICC_RESET_PARAMS)
-	icc_send_params (c);
-      else if (c->icc_header.msg_type == ICC_SECURE)
+      else if (c->ccid_header.msg_type == CCID_SET_PARAMS
+	       || c->ccid_header.msg_type == CCID_GET_PARAMS
+	       || c->ccid_header.msg_type == CCID_RESET_PARAMS)
+	ccid_send_params (c);
+      else if (c->ccid_header.msg_type == CCID_SECURE)
 	{
 	  if (c->p != c->a->cmd_apdu_data)
 	    {
 	      /* SECURE received in the middle of command chaining */
 	      ccid_reset (c);
-	      icc_error (c, ICC_OFFSET_DATA_LEN);
+	      ccid_error (c, CCID_OFFSET_DATA_LEN);
 	      return next_state;
 	    }
 
@@ -1254,7 +1254,7 @@ icc_handle_data (struct ccid *c)
 	      c->a->res_apdu_data = &c->p[5];
 
 	      eventflag_signal (&c->openpgp_comm, EV_VERIFY_CMD_AVAILABLE);
-	      next_state = ICC_STATE_EXECUTE;
+	      next_state = CCID_STATE_EXECUTE;
 	    }
 	  else if (c->p[10-10] == 0x01) /* PIN Modification */
 	    {
@@ -1285,35 +1285,35 @@ icc_handle_data (struct ccid *c)
 
 	      c->a->sw = 0x9000;
 	      c->a->res_apdu_data_len = 0;
-	      c->a->res_apdu_data = &icc_buffer[5];
+	      c->a->res_apdu_data = &ccid_buffer[5];
 
 	      eventflag_signal (&c->openpgp_comm, EV_MODIFY_CMD_AVAILABLE);
-	      next_state = ICC_STATE_EXECUTE;
+	      next_state = CCID_STATE_EXECUTE;
 	    }
 	  else
-	    icc_error (c, ICC_MSG_DATA_OFFSET);
+	    ccid_error (c, CCID_MSG_DATA_OFFSET);
 	}
       else
 	{
 	  DEBUG_INFO ("ERR03\r\n");
-	  DEBUG_BYTE (c->icc_header.msg_type);
-	  icc_error (c, ICC_OFFSET_CMD_NOT_SUPPORTED);
+	  DEBUG_BYTE (c->ccid_header.msg_type);
+	  ccid_error (c, CCID_OFFSET_CMD_NOT_SUPPORTED);
 	}
       break;
-    case ICC_STATE_EXECUTE:
-      if (c->icc_header.msg_type == ICC_POWER_OFF)
-	next_state = icc_power_off (c);
-      else if (c->icc_header.msg_type == ICC_SLOT_STATUS)
-	icc_send_status (c);
+    case CCID_STATE_EXECUTE:
+      if (c->ccid_header.msg_type == CCID_POWER_OFF)
+	next_state = ccid_power_off (c);
+      else if (c->ccid_header.msg_type == CCID_SLOT_STATUS)
+	ccid_send_status (c);
       else
 	{
 	  DEBUG_INFO ("ERR04\r\n");
-	  DEBUG_BYTE (c->icc_header.msg_type);
-	  icc_error (c, ICC_OFFSET_CMD_NOT_SUPPORTED);
+	  DEBUG_BYTE (c->ccid_header.msg_type);
+	  ccid_error (c, CCID_OFFSET_CMD_NOT_SUPPORTED);
 	}
       break;
     default:
-      next_state = ICC_STATE_START;
+      next_state = CCID_STATE_START;
       DEBUG_INFO ("ERR10\r\n");
       break;
     }
@@ -1321,15 +1321,15 @@ icc_handle_data (struct ccid *c)
   return next_state;
 }
 
-static enum icc_state
-icc_handle_timeout (struct ccid *c)
+static enum ccid_state
+ccid_handle_timeout (struct ccid *c)
 {
-  enum icc_state next_state = c->icc_state;
+  enum ccid_state next_state = c->ccid_state;
 
-  switch (c->icc_state)
+  switch (c->ccid_state)
     {
-    case ICC_STATE_EXECUTE:
-      icc_send_data_block_time_extension (c);
+    case CCID_STATE_EXECUTE:
+      ccid_send_data_block_time_extension (c);
       break;
     default:
       break;
@@ -1340,7 +1340,7 @@ icc_handle_timeout (struct ccid *c)
 }
 
 static struct ccid ccid;
-enum icc_state *icc_state_p = &ccid.icc_state;
+enum ccid_state *ccid_state_p = &ccid.ccid_state;
 
 void
 ccid_card_change_signal (int how)
@@ -1348,8 +1348,8 @@ ccid_card_change_signal (int how)
   struct ccid *c = &ccid;
 
   if (how == CARD_CHANGE_TOGGLE
-      || (c->icc_state == ICC_STATE_NOCARD && how == CARD_CHANGE_INSERT)
-      || (c->icc_state != ICC_STATE_NOCARD && how == CARD_CHANGE_REMOVE))
+      || (c->ccid_state == CCID_STATE_NOCARD && how == CARD_CHANGE_INSERT)
+      || (c->ccid_state != CCID_STATE_NOCARD && how == CARD_CHANGE_REMOVE))
     eventflag_signal (&c->ccid_comm, EV_CARD_CHANGE);
 }
 
@@ -1361,7 +1361,7 @@ ccid_usb_reset (void)
 }
 
 
-#define USB_ICC_TIMEOUT (1950*1000)
+#define USB_CCID_TIMEOUT (1950*1000)
 
 #define GPG_THREAD_TERMINATED 0xffff
 
@@ -1403,8 +1403,8 @@ ccid_thread (void *arg)
     }
 
   ccid.ccid_comm.flags = 0;
-  timeout = USB_ICC_TIMEOUT;
-  icc_prepare_receive (c);
+  timeout = USB_CCID_TIMEOUT;
+  ccid_prepare_receive (c);
   while (1)
     {
       eventmask_t m;
@@ -1418,7 +1418,7 @@ ccid_thread (void *arg)
 	  continue;
 	}
 
-      timeout = USB_ICC_TIMEOUT;
+      timeout = USB_CCID_TIMEOUT;
       m = eventflag_get (&c->ccid_comm);
 
       if (m == EV_USB_RESET)
@@ -1436,9 +1436,9 @@ ccid_thread (void *arg)
 	  uint8_t int_msg[2];
 
 	  int_msg[0] = NOTIFY_SLOT_CHANGE;
-	  if (c->icc_state == ICC_STATE_NOCARD)
+	  if (c->ccid_state == CCID_STATE_NOCARD)
 	    { /* Inserted!  */
-	      c->icc_state = ICC_STATE_START;
+	      c->ccid_state = CCID_STATE_START;
 	      int_msg[1] = 0x03;
 	    }
 	  else
@@ -1450,7 +1450,7 @@ ccid_thread (void *arg)
 		  c->application = 0;
 		}
 
-	      c->icc_state = ICC_STATE_NOCARD;
+	      c->ccid_state = CCID_STATE_NOCARD;
 	      int_msg[1] = 0x02;
 	    }
 
@@ -1458,17 +1458,17 @@ ccid_thread (void *arg)
 	  led_blink (LED_TWOSHOTS);
 	}
       else if (m == EV_RX_DATA_READY)
-	c->icc_state = icc_handle_data (c);
+	c->ccid_state = ccid_handle_data (c);
       else if (m == EV_EXEC_FINISHED)
-	if (c->icc_state == ICC_STATE_EXECUTE)
+	if (c->ccid_state == CCID_STATE_EXECUTE)
 	  {
 	    if (c->a->sw == GPG_THREAD_TERMINATED)
 	      {
 		c->sw1sw2[0] = 0x90;
 		c->sw1sw2[1] = 0x00;
 		c->state = APDU_STATE_RESULT;
-		icc_send_data_block (c);
-		c->icc_state = ICC_STATE_EXITED;
+		ccid_send_data_block (c);
+		c->ccid_state = CCID_STATE_EXITED;
 		break;
 	      }
 
@@ -1479,16 +1479,16 @@ ccid_thread (void *arg)
 	    if (c->a->res_apdu_data_len <= c->a->expected_res_size)
 	      {
 		c->state = APDU_STATE_RESULT;
-		icc_send_data_block (c);
-		c->icc_state = ICC_STATE_WAIT;
+		ccid_send_data_block (c);
+		c->ccid_state = CCID_STATE_WAIT;
 	      }
 	    else
 	      {
 		c->state = APDU_STATE_RESULT_GET_RESPONSE;
 		c->p = c->a->res_apdu_data;
 		c->len = c->a->res_apdu_data_len;
-		icc_send_data_block_gr (c, c->a->expected_res_size);
-		c->icc_state = ICC_STATE_WAIT;
+		ccid_send_data_block_gr (c, c->a->expected_res_size);
+		c->ccid_state = CCID_STATE_WAIT;
 	      }
 	  }
 	else
@@ -1510,10 +1510,10 @@ ccid_thread (void *arg)
 	  if (c->state == APDU_STATE_WAIT_COMMAND
 	      || c->state == APDU_STATE_COMMAND_CHAINING
 	      || c->state == APDU_STATE_RESULT_GET_RESPONSE)
-	    icc_prepare_receive (c);
+	    ccid_prepare_receive (c);
 	}
       else			/* Timeout */
-	c->icc_state = icc_handle_timeout (c);
+	c->ccid_state = ccid_handle_timeout (c);
     }
 
   if (c->application)

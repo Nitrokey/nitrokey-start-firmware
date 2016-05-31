@@ -132,7 +132,7 @@ static uint16_t hid_report;
 static void
 gnuk_setup_endpoints_for_interface (uint16_t interface, int stop)
 {
-  if (interface == ICC_INTERFACE)
+  if (interface == CCID_INTERFACE)
     {
       if (!stop)
 	{
@@ -276,7 +276,7 @@ usb_cb_setup (uint8_t req, uint8_t req_no, struct req_args *arg)
 
 	  if (req_no == USB_FSIJ_GNUK_DOWNLOAD)
 	    {
-	      if (*icc_state_p != ICC_STATE_EXITED)
+	      if (*ccid_state_p != CCID_STATE_EXITED)
 		return USB_UNSUPPORT;
 
 	      if (addr < &_regnual_start || addr + arg->len > __heap_end__)
@@ -291,7 +291,7 @@ usb_cb_setup (uint8_t req, uint8_t req_no, struct req_args *arg)
 	    }
 	  else if (req_no == USB_FSIJ_GNUK_EXEC && arg->len == 0)
 	    {
-	      if (*icc_state_p != ICC_STATE_EXITED)
+	      if (*ccid_state_p != CCID_STATE_EXITED)
 		return USB_UNSUPPORT;
 
 	      if (((uint32_t)addr & 0x03))
@@ -311,7 +311,7 @@ usb_cb_setup (uint8_t req, uint8_t req_no, struct req_args *arg)
     }
   else if (type_rcp == (CLASS_REQUEST | INTERFACE_RECIPIENT))
     {
-      if (arg->index == ICC_INTERFACE)
+      if (arg->index == CCID_INTERFACE)
 	{
 	  if (USB_SETUP_GET (req))
 	    {
@@ -396,7 +396,7 @@ usb_cb_ctrl_write_finish (uint8_t req, uint8_t req_no, struct req_args *arg)
     {
       if (USB_SETUP_SET (req) && req_no == USB_FSIJ_GNUK_EXEC)
 	{
-	  if (*icc_state_p != ICC_STATE_EXITED)
+	  if (*ccid_state_p != CCID_STATE_EXITED)
 	    return;
 
 	  bDeviceState = UNCONNECTED;

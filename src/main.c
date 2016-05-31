@@ -130,9 +130,9 @@ static void emit_led (int on_time, int off_time)
 
 static void display_status_code (void)
 {
-  enum icc_state icc_state = *icc_state_p;
+  enum ccid_state ccid_state = *ccid_state_p;
 
-  if (icc_state == ICC_STATE_START)
+  if (ccid_state == CCID_STATE_START)
     emit_led (LED_TIMEOUT_ONE, LED_TIMEOUT_STOP);
   else
     /* OpenPGP card thread is running */
@@ -144,12 +144,12 @@ static void display_status_code (void)
       emit_led ((auth_status & AC_PSO_CDS_AUTHORIZED)?
 		LED_TIMEOUT_ONE : LED_TIMEOUT_ZERO, LED_TIMEOUT_INTERVAL);
 
-      if (icc_state == ICC_STATE_WAIT)
+      if (ccid_state == CCID_STATE_WAIT)
 	chopstx_usec_wait (LED_TIMEOUT_STOP * 2);
       else
 	{
 	  chopstx_usec_wait (LED_TIMEOUT_INTERVAL);
-	  emit_led (icc_state == ICC_STATE_RECEIVE?
+	  emit_led (ccid_state == CCID_STATE_RECEIVE?
 		    LED_TIMEOUT_ONE : LED_TIMEOUT_ZERO, LED_TIMEOUT_STOP);
 	}
     }
