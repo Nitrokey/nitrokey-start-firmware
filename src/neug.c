@@ -1,7 +1,8 @@
 /*
  * neug.c - true random number generation
  *
- * Copyright (C) 2011, 2012, 2013 Free Software Initiative of Japan
+ * Copyright (C) 2011, 2012, 2013, 2016
+ *               Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
  * This file is a part of NeuG, a True Random Number Generator
@@ -28,18 +29,12 @@
 
 #include "sys.h"
 #include "neug.h"
-#include "stm32f103.h"
+#include "mcu/stm32f103.h"
 #include "adc.h"
 #include "sha256.h"
 
 static chopstx_mutex_t mode_mtx;
 static chopstx_cond_t  mode_cond;
-
-/*
- * ADC finish interrupt
- */
-#define INTR_REQ_DMA1_Channel1 11
-
 
 static sha256_context sha256_ctx_data;
 static uint32_t sha256_output[SHA256_DIGEST_SIZE/sizeof (uint32_t)];
@@ -574,7 +569,6 @@ static void *
 rng (void *arg)
 {
   struct rng_rb *rb = (struct rng_rb *)arg;
-  chopstx_intr_t adc_intr;
   int mode = neug_mode;
 
   rng_should_terminate = 0;
@@ -582,7 +576,6 @@ rng (void *arg)
   chopstx_cond_init (&mode_cond);
 
   /* Enable ADCs */
-  chopstx_claim_irq (&adc_intr, INTR_REQ_DMA1_Channel1);
   adc_start ();
 
   ep_init (mode);
@@ -591,7 +584,7 @@ rng (void *arg)
       int err;
       int n;
 
-      err = adc_wait_completion (&adc_intr);
+      err = adc_wait_completion ();
 
       chopstx_mutex_lock (&mode_mtx);
       if (err || mode != neug_mode)

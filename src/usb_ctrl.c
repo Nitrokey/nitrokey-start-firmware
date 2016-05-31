@@ -38,7 +38,7 @@
 #include "usb_lld.h"
 #include "usb_conf.h"
 #include "gnuk.h"
-#include "stm32f103.h"
+#include "mcu/stm32f103.h"
 
 #ifdef ENABLE_VIRTUAL_COM_PORT
 #include "usb-cdc.h"

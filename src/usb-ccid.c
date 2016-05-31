@@ -693,8 +693,9 @@ usb_cb_rx_ready (uint8_t ep_num)
 }
 
 void
-usb_cb_tx_done (uint8_t ep_num)
+usb_cb_tx_done (uint8_t ep_num, uint32_t len)
 {
+  (void)len;
   if (ep_num == ENDP1)
     EP1_IN_Callback ();
   else if (ep_num == ENDP2)
@@ -1395,6 +1396,13 @@ ccid_thread (void *arg)
   apdu_init (a);
   ccid_init (c, epi, epo, a);
 
+  while (bDeviceState != CONFIGURED)
+    {
+      chopstx_poll (NULL, 1, &interrupt);
+      usb_interrupt_handler ();
+    }
+
+  ccid.ccid_comm.flags = 0;
   timeout = USB_ICC_TIMEOUT;
   icc_prepare_receive (c);
   while (1)

@@ -332,17 +332,18 @@ then
 fi
 
 if test "$sys1_compat" = "no"; then
-   # Disable when you are sure that it's sys version 2.1.
-   # Note that Gnuk 1.0 and NeuG (until 0.06) uses sys version 1.0.
-   # Disabling the compatibility, executable will be target independent,
-   # assuming the clock initialization will be done by SYS (before entry).
-   have_sys_h="-DHAVE_SYS_H"
+    # Disable when you are sure that it's sys version 3.0 or later.
+    # Note that Gnuk 1.0 and NeuG (until 0.06) uses sys version 1.0.
+    # Disabling the compatibility, executable will be target independent,
+    # assuming the clock initialization will be done by clock_init in 
+    # SYS.
+    use_sys3="-DUSE_SYS3"
 else
-   have_sys_h=""
+    use_sys3=""
 fi
 
 
-sed -e "s%@HAVE_SYS_H@%$have_sys_h%" \
+sed -e "s%@USE_SYS3@%$use_sys3%" \
     -e "s%@DEBUG_MAKE_OPTION@%$DEBUG_MAKE_OPTION%" \
     -e "s%@PINPAD_MAKE_OPTION@%$PINPAD_MAKE_OPTION%" \
     -e "s%@HEXOUTPUT_MAKE_OPTION@%$HEXOUTPUT_MAKE_OPTION%" \

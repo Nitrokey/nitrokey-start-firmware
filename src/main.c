@@ -35,7 +35,7 @@
 #include "usb_lld.h"
 #include "usb-cdc.h"
 #include "random.h"
-#include "stm32f103.h"
+#include "mcu/stm32f103.h"
 
 
 /*

@@ -8,15 +8,14 @@ CHOPSTX = ../chopstx
 # Define linker script file here
 LDSCRIPT= gnuk.ld
 
-CSRC = main.c usb_stm32f103.c adc_stm32f103.c \
-	usb_desc.c usb_ctrl.c \
+CSRC = main.c usb_desc.c usb_ctrl.c \
 	call-rsa.c \
 	usb-ccid.c openpgp.c ac.c openpgp-do.c flash.c \
 	bn.c mod.c \
 	modp256r1.c jpc_p256r1.c ec_p256r1.c call-ec_p256r1.c \
 	modp256k1.c jpc_p256k1.c ec_p256k1.c call-ec_p256k1.c \
 	mod25638.c ecc-edwards.c ecc-mont.c sha512.c \
-	random.c neug.c sha256.c sys.c
+	random.c neug.c sha256.c
 
 INCDIR =
 
@@ -46,6 +45,11 @@ ifeq ($(ENABLE_PINPAD),dnd)
 CSRC += usb-msc.c
 endif
 
+CHIP=stm32f103
+USE_SYS = yes
+USE_USB = yes
+USE_ADC = yes
+
 ###################################
 CROSS = arm-none-eabi-
 CC   = $(CROSS)gcc
@@ -55,7 +59,7 @@ OBJCOPY   = $(CROSS)objcopy
 MCU   = cortex-m3
 CWARN = -Wall -Wextra -Wstrict-prototypes
 # DEFS: Add  
-DEFS  = @HAVE_SYS_H@
+DEFS  = @USE_SYS3@
 OPT   = -O3 -Os -g
 LIBS  =
 

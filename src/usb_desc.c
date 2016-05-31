@@ -360,6 +360,7 @@ usb_cb_get_descriptor (uint8_t rcp, uint8_t desc_type, uint8_t desc_index,
 	    return usb_lld_reply_request (string_descriptors[desc_index].desc,
 					  string_descriptors[desc_index].size,
 					  arg);
+#ifdef USE_SYS3
 	  else if (desc_index == NUM_STRING_DESC)
 	    {
 	      uint8_t usbbuf[64];
@@ -378,6 +379,7 @@ usb_cb_get_descriptor (uint8_t rcp, uint8_t desc_type, uint8_t desc_index,
 	      usbbuf[1] = STRING_DESCRIPTOR;
 	      return usb_lld_reply_request (usbbuf, len, arg);
 	    }
+#endif
 	}
     }
 #ifdef HID_CARD_CHANGE_SUPPORT
