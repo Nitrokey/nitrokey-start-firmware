@@ -68,7 +68,6 @@ class gnuk_token(object):
             raise ValueError("Wrong interface sub class")
         self.__devhandle = device.open()
         self.__devhandle.claimInterface(interface)
-        self.__devhandle.setAltInterface(0)
 
         self.__intf = interface.interfaceNumber
         self.__alt = interface.alternateSetting
@@ -473,7 +472,6 @@ class regnual(object):
             raise ValueError("Wrong interface class")
         self.__devhandle = dev.open()
         self.__devhandle.claimInterface(intf)
-        self.__devhandle.setAltInterface(0)
 
     def mem_info(self):
         mem = self.__devhandle.controlMsg(requestType = 0xc0, request = 0,

@@ -146,15 +146,7 @@ class stlinkv2(object):
         if intf.interfaceClass != 0xff: # Vendor specific
             raise ValueError("Wrong interface class.", intf.interfaceClass)
         self.__devhandle = dev.open()
-        # ST-Link/V2-1 has other interfaces
-        # Some other processes or kernel would use it
-        # So, write access to configuration causes error
-        try:
-            self.__devhandle.setConfiguration(conf.value)
-        except:
-            pass
         self.__devhandle.claimInterface(intf.interfaceNumber)
-        # self.__devhandle.setAltInterface(0)  # This was not good for libusb-win32 with wrong arg intf, new correct value 0 would be OK
 
     def shutdown(self):
         self.__devhandle.releaseInterface()

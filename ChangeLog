@@ -1,5 +1,11 @@
 2016-06-01  Niibe Yutaka  <gniibe@fsij.org>
 
+	* tool/stlinkv2.py (stlinkv2.__init__): Don't
+	call setConfiguration.
+
+	* tool/gnuk_token.py (gnuk_token, regnual): Don't
+	call setAltInterface, it's not needed.
+
 	* src/usb-ccid.c (ccid_notify_slot_change): New.
 	(ccid_thread): Call ccid_notify_slot_change at
 	interface_reset and EV_CARD_CHANGE.
