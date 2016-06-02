@@ -318,9 +318,10 @@ void usb_cb_rx_ready (uint8_t ep_num)
   (void)ep_num;
 }
 
-void usb_cb_tx_done (uint8_t ep_num)
+void usb_cb_tx_done (uint8_t ep_num, uint32_t len)
 {
   (void)ep_num;
+  (void)len;
 }
 
 static void wait (int count)
