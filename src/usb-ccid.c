@@ -358,10 +358,11 @@ static void get_sw1sw2 (struct ep_in *epi, size_t len)
  * Tx done callback
  */
 static void
-EP1_IN_Callback (void)
+EP1_IN_Callback (uint16_t len)
 {
   struct ep_in *epi = &endpoint_in;
 
+  (void)len;
   if (epi->buf == NULL)
     if (epi->tx_done)
       epi->notify (epi);
@@ -635,10 +636,9 @@ ccid_prepare_receive (struct ccid *c)
  */
 
 static void
-EP1_OUT_Callback (void)
+EP1_OUT_Callback (uint16_t len)
 {
   struct ep_out *epo = &endpoint_out;
-  size_t len = usb_lld_rx_data_len (epo->ep_num);
   int offset = 0;
   int cont;
   size_t orig_len = len;
@@ -675,13 +675,13 @@ EP1_OUT_Callback (void)
 }
 
 
-extern void EP6_IN_Callback (void);
+extern void EP6_IN_Callback (uint16_t len);
 
-void
-usb_cb_rx_ready (uint8_t ep_num)
+static void
+usb_rx_ready (uint8_t ep_num, uint16_t len)
 {
   if (ep_num == ENDP1)
-    EP1_OUT_Callback ();
+    EP1_OUT_Callback (len);
 #ifdef DEBUG
   else if (ep_num == ENDP5)
     {
@@ -692,12 +692,11 @@ usb_cb_rx_ready (uint8_t ep_num)
 #endif
 }
 
-void
-usb_cb_tx_done (uint8_t ep_num, uint32_t len)
+static void
+usb_tx_done (uint8_t ep_num, uint16_t len)
 {
-  (void)len;
   if (ep_num == ENDP1)
-    EP1_IN_Callback ();
+    EP1_IN_Callback (len);
   else if (ep_num == ENDP2)
     {
       /* INTERRUPT Transfer done */
@@ -712,7 +711,7 @@ usb_cb_tx_done (uint8_t ep_num, uint32_t len)
 #endif
 #ifdef PINPAD_SUPPORT
   else if (ep_num == ENDP6)
-    EP6_IN_Callback ();
+    EP6_IN_Callback (len);
 #endif
 }
 
@@ -1391,14 +1390,102 @@ ccid_notify_slot_change (struct ccid *c)
 
 #define INTR_REQ_USB 20
 
+extern uint32_t bDeviceState;
+extern void usb_device_reset (struct usb_dev *dev);
+extern int usb_setup (struct usb_dev *dev);
+extern void usb_ctrl_write_finish (struct usb_dev *dev);
+extern int usb_set_configuration (struct usb_dev *dev);
+extern int usb_set_interface (struct usb_dev *dev);
+extern int usb_get_interface (struct usb_dev *dev);
+extern int usb_get_status_interface (struct usb_dev *dev);
+
+extern int usb_get_descriptor (struct usb_dev *dev);
+
+static void
+usb_event_handle (struct usb_dev *dev)
+{
+  uint8_t ep_num;
+  int e;
+
+  e = usb_lld_event_handler (dev);
+  ep_num = USB_EVENT_ENDP (e);
+
+  if (ep_num != 0)
+    {
+      if (USB_EVENT_TXRX (e))
+	usb_tx_done (ep_num, USB_EVENT_LEN (e));
+      else
+	usb_rx_ready (ep_num, USB_EVENT_LEN (e));
+    }
+  else
+    switch (USB_EVENT_ID (e))
+      {
+      case USB_EVENT_DEVICE_RESET:
+	usb_device_reset (dev);
+	break;
+
+      case USB_EVENT_DEVICE_ADDRESSED:
+	bDeviceState = ADDRESSED;
+	break;
+
+      case USB_EVENT_GET_DESCRIPTOR:
+	if (usb_get_descriptor (dev) < 0)
+	  usb_lld_ctrl_error (dev);
+	break;
+
+      case USB_EVENT_SET_CONFIGURATION:
+	if (usb_set_configuration (dev) < 0)
+	  usb_lld_ctrl_error (dev);
+	break;
+
+      case USB_EVENT_SET_INTERFACE:
+	if (usb_set_interface (dev) < 0)
+	  usb_lld_ctrl_error (dev);
+	break;
+
+      case USB_EVENT_CTRL_REQUEST:
+	/* Device specific device request.  */
+	if (usb_setup (dev) < 0)
+	  usb_lld_ctrl_error (dev);
+	break;
+
+      case USB_EVENT_GET_STATUS_INTERFACE:
+	if (usb_get_status_interface (dev) < 0)
+	  usb_lld_ctrl_error (dev);
+	break;
+
+      case USB_EVENT_GET_INTERFACE:
+	if (usb_get_interface (dev) < 0)
+	  usb_lld_ctrl_error (dev);
+	break;
+
+      case USB_EVENT_SET_FEATURE_DEVICE:
+      case USB_EVENT_SET_FEATURE_ENDPOINT:
+      case USB_EVENT_CLEAR_FEATURE_DEVICE:
+      case USB_EVENT_CLEAR_FEATURE_ENDPOINT:
+	usb_lld_ctrl_ack (dev);
+	break;
+
+      case USB_EVENT_CTRL_WRITE_FINISH:
+	/* Control WRITE transfer finished.  */
+	usb_ctrl_write_finish (dev);
+	break;
+
+      case USB_EVENT_OK:
+      case USB_EVENT_DEVICE_SUSPEND:
+      default:
+	break;
+      }
+}
+
 void *
 ccid_thread (void *arg)
 {
-  extern uint32_t bDeviceState;
   chopstx_intr_t interrupt;
   uint32_t timeout;
   eventmask_t m;
   chopstx_poll_cond_t poll_desc;
+  struct usb_dev dev;
 
   struct ep_in *epi = &endpoint_in;
   struct ep_out *epo = &endpoint_out;
@@ -1410,9 +1497,9 @@ ccid_thread (void *arg)
   eventflag_init (&ccid.ccid_comm);
   eventflag_init (&ccid.openpgp_comm);
 
-  usb_lld_init (USB_INITIAL_FEATURE);
+  usb_lld_init (&dev, USB_INITIAL_FEATURE);
   chopstx_claim_irq (&interrupt, INTR_REQ_USB);
-  usb_interrupt_handler ();	/* For old SYS < 3.0 */
+  usb_event_handle (&dev);	/* For old SYS < 3.0 */
 
  device_reset:
   epi_init (epi, ENDP1, notify_tx, c);
@@ -1425,10 +1512,8 @@ ccid_thread (void *arg)
       eventflag_prepare_poll (&c->ccid_comm, &poll_desc);
       chopstx_poll (NULL, 2, &interrupt, &poll_desc);
       if (interrupt.ready)
-	{
-	  usb_interrupt_handler ();
-	  continue;
-	}
+	usb_event_handle (&dev);
+
       m = eventflag_get (&c->ccid_comm);
       /* Ignore event while not-configured.  */
     }
@@ -1443,7 +1528,7 @@ ccid_thread (void *arg)
       chopstx_poll (&timeout, 2, &interrupt, &poll_desc);
       if (interrupt.ready)
 	{
-	  usb_interrupt_handler ();
+	  usb_event_handle (&dev);
 	  continue;
 	}
 
@@ -1553,7 +1638,7 @@ ccid_thread (void *arg)
   while (bDeviceState != UNCONNECTED)
     {
       chopstx_poll (NULL, 1, &interrupt);
-      usb_interrupt_handler ();
+      usb_event_handle (&dev);
     }
 
   return NULL;

@@ -1,3 +1,34 @@
+2016-06-14  Niibe Yutaka  <gniibe@fsij.org>
+
+	* regnual/regnual.c (usb_device_reset): Rename from
+	usb_cb_device_reset.
+	(usb_ctrl_write_finish): Rename from usb_cb_ctrl_write_finish.
+	(usb_setup): Rename from usb_cb_setup.
+	(usb_get_descriptor): Rename from usb_cb_get_descriptor.
+	(usb_set_configuration): New.
+	(usb_interrupt_handler): New.
+
+	* src/usb-ccid.c (usb_tx_done): Rename from usb_cb_tx_done.
+	(usb_rx_ready): Rename from usb_cb_rx_ready.
+	(usb_event_handle): New.
+	(ccid_thread): Use usb_event_handle.
+
+	* src/usb-msc.c (EP6_IN_Callback): Update to new USB API.
+	(EP6_OUT_Callback): Likewise.
+
+	* src/usb_ctrl.c (usb_device_reset): Rename from
+	usb_cb_device_reset.
+	(vcom_port_data_setup): Update to new USB API.
+	(usb_ctrl_write_finish): Rename from usb_cb_ctrl_write_finish.
+	(usb_setup): Rename from usb_cb_setup.
+	(usb_set_configuration): New, based on usb_cb_handle_event.
+	(usb_set_interface): Rename from usb_cb_interface.
+	(usb_get_interface): New.
+	(usb_get_status_interface): New.
+
+	* src/usb_desc.c (usb_get_descriptor): Rename from
+	usb_cb_get_descriptor.
+
 2016-06-02  Niibe Yutaka  <gniibe@fsij.org>
 
 	* regnual/regnual.c (usb_cb_tx_done): Follow the change of USB

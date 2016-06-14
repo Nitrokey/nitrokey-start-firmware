@@ -61,47 +61,25 @@ static struct line_coding line_coding = {
 #define CDC_CTRL_DTR            0x0001
 
 static int
-vcom_port_data_setup (uint8_t req, uint8_t req_no, struct req_args *arg)
+vcom_port_data_setup (struct usb_dev *dev)
 {
-  if (USB_SETUP_GET (req))
+  struct device_req *arg = &dev->dev_req;
+
+  if (USB_SETUP_GET (arg->type))
     {
-      if (req_no == USB_CDC_REQ_GET_LINE_CODING)
-	return usb_lld_reply_request (&line_coding, sizeof(line_coding), arg);
+      if (arg->request == USB_CDC_REQ_GET_LINE_CODING)
+	return usb_lld_ctrl_send (dev, &line_coding, sizeof (line_coding));
     }
   else  /* USB_SETUP_SET (req) */
     {
-      if (req_no == USB_CDC_REQ_SET_LINE_CODING)
-	{
-	  usb_lld_set_data_to_recv (&line_coding, sizeof(line_coding));
-	  return USB_SUCCESS;
-	}
-      else if (req_no == USB_CDC_REQ_SET_CONTROL_LINE_STATE)
-	{
-	  uint8_t connected_saved = stdout.connected;
-
-	  if ((arg->value & CDC_CTRL_DTR) != 0)
-	    {
-	      if (stdout.connected == 0)
-		/* It's Open call */
-		stdout.connected++;
-	    }
-	  else
-	    {
-	      if (stdout.connected)
-		/* Close call */
-		stdout.connected = 0;
-	    }
-
-	  chopstx_mutex_lock (&stdout.m_dev);
-	  if (stdout.connected != connected_saved)
-	    chopstx_cond_signal (&stdout.cond_dev);
-	  chopstx_mutex_unlock (&stdout.m_dev);
-
-	  return USB_SUCCESS;
-	}
+      if (arg->request == USB_CDC_REQ_SET_LINE_CODING
+	  && arg->len == sizeof (line_coding))
+	return usb_lld_ctrl_recv (dev, &line_coding, sizeof (line_coding));
+      else if (arg->request == USB_CDC_REQ_SET_CONTROL_LINE_STATE)
+	return usb_lld_ctrl_ack (dev);
     }
 
-  return USB_UNSUPPORT;
+  return -1;
 }
 #endif
 
@@ -195,11 +173,11 @@ gnuk_setup_endpoints_for_interface (uint16_t interface, int stop)
 }
 
 void
-usb_cb_device_reset (void)
+usb_device_reset (struct usb_dev *dev)
 {
   int i;
 
-  usb_lld_reset (USB_INITIAL_FEATURE);
+  usb_lld_reset (dev, USB_INITIAL_FEATURE);
 
   /* Initialize Endpoint 0 */
   usb_lld_setup_endpoint (ENDP0, EP_CONTROL, 0, ENDP0_RXADDR, ENDP0_TXADDR,
@@ -240,7 +218,7 @@ static uint32_t rbit (uint32_t v)
 }
 
 /* After calling this function, CRC module remain enabled.  */
-static int download_check_crc32 (const uint32_t *end_p)
+static int download_check_crc32 (struct usb_dev *dev, const uint32_t *end_p)
 {
   uint32_t crc32 = *end_p;
   const uint32_t *p;
@@ -252,60 +230,60 @@ static int download_check_crc32 (const uint32_t *end_p)
     CRC->DR = rbit (*p);
 
   if ((rbit (CRC->DR) ^ crc32) == 0xffffffff)
-    return USB_SUCCESS;
+    return usb_lld_ctrl_ack (dev);
 
-  return USB_UNSUPPORT;
+  return -1;
 }
 
 int
-usb_cb_setup (uint8_t req, uint8_t req_no, struct req_args *arg)
+usb_setup (struct usb_dev *dev)
 {
-  uint8_t type_rcp = req & (REQUEST_TYPE|RECIPIENT);
+  struct device_req *arg = &dev->dev_req;
+  uint8_t type_rcp = arg->type & (REQUEST_TYPE|RECIPIENT);
 
   if (type_rcp == (VENDOR_REQUEST | DEVICE_RECIPIENT))
     {
-      if (USB_SETUP_GET (req))
+      if (USB_SETUP_GET (arg->type))
 	{
-	  if (req_no == USB_FSIJ_GNUK_MEMINFO)
-	    return usb_lld_reply_request (mem_info, sizeof (mem_info), arg);
+	  if (arg->request == USB_FSIJ_GNUK_MEMINFO)
+	    return usb_lld_ctrl_send (dev, mem_info, sizeof (mem_info));
 	}
       else /* SETUP_SET */
 	{
 	  uint8_t *addr = (uint8_t *)(0x20000000 + arg->value * 0x100
 				      + arg->index);
 
-	  if (req_no == USB_FSIJ_GNUK_DOWNLOAD)
+	  if (arg->request == USB_FSIJ_GNUK_DOWNLOAD)
 	    {
 	      if (*ccid_state_p != CCID_STATE_EXITED)
-		return USB_UNSUPPORT;
+		return -1;
 
 	      if (addr < &_regnual_start || addr + arg->len > __heap_end__)
-		return USB_UNSUPPORT;
+		return -1;
 
 	      if (arg->index + arg->len < 256)
 		memset (addr + arg->index + arg->len, 0,
 			256 - (arg->index + arg->len));
 
-	      usb_lld_set_data_to_recv (addr, arg->len);
-	      return USB_SUCCESS;
+	      return usb_lld_ctrl_recv (dev, addr, arg->len);
 	    }
-	  else if (req_no == USB_FSIJ_GNUK_EXEC && arg->len == 0)
+	  else if (arg->request == USB_FSIJ_GNUK_EXEC && arg->len == 0)
 	    {
 	      if (*ccid_state_p != CCID_STATE_EXITED)
-		return USB_UNSUPPORT;
+		return -1;
 
 	      if (((uint32_t)addr & 0x03))
-		return USB_UNSUPPORT;
+		return -1;
 
-	      return download_check_crc32 ((uint32_t *)addr);
+	      return download_check_crc32 (dev, (uint32_t *)addr);
 	    }
-	  else if (req_no == USB_FSIJ_GNUK_CARD_CHANGE && arg->len == 0)
+	  else if (arg->request == USB_FSIJ_GNUK_CARD_CHANGE && arg->len == 0)
 	    {
 	      if (arg->value != 0 && arg->value != 1 && arg->value != 2)
-		return USB_UNSUPPORT;
+		return -1;
 
 	      ccid_card_change_signal (arg->value);
-	      return USB_SUCCESS;
+	      return usb_lld_ctrl_ack (dev);
 	    }
 	}
     }
@@ -313,88 +291,85 @@ usb_cb_setup (uint8_t req, uint8_t req_no, struct req_args *arg)
     {
       if (arg->index == CCID_INTERFACE)
 	{
-	  if (USB_SETUP_GET (req))
+	  if (USB_SETUP_GET (arg->type))
 	    {
-	      if (req_no == USB_CCID_REQ_GET_CLOCK_FREQUENCIES)
-		return usb_lld_reply_request (freq_table, sizeof (freq_table),
-					      arg);
-	      else if (req_no == USB_CCID_REQ_GET_DATA_RATES)
-		return usb_lld_reply_request (data_rate_table,
-					      sizeof (data_rate_table), arg);
+	      if (arg->request == USB_CCID_REQ_GET_CLOCK_FREQUENCIES)
+		return usb_lld_ctrl_send (dev, freq_table, sizeof (freq_table));
+	      else if (arg->request == USB_CCID_REQ_GET_DATA_RATES)
+		return usb_lld_ctrl_send (dev, data_rate_table,
+					  sizeof (data_rate_table));
 	    }
 	  else
 	    {
-	      if (req_no == USB_CCID_REQ_ABORT)
+	      if (arg->request == USB_CCID_REQ_ABORT)
 		/* wValue: bSeq, bSlot */
 		/* Abortion is not supported in Gnuk */
-		return USB_UNSUPPORT;
+		return -1;
 	    }
 	}
 #ifdef HID_CARD_CHANGE_SUPPORT
       else if (arg->index == HID_INTERFACE)
 	{
-	  switch (req_no)
+	  switch (arg->request)
 	    {
 	    case USB_HID_REQ_GET_IDLE:
-	      return usb_lld_reply_request (&hid_idle_rate, 1, arg);
+	      return usb_lld_ctrl_send (dev, &hid_idle_rate, 1);
 	    case USB_HID_REQ_SET_IDLE:
-	      usb_lld_set_data_to_recv (&hid_idle_rate, 1);
-	      return USB_SUCCESS;
+	      return usb_lld_ctrl_recv (dev, &hid_idle_rate, 1);
 
 	    case USB_HID_REQ_GET_REPORT:
 	      /* Request of LED status and key press */
-	      return usb_lld_reply_request (&hid_report, 2, arg);
+	      return usb_lld_ctrl_send (dev, &hid_report, 2);
 
 	    case USB_HID_REQ_SET_REPORT:
 	      /* Received LED set request */
 	      if (arg->len == 1)
-		usb_lld_set_data_to_recv (&hid_report, arg->len);
-	      return USB_SUCCESS;
+		return usb_lld_ctrl_recv (dev, &hid_report, arg->len);
+	      else
+		return usb_lld_ctrl_ack (dev);
 
 	    case USB_HID_REQ_GET_PROTOCOL:
 	    case USB_HID_REQ_SET_PROTOCOL:
 	      /* This driver doesn't support boot protocol.  */
-	      return USB_UNSUPPORT;
+	      return -1;
 
 	    default:
-	      return USB_UNSUPPORT;
+	      return -1;
 	    }
 	}
 #endif
 #ifdef ENABLE_VIRTUAL_COM_PORT
       else if (arg->index == VCOM_INTERFACE_0)
-	return vcom_port_data_setup (req, req_no, arg);
+	return vcom_port_data_setup (dev);
 #endif
 #ifdef PINPAD_DND_SUPPORT
       else if (arg->index == MSC_INTERFACE)
 	{
 	  if (USB_SETUP_GET (req))
 	    {
-	      if (req_no == MSC_GET_MAX_LUN_COMMAND)
-		return usb_lld_reply_request (lun_table, sizeof (lun_table),
-					      arg);
+	      if (arg->request == MSC_GET_MAX_LUN_COMMAND)
+		return usb_lld_ctrl_send (dev, lun_table, sizeof (lun_table));
 	    }
 	  else
-	    if (req_no == MSC_MASS_STORAGE_RESET_COMMAND)
-	      /* Should call resetting MSC thread, something like msc_reset() */
-	      return USB_SUCCESS;
+	    if (arg->request == MSC_MASS_STORAGE_RESET_COMMAND)
+	      return usb_lld_ctrl_ack (dev);
 	}
 #endif
     }
 
-  return USB_UNSUPPORT;
+  return -1;
 }
 
 
 void
-usb_cb_ctrl_write_finish (uint8_t req, uint8_t req_no, struct req_args *arg)
+usb_ctrl_write_finish (struct usb_dev *dev)
 {
-  uint8_t type_rcp = req & (REQUEST_TYPE|RECIPIENT);
+  struct device_req *arg = &dev->dev_req;
+  uint8_t type_rcp = arg->type & (REQUEST_TYPE|RECIPIENT);
 
-  (void)arg;
   if (type_rcp == (VENDOR_REQUEST | DEVICE_RECIPIENT))
     {
-      if (USB_SETUP_SET (req) && req_no == USB_FSIJ_GNUK_EXEC)
+      if (USB_SETUP_SET (arg->type) && arg->request == USB_FSIJ_GNUK_EXEC)
 	{
 	  if (*ccid_state_p != CCID_STATE_EXITED)
 	    return;
@@ -404,10 +379,36 @@ usb_cb_ctrl_write_finish (uint8_t req, uint8_t req_no, struct req_args *arg)
 	  led_blink (LED_GNUK_EXEC);	/* Notify the main.  */
 	}
     }
-#ifdef HID_CARD_CHANGE_SUPPORT
+#if defined(HID_CARD_CHANGE_SUPPORT) || defined (ENABLE_VIRTUAL_COM_PORT)
   else if (type_rcp == (CLASS_REQUEST | INTERFACE_RECIPIENT))
     {
-      if (arg->index == HID_INTERFACE && req_no == USB_HID_REQ_SET_REPORT)
+# if defined(ENABLE_VIRTUAL_COM_PORT)
+      if (arg->index == VCOM_INTERFACE_0 && USB_SETUP_SET (arg->type)
+	  && arg->request == USB_CDC_REQ_SET_CONTROL_LINE_STATE)
+	{
+	  uint8_t connected_saved = stdout.connected;
+
+	  if ((arg->value & CDC_CTRL_DTR) != 0)
+	    {
+	      if (stdout.connected == 0)
+		/* It's Open call */
+		stdout.connected++;
+	    }
+	  else
+	    {
+	      if (stdout.connected)
+		/* Close call */
+		stdout.connected = 0;
+	    }
+
+	  chopstx_mutex_lock (&stdout.m_dev);
+	  if (stdout.connected != connected_saved)
+	    chopstx_cond_signal (&stdout.cond_dev);
+	  chopstx_mutex_unlock (&stdout.m_dev);
+	}
+# endif
+# if defined(HID_CARD_CHANGE_SUPPORT)
+      if (arg->index == HID_INTERFACE && arg->request == USB_HID_REQ_SET_REPORT)
 	{
 	  if ((hid_report ^ hid_report_saved) & HID_LED_STATUS_CARDCHANGE)
 	    ccid_card_change_signal (CARD_CHANGE_TOGGLE);
@@ -415,78 +416,85 @@ usb_cb_ctrl_write_finish (uint8_t req, uint8_t req_no, struct req_args *arg)
 	  hid_report_saved = hid_report;
 	}
     }
+# endif
 #endif
 }
 
 
-int usb_cb_handle_event (uint8_t event_type, uint16_t value)
+int
+usb_set_configuration (struct usb_dev *dev)
 {
   int i;
   uint8_t current_conf;
 
-  switch (event_type)
+  current_conf = usb_lld_current_configuration (dev);
+  if (current_conf == 0)
     {
-    case USB_EVENT_ADDRESS:
+      if (dev->dev_req.value != 1)
+	return -1;
+
+      usb_lld_set_configuration (dev, 1);
+      for (i = 0; i < NUM_INTERFACES; i++)
+	gnuk_setup_endpoints_for_interface (i, 0);
+      bDeviceState = CONFIGURED;
+    }
+  else if (current_conf != dev->dev_req.value)
+    {
+      if (dev->dev_req.value != 0)
+	return -1;
+
+      usb_lld_set_configuration (dev, 0);
+      for (i = 0; i < NUM_INTERFACES; i++)
+	gnuk_setup_endpoints_for_interface (i, 1);
       bDeviceState = ADDRESSED;
-      return USB_SUCCESS;
-    case USB_EVENT_CONFIG:
-      current_conf = usb_lld_current_configuration ();
-      if (current_conf == 0)
-	{
-	  if (value != 1)
-	    return USB_UNSUPPORT;
-
-	  usb_lld_set_configuration (value);
-	  for (i = 0; i < NUM_INTERFACES; i++)
-	    gnuk_setup_endpoints_for_interface (i, 0);
-	  bDeviceState = CONFIGURED;
-	}
-      else if (current_conf != value)
-	{
-	  if (value != 0)
-	    return USB_UNSUPPORT;
-
-	  usb_lld_set_configuration (0);
-	  for (i = 0; i < NUM_INTERFACES; i++)
-	    gnuk_setup_endpoints_for_interface (i, 1);
-	  bDeviceState = ADDRESSED;
-	  ccid_usb_reset (1);
-	}
-      /* Do nothing when current_conf == value */
-      return USB_SUCCESS;
-    default:
-      break;
+      ccid_usb_reset (1);
     }
 
-  return USB_UNSUPPORT;
+  /* Do nothing when current_conf == value */
+  return usb_lld_ctrl_ack (dev);
 }
 
-int usb_cb_interface (uint8_t cmd, struct req_args *arg)
+
+int
+usb_set_interface (struct usb_dev *dev)
 {
-  const uint8_t zero = 0;
-  uint16_t interface = arg->index;
-  uint16_t alt = arg->value;
+  uint16_t interface = dev->dev_req.index;
+  uint16_t alt = dev->dev_req.value;
 
   if (interface >= NUM_INTERFACES)
-    return USB_UNSUPPORT;
+    return -1;
 
-  switch (cmd)
+  if (alt != 0)
+    return -1;
+  else
     {
-    case USB_SET_INTERFACE:
-      if (alt != 0)
-	return USB_UNSUPPORT;
-      else
-	{
-	  gnuk_setup_endpoints_for_interface (interface, 0);
-	  ccid_usb_reset (0);
-	  return USB_SUCCESS;
-	}
-
-    case USB_GET_INTERFACE:
-      return usb_lld_reply_request (&zero, 1, arg);
-
-    case USB_QUERY_INTERFACE:
-    default:
-      return USB_SUCCESS;
+      gnuk_setup_endpoints_for_interface (interface, 0);
+      ccid_usb_reset (0);
+      return usb_lld_ctrl_ack (dev);
     }
+}
+
+
+int
+usb_get_interface (struct usb_dev *dev)
+{
+  const uint8_t zero = 0;
+  uint16_t interface = dev->dev_req.index;
+
+  if (interface >= NUM_INTERFACES)
+    return -1;
+
+  return usb_lld_ctrl_send (dev, &zero, 1);
+}
+
+int
+usb_get_status_interface (struct usb_dev *dev)
+{
+  const uint16_t status_info = 0;
+  uint16_t interface = dev->dev_req.index;
+
+  if (interface >= NUM_INTERFACES)
+    return -1;
+
+  return usb_lld_ctrl_send (dev, &status_info, 2);
 }

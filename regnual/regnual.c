@@ -109,10 +109,10 @@ static const uint8_t regnual_string_serial[] = {
 };
 
 
-void
-usb_cb_device_reset (void)
+static void
+usb_device_reset (struct usb_dev *dev)
 {
-  usb_lld_reset (REGNUAL_FEATURE_INIT);
+  usb_lld_reset (dev, REGNUAL_FEATURE_INIT);
 
   /* Initialize Endpoint 0 */
   usb_lld_setup_endpoint (ENDP0, EP_CONTROL, 0, ENDP0_RXADDR, ENDP0_TXADDR,
@@ -169,95 +169,101 @@ static uint32_t calc_crc32 (void)
 }
 
 
-void usb_cb_ctrl_write_finish (uint8_t req, uint8_t req_no,
-			       struct req_args *arg)
+static void
+usb_ctrl_write_finish (struct usb_dev *dev)
 {
-  uint8_t type_rcp = req & (REQUEST_TYPE|RECIPIENT);
+  struct device_req *arg = &dev->dev_req;
+  uint8_t type_rcp = arg->type & (REQUEST_TYPE|RECIPIENT);
 
-  if (type_rcp == (VENDOR_REQUEST | DEVICE_RECIPIENT) && USB_SETUP_SET (req))
+  if (type_rcp == (VENDOR_REQUEST | DEVICE_RECIPIENT)
+      && USB_SETUP_SET (arg->type))
     {
-      if (req_no == USB_REGNUAL_SEND && arg->value == 0)
+      if (arg->request == USB_REGNUAL_SEND && arg->value == 0)
 	result = calc_crc32 ();
-      else if (req_no == USB_REGNUAL_FLASH)
+      else if (arg->request == USB_REGNUAL_FLASH)
 	{
 	  uint32_t dst_addr = (0x08000000 + arg->value * 0x100);
 
 	  result = flash_write (dst_addr, (const uint8_t *)mem, 256);
 	}
-      else if (req_no == USB_REGNUAL_PROTECT && arg->value == 0)
+      else if (arg->request == USB_REGNUAL_PROTECT && arg->value == 0)
 	result = flash_protect ();
-      else if (req_no == USB_REGNUAL_FINISH && arg->value == 0)
+      else if (arg->request == USB_REGNUAL_FINISH && arg->value == 0)
 	nvic_system_reset ();
     }
 }
 
-int
-usb_cb_setup (uint8_t req, uint8_t req_no, struct req_args *arg)
+static int
+usb_setup (struct usb_dev *dev)
 {
-  uint8_t type_rcp = req & (REQUEST_TYPE|RECIPIENT);
+  struct device_req *arg = &dev->dev_req;
+  uint8_t type_rcp = arg->type & (REQUEST_TYPE|RECIPIENT);
 
   if (type_rcp == (VENDOR_REQUEST | DEVICE_RECIPIENT))
     {
-      if (USB_SETUP_GET (req))
+      if (USB_SETUP_GET (arg->type))
 	{
-	  if (req_no == USB_REGNUAL_MEMINFO)
+	  if (arg->request == USB_REGNUAL_MEMINFO)
 	    {
 	      const uint8_t *mem_info[2];
 
 	      mem_info[0] = (const uint8_t *)FLASH_START;
 	      mem_info[1] = (const uint8_t *)flash_end;
-	      return usb_lld_reply_request (mem_info, sizeof (mem_info), arg);
+	      return usb_lld_ctrl_send (dev, mem_info, sizeof (mem_info));
 	    }
-	  else if (req_no == USB_REGNUAL_RESULT)
-	    return usb_lld_reply_request (&result, sizeof (uint32_t), arg);
+	  else if (arg->request == USB_REGNUAL_RESULT)
+	    return usb_lld_ctrl_send (dev, &result, sizeof (uint32_t));
 	}
       else /* SETUP_SET */
 	{
-	  if (req_no == USB_REGNUAL_SEND)
+	  if (arg->request == USB_REGNUAL_SEND)
 	    {
 	      if (arg->value != 0 || arg->index + arg->len > 256)
-		return USB_UNSUPPORT;
+		return -1;
 
 	      if (arg->index + arg->len < 256)
 		memset ((uint8_t *)mem + arg->index + arg->len, 0xff,
 			256 - (arg->index + arg->len));
 
-	      usb_lld_set_data_to_recv (mem + arg->index, arg->len);
-	      return USB_SUCCESS;
+	      return usb_lld_ctrl_recv (dev, mem + arg->index, arg->len);
 	    }
-	  else if (req_no == USB_REGNUAL_FLASH && arg->len == 0
+	  else if (arg->request == USB_REGNUAL_FLASH && arg->len == 0
 		   && arg->index == 0)
 	    {
 	      uint32_t dst_addr = (0x08000000 + arg->value * 0x100);
 
 	      if (dst_addr + 256 <= flash_end)
-		return USB_SUCCESS;
+		return usb_lld_ctrl_ack (dev);
 	    }
-	  else if (req_no == USB_REGNUAL_PROTECT && arg->len == 0
+	  else if (arg->request == USB_REGNUAL_PROTECT && arg->len == 0
 		   && arg->value == 0 && arg->index == 0)
-	    return USB_SUCCESS;
-	  else if (req_no == USB_REGNUAL_FINISH && arg->len == 0
+	    return usb_lld_ctrl_ack (dev);
+	  else if (arg->request == USB_REGNUAL_FINISH && arg->len == 0
 		   && arg->value == 0 && arg->index == 0)
-	    return USB_SUCCESS;
+	    return usb_lld_ctrl_ack (dev);
 	}
     }
 
-  return USB_UNSUPPORT;
+  return -1;
 }
 
-int
-usb_cb_get_descriptor (uint8_t rcp, uint8_t desc_type, uint8_t desc_index,
-		       struct req_args *arg)
+static int
+usb_get_descriptor (struct usb_dev *dev)
 {
+  struct device_req *arg = &dev->dev_req;
+  uint8_t rcp = arg->type & RECIPIENT;
+  uint8_t desc_type = (arg->value >> 8);
+  uint8_t desc_index = (arg->value & 0xff);
+
   if (rcp != DEVICE_RECIPIENT)
-    return USB_UNSUPPORT;
+    return -1;
 
   if (desc_type == DEVICE_DESCRIPTOR)
-    return usb_lld_reply_request (regnual_device_desc,
-				  sizeof (regnual_device_desc), arg);
+    return usb_lld_ctrl_send (dev, regnual_device_desc,
+			      sizeof (regnual_device_desc));
   else if (desc_type == CONFIG_DESCRIPTOR)
-    return usb_lld_reply_request (regnual_config_desc,
-				     sizeof (regnual_config_desc), arg); 
+    return usb_lld_ctrl_send (dev, regnual_config_desc,
+			      sizeof (regnual_config_desc)); 
   else if (desc_type == STRING_DESCRIPTOR)
     {
       const uint8_t *str;
@@ -282,47 +288,40 @@ usb_cb_get_descriptor (uint8_t rcp, uint8_t desc_type, uint8_t desc_index,
 	  size = sizeof (regnual_string_serial);
 	  break;
 	default:
-	  return USB_UNSUPPORT;
+	  return -1;
 	}
 
-      return usb_lld_reply_request (str, size, arg);
+      return usb_lld_ctrl_send (dev, str, size);
     }
 
-  return USB_UNSUPPORT;
+  return -1;
 }
 
-int usb_cb_handle_event (uint8_t event_type, uint16_t value)
+static int
+usb_set_configuration (struct usb_dev *dev)
 {
-  (void)value;
+  uint8_t current_conf;
 
-  switch (event_type)
+  current_conf = usb_lld_current_configuration (dev);
+  if (current_conf == 0)
     {
-    case USB_EVENT_ADDRESS:
-    case USB_EVENT_CONFIG:
-      return USB_SUCCESS;
-    default:
-      break;
+      if (dev->dev_req.value != 1)
+	return -1;
+
+      usb_lld_set_configuration (dev, 1);
+    }
+  else if (current_conf != dev->dev_req.value)
+    {
+      if (dev->dev_req.value != 0)
+	return -1;
+
+      usb_lld_set_configuration (dev, 0);
     }
 
-  return USB_UNSUPPORT;
+  /* Do nothing when current_conf == value */
+  return usb_lld_ctrl_ack (dev);
 }
 
-int usb_cb_interface (uint8_t cmd, struct req_args *arg)
-{
-  (void)cmd; (void)arg;
-  return USB_UNSUPPORT;
-}
-
-void usb_cb_rx_ready (uint8_t ep_num)
-{
-  (void)ep_num;
-}
-
-void usb_cb_tx_done (uint8_t ep_num, uint32_t len)
-{
-  (void)ep_num;
-  (void)len;
-}
 
 static void wait (int count)
 {
@@ -357,6 +356,7 @@ static void nvic_enable_intr (uint8_t irq_num)
 }
 
 #define USB_LP_CAN1_RX0_IRQn	 20
+static struct usb_dev dev;
 
 int
 main (int argc, char *argv[])
@@ -372,7 +372,7 @@ main (int argc, char *argv[])
    * USB interrupt is disabled by NVIC setting.
    * We enable the interrupt again by nvic_enable_intr.
    */
-  usb_lld_init (REGNUAL_FEATURE_INIT);
+  usb_lld_init (&dev, REGNUAL_FEATURE_INIT);
   nvic_enable_intr (USB_LP_CAN1_RX0_IRQn);
 
   while (1)
@@ -382,4 +382,70 @@ main (int argc, char *argv[])
       set_led (0);
       wait (WAIT);
     }
+}
+
+void
+usb_interrupt_handler (void)
+{
+  uint8_t ep_num;
+  int e;
+
+  e = usb_lld_event_handler (&dev);
+  ep_num = USB_EVENT_ENDP (e);
+
+  if (ep_num == 0)
+    switch (USB_EVENT_ID (e))
+      {
+      case USB_EVENT_DEVICE_RESET:
+	usb_device_reset (&dev);
+	break;
+
+      case USB_EVENT_DEVICE_ADDRESSED:
+	break;
+
+      case USB_EVENT_GET_DESCRIPTOR:
+	if (usb_get_descriptor (&dev) < 0)
+	  usb_lld_ctrl_error (&dev);
+	break;
+
+      case USB_EVENT_SET_CONFIGURATION:
+	if (usb_set_configuration (&dev) < 0)
+	  usb_lld_ctrl_error (&dev);
+	break;
+
+      case USB_EVENT_SET_INTERFACE:
+	usb_lld_ctrl_error (&dev);
+	break;
+
+      case USB_EVENT_CTRL_REQUEST:
+	/* Device specific device request.  */
+	if (usb_setup (&dev) < 0)
+	  usb_lld_ctrl_error (&dev);
+	break;
+
+      case USB_EVENT_GET_STATUS_INTERFACE:
+	usb_lld_ctrl_error (&dev);
+	break;
+
+      case USB_EVENT_GET_INTERFACE:
+	usb_lld_ctrl_error (&dev);
+	break;
+
+      case USB_EVENT_SET_FEATURE_DEVICE:
+      case USB_EVENT_SET_FEATURE_ENDPOINT:
+      case USB_EVENT_CLEAR_FEATURE_DEVICE:
+      case USB_EVENT_CLEAR_FEATURE_ENDPOINT:
+	usb_lld_ctrl_ack (&dev);
+	break;
+
+      case USB_EVENT_CTRL_WRITE_FINISH:
+	/* Control WRITE transfer finished.  */
+	usb_ctrl_write_finish (&dev);
+	break;
+
+      case USB_EVENT_OK:
+      case USB_EVENT_DEVICE_SUSPEND:
+      default:
+	break;
+      }
 }

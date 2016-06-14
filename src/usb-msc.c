@@ -86,13 +86,12 @@ static void usb_start_transmit (const uint8_t *p, size_t n)
 
 /* "Data Transmitted" callback */
 void
-EP6_IN_Callback (void)
+EP6_IN_Callback (uint16_t len)
 {
-  size_t n;
+  size_t n = len;
 
   chopstx_mutex_lock (msc_mutex);
 
-  n = (size_t)usb_lld_tx_data_len (ENDP6);
   ep6_in.txbuf += n;
   ep6_in.txcnt += n;
   ep6_in.txsize -= n;
@@ -132,14 +131,13 @@ static void usb_start_receive (uint8_t *p, size_t n)
 
 /* "Data Received" call back */
 void
-EP6_OUT_Callback (void)
+EP6_OUT_Callback (uint16_t len)
 {
-  size_t n;
+  size_t n = len;
   int err = 0;
 
   chopstx_mutex_lock (msc_mutex);
 
-  n =  (size_t)usb_lld_rx_data_len (ENDP6);
   if (n > ep6_out.rxsize)
     {				/* buffer overflow */
       err = 1;

@@ -345,21 +345,24 @@ static const struct desc string_descriptors[] = {
 #define USB_DT_REPORT			0x22
 
 int
-usb_cb_get_descriptor (uint8_t rcp, uint8_t desc_type, uint8_t desc_index,
-		       struct req_args *arg)
+usb_get_descriptor (struct usb_dev *dev)
 {
+  struct device_req *arg = &dev->dev_req;
+  uint8_t rcp = arg->type & RECIPIENT;
+  uint8_t desc_type = (arg->value >> 8);
+  uint8_t desc_index = (arg->value & 0xff);
+
   if (rcp == DEVICE_RECIPIENT)
     {
       if (desc_type == DEVICE_DESCRIPTOR)
-	return usb_lld_reply_request (device_desc, sizeof (device_desc), arg);
+	return usb_lld_ctrl_send (dev, device_desc, sizeof (device_desc));
       else if (desc_type == CONFIG_DESCRIPTOR)
-	return usb_lld_reply_request (config_desc, sizeof (config_desc), arg);
+	return usb_lld_ctrl_send (dev, config_desc, sizeof (config_desc));
       else if (desc_type == STRING_DESCRIPTOR)
 	{
 	  if (desc_index < NUM_STRING_DESC)
-	    return usb_lld_reply_request (string_descriptors[desc_index].desc,
-					  string_descriptors[desc_index].size,
-					  arg);
+	    return usb_lld_ctrl_send (dev, string_descriptors[desc_index].desc,
+				      string_descriptors[desc_index].size);
 #ifdef USE_SYS3
 	  else if (desc_index == NUM_STRING_DESC)
 	    {
@@ -377,7 +380,7 @@ usb_cb_get_descriptor (uint8_t rcp, uint8_t desc_type, uint8_t desc_index,
 		}
 	      usbbuf[0] = len = i*2 + 2;
 	      usbbuf[1] = STRING_DESCRIPTOR;
-	      return usb_lld_reply_request (usbbuf, len, arg);
+	      return usb_lld_ctrl_send (dev, usbbuf, len);
 	    }
 #endif
 	}
@@ -388,14 +391,13 @@ usb_cb_get_descriptor (uint8_t rcp, uint8_t desc_type, uint8_t desc_index,
       if (arg->index == HID_INTERFACE)
 	{
 	  if (desc_type == USB_DT_HID)
-	    return usb_lld_reply_request (config_desc+CCID_TOTAL_LENGTH+9, 9,
-					  arg);
+	    return usb_lld_ctrl_send (dev, config_desc+CCID_TOTAL_LENGTH+9, 9);
 	  else if (desc_type == USB_DT_REPORT)
-	    return usb_lld_reply_request (hid_report_desc, HID_REPORT_DESC_SIZE,
-					  arg);
+	    return usb_lld_ctrl_send (dev, hid_report_desc,
+				      HID_REPORT_DESC_SIZE);
 	}
     }
 #endif
 
-  return USB_UNSUPPORT;
+  return -1;
 }
