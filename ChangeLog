@@ -1,3 +1,10 @@
+2016-06-15  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/gnuk.ld.in (__process2_stack_size__): Update
+	thread size for rng by examining NeuG.
+
+	* src/usb-ccid.c (poll_event_intr): New.
+
 2016-06-14  Niibe Yutaka  <gniibe@fsij.org>
 
 	* regnual/regnual.c (usb_device_reset): Rename from
