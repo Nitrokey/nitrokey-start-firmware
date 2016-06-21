@@ -9,17 +9,19 @@ Personalize your Gnuk Token
 Invoke GnuPG with the option ``--card-edit``.  ::
 
   $ gpg --card-edit
-  Application ID ...: D276000124010200FFFE330069060000
+
+  Reader ...........: 234B:0000:FSIJ-1.2.0-87193059:0
+  Application ID ...: D276000124010200FFFE871930590000
   Version ..........: 2.0
   Manufacturer .....: unmanaged S/N range
-  Serial number ....: 33006906
+  Serial number ....: 87193059
   Name of cardholder: [not set]
   Language prefs ...: [not set]
   Sex ..............: unspecified
   URL of public key : [not set]
   Login data .......: [not set]
   Signature PIN ....: forced
-  Key attributes ...: 2048R 2048R 2048R
+  Key attributes ...: rsa2048 rsa2048 rsa2048
   Max. PIN lengths .: 127 127 127
   PIN retry counter : 3 3 3
   Signature counter : 0
@@ -58,7 +60,7 @@ login, and URL.  URL specifies the place where I put my public keys. ::
   Sex ((M)ale, (F)emale or space): m
   
   gpg/card> url
-  URL to retrieve public key: http://www.gniibe.org/gniibe.asc
+  URL to retrieve public key: http://www.gniibe.org/gniibe-20150813.asc
   
   gpg/card> login
   Login data (account name): gniibe
@@ -72,4 +74,4 @@ Then, I quit. ::
   
   gpg/card> quit
 
-That's all.
+That's all in this step.

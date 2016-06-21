@@ -28,10 +28,16 @@ To stop SCDAEMON and let it exit, type::
 Then, you can confirm that there is no SCDAEMON any more by ``ps``
 command.
 
+Or, you can use ``gpgconf`` command.  Type::
+
+	$ gpgconf --reload scdameon
+
+will do the samething.
+
 
 Let GPG-AGENT/SCDAEMON learn
 ============================
 
-To let gpg-agent/scdaemon learn from Gnuk Token, type::
+To let gpg-agent/scdaemon "learn" from Gnuk Token, type::
 
 	$ gpg-connect-agent learn /bye

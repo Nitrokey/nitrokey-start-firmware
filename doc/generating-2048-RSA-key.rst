@@ -9,31 +9,31 @@ Key length of RSA
 =================
 
 In 2005, NIST (National Institute of Standards and Technology, USA)
-has issued the first revision of NIST Special Publication 800-57, 
+issued the first revision of NIST Special Publication 800-57, 
 "Recommendation for Key Management".
 
 In 800-57, NIST advises that 1024-bit RSA keys will no longer be
 viable after 2010 and advises moving to 2048-bit RSA keys.  NIST
 advises that 2048-bit keys should be viable until 2030.
 
-As of 2010, GnuPG's default for generating RSA key is 2048-bit.
+As of 2016, GnuPG's default for generating RSA key is 2048-bit.
 
 Some people have preference on RSA 4096-bit keys, considering
 "longer is better".
 
 However, "longer is better" is not always true.  When it's long, it
-requires more computational resource, memory and storage, and it
-consumes more power for nomal usages.  These days, many people has
+requires more computational resource, memory, and storage.  Further,
+it consumes more power for nomal usages.  These days, many people has
 enough computational resource, that would be true, but less is better
-for power consumption.
+for power consumption, isn't it?
 
 For security, the key length is just a single factor.  We had and will have
 algorithm issues, too.  It is true that it's difficult to update
-our public keys, but this problem wouldn't be solved by just have
+our public keys, but this problem wouldn't be solved by just having
 longer keys.
 
-We deliberately support only RSA 2048-bit keys for Gnuk, considering
-device computation power and host software constraints.
+We deliberately recommend use of RSA 2048-bit keys for Gnuk,
+considering device computation power and host software constraints.
 
 Thus, the key size is 2048-bit in the examples below.
 
@@ -43,94 +43,38 @@ Generating keys on host PC
 
 Here is the example session to generate main key and a subkey for encryption.
 
-I invoke GnuPG with ``--gen-key`` option. ::
+I invoke GnuPG with ``--quick-gen-key`` option. ::
 
-  $ gpg --gen-key
-  gpg (GnuPG) 1.4.11; Copyright (C) 2010 Free Software Foundation, Inc.
-  This is free software: you are free to change and redistribute it.
-  There is NO WARRANTY, to the extent permitted by law.
-
-and GnuPG asks kind of key.  Select ``RSA and RSA``. ::
-
-  Please select what kind of key you want:
-     (1) RSA and RSA (default)
-     (2) DSA and Elgamal
-     (3) DSA (sign only)
-     (4) RSA (sign only)
-  Your selection? 1
-  RSA keys may be between 1024 and 4096 bits long.
-
-and select 2048-bit (as Gnuk Token only supports this). ::
-
-  What keysize do you want? (2048) 
-  Requested keysize is 2048 bits
-
-and select expiration of the key. ::
-
-  Please specify how long the key should be valid.
-           0 = key does not expire
-        <n>  = key expires in n days
-        <n>w = key expires in n weeks
-        <n>m = key expires in n months
-        <n>y = key expires in n years
-  Key is valid for? (0) 0
-  Key does not expire at all
-
-Confirm key types, bitsize and expiration. ::
-
-  Is this correct? (y/N) y
-
-Then enter user ID. ::
-
-  You need a user ID to identify your key; the software constructs the user ID
-  from the Real Name, Comment and Email Address in this form:
-      "Heinrich Heine (Der Dichter) <heinrichh@duesseldorf.de>"
-  
-  Real name: Niibe Yutaka
-  Email address: gniibe@fsij.org
-  Comment: 
-  You selected this USER-ID:
+  $ gpg --quick-gen-key "Niibe Yutaka <gniibe@fsij.org>"
+  About to create a key for:
       "Niibe Yutaka <gniibe@fsij.org>"
-  
-  Change (N)ame, (C)omment, (E)mail or (O)kay/(Q)uit? o
 
-and enter passphrase for this **key on host PC**.
+  Continue? (Y/n) y
+
+It askes passphrase for this **key on host PC**.
 Note that this is a passphrase for the key on host PC.
 It is different thing to the passphrase of Gnuk Token.
-
 We enter two same inputs two times
-(once for passphrase input, and another for confirmation). ::
-
-  You need a Passphrase to protect your secret key.
-  <PASSWORD-KEY-ON-PC>
+(once for passphrase input, and another for confirmation),
+<PASSWORD-KEY-ON-PC>.
 
 Then, GnuPG generate keys.  It takes some time.  ::
-
-  We need to generate a lot of random bytes. It is a good idea to perform
-  some other action (type on the keyboard, move the mouse, utilize the
-  disks) during the prime generation; this gives the random number
-  generator a better chance to gain enough entropy.
-  ...+++++
-  +++++
-  We need to generate a lot of random bytes. It is a good idea to perform
-  some other action (type on the keyboard, move the mouse, utilize the
-  disks) during the prime generation; this gives the random number
-  generator a better chance to gain enough entropy.
-  ..+++++
   
-  Not enough random bytes available.  Please do some other work to give
-  the OS a chance to collect more entropy! (Need 15 more bytes)
-  ...+++++
-  gpg: key 4CA7BABE marked as ultimately trusted
+  We need to generate a lot of random bytes. It is a good idea to perform
+  some other action (type on the keyboard, move the mouse, utilize the
+  disks) during the prime generation; this gives the random number
+  generator a better chance to gain enough entropy.
+  gpg: key 76A9392B02CD15D1 marked as ultimately trusted
+  gpg: revocation certificate stored as '/home/gniibe.gnupg/openpgp-revocs.d/36CE0B8408CFE5CD07F94ACF76A9392B02CD15D1.rev'
   public and secret key created and signed.
-  
+
   gpg: checking the trustdb
-  gpg: 3 marginal(s) needed, 1 complete(s) needed, PGP trust model
-  pub   2048R/4CA7BABE 2010-10-15
-        Key fingerprint = 1241 24BD 3B48 62AF 7A0A  42F1 00B4 5EBD 4CA7 BABE
-  uid                  Niibe Yutaka <gniibe@fsij.org>
-  sub   2048R/084239CF 2010-10-15
-  $ 
+  gpg: marginals needed: 3  completes needed: 1  trust model: pgp
+  gpg: depth: 0  valid:   1  signed:   0  trust: 0-, 0q, 0n, 0m, 0f, 1u
+  pub   rsa2048 2016-06-20 [S]
+        36CE0B8408CFE5CD07F94ACF76A9392B02CD15D1
+  uid           [ultimate] Niibe Yutaka <gniibe@fsij.org>
+  sub   rsa2048 2016-06-20 []
 
 Done.
 
@@ -139,16 +83,17 @@ Authentication subkey is not that common,
 but very useful (for SSH authentication).
 As it is not that common, we need ``--expert`` option for GnuPG. ::
 
-  $ gpg --expert --edit-key 4CA7BABE
-  gpg (GnuPG) 1.4.11; Copyright (C) 2010 Free Software Foundation, Inc.
+  gpg (GnuPG) 2.1.13; Copyright (C) 2016 Free Software Foundation, Inc.
   This is free software: you are free to change and redistribute it.
   There is NO WARRANTY, to the extent permitted by law.
-  
+
   Secret key is available.
-  
-  pub  2048R/4CA7BABE  created: 2010-10-15  expires: never       usage: SC  
-                       trust: ultimate      validity: ultimate
-  sub  2048R/084239CF  created: 2010-10-15  expires: never       usage: E   
+
+  sec  rsa2048/76A9392B02CD15D1
+       created: 2016-06-20  expires: never       usage: SC  
+       trust: ultimate      validity: ultimate
+  ssb  rsa2048/4BD1EB26F0E607E6
+       created: 2016-06-20  expires: never       usage: E   
   [ultimate] (1). Niibe Yutaka <gniibe@fsij.org>
   
   gpg> 
@@ -157,18 +102,9 @@ Here, it displays that there are main key and a subkey.
 It prompts sub-command with ``gpg>`` .
 
 Here, we enter ``addkey`` sub-command.
-Then, we enter the passphrase of **key on host PC**.
-It's the one we entered above as <PASSWORD-KEY-ON-PC>. ::
 
   gpg> addkey
-  Key is protected.
     
-  You need a passphrase to unlock the secret key for
-  user: "Niibe Yutaka <gniibe@fsij.org>"
-  2048-bit RSA key, ID 4CA7BABE, created 2010-10-15
-  <PASSWORD-KEY-ON-PC>
-  gpg: gpg-agent is not available in this session
-
 GnuPG asks kind of key.  We select ``RSA (set your own capabilities)``. ::
 
   Please select what kind of key you want:
@@ -178,6 +114,10 @@ GnuPG asks kind of key.  We select ``RSA (set your own capabilities)``. ::
      (6) RSA (encrypt only)
      (7) DSA (set your own capabilities)
      (8) RSA (set your own capabilities)
+    (10) ECC (sign only)
+    (11) ECC (set your own capabilities)
+    (12) ECC (encrypt only)
+    (13) Existing key
   Your selection? 8
 
 And select ``Authenticate`` for the capabilities for this key.
@@ -245,24 +185,28 @@ Then, we confirm that we really create the key. ::
   Is this correct? (y/N) y
   Really create? (y/N) y
 
+Then, it askes the passphrase, it is the passphrase of **key on host PC**.
+It's the one we entered above as <PASSWORD-KEY-ON-PC>.
+
 Then, GnuPG generate the key. ::
 
   We need to generate a lot of random bytes. It is a good idea to perform
   some other action (type on the keyboard, move the mouse, utilize the
   disks) during the prime generation; this gives the random number
   generator a better chance to gain enough entropy.
-  .......+++++
-  +++++
 
-  pub  2048R/4CA7BABE  created: 2010-10-15  expires: never       usage: SC  
-                       trust: ultimate      validity: ultimate
-  sub  2048R/084239CF  created: 2010-10-15  expires: never       usage: E   
-  sub  2048R/5BB065DC  created: 2010-10-22  expires: never       usage: A   
+  sec  rsa2048/76A9392B02CD15D1
+       created: 2016-06-20  expires: never       usage: SC  
+       trust: ultimate      validity: ultimate
+  ssb  rsa2048/4BD1EB26F0E607E6
+       created: 2016-06-20  expires: never       usage: E   
+  ssb  rsa2048/F3BA52C64012198D
+       created: 2016-06-20  expires: never       usage: A   
   [ultimate] (1). Niibe Yutaka <gniibe@fsij.org>
 
   gpg> 
 
-We save the key (to the storage of the host PC. ::
+We save the key (to the storage of the host PC). ::
 
   gpg> save
   $ 

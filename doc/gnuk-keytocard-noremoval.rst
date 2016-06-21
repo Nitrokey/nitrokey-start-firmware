@@ -22,4 +22,4 @@ Lastly, I quit GnuPG.  Note that I **don't** save changes. ::
   $ 
 
 All keys are imported to Gnuk Token now.
-Still, secret keys are available on PC.
+Still, secret keys are available on PC, too.

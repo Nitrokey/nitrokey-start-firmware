@@ -22,24 +22,19 @@ tool/stlinkv2.py.
 OpenOCD
 -------
 
-For JTAG/SWD debugger, we can use OpenOCD somehow.
-
-Note that ST-Link/V2 was *not* supported by OpenOCD 0.5.0.
-
-It is supported by version 0.6 or later somehow, but still, you can't
-enable protection of flash ROM with OpenOCD using ST-Link/V2.
+For JTAG/SWD debugger, we can use OpenOCD.
 
 
 GNU Toolchain
 -------------
 
 You need GNU toolchain and newlib for 'arm-none-eabi' target.
+In Debian, we can just apt-get packages of: gcc-arm-none-eabi, binutils-arm-none-eabi, gdb-arm-none-eabi and libnewlib-arm-none-eabi. 
 
-There is "gcc-arm-embedded" project.  See:
+For other distributiions, there is "gcc-arm-embedded" project.  See:
 https://launchpad.net/gcc-arm-embedded/
 
-It is based on GCC 4.8 (as of December, 2013).  We are using "-O3 -Os"
-for compiler option.
+We are using "-O3 -Os" for compiler option.
 
 
 Building Gnuk

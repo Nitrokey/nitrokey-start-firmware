@@ -10,10 +10,13 @@ PC/SC Lite, as it has its own device configuration.
 udev rules for Gnuk Token
 =========================
 
-In case of Debian, there is a file /lib/udev/rules.d/60-gnupg.rules,
-when you install "gnupg" package.  This is the place we need to
-change, if your installation is older (than jessie).  Newer "gnupg"
-package (1.4.15-1 or later) has already supported Gnuk Token.
+In case of Debian, there is a file /lib/udev/rules.d/60-gnupg.rules
+(or /lib/udev/rules.d/60-scdamon.rules for newer version),
+when you install "gnupg" package (or "scdaemon" package).
+This is the place we need to
+change, if your installation is older than jessie.  Newer "gnupg"
+package (1.4.15-1 or later) or "scdaemon" package has already
+supported Gnuk Token.
 
 If needed, please add lines for Gnuk Token to give a desktop user the
 permission to use the device.  We specify USB ID of Gnuk Token (by
@@ -30,7 +33,7 @@ FSIJ)::
     +
      LABEL="gnupg_rules_end"
 
-When we install "gnupg2" package only (with no "gnupg" package),
+When we only install "gnupg2" package for 2.0 (with no "gnupg" package),
 there will be no udev rules (there is a bug report #543217 for this issue).
 In this case, we need something like this in /etc/udev/rules.d/60-gnuk.rules::
 

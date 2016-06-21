@@ -22,41 +22,40 @@ Besides, some people sometimes prefer the word "passphrase" to
 same thing and it just refer user-password or admin-password.
 
 
-Set up PW1, PW3 and reset code
-==============================
+Set up PW1 and PW3
+==================
 
 Invoke GnuPG with the option ``--card-edit``.  ::
 
-  $ gpg --card-edit
-  Application ID ...: D276000124010200F517000000010000
+  Reader ...........: 234B:0000:FSIJ-1.2.0-87193059:0
+  Application ID ...: D276000124010200FFFE871930590000
   Version ..........: 2.0
-  Manufacturer .....: FSIJ
-  Serial number ....: 00000001
+  Manufacturer .....: unmanaged S/N range
+  Serial number ....: 87193059
   Name of cardholder: Yutaka Niibe
   Language prefs ...: ja
   Sex ..............: male
-  URL of public key : http://www.gniibe.org/gniibe.asc
+  URL of public key : http://www.gniibe.org/gniibe-20150813.asc
   Login data .......: gniibe
   Signature PIN ....: not forced
-  Key attributes ...: 2048R 2048R 2048R
+  Key attributes ...: ed25519 cv25519 ed25519
   Max. PIN lengths .: 127 127 127
   PIN retry counter : 3 3 3
   Signature counter : 0
-  Signature key ....: 1241 24BD 3B48 62AF 7A0A  42F1 00B4 5EBD 4CA7 BABE
-        created ....: 2010-10-15 06:46:33
-  Encryption key....: 42E1 E805 4E6F 1F30 26F2  DC79 79A7 9093 0842 39CF
-        created ....: 2010-10-15 06:46:33
-  Authentication key: B4D9 7142 C42D 6802 F5F7  4E70 9C33 B6BA 5BB0 65DC
-        created ....: 2010-10-22 06:06:36
-  General key info..: 
-  pub  2048R/4CA7BABE 2010-10-15 NIIBE Yutaka <gniibe@fsij.org>
-  sec>  2048R/4CA7BABE  created: 2010-10-15  expires: never     
-                        card-no: F517 00000001
-  ssb>  2048R/084239CF  created: 2010-10-15  expires: never     
-                        card-no: F517 00000001
-  ssb>  2048R/5BB065DC  created: 2010-10-22  expires: never     
-                        card-no: F517 00000001
-
+  Signature key ....: 249C B377 1750 745D 5CDD  323C E267 B052 364F 028D
+        created ....: 2015-08-12 07:10:48
+  Encryption key....: E228 AB42 0F73 3B1D 712D  E50C 850A F040 D619 F240
+        created ....: 2015-08-12 07:10:48
+  Authentication key: E63F 31E6 F203 20B5 D796  D266 5F91 0521 FAA8 05B1
+        created ....: 2015-08-12 07:16:14
+  General key info..: pub  ed25519/E267B052364F028D 2015-08-12 NIIBE Yutaka <gniibe@fsij.org>
+  sec>  ed25519/E267B052364F028D  created: 2015-08-12  expires: never     
+                                  card-no: FFFE 87193059
+  ssb>  cv25519/850AF040D619F240  created: 2015-08-12  expires: never     
+                                  card-no: FFFE 87193059
+  ssb>  ed25519/5F910521FAA805B1  created: 2015-08-12  expires: never     
+                                  card-no: FFFE 87193059
+  
   gpg/card> 
 
 It shows the status of the card (as same as the output of ``gpg --card-status``).
@@ -71,7 +70,7 @@ Note that *the length of PIN should be more than (or equals to) 8* for
 "admin less mode".  ::
 
   gpg/card> passwd
-  gpg: OpenPGP card no. D276000124010200F517000000010000 detected
+  gpg: OpenPGP card no. D276000124010200FFFE871930590000 detected
   
   Please enter the PIN
   Enter PIN: 123456
@@ -94,15 +93,24 @@ please change admin-password at first.
 Then, the token works as same as OpenPGPcard specification
 with regards to PW1 and PW3.)
 
-Lastly, I setup reset code, entering admin mode.
-Having reset code, you can unblock PIN when the token will be blocked
-(by wrong attempt to entering PIN).  This is optional step. ::
+
+Set up of reset code (optional)
+===============================
+
+Lastly, we can setup reset code, entering admin mode.
+
+Having reset code, we can unblock the token when the token will be blocked
+(by wrong attempts to entering passphrase).  Note that this is optional step.
+
+When reset code is known to someone, that person can try to guess your passphrase of PW1 more times by unblocking the token.  So, I don't use this feature by myself.
+
+If we do, here is the interaction. ::
 
   gpg/card> admin
   Admin commands are allowed
   
   gpg/card> passwd
-  gpg: OpenPGP card no. D276000124010200F517000000010000 detected
+  gpg: OpenPGP card no. D276000124010200FFFE871930590000 detected
   
   1 - change PIN
   2 - unblock PIN
@@ -135,4 +143,4 @@ Then, I quit. ::
 
   gpg/card> quit
 
-That's all.
+That's all in this step.
