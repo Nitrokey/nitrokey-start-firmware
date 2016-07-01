@@ -1482,9 +1482,13 @@ static void
 poll_event_intr (uint32_t *timeout, struct eventflag *ev, chopstx_intr_t *intr)
 {
   chopstx_poll_cond_t poll_desc;
+  struct chx_poll_head *pd_array[2] = {
+    (struct chx_poll_head *)intr,
+    (struct chx_poll_head *)&poll_desc
+  };
 
   eventflag_prepare_poll (ev, &poll_desc);
-  chopstx_poll (timeout, 2, intr, &poll_desc);
+  chopstx_poll (timeout, 2, pd_array);
 }
 
 void *
@@ -1646,7 +1650,7 @@ ccid_thread (void *arg)
   /* Loading reGNUal.  */
   while (bDeviceState != UNCONNECTED)
     {
-      chopstx_poll (NULL, 1, &interrupt);
+      chopstx_intr_wait (&interrupt);
       usb_event_handle (&dev);
     }
 

@@ -1,3 +1,9 @@
+2016-07-01  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* chopstx: Update to 1.1.
+	* src/usb-ccid.c (poll_event_intr, ccid_thread): Follow the
+	change.
+
 2016-06-21  Niibe Yutaka  <gniibe@fsij.org>
 
 	* doc/index.rst: Update documentation by an example
