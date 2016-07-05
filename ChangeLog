@@ -1,3 +1,8 @@
+2016-07-04  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* doc/conf.py: Remove 'sphinx.ext.pngmath' and 'sphinx.ext.mathjax'.
+	Reported by Kenji Rikitake.
+
 2016-07-01  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* chopstx: Update to 1.1.

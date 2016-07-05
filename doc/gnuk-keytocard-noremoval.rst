@@ -10,7 +10,7 @@ I don't save changes on PC after keytocard.
 
 For the steps before the last step, please see `keytocard with removing keys on PC`_.
 
-.. _keytocard removing keys: gnuk-keytocard
+.. _keytocard with removing keys on PC: gnuk-keytocard
 
 Here is the session log of the last step.
 
