@@ -415,8 +415,8 @@ usb_ctrl_write_finish (struct usb_dev *dev)
 
 	  hid_report_saved = hid_report;
 	}
-    }
 # endif
+    }
 #endif
 }
 

@@ -28,7 +28,7 @@
 #include "config.h"
 #include "board.h"
 #include "gnuk.h"
-#include "stm32f103.h"
+#include "mcu/stm32f103.h"
 
 #ifdef DEBUG
 #define DEBUG_CIR 1
@@ -51,10 +51,9 @@ cir_ext_enable (void)
   EXTI->IMR |= EXTI_IMR;
 }
 
-
-static chopstx_t pin_thread;
-static uint32_t wait_usec;
-static uint8_t notification;
+static chopstx_mutex_t cir_input_mtx;
+static chopstx_cond_t cir_input_cnd;
+static int input_avail;
 
 uint8_t pin_input_buffer[MAX_PIN_CHARS];
 uint8_t pin_input_len;
@@ -501,8 +500,17 @@ hex (int x)
 }
 
 static int
+check_input (void *arg)
+{
+  (void)arg;
+  return input_avail;
+}
+
+static int
 cir_getchar (uint32_t timeout)
 {
+  chopstx_poll_cond_t poll_desc;
+  struct chx_poll_head *pd_array[1] = { (struct chx_poll_head *)&poll_desc };
   uint16_t cir_addr;
 #if defined(DEBUG_CIR)
   uint16_t *p;
@@ -514,10 +522,15 @@ cir_getchar (uint32_t timeout)
 
   cir_ll_init ();
 
-  notification = 0;
-  wait_usec = timeout;
-  chopstx_usec_wait_var (&wait_usec);
-  if (notification == 0)
+  poll_desc.type = CHOPSTX_POLL_COND;
+  poll_desc.ready = 0;
+  poll_desc.cond = &cir_input_cnd;
+  poll_desc.mutex = &cir_input_mtx;
+  poll_desc.check = check_input;
+  poll_desc.arg = NULL;
+
+  input_avail = 0;
+  if (chopstx_poll (&timeout, 1, pd_array) == 0)
     return -1;
 
   /* Sleep 200ms to avoid detecting chatter inputs.  */
@@ -631,13 +644,10 @@ cir_getchar (uint32_t timeout)
 int
 pinpad_getline (int msg_code, uint32_t timeout)
 {
-  extern chopstx_t openpgp_card_thd;
-
   (void)msg_code;
 
   DEBUG_INFO (">>>\r\n");
 
-  pin_thread = openpgp_card_thd;
   pin_input_len = 0;
   while (1)
     {
@@ -663,7 +673,6 @@ pinpad_getline (int msg_code, uint32_t timeout)
     }
 
   cir_ext_disable ();
-  pin_thread = NULL;
 
   return pin_input_len;
 }
@@ -932,13 +941,12 @@ cir_timer_interrupt (void)
 	    {
 	      /*
 	       * Notify the thread, when it's waiting the input.
-	       * If else, throw away the input.
+	       * If else, the input is thrown away.
 	       */
-	      if (pin_thread)
-		{
-		  notification = 1;
-		  chopstx_wakeup_usec_wait (pin_thread);
-		}
+	      chopstx_mutex_lock (&cir_input_mtx);
+	      input_avail = 1;
+	      chopstx_cond_signal (&cir_input_cnd);
+	      chopstx_mutex_unlock (&cir_input_mtx);
 	    }
 
 #if defined(DEBUG_CIR)
@@ -1004,6 +1012,9 @@ ext_main (void *arg)
 void
 cir_init (void)
 {
+  chopstx_mutex_init (&cir_input_mtx);
+  chopstx_cond_init (&cir_input_cnd);
+
   /*
    * We use XOR function for three signals: TIMx_CH1, TIMx_CH2, and TIMx_CH3.
    *

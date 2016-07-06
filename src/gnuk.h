@@ -233,6 +233,7 @@ int gpg_change_keystring (int who_old, const uint8_t *old_ks,
 extern struct key_data kd[3];
 
 #ifdef DEBUG
+void stdout_init (void);
 #define DEBUG_MORE 1
 /*
  * Debug functions in debug.c

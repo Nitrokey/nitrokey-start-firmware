@@ -709,7 +709,7 @@ usb_tx_done (uint8_t ep_num, uint16_t len)
       chopstx_mutex_unlock (&stdout.m_dev);
     }
 #endif
-#ifdef PINPAD_SUPPORT
+#ifdef PINPAD_DND_SUPPORT
   else if (ep_num == ENDP6)
     EP6_IN_Callback (len);
 #endif
@@ -1659,7 +1659,9 @@ ccid_thread (void *arg)
 
 
 #ifdef DEBUG
-static void
+#include "usb-cdc.h"
+
+void
 stdout_init (void)
 {
   chopstx_mutex_init (&stdout.m);
