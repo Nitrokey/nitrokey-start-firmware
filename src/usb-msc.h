@@ -18,8 +18,8 @@
 #define SCSI_WRITE10                0x2A
 #define SCSI_VERIFY10               0x2F
 #define SCSI_READ_FORMAT_CAPACITIES 0x23
-
 #define SCSI_SYNCHRONIZE_CACHE      0x35
+#define SCSI_REPORT_LUN             0xA0
 
 #define MSC_IDLE        0
 #define MSC_DATA_OUT    1

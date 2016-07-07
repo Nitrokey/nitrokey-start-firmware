@@ -345,7 +345,7 @@ usb_setup (struct usb_dev *dev)
 #ifdef PINPAD_DND_SUPPORT
       else if (arg->index == MSC_INTERFACE)
 	{
-	  if (USB_SETUP_GET (req))
+	  if (USB_SETUP_GET (arg->type))
 	    {
 	      if (arg->request == MSC_GET_MAX_LUN_COMMAND)
 		return usb_lld_ctrl_send (dev, lun_table, sizeof (lun_table));
