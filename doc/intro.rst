@@ -9,6 +9,8 @@ Gnuk is an implementation of USB cryptographic token for GNU Privacy
 Guard.  Gnuk supports OpenPGP card protocol version 2, and it runs on
 STM32F103 processor.
 
+This document explains about Gnuk 1.2, which comes with ECC algorithm.
+
 
 Cryptographic token and feature of Gnuk
 ---------------------------------------
@@ -51,7 +53,7 @@ Host prerequisites for using Gnuk Token
 
 * [Optional] SSH: openssh
 
-* [optional] Web: scute, firefox
+* [experimental] Web: scute, firefox
 
 
 Usages
@@ -60,4 +62,4 @@ Usages
 * Sign with GnuPG
 * Decrypt with GnuPG
 * Use with OpenSSH through gpg-agent (as ssh-agent)
-* Use with Firefox through Scute for X.509 client certificate authentication
+* [experimental] Use with Firefox through Scute for X.509 client certificate authentication

@@ -20,7 +20,7 @@ Contents:
    udev-rules.rst
    gnuk-token-initial-configuration.rst
    gnuk-personalization.rst
-   generating-2048-RSA-key.rst
+   generating-key.rst
    gnuk-keytocard.rst
    gnuk-keytocard-noremoval.rst
    gnuk-passphrase-setting.rst
