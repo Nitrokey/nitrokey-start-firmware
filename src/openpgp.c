@@ -1369,23 +1369,10 @@ process_command_apdu (void)
     }
 }
 
-static void * card_thread (chopstx_t thd, struct eventflag *ccid_comm);
-
-void * __attribute__ ((naked))
+void *
 openpgp_card_thread (void *arg)
 {
-  chopstx_t thd;
-
-  asm ("mov	%0, sp" : "=r" (thd));
-  return card_thread (thd, (struct eventflag *)arg);
-}
-
-chopstx_t openpgp_card_thd;
-
-static void * __attribute__ ((noinline))
-card_thread (chopstx_t thd, struct eventflag *ccid_comm)
-{
-  openpgp_card_thd = thd;
+  struct eventflag *ccid_comm = (struct eventflag *)arg;
 
   openpgp_comm = ccid_comm + 1;
 
