@@ -1,3 +1,26 @@
+2016-07-11  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* VERSION: 1.2.1.
+
+	* src/usb-ccid.c (ccid_power_on): Fix call of chopstx_create.
+	* src/usb-msc.c (msc_init): Ditto.
+	* src/pin-cir.c (cir_init): Ditto.
+	* src/neug.c (neug_init): Ditto.
+	* src/main.c (main): Ditto.
+
+	* src/usb-ccid.c (struct ccid): Arrange for smaller footprint.
+	* src/gnuk.h (struct apdu): Likewise.
+
+	* src/usb-ccid.c (ccid_card_change_signal): Don't touch ccid_state_p.
+	(ccid_state_p): This is constant.
+
+	* src/configure (output_vendor_product_serial_strings): Add const
+	qualifier.
+
+	* src/usb-ccid.c (epo_init, epi_init): Simplify without notify method.
+	(EP1_IN_Callback, EP1_OUT_Callback): Call notify_tx and notify_icc
+	directly.
+
 2016-07-09  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* src/openpgp.c (openpgp_card_thread): Don't need to get SELF.

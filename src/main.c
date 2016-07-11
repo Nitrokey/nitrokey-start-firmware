@@ -184,9 +184,9 @@ calculate_regnual_entry_address (const uint8_t *addr)
   return v;
 }
 
-extern uint8_t __process1_stack_base__, __process1_stack_size__;
-const uint32_t __stackaddr_ccid = (uint32_t)&__process1_stack_base__;
-const size_t __stacksize_ccid = (size_t)&__process1_stack_size__;
+extern uint8_t __process1_stack_base__[], __process1_stack_size__[];
+#define STACK_ADDR_CCID ((uint32_t)__process1_stack_base__)
+#define STACK_SIZE_CCID ((uint32_t)__process1_stack_size__)
 
 #define PRIO_CCID 3
 #define PRIO_MAIN 5
@@ -225,7 +225,7 @@ main (int argc, char *argv[])
   stdout_init ();
 #endif
 
-  ccid_thd = chopstx_create (PRIO_CCID, __stackaddr_ccid, __stacksize_ccid,
+  ccid_thd = chopstx_create (PRIO_CCID, STACK_ADDR_CCID, STACK_SIZE_CCID,
 			     ccid_thread, NULL);
 
 #ifdef PINPAD_CIR_SUPPORT

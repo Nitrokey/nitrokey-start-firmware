@@ -640,9 +640,9 @@ rng (void *arg)
 
 static struct rng_rb the_ring_buffer;
 
-extern uint8_t __process2_stack_base__, __process2_stack_size__;
-const uint32_t __stackaddr_rng = (uint32_t)&__process2_stack_base__;
-const size_t __stacksize_rng = (size_t)&__process2_stack_size__;
+extern uint8_t __process2_stack_base__[], __process2_stack_size__[];
+#define STACK_ADDR_RNG ((uint32_t)__process2_stack_base__)
+#define STACK_SIZE_RNG ((uint32_t)__process2_stack_size__)
 #define PRIO_RNG 2
 
 /**
@@ -668,7 +668,7 @@ neug_init (uint32_t *buf, uint8_t size)
   neug_mode = NEUG_MODE_CONDITIONED;
   rb_init (rb, buf, size);
 
-  rng_thread = chopstx_create (PRIO_RNG, __stackaddr_rng, __stacksize_rng,
+  rng_thread = chopstx_create (PRIO_RNG, STACK_ADDR_RNG, STACK_SIZE_RNG,
 			       rng, rb);
 }
 

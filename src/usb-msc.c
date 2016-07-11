@@ -31,9 +31,9 @@
 #include "usb_lld.h"
 #include "usb-msc.h"
 
-extern uint8_t __process5_stack_base__, __process5_stack_size__;
-const uint32_t __stackaddr_msc = (uint32_t)&__process5_stack_base__;
-const size_t __stacksize_msc = (size_t)&__process5_stack_size__;
+extern uint8_t __process5_stack_base__[], __process5_stack_size__[];
+#define STACK_ADDR_MSC ((uint32_t)__process5_stack_base__)
+#define STACK_SIZE_MSC ((uint32_t)__process5_stack_size__)
 #define PRIO_MSC 3
 
 static chopstx_mutex_t a_pinpad_mutex;
@@ -568,5 +568,5 @@ msc_main (void *arg)
 void
 msc_init (void)
 {
-  chopstx_create (PRIO_MSC, __stackaddr_msc, __stacksize_msc, msc_main, NULL);
+  chopstx_create (PRIO_MSC, STACK_ADDR_MSC, STACK_SIZE_MSC, msc_main, NULL);
 }

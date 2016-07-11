@@ -77,7 +77,6 @@ struct apdu apdu;
 struct ep_in {
   uint8_t ep_num;
   uint8_t tx_done;
-  void (*notify) (struct ep_in *epi);
   const uint8_t *buf;
   size_t cnt;
   size_t buf_len;
@@ -85,12 +84,10 @@ struct ep_in {
   void (*next_buf) (struct ep_in *epi, size_t len);
 };
 
-static void epi_init (struct ep_in *epi, int ep_num,
-		      void (*notify) (struct ep_in *epi), void *priv)
+static void epi_init (struct ep_in *epi, int ep_num, void *priv)
 {
   epi->ep_num = ep_num;
   epi->tx_done = 0;
-  epi->notify = notify;
   epi->buf = NULL;
   epi->cnt = 0;
   epi->buf_len = 0;
@@ -101,7 +98,6 @@ static void epi_init (struct ep_in *epi, int ep_num,
 struct ep_out {
   uint8_t ep_num;
   uint8_t err;
-  void (*notify) (struct ep_out *epo);
   uint8_t *buf;
   size_t cnt;
   size_t buf_len;
@@ -113,12 +109,10 @@ struct ep_out {
 static struct ep_out endpoint_out;
 static struct ep_in endpoint_in;
 
-static void epo_init (struct ep_out *epo, int ep_num,
-		      void (*notify) (struct ep_out *epo), void *priv)
+static void epo_init (struct ep_out *epo, int ep_num, void *priv)
 {
   epo->ep_num = ep_num;
   epo->err = 0;
-  epo->notify = notify;
   epo->buf = NULL;
   epo->cnt = 0;
   epo->buf_len = 0;
@@ -189,10 +183,10 @@ struct ccid_header {
 struct ccid {
   enum ccid_state ccid_state;
   uint8_t state;
+  uint8_t err;
+
   uint8_t *p;
   size_t len;
-
-  uint8_t err;
 
   struct ccid_header ccid_header;
 
@@ -256,8 +250,6 @@ static void ccid_reset (struct ccid *c)
 static void ccid_init (struct ccid *c, struct ep_in *epi, struct ep_out *epo,
 		       struct apdu *a)
 {
-  ccid_state_p = &c->ccid_state;
-
   c->ccid_state = CCID_STATE_START;
   c->state = APDU_STATE_WAIT_COMMAND;
   c->p = a->cmd_apdu_data;
@@ -365,7 +357,7 @@ EP1_IN_Callback (uint16_t len)
   (void)len;
   if (epi->buf == NULL)
     if (epi->tx_done)
-      epi->notify (epi);
+      notify_tx (epi);
     else
       {
 	epi->tx_done = 1;
@@ -671,7 +663,7 @@ EP1_OUT_Callback (uint16_t len)
   if (cont)
     usb_lld_rx_enable (epo->ep_num);
   else
-    epo->notify (epo);
+    notify_icc (epo);
 }
 
 
@@ -781,9 +773,9 @@ static void ccid_error (struct ccid *c, int offset)
 
 extern void *openpgp_card_thread (void *arg);
 
-extern uint8_t __process3_stack_base__, __process3_stack_size__;
-const uint32_t __stackaddr_gpg = (uint32_t)&__process3_stack_base__;
-const size_t __stacksize_gpg = (size_t)&__process3_stack_size__;
+extern uint8_t __process3_stack_base__[], __process3_stack_size__[];
+#define STACK_ADDR_GPG ((uint32_t)__process3_stack_base__)
+#define STACK_SIZE_GPG ((uint32_t)__process3_stack_size__)
 #define PRIO_GPG 1
 
 
@@ -795,8 +787,8 @@ ccid_power_on (struct ccid *c)
   uint8_t p[CCID_MSG_HEADER_SIZE];
 
   if (c->application == 0)
-    c->application = chopstx_create (PRIO_GPG, __stackaddr_gpg,
-				     __stacksize_gpg, openpgp_card_thread,
+    c->application = chopstx_create (PRIO_GPG, STACK_ADDR_GPG,
+				     STACK_SIZE_GPG, openpgp_card_thread,
 				     (void *)&c->ccid_comm);
 
   p[0] = CCID_DATA_BLOCK_RET;
@@ -1341,7 +1333,7 @@ ccid_handle_timeout (struct ccid *c)
 }
 
 static struct ccid ccid;
-enum ccid_state *ccid_state_p = &ccid.ccid_state;
+enum ccid_state *const ccid_state_p = &ccid.ccid_state;
 
 void
 ccid_card_change_signal (int how)
@@ -1514,8 +1506,8 @@ ccid_thread (void *arg)
     struct ep_out *epo = &endpoint_out;
     struct apdu *a = &apdu;
 
-    epi_init (epi, ENDP1, notify_tx, c);
-    epo_init (epo, ENDP1, notify_icc, c);
+    epi_init (epi, ENDP1, c);
+    epo_init (epo, ENDP1, c);
     apdu_init (a);
     ccid_init (c, epi, epo, a);
   }

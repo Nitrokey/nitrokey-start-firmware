@@ -964,9 +964,9 @@ cir_timer_interrupt (void)
 }
 
 
-extern uint8_t __process6_stack_base__, __process6_stack_size__;
-const uint32_t __stackaddr_tim = (uint32_t)&__process6_stack_base__;
-const size_t __stacksize_tim = (size_t)&__process6_stack_size__;
+extern uint8_t __process6_stack_base__[], __process6_stack_size__[];
+#define STACK_ADDR_TIM ((uint32_t)__process6_stack_base__)
+#define STACK_SIZE_TIM ((uint32_t)__process6_stack_size__)
 #define PRIO_TIM 4
 
 static void *
@@ -1057,6 +1057,6 @@ cir_init (void)
   /* Generate UEV to upload PSC and ARR */
   TIMx->EGR = TIM_EGR_UG;
 
-  chopstx_create (PRIO_TIM, __stackaddr_tim, __stacksize_tim, tim_main, NULL);
-  chopstx_create (PRIO_EXT, __stackaddr_ext, __stacksize_ext, ext_main, NULL);
+  chopstx_create (PRIO_TIM, STACK_ADDR_TIM, STACK_SIZE_TIM, tim_main, NULL);
+  chopstx_create (PRIO_EXT, STACK_ADDR_EXT, STACK_SIZE_EXT, ext_main, NULL);
 }

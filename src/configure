@@ -290,7 +290,7 @@ output_vendor_product_serial_strings () {
 
   if test -n "$prefix"; then
   echo
-  echo "uint8_t ${prefix}string_serial[] = {"
+  echo "const uint8_t ${prefix}string_serial[] = {"
   echo "  ${#SERIALNO}*2+2+16,			/* bLength */"
   echo "  STRING_DESCRIPTOR,		/* bDescriptorType */"
   echo "  /* Serial number: \"$SERIALNO\" */"

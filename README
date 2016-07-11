@@ -1,23 +1,23 @@
 Gnuk - An Implementation of USB Cryptographic Token for GnuPG
 
-							  Version 1.2.0
-							     2016-05-20
+							  Version 1.2.1
+							     2016-07-11
 							   Niibe Yutaka
 				      Free Software Initiative of Japan
 
 Release Notes
 =============
 
-This is new release of Gnuk, version 1.2.0, which has major
+This is the release of Gnuk, version 1.2.1, which has major
 incompatible changes to Gnuk 1.0.x.  Specifically, it now supports
 overriding key import, but importing keys (or generating keys) results
 password reset.  Please update your documentation for Gnuk Token, so
 that the instruction of importing keys won't cause any confusion.
 
 It has supports of EdDSA, ECDSA (with NIST P256 and secp256k1), and
-ECDH (with NIST P256, secp256k1, and X25519), but this ECC feature is
-somehow experimental, and it requires modern GnuPG 2.1.x with
-libgcrypt 1.7.0 or later.
+ECDH (with X25519, NIST P256 and secp256k1), but this ECC feature is
+somehow experimental, and it requires modern GnuPG 2.1 with libgcrypt
+1.7.0 or later.
 
 It also supports RSA-4096, but users should know that it takes more
 than 8 seconds to sign/decrypt.  Key generation of RSA-4096 just fails,
@@ -62,8 +62,8 @@ A0: Good points of Gnuk are:
 
 Q1: What kind of key algorithm is supported?
 A1: Gnuk version 1.0 only supports RSA-2048.
-    Gnuk version 1.2.x supports 256-bit EdDSA and ECDSA, as well as
-    RSA-4096.  But it takes long time to sign with RSA-4096.
+    Gnuk version 1.2.x supports 255-bit EdDSA, as well as RSA-4096.
+    (Note that it takes long time to sign with RSA-4096.)
 
 Q2: How long does it take for digital signing?
 A2: It takes a second and a half or so for RSA-2048. 
@@ -77,7 +77,7 @@ A3: Orthodox choice is Olimex STM32-H103.
     choice for experiment.
 
 Q4: What's version of GnuPG are you using?
-A4: In Debian GNU/Linux system, I use GnuPG modern 2.1.12 in
+A4: In Debian GNU/Linux system, I use GnuPG modern 2.1.13 in
     experimental.
 
 Q5: What's version of pcscd and libccid are you using?
@@ -248,7 +248,7 @@ External source code
 
 Gnuk is distributed with external source code.
 
-* chopstx/  -- Chopstx 0.11
+* chopstx/  -- Chopstx 1.1
 
   We use Chopstx as the kernel for Gnuk.
 

@@ -12,8 +12,8 @@ struct apdu {
 
   /* response APDU */
   uint16_t sw;
-  uint8_t *res_apdu_data;
   uint16_t res_apdu_data_len;
+  uint8_t *res_apdu_data;
 };
 
 extern struct apdu apdu;
@@ -66,7 +66,7 @@ enum ccid_state {
 };
 
 
-extern enum ccid_state *ccid_state_p;
+extern enum ccid_state *const ccid_state_p;
 
 extern volatile uint8_t auth_status;
 #define AC_NONE_AUTHORIZED	0x00
