@@ -3,7 +3,7 @@
 """
 hub_ctrl.py - a tool to control port power/led of USB hub
 
-Copyright (C) 2006, 2011 Free Software Initiative of Japan
+Copyright (C) 2006, 2011, 2016 Free Software Initiative of Japan
 
 Author: NIIBE Yutaka  <gniibe@fsij.org>
 
@@ -23,6 +23,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
+from __future__ import print_function
 import usb
 
 USB_RT_HUB		=	(usb.TYPE_CLASS | usb.RECIP_DEVICE)
@@ -43,7 +44,7 @@ def find_hubs(listing, verbose, busnum=None, devnum=None, hub=None):
     hubs = []
     busses = usb.busses()
     if not busses:
-        raise ValueError, "can't access USB"
+        raise ValueError("can't access USB")
 
     for bus in busses:
         devices = bus.devices
@@ -79,17 +80,17 @@ def find_hubs(listing, verbose, busnum=None, devnum=None, hub=None):
                 continue
 
             if printout_enable:
-                print "Hub #%d at %s:%03d" % (number_of_hubs_with_feature,
-                                              bus.dirname, dev.devnum)
+                print("Hub #%d at %s:%03d" % (number_of_hubs_with_feature,
+                                              bus.dirname, dev.devnum))
                 if (desc[3] & 0x03) == 0:
-                    print " INFO: ganged power switching."
+                    print(" INFO: ganged power switching.")
                 elif (desc[3] & 0x03) == 1:
-                    print " INFO: individual power switching."
+                    print(" INFO: individual power switching.")
                 elif (desc[3] & 0x03) == 2 or (desc[3] & 0x03) == 3:
-                    print " WARN: no power switching."
+                    print(" WARN: no power switching.")
 
                 if (desc[3] & 0x80) == 0:
-                    print " WARN: Port indicators are NOT supported."
+                    print(" WARN: Port indicators are NOT supported.")
 
             hubs.append({ 'busnum' : bus.dirname, 'devnum' : dev.devnum,
                           'indicator_support' : (desc[3] & 0x80) == 0x80,
@@ -99,7 +100,7 @@ def find_hubs(listing, verbose, busnum=None, devnum=None, hub=None):
     return hubs
 
 def hub_port_status(handle, num_ports):
-    print " Hub Port Status:"
+    print(" Hub Port Status:")
     for i in range(num_ports):
         port = i + 1
         status = handle.controlMsg(requestType = USB_RT_PORT | usb.ENDPOINT_IN, 
@@ -108,31 +109,31 @@ def hub_port_status(handle, num_ports):
                                    index = port, buffer = 4,
                                    timeout = 1000)
 
-        print "   Port %d: %02x%02x.%02x%02x" % (port, status[3], status[2],
-                                                 status[1], status[0]),
+        print("   Port %d: %02x%02x.%02x%02x" % (port, status[3], status[2],
+                                                 status[1], status[0]),)
         if status[1] & 0x10:
-            print " indicator", 
+            print(" indicator", end='')
         if status[1] & 0x08:
-            print " test" ,
+            print(" test" , end='')
         if status[1] & 0x04:
-            print " highspeed",
+            print(" highspeed", end='')
         if status[1] & 0x02:
-            print " lowspeed",
+            print(" lowspeed", end='')
         if status[1] & 0x01:
-            print " power",
+            print(" power", end='')
 
         if status[0] & 0x10:
-            print " RESET",
+            print(" RESET", end='')
         if status[0] & 0x08:
-            print " oc",
+            print(" oc", end='')
         if status[0] & 0x04:
-            print " suspend",
+            print(" suspend", end='')
         if status[0] & 0x02:
-            print " enable",
+            print(" enable", end='')
         if status[0] & 0x01:
-            print " connect",
+            print(" connect", end='')
 
-        print 
+        print()
 
 import sys
 
@@ -142,9 +143,9 @@ COMMAND_SET_POWER = 2
 HUB_LED_GREEN  = 2
 
 def usage(progname):
-    print >> sys.stderr, """Usage: %s [{-h HUBNUM | -b BUSNUM -d DEVNUM}]
+    print("""Usage: %s [{-h HUBNUM | -b BUSNUM -d DEVNUM}]
           [-P PORT] [{-p [VALUE]|-l [VALUE]}]
-""" % progname
+""" % progname, file=sys.stderr)
 
 def exit_with_usage(progname):
     usage(progname)
@@ -219,7 +220,7 @@ if __name__ == '__main__':
 
     hubs = find_hubs(listing, verbose, busnum, devnum, hub)
     if len(hubs) == 0:
-        print >> sys.stderr, "No hubs found."
+        print("No hubs found.", file=sys.stderr)
         exit(1)
     if listing:
         exit(0)
@@ -246,11 +247,11 @@ if __name__ == '__main__':
         feature = USB_PORT_FEAT_INDICATOR
         index = (value << 8) | port
     if verbose:
-        print "Send control message (REQUEST=%d, FEATURE=%d, INDEX=%d) " % (request, feature, index)
+        print("Send control message (REQUEST=%d, FEATURE=%d, INDEX=%d) " % (request, feature, index))
 
     uh.controlMsg(requestType = USB_RT_PORT, request = request, value = feature,
                   index = index, buffer = None, timeout = 1000)
     if verbose:
-	hub_port_status(uh,nports)
+        hub_port_status(uh,nports)
 
     del uh
