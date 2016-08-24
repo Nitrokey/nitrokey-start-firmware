@@ -1,3 +1,9 @@
+2016-08-24  Niibe Yutaka  <gniibe@fsij.org>
+
+	* test/features/steps.py (ini): Use GLC (the global context),
+	instead of FTC (the feature context), so that token only is
+	opened once.
+
 2016-08-03  Niibe Yutaka  <gniibe@fsij.org>
 
 	* tool/hub_ctrl.py: Port to Python 3.
