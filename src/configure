@@ -45,7 +45,7 @@ certdo=no
 hid_card_change=no
 
 # Revision number
-if test -d ../.git; then
+if test -e ../.git; then
   REVISION=`git describe --dirty="-modified"` 
 else
   REVISION=`cat ../VERSION`
@@ -111,6 +111,7 @@ Configuration:
   --target=TARGET	specify target			[FST_01]
 			supported targets are:
 			   FST_01
+			   FST_01G
 			   OLIMEX_STM32_H103
 			   STM32_PRIMER2
 			   STBEE
@@ -189,7 +190,8 @@ fi
 
 # --with-dfu option
 if test "$with_dfu" = "yes"; then
-  if test "$target" = "FST_01" -o "$target" = "FST_01_00"; then
+  if test "$target" = "FST_01" -o "$target" = "FST_01G" \
+     -o "$target" = "FST_01_00"; then
       echo "FST-01 doesn't have DFU loader, you should not use --with-dfu." >&2
       exit 1
   fi
