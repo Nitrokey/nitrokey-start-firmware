@@ -36,6 +36,49 @@ def ccid_compose(msg_type, seq, slot=0, rsv=0, param=0, data=b""):
 
 IFSC=254
 
+def compute_edc(pcb, info):
+    edc = pcb
+    edc ^= len(info)
+    for i in range(len(info)):
+        edc ^= info[i]
+    return edc
+
+def compose_i_block(ns, info, more):
+    pcb = 0x00
+    if ns:
+        pcb |= 0x40
+    if more:
+        pcb |= 0x20
+    edc = compute_edc(pcb, info)
+    return bytes([0, pcb, len(info)]) + info + bytes([edc])
+
+def compose_r_block(nr, edc_error=0):
+    pcb = 0x80
+    if nr:
+        pcb |= 0x10
+    if edc_error:
+        pcb |= 0x01
+    return bytes([0, pcb, 0, pcb])
+
+def is_r_block_no_error(blk):
+    return ((blk[1] & 0xC0) == 0x80 and (blk[1] & 0x2f) == 0x00)
+
+def is_s_block_time_ext(blk):
+    return (blk[1] == 0xC3)
+
+def is_i_block_last(blk):
+    return ((blk[1] & 0x80) == 0 and (blk[1] & 0x20) == 0)
+
+def is_i_block_more(blk):
+    return ((blk[1] & 0x80) == 0 and (blk[1] & 0x20) == 0x20)
+
+def is_edc_error(blk):
+    # to be implemented
+    return 0
+
+def i_block_content(blk)
+    return blk[3:-1]
+
 class CardReader(object):
     def __init__(self, dev):
         """
@@ -130,18 +173,20 @@ class CardReader(object):
         #
         if self.__use_APDU == False:
             # TPDU reader configuration
+            self.ns = 0
+            self.nr = 0
             pps = b"\xFF\x11\x18\xF6"
-            ret_pps = self.ccid_send_data_block(pps)
+            status, chain, ret_pps = self.ccid_send_data_block(pps)
             #
             param = b"\x18\x10\xFF\x75\x00\xFE\x00"
             # ^--- This shoud be adapted by ATR string, see update_param_by_atr
             msg = ccid_compose(0x6d, self.__seq, rsv=0x1, data=param)
             self.__dev.write(self.__bulkout, msg, self.__timeout)
             self.increment_seq()
-            ret_param = self.ccid_get_result()
-            # Send an S-block
+            status, chain, ret_param = self.ccid_get_result()
+            # Send an S-block of changing IFSD=254
             sblk = b"\x00\xC1\x01\xFE\x3E"
-            ret_sblk = self.ccid_send_data_block(sblk)
+            status, chain, ret_sblk = self.ccid_send_data_block(sblk)
         return self.atr
 
     def ccid_power_off(self):
@@ -183,11 +228,66 @@ class CardReader(object):
         else:
             raise ValueError("ccid_send_cmd")
 
+    def send_tpdu(self, info=None, more=0, response_time_ext=0,
+                  edc_error=0, no_error=0):
+        if info:
+            data = compose_i_block(self.ns, info, more)
+        elif response_time_ext:
+            # compose S-block
+            data = b"\x00\xE3\x00\xE3"
+        elif edc_error:
+            data = compose_r_block(self.nr, edc_error=1)
+        elif no_error:
+            data = compose_r_block(self.nr)
+        msg = ccid_compose(0x6f, self.__seq, data=data)
+        self.__dev.write(self.__bulkout, msg, self.__timeout)
+        self.increment_seq()
+
+    def recv_tpdu(self):
+        status, chain, data = self.ccid_get_result()
+        return data
+
     def send_cmd(self, cmd):
+        # Simple APDU case
         if self.__use_APDU:
             return self.ccid_send_cmd(cmd)
-        # TPDU
-        raise ValueError("TPDU not implemented yet")
+        # TPDU case
+        while len(cmd) > 254:
+            blk = cmd[0:253]
+            cmd = cmd[254:]
+            while True:
+                self.send_tpdu(info=blk,more=1)
+                rblk = self.recv_tpdu()
+                if is_r_block_no_error(rblk):
+                    break
+            self.ns = self.ns ^ 1
+        while True:
+            self.send_tpdu(info=cmd)
+            blk = self.recv_tpdu()
+            if is_r_block_no_error(blk):
+                break
+        self.ns = self.ns ^ 1
+        res = b""
+        while True:
+            if is_s_block_time_ext(blk):
+                self.send_tpdu(response_time_ext=1)
+            elif is_i_block_last(blk):
+                self.nr = self.nr ^ 1
+                if is_edc_error(blk):
+                    self.send_tpdu(edc_error=1)
+                else:
+                    res += i_block_content(blk)
+                    break
+            elif is_i_block_more(blk):
+                self.nr = self.nr ^ 1
+                if is_edc_error(blk):
+                    self.send_tpdu(edc_error=1)
+                else:
+                    res += i_block_content(blk)
+                    self.send_tpdu(no_error=1)
+            blk = self.recv_tpdu()
+        return res
+
 
 class find_class(object):
     def __init__(self, usb_class):
