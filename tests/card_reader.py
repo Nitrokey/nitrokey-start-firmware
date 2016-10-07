@@ -60,8 +60,9 @@ def compose_r_block(nr, edc_error=0):
         pcb |= 0x01
     return bytes([0, pcb, 0, pcb])
 
-def is_r_block_no_error(blk):
-    return ((blk[1] & 0xC0) == 0x80 and (blk[1] & 0x2f) == 0x00)
+def is_r_block_no_error_or_other(blk):
+    return (((blk[1] & 0xC0) == 0x80 and (blk[1] & 0x2f) == 0x00)) or \
+        ((blk[1] & 0xC0) != 0x80)
 
 def is_s_block_time_ext(blk):
     return (blk[1] == 0xC3)
@@ -76,7 +77,7 @@ def is_edc_error(blk):
     # to be implemented
     return 0
 
-def i_block_content(blk)
+def i_block_content(blk):
     return blk[3:-1]
 
 class CardReader(object):
@@ -175,12 +176,13 @@ class CardReader(object):
             # TPDU reader configuration
             self.ns = 0
             self.nr = 0
+            # Set PPS
             pps = b"\xFF\x11\x18\xF6"
             status, chain, ret_pps = self.ccid_send_data_block(pps)
-            #
+            # Set parameters
             param = b"\x18\x10\xFF\x75\x00\xFE\x00"
             # ^--- This shoud be adapted by ATR string, see update_param_by_atr
-            msg = ccid_compose(0x6d, self.__seq, rsv=0x1, data=param)
+            msg = ccid_compose(0x61, self.__seq, rsv=0x1, data=param)
             self.__dev.write(self.__bulkout, msg, self.__timeout)
             self.increment_seq()
             status, chain, ret_param = self.ccid_get_result()
@@ -258,13 +260,13 @@ class CardReader(object):
             while True:
                 self.send_tpdu(info=blk,more=1)
                 rblk = self.recv_tpdu()
-                if is_r_block_no_error(rblk):
+                if is_r_block_no_error_or_other(rblk):
                     break
             self.ns = self.ns ^ 1
         while True:
             self.send_tpdu(info=cmd)
             blk = self.recv_tpdu()
-            if is_r_block_no_error(blk):
+            if is_r_block_no_error_or_other(blk):
                 break
         self.ns = self.ns ^ 1
         res = b""

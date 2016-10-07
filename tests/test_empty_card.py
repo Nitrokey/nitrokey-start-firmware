@@ -47,7 +47,7 @@ def get_data_object(card, tag):
     return card.cmd_get_data(tagh, tagl)
 
 def check_null(data_object):
-    return len(data_object) == 0
+    return data_object == None or len(data_object) == 0
 
 def test_login(card):
     login = get_data_object(card, 0x5e)
@@ -71,15 +71,15 @@ def test_url(card):
 
 def test_ds_counter(card):
     c = get_data_object(card, 0x93)
-    assert c == b'\x00\x00\x00'
+    assert c == None or c == b'\x00\x00\x00'
 
 def test_pw1_status(card):
     s = get_data_object(card, 0xc4)
-    assert s == b'\x00\x7f\x7f\x7f\x03\x03\x03'
+    assert match(b'\x00...\x03[\x00\x03]\x03', s, DOTALL)
 
 def test_fingerprint_0(card):
     fprlist = get_data_object(card, 0xC5)
-    assert fprlist == EMPTY_60
+    assert fprlist == None or fprlist == EMPTY_60
 
 def test_fingerprint_1(card):
     fpr = get_data_object(card, 0xC7)
@@ -95,7 +95,7 @@ def test_fingerprint_3(card):
 
 def test_ca_fingerprint_0(card):
     cafprlist = get_data_object(card, 0xC6)
-    assert cafprlist == EMPTY_60
+    assert cafprlist == None or cafprlist == EMPTY_60
 
 def test_ca_fingerprint_1(card):
     cafp = get_data_object(card, 0xCA)
@@ -111,7 +111,7 @@ def test_ca_fingerprint_3(card):
 
 def test_timestamp_0(card):
     t = get_data_object(card, 0xCD)
-    assert t == b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+    assert t == None or t == b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
 
 def test_timestamp_1(card):
     t = get_data_object(card, 0xCE)
@@ -139,23 +139,24 @@ def test_verify_pw3(card):
 
 def test_historical_bytes(card):
     h = get_data_object(card, 0x5f52)
-    assert h == b'\x00\x31\x84\x73\x80\x01\x80\x00\x90\x00'
+    assert h == b'\x001\xc5s\xc0\x01@\x05\x90\x00' or \
+           h == b'\x00\x31\x84\x73\x80\x01\x80\x00\x90\x00'
 
 def test_extended_capabilities(card):
     a = get_data_object(card, 0xc0)
-    assert match(b'[\x70\x74]\x00\x00\x20[\x00\x08]\x00\x00\xff\x01\x00', a)
+    assert a == None or match(b'[\x70\x74]\x00\x00\x20[\x00\x08]\x00\x00\xff\x01\x00', a)
 
 def test_algorithm_attributes_1(card):
     a = get_data_object(card, 0xc1)
-    assert a == b'\x01\x08\x00\x00\x20\x00'
+    assert a == None or a == b'\x01\x08\x00\x00\x20\x00'
 
 def test_algorithm_attributes_2(card):
     a = get_data_object(card, 0xc2)
-    assert a == b'\x01\x08\x00\x00\x20\x00'
+    assert a == None or a == b'\x01\x08\x00\x00\x20\x00'
 
 def test_algorithm_attributes_3(card):
     a = get_data_object(card, 0xc3)
-    assert a == b'\x01\x08\x00\x00\x20\x00'
+    assert a == None or a == b'\x01\x08\x00\x00\x20\x00'
 
 def test_AID(card):
     a = get_data_object(card, 0x4f)
