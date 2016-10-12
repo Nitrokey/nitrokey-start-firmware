@@ -121,17 +121,17 @@ def test_fingerprint_3_put(card):
     r = card.cmd_put_data(0x00, 0xc9, fpr3)
     assert r
 
-def test_timestamp_1(card):
+def test_timestamp_1_put(card):
     timestamp1 = rsa_keys.timestamp[0]
     r = card.cmd_put_data(0x00, 0xce, timestamp1)
     assert r
 
-def test_timestamp_2(card):
+def test_timestamp_2_put(card):
     timestamp2 = rsa_keys.timestamp[1]
     r = card.cmd_put_data(0x00, 0xcf, timestamp2)
     assert r
 
-def test_timestamp_3(card):
+def test_timestamp_3_put(card):
     timestamp3 = rsa_keys.timestamp[2]
     r = card.cmd_put_data(0x00, 0xd0, timestamp3)
     assert r
@@ -222,14 +222,14 @@ PLAIN_TEXT2=b"This is another test message.\nMultiple lines.\n"
 
 def test_sign_0(card):
     digestinfo = rsa_keys.compute_digestinfo(PLAIN_TEXT0)
-    r = card.cmd_pso_longdata(0x9e, 0x9a, digestinfo)
+    r = card.cmd_pso(0x9e, 0x9a, digestinfo)
     sig = rsa_keys.compute_signature(0, digestinfo)
     sig_bytes = sig.to_bytes(int((sig.bit_length()+7)/8), byteorder='big')
     assert r == sig_bytes
 
 def test_sign_1(card):
     digestinfo = rsa_keys.compute_digestinfo(PLAIN_TEXT1)
-    r = card.cmd_pso_longdata(0x9e, 0x9a, digestinfo)
+    r = card.cmd_pso(0x9e, 0x9a, digestinfo)
     sig = rsa_keys.compute_signature(0, digestinfo)
     sig_bytes = sig.to_bytes(int((sig.bit_length()+7)/8), byteorder='big')
     assert r == sig_bytes
@@ -250,10 +250,10 @@ def test_sign_auth_1(card):
 
 def test_decrypt_0(card):
     ciphertext = rsa_keys.encrypt(1, PLAIN_TEXT0)
-    r = card.cmd_pso_longdata(0x80, 0x86, ciphertext)
+    r = card.cmd_pso(0x80, 0x86, ciphertext)
     assert r == PLAIN_TEXT0
 
 def test_decrypt_1(card):
     ciphertext = rsa_keys.encrypt(1, PLAIN_TEXT1)
-    r = card.cmd_pso_longdata(0x80, 0x86, ciphertext)
+    r = card.cmd_pso(0x80, 0x86, ciphertext)
     assert r == PLAIN_TEXT1

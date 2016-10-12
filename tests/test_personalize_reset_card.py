@@ -46,11 +46,12 @@ def test_name_put(card):
     assert r
 
 def test_lang_put(card):
-    r = card.cmd_put_data(0x5f, 0x2d, b"de")
+    r = card.cmd_put_data(0x5f, 0x2d, b"")
     assert r
 
 def test_sex_put(card):
-    r = card.cmd_put_data(0x5f, 0x35, b"0")
+    r = card.cmd_put_data(0x5f, 0x35, b"9")
+    # r = card.cmd_put_data(0x5f, 0x35, b"")
     assert r
 
 def test_url_put(card):
