@@ -1,3 +1,9 @@
+2016-10-12  Niibe Yutaka  <gniibe@fsij.org>
+
+	* test/features/steps.py (cmd_reset_retry_counter): Fix.
+	* tool/gnuk_token.py (gnuk_token.cmd_reset_retry_counter): Fix.
+	(gnuk_token.cmd_select_openpgp): Fix P2.
+
 2016-09-02  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/configure (REVISION): Fix the detection of .git.

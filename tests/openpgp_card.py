@@ -205,7 +205,6 @@ class OpenPGP_Card(object):
     def cmd_pso_longdata(self, p1, p2, data):
         if self.__reader.is_tpdu_reader():
             cmd_data = iso7816_compose(0x2a, p1, p2, data, le=256)
-            print(cmd_data)
             r = self.__reader.send_cmd(cmd_data)
             if len(r) < 2:
                 raise ValueError(r)

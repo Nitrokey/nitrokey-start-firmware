@@ -36,7 +36,7 @@ def cmd_put_data(tag_str,content_str_repr):
 @Given("cmd_reset_retry_counter with (.*) and \"(.*)\"")
 def cmd_reset_retry_counter(how_str, data):
     how = int(how_str)
-    scc.result = glc.token.cmd_reset_retry_counter(how, data)
+    scc.result = glc.token.cmd_reset_retry_counter(how, 0x81, data)
 
 @Given("a RSA key pair (.*)")
 def set_rsa_key(keyno_str):

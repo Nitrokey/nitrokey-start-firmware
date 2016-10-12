@@ -289,13 +289,19 @@ class gnuk_token(object):
             count += 1
 
     def cmd_select_openpgp(self):
-        cmd_data = iso7816_compose(0xa4, 0x04, 0x0c, b"\xD2\x76\x00\x01\x24\x01")
-        sw = self.icc_send_cmd(cmd_data)
-        if len(sw) != 2:
-            raise ValueError(sw)
-        if not (sw[0] == 0x90 and sw[1] == 0x00):
+        cmd_data = iso7816_compose(0xa4, 0x04, 0x00, b"\xD2\x76\x00\x01\x24\x01")
+        r = self.icc_send_cmd(cmd_data)
+        if len(r) < 2:
+            raise ValueError(r)
+        sw = r[-2:]
+        r = r[0:-2]
+        if sw[0] == 0x61:
+            self.cmd_get_response(sw[1])
+            return True
+        elif sw[0] == 0x90 and sw[1] == 0x00:
+            return True
+        else:
             raise ValueError("%02x%02x" % (sw[0], sw[1]))
-        return True
 
     def cmd_get_data(self, tagh, tagl):
         cmd_data = iso7816_compose(0xca, tagh, tagl, b"")
@@ -341,8 +347,8 @@ class gnuk_token(object):
             raise ValueError("%02x%02x" % (sw[0], sw[1]))
         return True
 
-    def cmd_reset_retry_counter(self, how, data):
-        cmd_data = iso7816_compose(0x2c, how, 0x00, data)
+    def cmd_reset_retry_counter(self, how, who, data):
+        cmd_data = iso7816_compose(0x2c, how, who, data)
         sw = self.icc_send_cmd(cmd_data)
         if len(sw) != 2:
             raise ValueError(sw)
