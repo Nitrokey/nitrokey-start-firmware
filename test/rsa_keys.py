@@ -60,7 +60,7 @@ def build_privkey_template(openpgp_keyno, keyno):
 
     suffix = b'\x5f\x48' + b'\x82\x01\x04'
 
-    t = b'\x4d' + b'\x82\01\16' + exthdr + suffix + e_bytes + p_bytes + q_bytes
+    t = b'\x4d' + b'\x82\x01\x16' + exthdr + suffix + e_bytes + p_bytes + q_bytes
     return t
 
 def build_privkey_template_for_remove(openpgp_keyno):
