@@ -140,6 +140,9 @@ class CardReader(object):
         except:
             pass
 
+    def is_tpdu_reader(self):
+        return not self.__use_APDU
+
     def ccid_get_result(self):
         msg = self.__dev.read(self.__bulkin, 1024, self.__timeout)
         if len(msg) < 10:
@@ -255,7 +258,7 @@ class CardReader(object):
             return self.ccid_send_cmd(cmd)
         # TPDU case
         while len(cmd) > 254:
-            blk = cmd[0:253]
+            blk = cmd[0:254]
             cmd = cmd[254:]
             while True:
                 self.send_tpdu(info=blk,more=1)

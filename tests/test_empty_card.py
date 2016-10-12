@@ -1,5 +1,5 @@
 """
-test_empty_card.py - testing empty card
+test_empty_card.py - test empty card
 
 Copyright (C) 2016  g10 Code GmbH
 Author: NIIBE Yutaka <gniibe@fsij.org>
@@ -20,34 +20,13 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-import pytest
 from re import match, DOTALL
+from util import *
 
 EMPTY_60=bytes(60)
 
 FACTORY_PASSPHRASE_PW1=b"123456"
 FACTORY_PASSPHRASE_PW3=b"12345678"
-
-@pytest.fixture(scope="module")
-def card():
-    if pytest.config.option.reader == "gnuk":
-        from card_reader import get_ccid_device
-        reader = get_ccid_device()
-        from openpgp_card import OpenPGP_Card
-        card = OpenPGP_Card(reader)
-    else:
-        raise ValueError("Reader Not Supported")
-    card.cmd_select_openpgp()
-    yield card
-    del card
-
-def get_data_object(card, tag):
-    tagh = tag >> 8
-    tagl = tag & 0xff
-    return card.cmd_get_data(tagh, tagl)
-
-def check_null(data_object):
-    return data_object == None or len(data_object) == 0
 
 def test_login(card):
     login = get_data_object(card, 0x5e)

@@ -32,10 +32,18 @@ def iso7816_compose(ins, p1, p2, data, cls=0x00, le=None):
             return pack('>BBBBB', cls, ins, p1, p2, le)
     else:
         if not le:
-            return pack('>BBBBB', cls, ins, p1, p2, data_len) + data
+            if data_len <= 255:
+                return pack('>BBBBB', cls, ins, p1, p2, data_len) + data
+            else:
+                return pack('>BBBBBH', cls, ins, p1, p2, 0, data_len) \
+                    + data
         else:
-            return pack('>BBBBB', cls, ins, p1, p2, data_len) \
-                + data + pack('>B', le)
+            if data_len <= 255 and le < 256:
+                return pack('>BBBBB', cls, ins, p1, p2, data_len) \
+                    + data + pack('>B', le)
+            else:
+                return pack('>BBBBBH', cls, ins, p1, p2, 0, data_len) \
+                    + data + pack('>H', le)
 
 class OpenPGP_Card(object):
     def __init__(self, reader):
@@ -156,22 +164,26 @@ class OpenPGP_Card(object):
         return True
 
     def cmd_put_data_odd(self, tagh, tagl, content):
-        cmd_data0 = iso7816_compose(0xdb, tagh, tagl, content[:128], 0x10)
-        cmd_data1 = iso7816_compose(0xdb, tagh, tagl, content[128:])
-        sw = self.__reader.send_cmd(cmd_data0)
-        if len(sw) != 2:
-            raise ValueError(sw)
-        if not (sw[0] == 0x90 and sw[1] == 0x00):
-            raise ValueError("%02x%02x" % (sw[0], sw[1]))
-        sw = self.__reader.send_cmd(cmd_data1)
+        if self.__reader.is_tpdu_reader():
+            cmd_data = iso7816_compose(0xdb, tagh, tagl, content)
+            sw = self.__reader.send_cmd(cmd_data)
+        else:
+            cmd_data0 = iso7816_compose(0xdb, tagh, tagl, content[:128], 0x10)
+            cmd_data1 = iso7816_compose(0xdb, tagh, tagl, content[128:])
+            sw = self.__reader.send_cmd(cmd_data0)
+            if len(sw) != 2:
+                raise ValueError(sw)
+            if not (sw[0] == 0x90 and sw[1] == 0x00):
+                raise ValueError("%02x%02x" % (sw[0], sw[1]))
+            sw = self.__reader.send_cmd(cmd_data1)
         if len(sw) != 2:
             raise ValueError(sw)
         if not (sw[0] == 0x90 and sw[1] == 0x00):
             raise ValueError("%02x%02x" % (sw[0], sw[1]))
         return True
 
-    def cmd_reset_retry_counter(self, how, data):
-        cmd_data = iso7816_compose(0x2c, how, 0x00, data)
+    def cmd_reset_retry_counter(self, how, who, data):
+        cmd_data = iso7816_compose(0x2c, how, who, data)
         sw = self.__reader.send_cmd(cmd_data)
         if len(sw) != 2:
             raise ValueError(sw)
@@ -191,30 +203,48 @@ class OpenPGP_Card(object):
         return self.cmd_get_response(sw[1])
 
     def cmd_pso_longdata(self, p1, p2, data):
-        cmd_data0 = iso7816_compose(0x2a, p1, p2, data[:128], 0x10)
-        cmd_data1 = iso7816_compose(0x2a, p1, p2, data[128:])
-        sw = self.__reader.send_cmd(cmd_data0)
-        if len(sw) != 2:
-            raise ValueError(sw)
-        if not (sw[0] == 0x90 and sw[1] == 0x00):
-            raise ValueError("%02x%02x" % (sw[0], sw[1]))
-        sw = self.__reader.send_cmd(cmd_data1)
-        if len(sw) != 2:
-            raise ValueError(sw)
-        elif sw[0] != 0x61:
-            raise ValueError("%02x%02x" % (sw[0], sw[1]))
-        return self.cmd_get_response(sw[1])
+        if self.__reader.is_tpdu_reader():
+            cmd_data = iso7816_compose(0x2a, p1, p2, data, le=256)
+            print(cmd_data)
+            r = self.__reader.send_cmd(cmd_data)
+            if len(r) < 2:
+                raise ValueError(r)
+            sw = r[-2:]
+            r = r[0:-2]
+            if sw[0] == 0x61:
+                return self.cmd_get_response(sw[1])
+            elif sw[0] == 0x90 and sw[1] == 0x00:
+                return r
+            else:
+                raise ValueError("%02x%02x" % (sw[0], sw[1]))
+        else:
+            cmd_data0 = iso7816_compose(0x2a, p1, p2, data[:128], 0x10)
+            cmd_data1 = iso7816_compose(0x2a, p1, p2, data[128:])
+            sw = self.__reader.send_cmd(cmd_data0)
+            if len(sw) != 2:
+                raise ValueError(sw)
+            if not (sw[0] == 0x90 and sw[1] == 0x00):
+                raise ValueError("%02x%02x" % (sw[0], sw[1]))
+            sw = self.__reader.send_cmd(cmd_data1)
+            if len(sw) != 2:
+                raise ValueError(sw)
+            elif sw[0] != 0x61:
+                raise ValueError("%02x%02x" % (sw[0], sw[1]))
+            return self.cmd_get_response(sw[1])
 
     def cmd_internal_authenticate(self, data):
-        cmd_data = iso7816_compose(0x88, 0, 0, data)
-        sw = self.__reader.send_cmd(cmd_data)
-        if len(sw) != 2:
-            raise ValueError(sw)
-        if sw[0] == 0x90 and sw[1] == 0x00:
-            return b""
-        elif sw[0] != 0x61:
+        cmd_data = iso7816_compose(0x88, 0, 0, data, le=256)
+        r = self.__reader.send_cmd(cmd_data)
+        if len(r) < 2:
+            raise ValueError(r)
+        sw = r[-2:]
+        r = r[0:-2]
+        if sw[0] == 0x61:
+            return self.cmd_get_response(sw[1])
+        elif sw[0] == 0x90 and sw[1] == 0x00:
+            return r
+        else:
             raise ValueError("%02x%02x" % (sw[0], sw[1]))
-        return self.cmd_get_response(sw[1])
 
     def cmd_genkey(self, keyno):
         if keyno == 1:
