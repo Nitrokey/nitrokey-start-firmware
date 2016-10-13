@@ -133,7 +133,8 @@ def test_verify_pw3(card):
 def test_historical_bytes(card):
     h = get_data_object(card, 0x5f52)
     assert h == b'\x001\xc5s\xc0\x01@\x05\x90\x00' or \
-           h == b'\x00\x31\x84\x73\x80\x01\x80\x00\x90\x00'
+           h == b'\x00\x31\x84\x73\x80\x01\x80\x00\x90\x00' or \
+           h == b'\x00\x31\x84\x73\x80\x01\x80\x05\x90\x00'
 
 def test_extended_capabilities(card):
     a = get_data_object(card, 0xc0)

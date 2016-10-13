@@ -795,6 +795,10 @@ ccid_power_on (struct ccid *c)
   memcpy (p + CCID_MSG_HEADER_SIZE, ATR_head, sizeof (ATR_head));
   memcpy (p + CCID_MSG_HEADER_SIZE + sizeof (ATR_head),
 	  historical_bytes + 1, historical_bytes[0]);
+#ifdef LIFE_CYCLE_MANAGEMENT_SUPPORT
+  if (file_selection == 255)
+    p[CCID_MSG_HEADER_SIZE + sizeof (ATR_head) + 7] = 0x03;
+#endif
   for (i = 1; i < (int)size_atr - 1; i++)
     xor_check ^= p[CCID_MSG_HEADER_SIZE + i];
   p[CCID_MSG_HEADER_SIZE+size_atr-1] = xor_check;

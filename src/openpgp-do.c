@@ -90,10 +90,10 @@ uint16_t data_objects_number_of_bytes;
 
 /*
  * Compile time vars:
- *   Historical Bytes (template), Extended Capabilities.
+ *   Historical Bytes, Extended Capabilities.
  */
 
-/* Historical Bytes (template) */
+/* Historical Bytes */
 const uint8_t historical_bytes[] __attribute__ ((aligned (1))) = {
   10,
   0x00,
@@ -102,7 +102,12 @@ const uint8_t historical_bytes[] __attribute__ ((aligned (1))) = {
   0x80, 0x01, 0x80,		/* Full DF name */
 				/* 1-byte */
 				/* Command chaining, No extended Lc and Le */
-  0x00, 0x90, 0x00		/* Status info (no life cycle management) */
+#ifdef LIFE_CYCLE_MANAGEMENT_SUPPORT
+  0x05,
+#else
+  0x00,
+#endif
+  0x90, 0x00			/* Status info */
 };
 
 /* Extended Capabilities */
@@ -485,23 +490,6 @@ copy_tag (uint16_t tag)
     }
 }
 
-static int
-do_hist_bytes (uint16_t tag, int with_tag)
-{
-  /*
-   * Currently, we support no life cycle management.  In case of Gnuk,
-   * user could flash the MCU with SWD/JTAG, instead.  It is also
-   * possible for user to do firmware upgrade through USB.
-   *
-   * Thus, here, it just returns the template as is.
-   *
-   * In future (when Gnuk will be on the real smartcard),
-   * we can support life cycle management by implementing
-   * TERMINATE DF / ACTIVATE FILE and fix code around here.
-   */
-  copy_do_1 (tag, historical_bytes, with_tag);
-  return 1;
-}
 
 #define SIZE_FP 20
 #define SIZE_KGTIME 4
@@ -1513,7 +1501,6 @@ gpg_do_table[] = {
   { GPG_DO_NAME, DO_VAR, AC_ALWAYS, AC_ADMIN_AUTHORIZED, &do_ptr[12] },
   { GPG_DO_LANGUAGE, DO_VAR, AC_ALWAYS, AC_ADMIN_AUTHORIZED, &do_ptr[13] },
   /* Pseudo DO READ: calculated */
-  { GPG_DO_HIST_BYTES, DO_PROC_READ, AC_ALWAYS, AC_NEVER, do_hist_bytes },
   { GPG_DO_FP_ALL, DO_PROC_READ, AC_ALWAYS, AC_NEVER, do_fp_all },
   { GPG_DO_CAFP_ALL, DO_PROC_READ, AC_ALWAYS, AC_NEVER, do_cafp_all },
   { GPG_DO_KGTIME_ALL, DO_PROC_READ, AC_ALWAYS, AC_NEVER, do_kgtime_all },
@@ -1530,6 +1517,7 @@ gpg_do_table[] = {
   { GPG_DO_ALG_AUT, DO_PROC_READWRITE, AC_ALWAYS, AC_ADMIN_AUTHORIZED,
     rw_algorithm_attr },
   /* Fixed data */
+  { GPG_DO_HIST_BYTES, DO_FIXED, AC_ALWAYS, AC_NEVER, historical_bytes },
   { GPG_DO_EXTCAP, DO_FIXED, AC_ALWAYS, AC_NEVER, extended_capabilities },
   /* Compound data: Read access only */
   { GPG_DO_CH_DATA, DO_CMP_READ, AC_ALWAYS, AC_NEVER, cmp_ch_data },

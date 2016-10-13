@@ -4,7 +4,7 @@ Feature: command GET DATA
 
   Scenario: data object historical bytes
      When requesting historical bytes: 5f52
-     Then you should get: \x00\x31\x84\x73\x80\x01\x80\x00\x90\x00
+     Then data should match: \x00\x31\x84\x73\x80\x01\x80[\x00\x05]\x90\x00
 
   Scenario: data object extended capabilities
      When requesting extended capabilities: c0

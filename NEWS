@@ -1,5 +1,21 @@
 Gnuk NEWS - User visible changes
 
+* Major changes in Gnuk 1.2.2
+
+  Released 2016-10-14, by NIIBE Yutaka
+
+** Change of SELECT FILE behavior 
+Gnuk used to reply AID upon SELECT FILE command.  Now, to be compatible
+to original OpenPGP card, it returns nothing but status code of 9000.
+
+** Added feature of Factory Reset as compile time option
+Original OpenPGP card has the feature, and Gnuk is now configurable to
+support the feature.
+
+** Upgrade of Chopstx
+We use Chopstx 1.2.
+
+
 * Major changes in Gnuk 1.2.1
 
   Released 2016-07-11, by NIIBE Yutaka

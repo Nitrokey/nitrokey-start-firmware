@@ -1,3 +1,24 @@
+2016-10-14  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/usb-ccid.c (ccid_power_on) [LIFE_CYCLE_MANAGEMENT_SUPPORT]:
+	Change LCS value in ATR at run time.
+
+	* src/openpgp.c (gpg_init): Handle FILE_CARD_TERMINATED.
+	(cmd_select_file): Don't return AID.
+	(cmd_activate_file, cmd_terminate_df): New.
+	(process_command_apdu): Let return GPG_NO_RECORD() when
+	not selected.
+
+	* src/openpgp-do.c (gpg_do_terminate): New.
+	(gpg_data_scan): Handle p_start is NULL.
+	(do_hist_bytes): Remove.
+
+	* src/flash.c (flash_data): Change the value from 0x0000.
+	(flash_init): Support termination state.  Fix handling
+	of the boundary case where gen0 is 0xfffe.
+	(flash_terminate, flash_activate): New.
+	(flash_copying_gc): Skip 0xffff for generation number.
+
 2016-10-13  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/status-code.h: Rename from openpgp.h.

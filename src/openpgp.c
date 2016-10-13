@@ -101,7 +101,7 @@ set_res_sw (uint8_t sw1, uint8_t sw2)
 #define FILE_CARD_TERMINATED_OPENPGP	254
 #define FILE_CARD_TERMINATED	255
 
-static uint8_t file_selection;
+uint8_t file_selection;
 
 static void
 gpg_init (void)
@@ -765,18 +765,9 @@ cmd_select_file (void)
 	}
 
       file_selection = FILE_DF_OPENPGP;
-      if ((P2 (apdu) & 0x0c) == 0x0c)	/* No FCI */
-	GPG_SUCCESS ();
-      else
-	{
-	  gpg_do_get_data (0x004f, 1); /* AID */
-	  memmove (res_APDU+2, res_APDU, res_APDU_size);
-	  res_APDU[0] = 0x6f;
-	  res_APDU[1] = 0x12;
-	  res_APDU[2] = 0x84;	/* overwrite: DF name */
-	  res_APDU_size += 2;
-	  GPG_SUCCESS ();
-	}
+
+      /* Behave just like original OpenPGP card.  */
+      GPG_SUCCESS ();
     }
   else if (apdu.cmd_apdu_data_len == 2
 	   && apdu.cmd_apdu_data[0] == 0x2f && apdu.cmd_apdu_data[1] == 0x02)
