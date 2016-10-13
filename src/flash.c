@@ -1,7 +1,7 @@
 /*
  * flash.c -- Data Objects (DO) and GPG Key handling on Flash ROM
  *
- * Copyright (C) 2010, 2011, 2012, 2013, 2014, 2015
+ * Copyright (C) 2010, 2011, 2012, 2013, 2014, 2015, 2016
  *               Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
@@ -75,7 +75,7 @@ static uint8_t *last_p;
 
 /* The first halfword is generation for the data page (little endian) */
 const uint8_t const flash_data[4] __attribute__ ((section (".gnuk_data"))) = {
-  0x01, 0x00, 0xff, 0xff
+  0x00, 0x00, 0xff, 0xff
 };
 
 /* Linker set this symbol */
@@ -114,21 +114,50 @@ flash_init (void)
     flash_page_size = 2048;
 
   gen1_p = (uint16_t *)(&_data_pool + flash_page_size);
+  data_pool = &_data_pool;
 
   /* Check data pool generation and choose the page */
   gen0 = *gen0_p;
   gen1 = *gen1_p;
+
+  if (gen0 == 0xffff && gen1 == 0xffff)
+    /* It's terminated.  */
+    return NULL;
+
   if (gen0 == 0xffff)
+    /* Use another page if a page is erased.  */
     data_pool = &_data_pool + flash_page_size;
   else if (gen1 == 0xffff)
+    /* Or use different page if another page is erased.  */
     data_pool = &_data_pool;
-  else if (gen1 > gen0)
+  else if ((gen0 == 0xfffe && gen1 == 0) || gen1 > gen0)
+    /* When both pages have valid header, use newer page.   */
     data_pool = &_data_pool + flash_page_size;
-  else
-    data_pool = &_data_pool;
 
   return data_pool + FLASH_DATA_POOL_HEADER_SIZE;
 }
+
+static uint8_t *flash_key_getpage (enum kind_of_key kk);
+
+void
+flash_terminate (void)
+{
+  int i;
+
+  for (i = 0; i < 3; i++)
+    flash_erase_page ((uint32_t)flash_key_getpage (i));
+  flash_erase_page ((uint32_t)&_data_pool);
+  flash_erase_page ((uint32_t)(&_data_pool + flash_page_size));
+  data_pool = &_data_pool;
+  last_p = &_data_pool + FLASH_DATA_POOL_HEADER_SIZE;
+}
+
+void
+flash_activate (void)
+{
+  flash_program_halfword ((uint32_t)&_data_pool, 0);
+}
+
 
 void
 flash_init_keys (void)
@@ -209,8 +238,12 @@ flash_copying_gc (void)
   generation = *(uint16_t *)src;
   data_pool = dst;
   gpg_data_copy (data_pool + FLASH_DATA_POOL_HEADER_SIZE);
+  if (generation == 0xfffe)
+    generation = 0;
+  else
+    generation++;
+  flash_program_halfword ((uint32_t)dst, generation);
   flash_erase_page ((uint32_t)src);
-  flash_program_halfword ((uint32_t)dst, generation+1);
   return 0;
 }
 

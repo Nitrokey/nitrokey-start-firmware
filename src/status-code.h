@@ -1,4 +1,6 @@
+#define GPG_APPLICATION_TERMINATED()	set_res_sw (0x62, 0x85)
 #define GPG_MEMORY_FAILURE()		set_res_sw (0x65, 0x81)
+#define GPG_WRONG_LENGTH()		set_res_sw (0x67, 0x00)
 #define GPG_SECURITY_FAILURE()		set_res_sw (0x69, 0x82)
 #define GPG_SECURITY_AUTH_BLOCKED()	set_res_sw (0x69, 0x83)
 #define GPG_CONDITION_NOT_SATISFIED()	set_res_sw (0x69, 0x85)

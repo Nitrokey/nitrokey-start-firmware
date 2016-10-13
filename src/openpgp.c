@@ -48,6 +48,7 @@ static struct eventflag *openpgp_comm;
 #define INS_CHANGE_REFERENCE_DATA		0x24
 #define INS_PSO		  			0x2a
 #define INS_RESET_RETRY_COUNTER			0x2c
+#define INS_ACTIVATE_FILE			0x44
 #define INS_PGP_GENERATE_ASYMMETRIC_KEY_PAIR	0x47
 #define INS_EXTERNAL_AUTHENTICATE		0x82
 #define INS_GET_CHALLENGE			0x84
@@ -59,6 +60,7 @@ static struct eventflag *openpgp_comm;
 #define INS_UPDATE_BINARY			0xd6
 #define INS_PUT_DATA				0xda
 #define INS_PUT_DATA_ODD			0xdb	/* For key import */
+#define INS_TERMINATE_DF			0xe6
 
 static const uint8_t *challenge; /* Random bytes */
 
@@ -96,6 +98,8 @@ set_res_sw (uint8_t sw1, uint8_t sw2)
 #define FILE_EF_UPDATE_KEY_2	7
 #define FILE_EF_UPDATE_KEY_3	8
 #define FILE_EF_CH_CERTIFICATE	9
+#define FILE_CARD_TERMINATED_OPENPGP	254
+#define FILE_CARD_TERMINATED	255
 
 static uint8_t file_selection;
 
@@ -104,10 +108,15 @@ gpg_init (void)
 {
   const uint8_t *flash_data_start;
 
-  file_selection = FILE_NONE;
-  flash_data_start = flash_init ();
-  gpg_data_scan (flash_data_start);
   flash_init_keys ();
+  flash_data_start = flash_init ();
+
+  if (flash_data_start == NULL)
+    file_selection = FILE_CARD_TERMINATED;
+  else
+    file_selection = FILE_NONE;
+
+  gpg_data_scan (flash_data_start);
 }
 
 static void
@@ -616,9 +625,6 @@ cmd_put_data (void)
 
   DEBUG_INFO (" - PUT DATA\r\n");
 
-  if (file_selection != FILE_DF_OPENPGP)
-    GPG_NO_RECORD();
-
   tag = ((P1 (apdu)<<8) | P2 (apdu));
   len = apdu.cmd_apdu_data_len;
   data = apdu.cmd_apdu_data;
@@ -751,6 +757,13 @@ cmd_select_file (void)
 	  return;
 	}
 
+      if (file_selection == FILE_CARD_TERMINATED)
+	{
+	  file_selection = FILE_CARD_TERMINATED_OPENPGP;
+	  GPG_APPLICATION_TERMINATED();
+	  return;
+	}
+
       file_selection = FILE_DF_OPENPGP;
       if ((P2 (apdu) & 0x0c) == 0x0c)	/* No FCI */
 	GPG_SUCCESS ();
@@ -812,9 +825,6 @@ cmd_get_data (void)
   uint16_t tag = ((P1 (apdu)<<8) | P2 (apdu));
 
   DEBUG_INFO (" - Get Data\r\n");
-
-  if (file_selection != FILE_DF_OPENPGP)
-    GPG_NO_RECORD ();
 
   gpg_do_get_data (tag, 0);
 }
@@ -1317,6 +1327,64 @@ cmd_get_challenge (void)
 }
 
 
+#ifdef LIFE_CYCLE_MANAGEMENT_SUPPORT
+static void
+cmd_activate_file (void)
+{
+  if (file_selection != FILE_CARD_TERMINATED_OPENPGP)
+    {
+      GPG_NO_RECORD();
+      return;
+    }
+
+  flash_activate ();
+  file_selection = FILE_DF_OPENPGP;
+  GPG_SUCCESS ();
+}
+
+static void
+cmd_terminate_df (void)
+{
+  uint8_t p1 = P1 (apdu);
+  uint8_t p2 = P2 (apdu);
+
+  if (file_selection != FILE_DF_OPENPGP)
+    {
+      GPG_NO_RECORD();
+      return;
+    }
+
+  if (p1 != 0 || p2 != 0)
+    {
+      GPG_BAD_P1_P2();
+      return;
+    }
+
+  if (apdu.cmd_apdu_data_len != 0)
+    {
+      GPG_WRONG_LENGTH();
+      return;
+    }
+
+
+  if (!ac_check_status (AC_ADMIN_AUTHORIZED) && !gpg_pw_locked (PW_ERR_PW3))
+    {
+      /* Only allow the case admin authorized, or, admin pass is locked.  */
+      GPG_SECURITY_FAILURE();
+      return;
+    }
+
+  ac_reset_admin ();
+  ac_reset_pso_cds ();
+  ac_reset_other ();
+  gpg_do_terminate ();
+  flash_terminate ();
+  file_selection = FILE_CARD_TERMINATED;
+  GPG_SUCCESS ();
+}
+#endif
+
+
 struct command
 {
   uint8_t command;
@@ -1328,13 +1396,16 @@ const struct command cmds[] = {
   { INS_CHANGE_REFERENCE_DATA, cmd_change_password },
   { INS_PSO, cmd_pso },
   { INS_RESET_RETRY_COUNTER, cmd_reset_user_password },
+#ifdef LIFE_CYCLE_MANAGEMENT_SUPPORT
+  { INS_ACTIVATE_FILE, cmd_activate_file },
+#endif
   { INS_PGP_GENERATE_ASYMMETRIC_KEY_PAIR, cmd_pgp_gakp },
   { INS_EXTERNAL_AUTHENTICATE,	            /* Not in OpenPGP card protocol */
     cmd_external_authenticate },
   { INS_GET_CHALLENGE, cmd_get_challenge }, /* Not in OpenPGP card protocol */
   { INS_INTERNAL_AUTHENTICATE, cmd_internal_authenticate },
   { INS_SELECT_FILE, cmd_select_file },
-  { INS_READ_BINARY, cmd_read_binary },
+  { INS_READ_BINARY, cmd_read_binary },     /* Not in OpenPGP card protocol */
   { INS_GET_DATA, cmd_get_data },
   { INS_WRITE_BINARY, cmd_write_binary},    /* Not in OpenPGP card protocol */
 #if defined(CERTDO_SUPPORT)
@@ -1342,6 +1413,9 @@ const struct command cmds[] = {
 #endif
   { INS_PUT_DATA, cmd_put_data },
   { INS_PUT_DATA_ODD, cmd_put_data },
+#ifdef LIFE_CYCLE_MANAGEMENT_SUPPORT
+  { INS_TERMINATE_DF, cmd_terminate_df},
+#endif
 };
 #define NUM_CMDS ((int)(sizeof (cmds) / sizeof (struct command)))
 
@@ -1357,9 +1431,22 @@ process_command_apdu (void)
 
   if (i < NUM_CMDS)
     {
-      chopstx_setcancelstate (1);
-      cmds[i].cmd_handler ();
-      chopstx_setcancelstate (0);
+      if (file_selection == FILE_CARD_TERMINATED
+	  && cmd != INS_SELECT_FILE && cmd != INS_ACTIVATE_FILE
+	  && cmd != INS_GET_CHALLENGE && cmd != INS_EXTERNAL_AUTHENTICATE)
+	GPG_APPLICATION_TERMINATED();
+      else if (file_selection != FILE_DF_OPENPGP
+	       && cmd != INS_SELECT_FILE && cmd != INS_ACTIVATE_FILE
+	       && cmd != INS_GET_CHALLENGE && cmd != INS_EXTERNAL_AUTHENTICATE
+	       && cmd != INS_WRITE_BINARY && cmd != INS_UPDATE_BINARY
+	       && cmd != INS_READ_BINARY)
+	GPG_NO_RECORD();
+      else
+	{
+	  chopstx_setcancelstate (1);
+	  cmds[i].cmd_handler ();
+	  chopstx_setcancelstate (0);
+	}
     }
   else
     {

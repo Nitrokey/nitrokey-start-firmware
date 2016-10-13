@@ -1074,6 +1074,28 @@ gpg_do_delete_prvkey (enum kind_of_key kk, int clean_page_full)
     }
 }
 
+void
+gpg_do_terminate (void)
+{
+  int i;
+
+  for (i = 0; i < 3; i++)
+    kd[i].pubkey = NULL;
+
+  for (i = 0; i < NR_DO__LAST__; i++)
+    do_ptr[i] = NULL;
+
+  num_prv_keys = 0;
+  data_objects_number_of_bytes = 0;
+  digital_signature_counter = 0;
+
+  pw1_lifetime_p = NULL;
+  pw_err_counter_p[PW_ERR_PW1] = NULL;
+  pw_err_counter_p[PW_ERR_RC] = NULL;
+  pw_err_counter_p[PW_ERR_PW3] = NULL;
+  algo_attr_sig_p = algo_attr_dec_p = algo_attr_aut_p = NULL;
+}
+
 static int
 gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data,
 		     int prvkey_len, const uint8_t *keystring_admin,
@@ -1549,7 +1571,7 @@ gpg_data_scan (const uint8_t *p_start)
 
   /* Traverse DO, counters, etc. in DATA pool */
   p = p_start;
-  while (*p != NR_EMPTY)
+  while (p && *p != NR_EMPTY)
     {
       uint8_t nr = *p++;
       uint8_t second_byte = *p;
