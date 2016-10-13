@@ -31,7 +31,7 @@
 
 #include "gnuk.h"
 #include "sys.h"
-#include "openpgp.h"
+#include "status-code.h"
 #include "sha256.h"
 #include "random.h"
 

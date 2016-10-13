@@ -30,7 +30,7 @@
 #include "config.h"
 
 #include "gnuk.h"
-#include "openpgp.h"
+#include "status-code.h"
 #include "random.h"
 #include "polarssl/config.h"
 #include "polarssl/rsa.h"
