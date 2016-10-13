@@ -8,7 +8,10 @@ def pytest_addoption(parser):
 
 @pytest.fixture(scope="session")
 def card():
+    print()
+    print("Test start!")
     reader = get_ccid_device()
+    print("Reader:", reader.get_string(1), reader.get_string(2))
     card = OpenPGP_Card(reader)
     card.cmd_select_openpgp()
     yield card

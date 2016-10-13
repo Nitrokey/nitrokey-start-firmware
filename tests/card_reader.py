@@ -326,5 +326,4 @@ def get_ccid_device():
         atr = ccid.ccid_power_on()
     else:
         raise ValueError("Unknown CCID status", status)
-    print(atr)
     return ccid

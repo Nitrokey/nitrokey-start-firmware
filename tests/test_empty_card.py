@@ -20,7 +20,9 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
+from binascii import hexlify
 from re import match, DOTALL
+from struct import pack
 from util import *
 
 EMPTY_60=bytes(60)
@@ -32,6 +34,7 @@ def test_login(card):
     login = get_data_object(card, 0x5e)
     assert check_null(login)
 
+"""
 def test_name(card):
     name = get_data_object(card, 0x5b)
     assert check_null(name)
@@ -43,6 +46,17 @@ def test_lang(card):
 def test_sex(card):
     sex = get_data_object(card, 0x5f35)
     assert check_null(sex)
+"""
+
+def test_name_lang_sex(card):
+    name = b""
+    lang = b""
+    sex = b"9"
+    expected = b'\x5b' + pack('B', len(name)) + name \
+               +  b'\x5f\x2d' + pack('B', len(lang)) + lang \
+               + b'\x5f\x35' + pack('B', len(sex)) + sex
+    name_lang_sex = get_data_object(card, 0x65)
+    assert name_lang_sex == b'' or name_lang_sex == expected
 
 def test_url(card):
     url = get_data_object(card, 0x5f50)
@@ -139,4 +153,8 @@ def test_algorithm_attributes_3(card):
 
 def test_AID(card):
     a = get_data_object(card, 0x4f)
-    assert match(b'\xd2\x76\x00\x01\\$\x01\x02\x00......\x00\x00', a, DOTALL)
+    print()
+    print("OpenPGP card version: %d.%d" % (a[6], a[7]))
+    print("Card Manufacturer:  ", hexlify(a[8:10]).decode("UTF-8"))
+    print("Card serial:    ", hexlify(a[10:14]).decode("UTF-8"))
+    assert match(b'\xd2\x76\x00\x01\\$\x01........\x00\x00', a, DOTALL)

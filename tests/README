@@ -7,28 +7,3 @@ You need to install:
 Please run test by typing:
 
     $ py.test-3 -x
-
-test_empty_card.py
-000
-001
-002
-
-010
-020
-021
-030
-040
-100
-101
-200
-201
-202
-203
-210
-211
-370
-380
-490
-
-
-003
