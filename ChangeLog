@@ -1,3 +1,15 @@
+2016-10-13  Niibe Yutaka  <gniibe@fsij.org>
+
+	* tests: New test suite for OpenPGP card with PyTest.
+
+	* src/configure (factory_reset): New.
+
+	* src/usb-ccid.c (ccid_power_on): Use ATR_head and historical
+	bytes.
+
+	* src/openpgp-do.c (rw_algorithm_attr): Clear fingerprint, timestamp,
+	and possibly ds_counter.
+
 2016-10-12  Niibe Yutaka  <gniibe@fsij.org>
 
 	* test/features/steps.py (cmd_reset_retry_counter): Fix.

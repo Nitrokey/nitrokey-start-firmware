@@ -43,6 +43,7 @@ sys1_compat=yes
 pinpad=no
 certdo=no
 hid_card_change=no
+factory_reset=no
 
 # Revision number
 if test -e ../.git; then
@@ -87,6 +88,10 @@ for option; do
     sys1_compat=yes ;;
   --disable-sys1-compat)
     sys1_compat=no ;;
+  --enable-factory-reset)
+    factory_reset=yes ;;
+  --disable-factory-reset)
+    factory_reset=no ;;
   --with-dfu)
     with_dfu=yes ;;
   --without-dfu)
@@ -131,6 +136,8 @@ Configuration:
   --disable-sys1-compat	disable SYS 1.0 compatibility	[no]
 			   executable is target independent
 			   but requires SYS 2.0 or newer
+  --enable-factory-reset
+			support life cycle management	[no]
   --with-dfu		build image for DFU 		[<target specific>]
 EOF
   exit 0
@@ -246,6 +253,15 @@ if test "$hid_card_change" = "yes"; then
 else
   HID_CARD_CHANGE_DEFINE="#undef HID_CARD_CHANGE_SUPPORT"
   echo "Card insert/removal by HID device is NOT supported"
+fi
+
+# --enable-factory-reset option
+if test "$factory_reset" = "yes"; then
+  LIFE_CYCLE_MANAGEMENT_DEFINE="#define LIFE_CYCLE_MANAGEMENT_SUPPORT 1"
+  echo "Life cycle management is supported"
+else
+  LIFE_CYCLE_MANAGEMENT_DEFINE="#undef LIFE_CYCLE_MANAGEMENT_SUPPORT"
+  echo "Life cycle management is NOT supported"
 fi
 
 ### !!! Replace following string of "FSIJ" to yours !!! ####
@@ -375,6 +391,7 @@ sed -e "s/@DEBUG_DEFINE@/$DEBUG_DEFINE/" \
     -e "s/@PINPAD_MORE_DEFINE@/$PINPAD_MORE_DEFINE/" \
     -e "s/@CERTDO_DEFINE@/$CERTDO_DEFINE/" \
     -e "s/@HID_CARD_CHANGE_DEFINE@/$HID_CARD_CHANGE_DEFINE/" \
+    -e "s/@LIFE_CYCLE_MANAGEMENT_DEFINE@/$LIFE_CYCLE_MANAGEMENT_DEFINE/" \
     -e "s/@SERIALNO_STR_LEN_DEFINE@/$SERIALNO_STR_LEN_DEFINE/" \
 	< config.h.in > config.h
 exit 0

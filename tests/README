@@ -1,5 +1,9 @@
 Here is a test suite for OpenPGP card.
 
+For now, only TPDU card reader is supported for OpenPGP card.
+Gnuk Token is supported as well.
+
+
 You need to install:
 
    $ sudo apt-get install python3-pytest python3-usb

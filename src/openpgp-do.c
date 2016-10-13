@@ -1,7 +1,7 @@
 /*
  * openpgp-do.c -- OpenPGP card Data Objects (DO) handling
  *
- * Copyright (C) 2010, 2011, 2012, 2013, 2014, 2015
+ * Copyright (C) 2010, 2011, 2012, 2013, 2014, 2015, 2016
  *               Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
@@ -94,7 +94,7 @@ uint16_t data_objects_number_of_bytes;
  */
 
 /* Historical Bytes (template) */
-static const uint8_t historical_bytes[] __attribute__ ((aligned (1))) = {
+const uint8_t historical_bytes[] __attribute__ ((aligned (1))) = {
   10,
   0x00,
   0x31, 0x84,			/* Full DF name, GET DATA, MF */
@@ -763,6 +763,22 @@ rw_algorithm_attr (uint16_t tag, int with_tag,
 	{
 	  gpg_do_delete_prvkey (kk, CLEAN_PAGE_FULL);
 	  flash_enum_clear (algo_attr_pp);
+	  if (kk == GPG_KEY_FOR_SIGNING)
+	    {
+	      gpg_reset_digital_signature_counter ();
+	      gpg_do_write_simple (NR_DO_FP_SIG, NULL, 0);
+	      gpg_do_write_simple (NR_DO_KGTIME_SIG, NULL, 0);
+	    }
+	  else if (kk == GPG_KEY_FOR_DECRYPTION)
+	    {
+	      gpg_do_write_simple (NR_DO_FP_DEC, NULL, 0);
+	      gpg_do_write_simple (NR_DO_KGTIME_DEC, NULL, 0);
+	    }
+	  else
+	    {
+	      gpg_do_write_simple (NR_DO_FP_AUT, NULL, 0);
+	      gpg_do_write_simple (NR_DO_KGTIME_AUT, NULL, 0);
+	    }
 	  if (*algo_attr_pp != NULL)
 	    return 0;
 	}
@@ -770,6 +786,22 @@ rw_algorithm_attr (uint16_t tag, int with_tag,
 	       || (*algo_attr_pp)[1] != algo)
 	{
 	  gpg_do_delete_prvkey (kk, CLEAN_PAGE_FULL);
+	  if (kk == GPG_KEY_FOR_SIGNING)
+	    {
+	      gpg_reset_digital_signature_counter ();
+	      gpg_do_write_simple (NR_DO_FP_SIG, NULL, 0);
+	      gpg_do_write_simple (NR_DO_KGTIME_SIG, NULL, 0);
+	    }
+	  else if (kk == GPG_KEY_FOR_DECRYPTION)
+	    {
+	      gpg_do_write_simple (NR_DO_FP_DEC, NULL, 0);
+	      gpg_do_write_simple (NR_DO_KGTIME_DEC, NULL, 0);
+	    }
+	  else
+	    {
+	      gpg_do_write_simple (NR_DO_FP_AUT, NULL, 0);
+	      gpg_do_write_simple (NR_DO_KGTIME_AUT, NULL, 0);
+	    }
 	  *algo_attr_pp = flash_enum_write (kk_to_nr (kk), algo);
 	  if (*algo_attr_pp == NULL)
 	    return 0;

@@ -720,24 +720,12 @@ usb_tx_done (uint8_t ep_num, uint16_t len)
  * TB3 = 0x55: BWI = 5, CWI = 5   (BWT timeout 3.2 sec)
  * TD3 = 0x1f: TA4 follows, T=15
  * TA4 = 0x03: 5V or 3.3V
- * Historical bytes: to be explained...
- * XOR check
  *
- * Minimum: 0x3b, 0x8a, 0x80, 0x01, + historical bytes, xor check
+ * Minimum: 0x3b, 0x8a, 0x80, 0x01
  *
  */
-static const uint8_t ATR[] = {
+static const uint8_t ATR_head[] = {
   0x3b, 0xda, 0x11, 0xff, 0x81, 0xb1, 0xfe, 0x55, 0x1f, 0x03,
-  0x00,
-	0x31, 0x84, /* full DF name, GET DATA, MF */
-        0x73,
-              0x80, /* DF full name */
-  	      0x01, /* 1-byte */
-  	      0x80, /* Command chaining, No extended Lc and extended Le */
-  	0x00,
-        0x90, 0x00,
- (0xda^0x11^0xff^0x81^0xb1^0xfe^0x55^0x1f^0x03
-  ^0x00^0x31^0x84^0x73^0x80^0x01^0x80^0x00^0x90^0x00)
 };
 
 /*
@@ -783,8 +771,10 @@ extern uint8_t __process3_stack_base__[], __process3_stack_size__[];
 static enum ccid_state
 ccid_power_on (struct ccid *c)
 {
-  size_t size_atr = sizeof (ATR);
-  uint8_t p[CCID_MSG_HEADER_SIZE];
+  size_t size_atr = sizeof (ATR_head) + historical_bytes[0] + 1;
+  uint8_t p[CCID_MSG_HEADER_SIZE+size_atr];
+  uint8_t xor_check = 0;
+  int i;
 
   if (c->application == 0)
     c->application = chopstx_create (PRIO_GPG, STACK_ADDR_GPG,
@@ -802,8 +792,14 @@ ccid_power_on (struct ccid *c)
   p[CCID_MSG_ERROR_OFFSET] = 0x00;
   p[CCID_MSG_CHAIN_OFFSET] = 0x00;
 
-  usb_lld_txcpy (p, c->epi->ep_num, 0, CCID_MSG_HEADER_SIZE);
-  usb_lld_txcpy (ATR, c->epi->ep_num, CCID_MSG_HEADER_SIZE, size_atr);
+  memcpy (p + CCID_MSG_HEADER_SIZE, ATR_head, sizeof (ATR_head));
+  memcpy (p + CCID_MSG_HEADER_SIZE + sizeof (ATR_head),
+	  historical_bytes + 1, historical_bytes[0]);
+  for (i = 1; i < (int)size_atr - 1; i++)
+    xor_check ^= p[CCID_MSG_HEADER_SIZE + i];
+  p[CCID_MSG_HEADER_SIZE+size_atr-1] = xor_check;
+
+  usb_lld_txcpy (p, c->epi->ep_num, 0, CCID_MSG_HEADER_SIZE + size_atr);
 
   /* This is a single packet Bulk-IN transaction */
   c->epi->buf = NULL;

@@ -100,6 +100,7 @@ void ac_fini (void);
 
 
 void set_res_sw (uint8_t sw1, uint8_t sw2);
+extern const uint8_t historical_bytes[];
 extern uint16_t data_objects_number_of_bytes;
 
 #define CHALLENGE_LEN	32
