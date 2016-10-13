@@ -1,5 +1,7 @@
 2016-10-13  Niibe Yutaka  <gniibe@fsij.org>
 
+	* chopstx: Update to 1.2.
+
 	* tests: New test suite for OpenPGP card with PyTest.
 
 	* src/configure (factory_reset): New.
