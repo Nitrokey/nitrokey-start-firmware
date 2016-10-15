@@ -136,6 +136,19 @@ def test_timestamp_3_put(card):
     r = card.cmd_put_data(0x00, 0xd0, timestamp3)
     assert r
 
+
+def test_public_key_1(card):
+    pk = card.cmd_get_public_key(1)
+    assert rsa_keys.key[0][0] == pk[9:9+256]
+
+def test_public_key_2(card):
+    pk = card.cmd_get_public_key(2)
+    assert rsa_keys.key[1][0] == pk[9:9+256]
+
+def test_public_key_3(card):
+    pk = card.cmd_get_public_key(3)
+    assert rsa_keys.key[2][0] == pk[9:9+256]
+
 def test_setup_pw1_0(card):
     r = card.cmd_change_reference_data(1, FACTORY_PASSPHRASE_PW1 + PW1_TEST0)
     assert r

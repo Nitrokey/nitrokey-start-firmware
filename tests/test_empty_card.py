@@ -24,6 +24,7 @@ from binascii import hexlify
 from re import match, DOTALL
 from struct import pack
 from util import *
+import pytest
 
 EMPTY_60=bytes(60)
 
@@ -151,6 +152,21 @@ def test_algorithm_attributes_2(card):
 def test_algorithm_attributes_3(card):
     a = get_data_object(card, 0xc3)
     assert a == None or a == b'\x01\x08\x00\x00\x20\x00'
+
+def test_public_key_1(card):
+    with pytest.raises(Exception) as excinfo:
+        pk = card.cmd_get_public_key(1)
+    assert excinfo.value.args[0] == "6a88"
+
+def test_public_key_2(card):
+    with pytest.raises(Exception) as excinfo:
+        pk = card.cmd_get_public_key(2)
+    assert excinfo.value.args[0] == "6a88"
+
+def test_public_key_3(card):
+    with pytest.raises(Exception) as excinfo:
+        pk = card.cmd_get_public_key(3)
+    assert excinfo.value.args[0] == "6a88"
 
 def test_AID(card):
     a = get_data_object(card, 0x4f)

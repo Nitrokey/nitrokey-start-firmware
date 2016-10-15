@@ -54,6 +54,7 @@ def test_sex_put(card):
         # Gnuk
         r = card.cmd_put_data(0x5f, 0x35, b"")
     except ValueError:
+        # OpenPGP card which doesn't allow b""
         r = card.cmd_put_data(0x5f, 0x35, b"9")
     assert r
 
