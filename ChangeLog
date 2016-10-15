@@ -1,5 +1,9 @@
 2016-10-15  Niibe Yutaka  <gniibe@fsij.org>
 
+	* src/openpgp.c (gpg_init): flash_init_keys shoule be after
+	gpg_data_scan since flash_init_keys accesses Data Object for
+	key attributes.
+
 	* src/usb-ccid.c (ccid_power_on): Don't waste stack.
 
 2016-10-14  Niibe Yutaka  <gniibe@fsij.org>

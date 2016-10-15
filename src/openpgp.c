@@ -108,7 +108,6 @@ gpg_init (void)
 {
   const uint8_t *flash_data_start;
 
-  flash_init_keys ();
   flash_data_start = flash_init ();
 
   if (flash_data_start == NULL)
@@ -117,6 +116,7 @@ gpg_init (void)
     file_selection = FILE_NONE;
 
   gpg_data_scan (flash_data_start);
+  flash_init_keys ();
 }
 
 static void
