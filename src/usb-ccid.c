@@ -771,8 +771,9 @@ extern uint8_t __process3_stack_base__[], __process3_stack_size__[];
 static enum ccid_state
 ccid_power_on (struct ccid *c)
 {
-  size_t size_atr = sizeof (ATR_head) + historical_bytes[0] + 1;
-  uint8_t p[CCID_MSG_HEADER_SIZE+size_atr];
+  uint8_t p[CCID_MSG_HEADER_SIZE+1]; /* >= size of historical_bytes -1 */
+  int hist_len = historical_bytes[0];
+  size_t size_atr = sizeof (ATR_head) + hist_len + 1;
   uint8_t xor_check = 0;
   int i;
 
@@ -792,18 +793,21 @@ ccid_power_on (struct ccid *c)
   p[CCID_MSG_ERROR_OFFSET] = 0x00;
   p[CCID_MSG_CHAIN_OFFSET] = 0x00;
 
-  memcpy (p + CCID_MSG_HEADER_SIZE, ATR_head, sizeof (ATR_head));
-  memcpy (p + CCID_MSG_HEADER_SIZE + sizeof (ATR_head),
-	  historical_bytes + 1, historical_bytes[0]);
+  usb_lld_txcpy (p, c->epi->ep_num, 0, CCID_MSG_HEADER_SIZE);
+  usb_lld_txcpy (ATR_head, c->epi->ep_num, CCID_MSG_HEADER_SIZE,
+		 sizeof (ATR_head));
+  for (i = 1; i < (int)sizeof (ATR_head); i++)
+    xor_check ^= ATR_head[i];
+  memcpy (p, historical_bytes + 1, hist_len);
 #ifdef LIFE_CYCLE_MANAGEMENT_SUPPORT
   if (file_selection == 255)
-    p[CCID_MSG_HEADER_SIZE + sizeof (ATR_head) + 7] = 0x03;
+    p[7] = 0x03;
 #endif
-  for (i = 1; i < (int)size_atr - 1; i++)
-    xor_check ^= p[CCID_MSG_HEADER_SIZE + i];
-  p[CCID_MSG_HEADER_SIZE+size_atr-1] = xor_check;
-
-  usb_lld_txcpy (p, c->epi->ep_num, 0, CCID_MSG_HEADER_SIZE + size_atr);
+  for (i = 0; i < hist_len; i++)
+    xor_check ^= p[i];
+  p[i] = xor_check;
+  usb_lld_txcpy (p, c->epi->ep_num, CCID_MSG_HEADER_SIZE + sizeof (ATR_head),
+		 hist_len+1);
 
   /* This is a single packet Bulk-IN transaction */
   c->epi->buf = NULL;
