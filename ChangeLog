@@ -1,4 +1,6 @@
-2016-10-15  Niibe Yutaka  <gniibe@fsij.org>
+2016-10-15  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* VERSION: 1.2.2.
 
 	* tool/gnuk_put_binary_libusb.py (main): Likewise.
 	* tool/upgrade_by_passwd.py (main): Add call of cmd_select_openpgp
