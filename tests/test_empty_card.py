@@ -64,8 +64,8 @@ def test_url(card):
     assert check_null(url)
 
 def test_ds_counter(card):
-    c = get_data_object(card, 0x93)
-    assert c == None or c == b'\x00\x00\x00'
+    c = get_data_object(card, 0x7a)
+    assert c == b'\x93\x03\x00\x00\x00'
 
 def test_pw1_status(card):
     s = get_data_object(card, 0xc4)

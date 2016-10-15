@@ -136,6 +136,13 @@ def test_timestamp_3_put(card):
     r = card.cmd_put_data(0x00, 0xd0, timestamp3)
     assert r
 
+def test_ds_counter_0(card):
+    c = get_data_object(card, 0x7a)
+    assert c == b'\x93\x03\x00\x00\x00'
+
+def test_pw1_status(card):
+    s = get_data_object(card, 0xc4)
+    assert match(b'\x01...\x03[\x00\x03]\x03', s, DOTALL)
 
 def test_public_key_1(card):
     pk = card.cmd_get_public_key(1)
@@ -246,6 +253,10 @@ def test_sign_1(card):
     sig = rsa_keys.compute_signature(0, digestinfo)
     sig_bytes = sig.to_bytes(int((sig.bit_length()+7)/8), byteorder='big')
     assert r == sig_bytes
+
+def test_ds_counter_1(card):
+    c = get_data_object(card, 0x7a)
+    assert c == b'\x93\x03\x00\x00\x02'
 
 def test_sign_auth_0(card):
     digestinfo = rsa_keys.compute_digestinfo(PLAIN_TEXT0)
