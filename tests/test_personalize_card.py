@@ -144,6 +144,13 @@ def test_pw1_status(card):
     s = get_data_object(card, 0xc4)
     assert match(b'\x01...\x03[\x00\x03]\x03', s, DOTALL)
 
+def test_app_data(card):
+    app_data = get_data_object(card, 0x6e)
+    hist_len = app_data[20]
+    # FIXME: parse and check DO of C0, C1, C2, C3, C4, and C6
+    assert app_data[0:8] == b"\x4f\x10\xd2\x76\x00\x01\x24\x01" and \
+           app_data[18:18+2] == b"\x5f\x52"
+
 def test_public_key_1(card):
     pk = card.cmd_get_public_key(1)
     assert rsa_keys.key[0][0] == pk[9:9+256]

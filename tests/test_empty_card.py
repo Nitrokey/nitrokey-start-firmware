@@ -59,6 +59,13 @@ def test_name_lang_sex(card):
     name_lang_sex = get_data_object(card, 0x65)
     assert name_lang_sex == b'' or name_lang_sex == expected
 
+def test_app_data(card):
+    app_data = get_data_object(card, 0x6e)
+    hist_len = app_data[20]
+    # FIXME: parse and check DO of C0, C1, C2, C3, C4, and C6
+    assert app_data[0:8] == b"\x4f\x10\xd2\x76\x00\x01\x24\x01" and \
+           app_data[18:18+2] == b"\x5f\x52"
+
 def test_url(card):
     url = get_data_object(card, 0x5f50)
     assert check_null(url)
