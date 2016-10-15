@@ -49,6 +49,7 @@ def main(fileid, is_update, data, passwd):
         raise ValueError("No ICC present")
     elif gnuk.icc_get_status() == 1:
         gnuk.icc_power_on()
+    gnuk.cmd_select_openpgp()
     gnuk.cmd_verify(BY_ADMIN, passwd.encode('UTF-8'))
     gnuk.cmd_write_binary(fileid, data, is_update)
     gnuk.cmd_select_openpgp()

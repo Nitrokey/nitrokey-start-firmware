@@ -1,5 +1,9 @@
 2016-10-15  Niibe Yutaka  <gniibe@fsij.org>
 
+	* tool/gnuk_put_binary_libusb.py (main): Likewise.
+	* tool/upgrade_by_passwd.py (main): Add call of cmd_select_openpgp
+	method.
+
 	* src/openpgp.c (gpg_init): flash_init_keys shoule be after
 	gpg_data_scan since flash_init_keys accesses Data Object for
 	key attributes.
