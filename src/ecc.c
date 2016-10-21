@@ -384,7 +384,7 @@ FUNC(check_secret) (const bn256 *d0, bn256 *d1)
 {
   ac Q0[1], Q1[1];
 
-  if (bn256_is_zero (d0) || bn256_sub (d1, N, d0) <= 0)
+  if (bn256_is_zero (d0) || bn256_sub (d1, N, d0) != 0)
     /* == 0 or >= N, it's not valid.  */
     return 0;
 

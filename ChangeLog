@@ -1,3 +1,7 @@
+2016-10-21  Niibe Yutaka  <gniibe@fsij.org>
+
+	* src/ecc.c (check_secret): Fix condition.
+
 2016-10-15  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* VERSION: 1.2.2.
