@@ -27,6 +27,7 @@ import usb, time
 from array import array
 
 # USB class, subclass, protocol
+GNUK_USB_DEVICE_ID = '../GNUK_USB_DEVICE_ID'
 CCID_CLASS = 0x0B
 CCID_SUBCLASS = 0x00
 CCID_PROTOCOL_0 = 0x00
@@ -586,17 +587,28 @@ def gnuk_devices():
                                 alt.interfaceProtocol == CCID_PROTOCOL_0:
                             yield dev, config, alt
 
-USB_VENDOR_FSIJ=[0x234b, 0x20a0]
-USB_PRODUCT_GNUK=[0x0000, 0x4211]
+def get_gnuk_devices_vidpid():
+    with open(GNUK_USB_DEVICE_ID, 'r') as f:
+        for line in f:
+            try:
+                vid_pid_column = line.split('\t')[0]
+                vid_pid = vid_pid_column.split(':')
+                toint = lambda x: int(x, 16)
+                vid_pid = map(toint, vid_pid)
+                # print((b, a))
+                yield vid_pid
+            except:
+                # print(('error for', line))
+                pass
+
+USB_VID_PID_GNUK = list(get_gnuk_devices_vidpid())
 
 def gnuk_devices_by_vidpid():
     busses = usb.busses()
     for bus in busses:
         devices = bus.devices
         for dev in devices:
-            if dev.idVendor not in USB_VENDOR_FSIJ:
-                continue
-            if dev.idProduct not in USB_PRODUCT_GNUK:
+            if [dev.idVendor, dev.idProduct] not in USB_VID_PID_GNUK:
                 continue
             yield dev
 
