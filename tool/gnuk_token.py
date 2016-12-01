@@ -586,17 +586,17 @@ def gnuk_devices():
                                 alt.interfaceProtocol == CCID_PROTOCOL_0:
                             yield dev, config, alt
 
-USB_VENDOR_FSIJ=0x234b
-USB_PRODUCT_GNUK=0x0000
+USB_VENDOR_FSIJ=[0x234b, 0x20a0]
+USB_PRODUCT_GNUK=[0x0000, 0x4211]
 
 def gnuk_devices_by_vidpid():
     busses = usb.busses()
     for bus in busses:
         devices = bus.devices
         for dev in devices:
-            if dev.idVendor != USB_VENDOR_FSIJ:
+            if dev.idVendor not in USB_VENDOR_FSIJ:
                 continue
-            if dev.idProduct != USB_PRODUCT_GNUK:
+            if dev.idProduct not in USB_PRODUCT_GNUK:
                 continue
             yield dev
 
