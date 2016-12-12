@@ -845,7 +845,7 @@ ccid_send_status (struct ccid *c)
   c->epi->tx_done = 1;
   usb_lld_write (c->epi->ep_num, ccid_reply, CCID_MSG_HEADER_SIZE);
 
-  led_blink (LED_SHOW_STATUS);
+//  led_blink (LED_SHOW_STATUS); //blinks regularly after running gpg2 command
 #ifdef DEBUG_MORE
   DEBUG_INFO ("St\r\n");
 #endif
@@ -1332,7 +1332,7 @@ ccid_handle_timeout (struct ccid *c)
       break;
     }
 
-  led_blink (LED_ONESHOT);
+//  led_blink (LED_ONESHOT); //blinks after powering on, stops after running gpg2 command
   return next_state;
 }
 

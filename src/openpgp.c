@@ -1551,6 +1551,7 @@ openpgp_card_thread (void *arg)
       led_blink (LED_START_COMMAND);
       process_command_apdu ();
       led_blink (LED_FINISH_COMMAND);
+      led_blink (LED_ONESHOT); //blink after finishing each command
     done:
       eventflag_signal (ccid_comm, EV_EXEC_FINISHED);
     }
