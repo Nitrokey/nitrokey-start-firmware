@@ -3,8 +3,13 @@ Both HEX and BIN files are usable for direct flashing (HEX files have checksum c
 Since LEDs are swapped in RTM.2 using this firmware for regnual upgrade will result in not working LED. This is the only side-effect though. Proper firmware for upgrade will be prepared and uploaded here later.
 Please unpack .hex.gz files before using or they might be interpreted as binary by flashing software.
 
+Binary version for RTM.1 is provided only for testing purposes and it is a result of the following command:
+srec_cat nitrokey-start-firmware-1.0.4-1a.hex -intel -offset -0x08000000 -o nitrokey-start-firmware-1.0.4-1a.bin -binary
+Please use .hex file for flashing.
+
 Output of sha512sum utility:
 f318d5bb375889076f109282237f28da6dc4b3e392aa9e14d4c2dac56763f48656b0e010039a0039928e8ee0087a3e6f2833cffa978fbe4ace72b506fae13260  RTM.1/nitrokey-start-firmware-1.0.4-1a.hex
+b248fb5551bf759bd4ea67f2b818010543e09d11448ef8d298387bbfe918990a30a5af03429e4a10206171251830060cd584b99409e0eda9aa7dd33da4a566b0  RTM.1/nitrokey-start-firmware-1.0.4-1a.bin.gz
 6aa8b807413e11328777d6181229e8b9ad02783c50ea579fe0090d66f6617a0be29b110708be3ec3a086370615ebf8a5d1d422f539c38edadc0f0f23e59ebb88  RTM.2/gnuk.hex
 6ec2a188be9a3eb070267217084b405fd003f2f7d769f407c1a2f0f840ad7eb040ec91ec98270e2ededb502780bb7ac7eeee0075d6306a027b0f35e054021ef2  RTM.2/regnual.hex
 
