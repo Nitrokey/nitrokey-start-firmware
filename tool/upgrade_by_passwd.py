@@ -124,6 +124,9 @@ if __name__ == '__main__':
         passwd = getpass("Admin password: ")
     filename_regnual = sys.argv[1]
     filename_upgrade = sys.argv[2]
+    if not filename_regnual.endswith('bin') or not filename_upgrade.endswith('bin'):
+        print("Both input files must be in binary format (*.bin)!")
+        exit(1)
     f = open(filename_regnual,"rb")
     data_regnual = f.read()
     f.close()

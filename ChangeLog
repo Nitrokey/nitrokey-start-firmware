@@ -1,3 +1,7 @@
+2017-01-02  Szczepan Zalega <szczepan@nitrokey.com>
+
+	* tool/upgrade_by_passwd.py: Add file extention check.
+
 2017-02-01  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* tool/upgrade_by_passwd.py (main): More verbose messages
