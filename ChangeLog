@@ -1,3 +1,7 @@
+2017-02-01  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* README: Update README.  Thanks to Paul Fertser.
+
 2017-01-02  Szczepan Zalega <szczepan@nitrokey.com>
 
 	* tool/upgrade_by_passwd.py: Add file extention check.

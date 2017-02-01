@@ -248,7 +248,7 @@ External source code
 
 Gnuk is distributed with external source code.
 
-* chopstx/  -- Chopstx 1.1
+* chopstx/  -- Chopstx 1.2
 
   We use Chopstx as the kernel for Gnuk.
 
@@ -361,10 +361,10 @@ You need GNU toolchain and newlib for 'arm-none-eabi' target.
 On Debian we can install the packages of gcc-arm-none-eabi,
 gdb-arm-none-eabi and its friends.  I'm using:
 
-	binutils-arm-none-eabi	2.26-4+8
-	gcc-arm-none-eabi 	15:4.9.3+svn231177-1
-	gdb-arm-none-eabi 	7.10-1+9
-	libnewlib-arm-none-eabi	2.2.0+git20150830.5a3d536-1
+	binutils-arm-none-eabi	2.27-9+9
+	gcc-arm-none-eabi 	15:5.4.1+svn241155-1
+	gdb-arm-none-eabi 	7.11.1-2+9+b1
+	libnewlib-arm-none-eabi	2.4.0.20160527-2
 
 Or else, see https://launchpad.net/gcc-arm-embedded for preparation of
 GNU Toolchain for 'arm-none-eabi' target.
@@ -395,18 +395,14 @@ How to install
 Olimex STM32-H103 board
 -----------------------
 
-If you are using Olimex JTAG-Tiny, type following to invoke OpenOCD:
+If you are using Olimex JTAG-Tiny, type following to invoke OpenOCD
+and write "gnuk.elf" to Flash ROM:
 
-  $ openocd -f interface/ftdi/olimex-jtag-tiny.cfg -f board/olimex_stm32_h103.cfg
+  $ openocd -f interface/ftdi/olimex-jtag-tiny.cfg \
+            -f board/olimex_stm32_h103.cfg \
+            -c "program build/gnuk.elf verify reset exit"
 
-Then, with another terminal, type following to write "gnuk.elf" to Flash ROM:
-
-  $ telnet localhost 4444
-  > reset halt
-  > flash write_image erase gnuk.elf
-  > reset
-  > exit
-  $ 
+Command invocation is assumed in src/ directory.
 
 
 Flying Stone Tiny 01
@@ -414,9 +410,10 @@ Flying Stone Tiny 01
 
 If you are using Flying Stone Tiny 01, you need a SWD writer.
 
-OpenOCD 0.9 now supports ST-Link/V2.  We can use it:
+OpenOCD 0.9.0 now supports ST-Link/V2.  We can use it like:
 
-  $ openocd -f interface/stlink-v2.cfg -f target/stm32f1x_stlink.cfg
+  $ openocd -f interface/stlink-v2.cfg -f target/stm32f1x.cfg \
+            -c "program build/gnuk.elf verify reset exit"
 
 
 
@@ -435,20 +432,24 @@ Then, reset the board.
 How to protect flash ROM
 ========================
 
-Invoke your OpenOCD and type:
+To protect, invoke OpenOCD like (for FST-01):
 
-  $ telnet localhost 4444
-  > reset halt
-  > stm32f1x lock 0
-  > reset
-  > shutdown
+  $ openocd -f interface/stlink-v2.cfg -f target/stm32f1x.cfg \
+            -c init -c "reset halt" -c "stm32f1x lock 0" -c reset -c exit
 
 After power-off / power-on sequence, the contents of flash ROM cannot
 be accessible from JTAG debugger.
 
+Unprotecting is:
+
+  $ openocd -f interface/stlink-v2.cfg -f target/stm32f1x.cfg \
+            -c init -c "reset halt" -c "stm32f1x unlock 0" -c reset -c exit
+
+Upon unprotection, flash is erased.
+
 Note that it would be still possible for some implementation of DfuSe
-to access the contents.  If you want to protect, killing DfuSe and
-accessing by JTAG debugger is recommended.
+to access the contents, even if it's protected.  If you really want to
+protect, killing DfuSe and accessing by JTAG debugger is recommended.
 
 
 (Optional) Configure serial number and X.509 certificate
