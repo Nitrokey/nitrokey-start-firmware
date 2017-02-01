@@ -1,7 +1,7 @@
 """
 gnuk_token.py - a library for Gnuk Token
 
-Copyright (C) 2011, 2012, 2013, 2015
+Copyright (C) 2011, 2012, 2013, 2015, 2017
               Free Software Initiative of Japan
 Author: NIIBE Yutaka <gniibe@fsij.org>
 
@@ -25,6 +25,12 @@ from struct import *
 import binascii
 import usb, time
 from array import array
+
+# Possible Gnuk Token products
+USB_PRODUCT_LIST=[
+    { 'vendor' : 0x234b, 'product' : 0x0000 }, # FSIJ Gnuk Token
+    { 'vendor' : 0x20a0, 'product' : 0x4211 }, # Nitrokey Start
+]
 
 # USB class, subclass, protocol
 CCID_CLASS = 0x0B
@@ -586,19 +592,18 @@ def gnuk_devices():
                                 alt.interfaceProtocol == CCID_PROTOCOL_0:
                             yield dev, config, alt
 
-USB_VENDOR_FSIJ=0x234b
-USB_PRODUCT_GNUK=0x0000
-
 def gnuk_devices_by_vidpid():
     busses = usb.busses()
     for bus in busses:
         devices = bus.devices
         for dev in devices:
-            if dev.idVendor != USB_VENDOR_FSIJ:
-                continue
-            if dev.idProduct != USB_PRODUCT_GNUK:
-                continue
-            yield dev
+            for cand in USB_PRODUCT_LIST:
+                if dev.idVendor != cand['vendor']:
+                    continue
+                if dev.idProduct != cand['product']:
+                    continue
+                yield dev
+                break
 
 def get_gnuk_device():
     icc = None

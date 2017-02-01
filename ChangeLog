@@ -1,3 +1,14 @@
+2017-02-01  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* tool/upgrade_by_passwd.py (main): More verbose messages
+	suggested by Szczepan Zalega <szczepan@nitrokey.com>.
+
+	* tool/gnuk_token.py (USB_PRODUCT_LIST): New.
+	(gnuk_devices_by_vidpid): Support searching by USB_PRODUCT_LIST.
+	Thanks to Szczepan Zalega <szczepan@nitrokey.com>.
+
+	* tool/usb_strings.py: Use gnuk_token.py.
+
 2016-10-21  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/ecc.c (check_secret): Fix condition.
