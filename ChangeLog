@@ -1,3 +1,8 @@
+2017-02-02  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* chopstx: Update to 1.3.
+	* src/configure: Add BLUE_PILL in the help message.
+
 2017-02-01  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* README: Update README.  Thanks to Paul Fertser.

@@ -1,5 +1,13 @@
 Gnuk NEWS - User visible changes
 
+* Major changes in Gnuk 1.2.3
+
+  Released 2017-02-XX, by NIIBE Yutaka
+
+** Upgrade of Chopstx
+We use Chopstx 1.3.
+
+
 * Major changes in Gnuk 1.2.2
 
   Released 2016-10-15, by NIIBE Yutaka

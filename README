@@ -248,7 +248,7 @@ External source code
 
 Gnuk is distributed with external source code.
 
-* chopstx/  -- Chopstx 1.2
+* chopstx/  -- Chopstx 1.3
 
   We use Chopstx as the kernel for Gnuk.
 
@@ -551,6 +551,10 @@ We can use GDB.
 Inside GDB, we can connect OpenOCD by:
 
   (gdb) target remote localhost:3333
+
+or
+
+  (gdb) target extended-remote localhost:3333
 
 
 You can see the output of PCSCD:
