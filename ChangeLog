@@ -1,5 +1,7 @@
 2017-02-02  NIIBE Yutaka  <gniibe@fsij.org>
 
+	* VERSION: 1.2.3.
+
 	* src/gnuk.ld.in (__process1_stack_size__): Increase by 0x20.
 	* chopstx: Update to 1.3.
 	* src/configure: Add BLUE_PILL in the help message.
