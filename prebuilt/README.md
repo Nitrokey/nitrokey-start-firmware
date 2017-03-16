@@ -34,8 +34,8 @@ git clone -b gnuk1.2-regnual-fix
 https://github.com/Nitrokey/nitrokey-start-firmware.git
 ```
 enter `prebuilt`, and choose binary depending on your current firmware:
-		* if your LED flashes green on operation please choose RTM.1->RTM.3
-		* if your LED flashes red then please choose RTM.3
+- if your LED flashes green on operation please choose RTM.1->RTM.3
+- if your LED flashes red then please choose RTM.3
 
 To make sure firmware is changed on device you can save current version
 to file: `gpg2 --card-status > before.status` . Since gpg2 claims the
