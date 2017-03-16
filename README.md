@@ -1,7 +1,7 @@
 Nitrokey Start Firmware
 ==============
 
-The firmware for Nitrokey start currently could be found under [gnuk1.2-regnual-fix](https://github.com/Nitrokey/nitrokey-start-firmware/tree/gnuk1.2-regnual-fix). Please follow instructions found there.
+The firmware for Nitrokey start currently could be found under [gnuk1.2-regnual-fix](https://github.com/Nitrokey/nitrokey-start-firmware/tree/gnuk1.2-regnual-fix) branch. Please follow [instructions found there](https://github.com/Nitrokey/nitrokey-start-firmware/blob/gnuk1.2-regnual-fix/README.md).
 
 
 Other
