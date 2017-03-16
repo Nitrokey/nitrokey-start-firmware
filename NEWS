@@ -1,5 +1,16 @@
 Gnuk NEWS - User visible changes
 
+* Major changes in Gnuk 1.2.3
+
+  Released 2017-02-02, by NIIBE Yutaka
+
+** ECC key generation on the device
+Bug fixed.
+
+** Upgrade of Chopstx
+We use Chopstx 1.3.
+
+
 * Major changes in Gnuk 1.2.2
 
   Released 2016-10-15, by NIIBE Yutaka
