@@ -22,7 +22,6 @@ Please use .hex file for flashing.
 Output of sha512sum utility is located in checksums.sha512 file.
 
 
-RTM.3 firmware is now ** under tests, please do not use it yet ** .
 Binaries based on GNUK 1.2.3 are available under RTM.3/ and RTM.1_to_RTM.3_upgrade/ directories for devices with red and green LED respectively. Devices upgraded earlier with RTM.1_to_RTM.2_upgrade/ firmware can be safely upgraded with RTM.1_to_RTM.3_upgrade/ binaries. 
 
 
@@ -34,7 +33,6 @@ Please download firmware repository, eg. with command:
 git clone -b gnuk1.2-regnual-fix
 https://github.com/Nitrokey/nitrokey-start-firmware.git
 ```
-RTM.3 firmware is now ** under tests, please do not use it yet ** .
 enter `prebuilt`, and choose binary depending on your current firmware:
 - if your LED flashes green on operation please choose RTM.1->RTM.3
 - if your LED flashes red then please choose RTM.3
