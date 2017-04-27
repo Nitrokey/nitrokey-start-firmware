@@ -171,10 +171,6 @@ SECTIONS
     .gnuk_flash :
     {
         . = ALIGN (@FLASH_PAGE_SIZE@);
-        _data_pool = .;
-        KEEP(*(.gnuk_data))
-        . = ALIGN(@FLASH_PAGE_SIZE@);
-        . += @FLASH_PAGE_SIZE@;
         _keystore_pool = .;
         . += 512;
         . = ALIGN(@FLASH_PAGE_SIZE@);
@@ -185,6 +181,10 @@ SECTIONS
         _updatekey_store = .;
         . += 1024;
         . = ALIGN(@FLASH_PAGE_SIZE@);
+        _data_pool = .;
+        KEEP(*(.gnuk_data))
+        . = ALIGN(@FLASH_PAGE_SIZE@);
+        . += @FLASH_PAGE_SIZE@;
     } > flash =0xffffffff
 }
 

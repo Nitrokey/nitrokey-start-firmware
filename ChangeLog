@@ -1,5 +1,7 @@
 2017-04-27  NIIBE Yutaka  <gniibe@fsij.org>
 
+	* src/gnuk.ld.in (_data_pool): Move to the end.
+
 	* src/flash.c (flash_init): Return address of end of data object.
 	* src/openpgp.c (gpg_init): Get address of end of data object.
 	* src/openpgp-do.c (gpg_data_scan): Check the end address.
