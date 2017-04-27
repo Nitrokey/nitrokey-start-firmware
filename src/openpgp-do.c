@@ -1,7 +1,7 @@
 /*
  * openpgp-do.c -- OpenPGP card Data Objects (DO) handling
  *
- * Copyright (C) 2010, 2011, 2012, 2013, 2014, 2015, 2016
+ * Copyright (C) 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
  *               Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
@@ -1543,12 +1543,13 @@ gpg_do_table[] = {
  * Reading data from Flash ROM, initialize DO_PTR, PW_ERR_COUNTERS, etc.
  */
 void
-gpg_data_scan (const uint8_t *p_start)
+gpg_data_scan (const uint8_t *do_start, const uint8_t *do_end)
 {
   const uint8_t *p;
   int i;
   const uint8_t *dsc_h14_p, *dsc_l10_p;
   int dsc_h14, dsc_l10;
+  const uint8_t *p_end;
 
   dsc_h14_p = dsc_l10_p = NULL;
   pw1_lifetime_p = NULL;
@@ -1556,10 +1557,15 @@ gpg_data_scan (const uint8_t *p_start)
   pw_err_counter_p[PW_ERR_RC] = NULL;
   pw_err_counter_p[PW_ERR_PW3] = NULL;
   algo_attr_sig_p = algo_attr_dec_p = algo_attr_aut_p = NULL;
+  digital_signature_counter = 0;
+
+  /* When the card is terminated no data objects are valid.  */
+  if (do_start == NULL)
+    return;
 
   /* Traverse DO, counters, etc. in DATA pool */
-  p = p_start;
-  while (p && *p != NR_EMPTY)
+  p = do_start;
+  while (p < do_end && *p != NR_EMPTY)
     {
       uint8_t nr = *p++;
       uint8_t second_byte = *p;
@@ -1571,7 +1577,9 @@ gpg_data_scan (const uint8_t *p_start)
 	  if (nr < 0x80)
 	    {
 	      /* It's Data Object */
-	      do_ptr[nr] = p;
+	      if (nr < NR_DO__LAST__)
+		do_ptr[nr] = p;
+
 	      p += second_byte + 1; /* second_byte has length */
 
 	      if (((uint32_t)p & 1))
