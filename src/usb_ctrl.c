@@ -233,8 +233,7 @@ usb_setup (struct usb_dev *dev)
 	}
       else /* SETUP_SET */
 	{
-	  uint8_t *addr = (uint8_t *)(0x20000000 + arg->value * 0x100
-				      + arg->index);
+	  uint8_t *addr = sram_address ((arg->value * 0x100) + arg->index);
 
 	  if (arg->request == USB_FSIJ_GNUK_DOWNLOAD)
 	    {
@@ -255,7 +254,7 @@ usb_setup (struct usb_dev *dev)
 	      if (*ccid_state_p != CCID_STATE_EXITED)
 		return -1;
 
-	      if (((uint32_t)addr & 0x03))
+	      if (((uintptr_t)addr & 0x03))
 		return -1;
 
 	      return download_check_crc32 (dev, (uint32_t *)addr);

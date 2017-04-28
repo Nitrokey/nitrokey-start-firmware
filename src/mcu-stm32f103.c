@@ -48,3 +48,9 @@ check_crc32 (const uint32_t *start_p, const uint32_t *end_p)
 
   return (rbit (CRC->DR) ^ crc32) == 0xffffffff;
 }
+
+uint8_t *
+sram_address (uint32_t offset)
+{
+  return ((uint8_t *)0x20000000) + offset;
+}
