@@ -1,3 +1,8 @@
+2017-04-28  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/openpgp-do.c (gpg_write_digital_signature_counter): Fix
+	writing lower 10-bit.
+
 2017-04-27  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* src/gnuk.ld.in (_data_pool): Move to the end.

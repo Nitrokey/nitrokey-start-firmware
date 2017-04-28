@@ -336,7 +336,7 @@ gpg_write_digital_signature_counter (const uint8_t *p, uint32_t dsc)
   else
     {
       hw0 = NR_COUNTER_DS | ((dsc & 0xfc0000) >> 18) | ((dsc & 0x03fc00) >> 2);
-      hw1 = NR_COUNTER_DS_LSB;
+      hw1 = NR_COUNTER_DS_LSB | ((dsc & 0x0300) >> 8) | ((dsc & 0x00ff) << 8);
       flash_put_data_internal (p, hw0);
       flash_put_data_internal (p+2, hw1);
       return p+4;
