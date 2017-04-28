@@ -1,5 +1,8 @@
 2017-04-28  NIIBE Yutaka  <gniibe@fsij.org>
 
+	* src/usb_ctrl.c (download_check_crc32): Use check_crc32.
+	* src/mcu-stm32f103.c: New.
+
 	* src/openpgp-do.c (gpg_write_digital_signature_counter): Fix
 	writing lower 10-bit.
 

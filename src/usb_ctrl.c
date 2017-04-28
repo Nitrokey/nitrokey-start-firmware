@@ -38,7 +38,6 @@
 #include "usb_lld.h"
 #include "usb_conf.h"
 #include "gnuk.h"
-#include "mcu/stm32f103.h"
 
 #ifdef ENABLE_VIRTUAL_COM_PORT
 #include "usb-cdc.h"
@@ -209,27 +208,11 @@ static const uint8_t *const mem_info[] = { &_regnual_start,  __heap_end__, };
 #define USB_FSIJ_GNUK_EXEC        2
 #define USB_FSIJ_GNUK_CARD_CHANGE 3
 
-static uint32_t rbit (uint32_t v)
-{
-  uint32_t r;
-
-  asm ("rbit	%0, %1" : "=r" (r) : "r" (v));
-  return r;
-}
-
 /* After calling this function, CRC module remain enabled.  */
-static int download_check_crc32 (struct usb_dev *dev, const uint32_t *end_p)
+static int
+download_check_crc32 (struct usb_dev *dev, const uint32_t *end_p)
 {
-  uint32_t crc32 = *end_p;
-  const uint32_t *p;
-
-  RCC->AHBENR |= RCC_AHBENR_CRCEN;
-  CRC->CR = CRC_CR_RESET;
-
-  for (p = (const uint32_t *)&_regnual_start; p < end_p; p++)
-    CRC->DR = rbit (*p);
-
-  if ((rbit (CRC->DR) ^ crc32) == 0xffffffff)
+  if (check_crc32 ((const uint32_t *)&_regnual_start, end_p))
     return usb_lld_ctrl_ack (dev);
 
   return -1;

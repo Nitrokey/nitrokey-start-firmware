@@ -8,8 +8,8 @@ CHOPSTX = ../chopstx
 # Define linker script file here
 LDSCRIPT= gnuk.ld
 
-CSRC = main.c usb_desc.c usb_ctrl.c \
-	call-rsa.c \
+CSRC = main.c call-rsa.c mcu-stm32f103.c \
+	usb_desc.c usb_ctrl.c \
 	usb-ccid.c openpgp.c ac.c openpgp-do.c flash.c \
 	bn.c mod.c \
 	modp256r1.c jpc_p256r1.c ec_p256r1.c call-ec_p256r1.c \

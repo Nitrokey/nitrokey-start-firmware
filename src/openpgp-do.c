@@ -1549,7 +1549,6 @@ gpg_data_scan (const uint8_t *do_start, const uint8_t *do_end)
   int i;
   const uint8_t *dsc_h14_p, *dsc_l10_p;
   int dsc_h14, dsc_l10;
-  const uint8_t *p_end;
 
   dsc_h14_p = dsc_l10_p = NULL;
   pw1_lifetime_p = NULL;

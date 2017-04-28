@@ -459,3 +459,5 @@ int pinpad_getline (int msg_code, uint32_t timeout_usec);
 #endif
 
 extern uint8_t _regnual_start, __heap_end__[];
+
+int check_crc32 (const uint32_t *start_p, const uint32_t *end_p);
