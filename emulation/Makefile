@@ -1,4 +1,4 @@
-SRCS = usbip-server.c
+SRCS = usbip-server.c usb-emu.c
 OBJS = $(SRCS:.c=.o)
 TARGET=gnuk_emulation
 GNUKDIR=../src
@@ -10,7 +10,7 @@ GNUK_SRCS = main.c call-rsa.c \
 	modp256k1.c jpc_p256k1.c ec_p256k1.c call-ec_p256k1.c \
 	mod25638.c ecc-edwards.c ecc-mont.c sha512.c \
 	random.c neug.c sha256.c
-USB_SRCS=usb_desc.c usb_ctrl.c 
+USB_SRCS=usb_desc.c usb_ctrl.c
 
 GNUK_CSRC = $(addprefix $(GNUKDIR)/, $(GNUK_SRCS))
 GNUK_OBJS = $(notdir $(GNUK_CSRC:.c=.o))
