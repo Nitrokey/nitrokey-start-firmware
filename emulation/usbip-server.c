@@ -34,8 +34,8 @@
 
 #define USBIP_PORT 3240
 
-#define CMD_REQ_LIST   0x01008005
-#define CMD_REQ_ATTACH 0x01008003
+#define CMD_REQ_LIST   0x01118005
+#define CMD_REQ_ATTACH 0x01118003
 #define CMD_URB        0x00000001
 #define CMD_DETACH     0x00000002
 
@@ -44,11 +44,70 @@ struct usbip_msg_head {
   uint32_t seq;
 };
 
+#define USBIP_REPLY_HEADER_SIZE 12
+#define DEVICE_INFO_SIZE        (256+32+12+6+6)
+#define INTERFACE_INFO_SIZE     4
+#define DEVICE_LIST_SIZE        (USBIP_REPLY_HEADER_SIZE+DEVICE_INFO_SIZE*1+INTERFACE_INFO_SIZE*1)
+
+#define USBIP_REPLY_DEVICE_LIST "\x01\x11\x00\x05"
+#define NETWORK_UINT32_ZERO     "\x00\x00\x00\x00"
+#define NETWORK_UINT32_ONE      "\x00\x00\x00\x01"
+#define NETWORK_UINT32_TWO      "\x00\x00\x00\x02"
+#define NETWORK_UINT16_FSIJ      "\x23\x4b"
+#define NETWORK_UINT16_ZERO      "\x00\x00"
+#define NETWORK_UINT16_ONE_ONE   "\x01\x01"
+
 static char *
 list_devices (size_t *len_p)
 {
+  char *p0, *p;
+
   *len_p = 0;
-  return NULL;
+  p0 = malloc (DEVICE_LIST_SIZE);
+  if (p0 == NULL)
+    return NULL;
+
+  *len_p = DEVICE_LIST_SIZE;
+
+  p = p0;
+  memcpy (p, USBIP_REPLY_DEVICE_LIST, 4);
+  p += 4;
+  memcpy (p, NETWORK_UINT32_ZERO, 4);
+  p += 4;
+  memcpy (p, NETWORK_UINT32_ONE, 4);
+  p += 4;
+  memset (p, 0, 256);
+  strcpy (p, "/sys/devices/pci0000:00/0000:00:01.1/usb1/1-1");
+  p += 256;
+  memset (p, 0, 32);
+  strcpy (p, "1-1");
+  p += 32;
+  memcpy (p, NETWORK_UINT32_ONE, 4); /* Bus */
+  p += 4;
+  memcpy (p, NETWORK_UINT32_TWO, 4); /* Dev */
+  p += 4;
+  memcpy (p, NETWORK_UINT32_ONE, 4); /* Speed */
+  p += 4;
+  memcpy (p, NETWORK_UINT16_FSIJ, 2);
+  p += 2;
+  memcpy (p, NETWORK_UINT16_ZERO, 2); /* Gnuk */
+  p += 2;
+  memcpy (p, NETWORK_UINT16_ONE_ONE, 2); /* USB 1.1 */
+  p += 2;
+
+  *p++ = 0; /* bDeviceClass        */
+  *p++ = 0; /* bDeviceSubClass     */
+  *p++ = 0; /* bDeviceProtocol     */
+  *p++ = 0; /* bConfigurationValue */
+  *p++ = 1; /* bConfigurationValue */
+  *p++ = 1; /* bNumInterfaces      */
+
+  *p++ = 11; /* bInterfaceClass    */
+  *p++ = 0;  /* bInterfaceSubClass */
+  *p++ = 0;  /* bInterfaceProtocol */
+  *p++ = 0;  /* ----pad----------- */
+
+  return p0;
 }
 
 static char *
@@ -65,8 +124,7 @@ handle_urb (int fd)
 }
 
 
-
-void
+static void
 run_server (void)
 {
   int sock;
@@ -202,11 +260,19 @@ run_server (void)
 	    }
 	  else
 	    {
-	      fprintf (stderr, "Unknown command %x, disconnecting.\n", msg.cmd);
+	      fprintf (stderr, "Unknown command %08x, disconnecting.\n", msg.cmd);
 	      break;
 	    }
 	}
 
        close (fd);
     }
+}
+
+
+int
+main (int argc, const char *argv[])
+{
+  run_server ();
+  return 0;
 }

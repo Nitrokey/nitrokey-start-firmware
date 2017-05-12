@@ -1,4 +1,4 @@
-SRCS = usbip-server.c usb-emu.c
+SRCS = usbip-server.c usb-emu.c glue.c
 OBJS = $(SRCS:.c=.o)
 TARGET=gnuk_emulation
 GNUKDIR=../src
