@@ -1,5 +1,15 @@
 Gnuk NEWS - User visible changes
 
+* Major changes in Gnuk 1.2.4
+
+  Released 2017-05-12, by NIIBE Yutaka
+
+** Flash ROM security fix
+The partial content of flash ROM might be exposed when scanning of
+data object had a problem.  Added boundary check and changed layout of
+flash ROM.
+
+
 * Major changes in Gnuk 1.2.3
 
   Released 2017-02-02, by NIIBE Yutaka
