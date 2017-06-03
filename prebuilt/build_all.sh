@@ -22,9 +22,7 @@ git clone -b $gtag git@github.com:Nitrokey/nitrokey-start-firmware.git --recursi
 
 pushd $tag/chopstx
 if [ ${upgrade_from_rtm1} == "green" ] ; then
-  git checkout green_led
-else
-  git checkout red_led
+  cp board/board-nitrokey-start{-green_LED,}.h -v -b
 fi
 popd
 
