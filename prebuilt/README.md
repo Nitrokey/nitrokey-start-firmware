@@ -2,8 +2,7 @@
 Prebuilt binaries
 ========
 
-Here are stored firmwares used to flash devices in first (RTM.1, GNUK v1.0.4), 
-second (RTM.2, v1.2.2) and third (RTM.3, v1.2.3) series.  Both HEX and BIN files are usable for
+Here are stored firmwares used to flash devices in all (RTM.1->RTM.4) series.  Both HEX and BIN files are usable for
 direct flashing (HEX files have checksum control though). Only BIN files however could
 be used for regnual upgrade.  Since LEDs are swapped in RTM.2 (red instead of green) using it with
 regnual upgrade will result in not working LED (it should be reversible though). For this please use files from
@@ -24,6 +23,7 @@ Output of sha512sum utility is located in checksums.sha512 file.
 
 Binaries based on GNUK 1.2.3 are available under RTM.3/ and RTM.1_to_RTM.3_upgrade/ directories for devices with red and green LED respectively. Devices upgraded earlier with RTM.1_to_RTM.2_upgrade/ firmware can be safely upgraded with RTM.1_to_RTM.3_upgrade/ binaries. 
 
+Similarly for later releases - RTM.4 is based on GNUK 1.2.4.
 
 Firmware upgrade instructions
 -------
@@ -34,12 +34,13 @@ git clone -b gnuk1.2-regnual-fix
 https://github.com/Nitrokey/nitrokey-start-firmware.git
 ```
 enter `prebuilt`, and choose binary depending on your current firmware:
-- if your LED flashes green on operation please choose RTM.1->RTM.3
-- if your LED flashes red then please choose RTM.3
+- if your LED flashes green on operation please choose RTM.1->RTM.4
+- if your LED flashes red then please choose RTM.4
 
 To make sure firmware is changed on device you can save current version
 to file: `gpg2 --card-status > before.status` . Since gpg2 claims the
 device please reinsert it to make it free to use by GNUK.
+Another way is to use `python ../tool/usb_strings.py` (`pyusb` python package required).
 
 Then please enter `tool` directory in firmware's repository and run:
 ```
@@ -54,4 +55,12 @@ diff before.status after.status
 
 It is possible to test the device after flashing. Please enter `./tests/` directory
 and run `py.test -v test_*`. Py.test 3+ and Python 3+ are needed to run
-them. A `virtualenv` tool might be useful to help setting up environment.
+them. A `virtualenv` tool might be useful to help setting up environment:
+
+```
+virtualenv env3 --python python3
+. env3/bin/activate
+pip3 install pytest 
+pip3 install pyusb
+pytest -vx test_*
+```
