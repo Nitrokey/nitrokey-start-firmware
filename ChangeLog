@@ -1,3 +1,53 @@
+2017-05-12  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* VERSION: 1.2.4.
+
+2017-04-28  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/mcu-stm32f103.c: New.
+	(check_crc32, sram_address): New.
+
+	* src/usb_ctrl.c (download_check_crc32): Use check_crc32 and
+	sram_address.
+
+	* src/openpgp-do.c (gpg_write_digital_signature_counter): Fix
+	writing lower 10-bit.
+
+2017-04-27  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/gnuk.ld.in (_data_pool): Move to the end.
+
+	* src/flash.c (flash_init): Return address of end of data object.
+	* src/openpgp.c (gpg_init): Get address of end of data object.
+	* src/openpgp-do.c (gpg_data_scan): Check the end address.
+
+2017-02-02  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* VERSION: 1.2.3.
+
+	* src/gnuk.ld.in (__process1_stack_size__): Increase by 0x20.
+	* chopstx: Update to 1.3.
+	* src/configure: Add BLUE_PILL in the help message.
+
+2017-02-01  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* README: Update README.  Thanks to Paul Fertser.
+
+2017-01-02  Szczepan Zalega <szczepan@nitrokey.com>
+
+	* tool/upgrade_by_passwd.py: Add file extention check.
+
+2017-02-01  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* tool/upgrade_by_passwd.py (main): More verbose messages
+	suggested by Szczepan Zalega <szczepan@nitrokey.com>.
+
+	* tool/gnuk_token.py (USB_PRODUCT_LIST): New.
+	(gnuk_devices_by_vidpid): Support searching by USB_PRODUCT_LIST.
+	Thanks to Szczepan Zalega <szczepan@nitrokey.com>.
+
+	* tool/usb_strings.py: Use gnuk_token.py.
+
 2016-10-21  Niibe Yutaka  <gniibe@fsij.org>
 
 	* src/ecc.c (check_secret): Fix condition.

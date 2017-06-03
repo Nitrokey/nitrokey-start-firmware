@@ -1,7 +1,7 @@
 /*
  * flash.c -- Data Objects (DO) and GPG Key handling on Flash ROM
  *
- * Copyright (C) 2010, 2011, 2012, 2013, 2014, 2015, 2016
+ * Copyright (C) 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
  *               Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
@@ -102,8 +102,8 @@ static int key_available_at (const uint8_t *k, int key_size)
 
 
 #define CHIP_ID_REG      ((uint32_t *)0xe0042000)
-const uint8_t *
-flash_init (void)
+void
+flash_init (const uint8_t **p_do_start, const uint8_t **p_do_end)
 {
   uint16_t gen0, gen1;
   uint16_t *gen0_p = (uint16_t *)&_data_pool;
@@ -121,8 +121,11 @@ flash_init (void)
   gen1 = *gen1_p;
 
   if (gen0 == 0xffff && gen1 == 0xffff)
-    /* It's terminated.  */
-    return NULL;
+    {
+      /* It's terminated.  */
+      *p_do_start = *p_do_end = NULL;
+      return;
+    }
 
   if (gen0 == 0xffff)
     /* Use another page if a page is erased.  */
@@ -134,7 +137,8 @@ flash_init (void)
     /* When both pages have valid header, use newer page.   */
     data_pool = &_data_pool + flash_page_size;
 
-  return data_pool + FLASH_DATA_POOL_HEADER_SIZE;
+  *p_do_start = data_pool + FLASH_DATA_POOL_HEADER_SIZE;
+  *p_do_end = data_pool + flash_page_size;
 }
 
 static uint8_t *flash_key_getpage (enum kind_of_key kk);

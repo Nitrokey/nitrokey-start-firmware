@@ -1,7 +1,7 @@
 /*
  * openpgp.c -- OpenPGP card protocol support
  *
- * Copyright (C) 2010, 2011, 2012, 2013, 2014, 2015, 2016
+ * Copyright (C) 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
  *               Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
@@ -106,16 +106,17 @@ uint8_t file_selection;
 static void
 gpg_init (void)
 {
-  const uint8_t *flash_data_start;
+  const uint8_t *flash_do_start;
+  const uint8_t *flash_do_end;
 
-  flash_data_start = flash_init ();
+  flash_init (&flash_do_start, &flash_do_end);
 
-  if (flash_data_start == NULL)
+  if (flash_do_start == NULL)
     file_selection = FILE_CARD_TERMINATED;
   else
     file_selection = FILE_NONE;
 
-  gpg_data_scan (flash_data_start);
+  gpg_data_scan (flash_do_start, flash_do_end);
   flash_init_keys ();
 }
 

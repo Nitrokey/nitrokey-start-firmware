@@ -68,10 +68,10 @@ def main(wait_e, keyno, passwd, data_regnual, data_upgrade):
     del gnuk
     gnuk = None
     #
-    print("Waiting for device to appear:")
     reg = None
+    print("Waiting for device to appear:")
     while reg == None:
-        print("- Wait %d seconds..." % wait_e)
+        print("  Wait %d seconds..." % wait_e)
         time.sleep(wait_e)
         for dev in gnuk_devices_by_vidpid():
             try:
@@ -85,7 +85,9 @@ def main(wait_e, keyno, passwd, data_regnual, data_upgrade):
     print("%08x:%08x" % mem_info)
     print("Downloading the program")
     reg.download(mem_info[0], data_upgrade)
+    print("Protecting device")
     reg.protect()
+    print("Finish flashing")
     reg.finish()
     print("Resetting device")
     reg.reset_device()

@@ -50,39 +50,9 @@ With the script below, I extract public key of the keygrip
 
    $ ./get_raw_public_key.py 5D6C89682D07CCFC034AF508420BF2276D8018ED
 
-Here is the script, get_raw_public_key.py::
-
-   #! /usr/bin/python
-   
-   import sys, binascii
-   from subprocess import check_output
-   
-   def get_gpg_public_key(keygrip):
-       result = check_output(["gpg-connect-agent", "READKEY %s" % keygrip, "/bye"])
-       key = ""
-       while True:
-           i = result.find('%')
-           if i < 0:
-               key += result
-               break
-           hex_str = result[i+1:i+3]
-           key += result[0:i]
-           key += chr(int(hex_str,16))
-           result = result[i+3:]
-
-       pos = key.index("D (10:public-key(3:rsa(1:n257:") + 31 # skip NUL too
-       key = key[pos:-17]           # )(1:e3:XYZ)))\nOK\n
-       if len(key) != 256:
-           raise ValueError, binascii.hexlify(key)
-       return key
-
-   if __name__ == '__main__':
-       keygrip = sys.argv[1]
-       k = get_gpg_public_key(keygrip)
-       shorthand = keygrip[0:8] + ".bin"
-       f = open(shorthand,"w")
-       f.write(k)
-       f.close()
+(The script is available in the directory gnuk/tool.  Please note that
+it was written in the early stage of the development.  The quality of
+the code is somewhat questionable.)
 
 
 Then, we can put the data of public key into token by::

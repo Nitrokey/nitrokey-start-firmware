@@ -1,7 +1,7 @@
 """
 gnuk_token.py - a library for Gnuk Token
 
-Copyright (C) 2011, 2012, 2013, 2015
+Copyright (C) 2011, 2012, 2013, 2015, 2017
               Free Software Initiative of Japan
 Author: NIIBE Yutaka <gniibe@fsij.org>
 
@@ -26,8 +26,13 @@ import binascii
 import usb, time
 from array import array
 
+# Possible Gnuk Token products
+USB_PRODUCT_LIST=[
+    { 'vendor' : 0x234b, 'product' : 0x0000 }, # FSIJ Gnuk Token
+    { 'vendor' : 0x20a0, 'product' : 0x4211 }, # Nitrokey Start
+]
+
 # USB class, subclass, protocol
-GNUK_USB_DEVICE_ID = '../GNUK_USB_DEVICE_ID'
 CCID_CLASS = 0x0B
 CCID_SUBCLASS = 0x00
 CCID_PROTOCOL_0 = 0x00
@@ -587,30 +592,19 @@ def gnuk_devices():
                                 alt.interfaceProtocol == CCID_PROTOCOL_0:
                             yield dev, config, alt
 
-def get_gnuk_devices_vidpid():
-    with open(GNUK_USB_DEVICE_ID, 'r') as f:
-        for line in f:
-            try:
-                vid_pid_column = line.split('\t')[0]
-                vid_pid = vid_pid_column.split(':')
-                toint = lambda x: int(x, 16)
-                vid_pid = map(toint, vid_pid)
-                # print((b, a))
-                yield vid_pid
-            except:
-                # print(('error for', line))
-                pass
-
-USB_VID_PID_GNUK = list(get_gnuk_devices_vidpid())
 
 def gnuk_devices_by_vidpid():
     busses = usb.busses()
     for bus in busses:
         devices = bus.devices
         for dev in devices:
-            if [dev.idVendor, dev.idProduct] not in USB_VID_PID_GNUK:
-                continue
-            yield dev
+            for cand in USB_PRODUCT_LIST:
+                if dev.idVendor != cand['vendor']:
+                    continue
+                if dev.idProduct != cand['product']:
+                    continue
+                yield dev
+                break
 
 def get_gnuk_device():
     icc = None
