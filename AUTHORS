@@ -1,3 +1,9 @@
+Anthony Romano:
+    Modified:
+	src/call-rsa.c
+	src/main.c
+	src/mod.c
+
 Kaz Kojima:
     Added STM32 Primer2 support.
 
