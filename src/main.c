@@ -354,6 +354,7 @@ extern uint8_t __heap_end__[];
 #define MEMORY_END (__heap_end__)
 #define MEMORY_ALIGNMENT 16
 #define MEMORY_ALIGN(n) (((n) + MEMORY_ALIGNMENT - 1) & ~(MEMORY_ALIGNMENT - 1))
+#define MEMORY_SIZE ((uintptr_t)__heap_end__ -  (uintptr_t)__heap_base__)
 
 static uint8_t *heap_p;
 static chopstx_mutex_t malloc_mtx;
@@ -364,6 +365,10 @@ struct mem_head {
   struct mem_head *next, *prev;	/* free list chain */
   struct mem_head *neighbor;	/* backlink to neighbor */
 };
+
+#define MEM_HEAD_IS_CORRUPT(x) \
+    ((x)->size != MEMORY_ALIGN((x)->size) || (x)->size > MEMORY_SIZE)
+#define MEM_HEAD_CHECK(x) if (MEM_HEAD_IS_CORRUPT(x)) fatal (FATAL_HEAP)
 
 static struct mem_head *free_list;
 
@@ -421,7 +426,7 @@ gnuk_malloc (size_t size)
 	    m->size = size;
 	  break;
 	}
-
+      MEM_HEAD_CHECK (m);
       if (m->size == size)
 	{
 	  remove_from_free_list (m);
@@ -466,9 +471,11 @@ gnuk_free (void *p)
   DEBUG_SHORT (m->size);
   DEBUG_WORD ((uint32_t)p);
 
+  MEM_HEAD_CHECK (m);
   m->neighbor = NULL;
   while (m0)
     {
+      MEM_HEAD_CHECK (m0);
       if ((void *)m + m->size == (void *)m0)
 	m0->neighbor = m;
       else if ((void *)m0 + m0->size == (void *)m)
@@ -484,6 +491,7 @@ gnuk_free (void *p)
       heap_p -= m->size;
       while (mn)
 	{
+	  MEM_HEAD_CHECK (mn);
 	  heap_p -= mn->size;
 	  remove_from_free_list (mn);
 	  mn = mn->neighbor;

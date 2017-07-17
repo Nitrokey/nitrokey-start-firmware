@@ -1,5 +1,13 @@
 2017-07-18  Anthony Romano <anthony.romano@coreos.com>
 
+	* src/main.c (MEMORY_SIZE, MEM_HEAD_IS_CORRUPT, MEM_HEAD_CHECK):
+	New.
+	(gnuk_malloc, gnuk_free): Add calls to MEM_HEAD_CHECK.
+
+	* src/gnuk.h (FATAL_HEAP): New.
+
+2017-07-18  Anthony Romano <anthony.romano@coreos.com>
+
 	* src/openpgp-do.c (gpg_reset_algo_attr): New.
 	(rw_algorithm_attr): Use gpg_reset_algo_attr.
 	Fix null dereference.

@@ -301,6 +301,7 @@ void gpg_increment_digital_signature_counter (void);
 void fatal (uint8_t code) __attribute__ ((noreturn));
 #define FATAL_FLASH  1
 #define FATAL_RANDOM 2
+#define FATAL_HEAP   3
 
 extern uint8_t keystring_md_pw3[KEYSTRING_MD_SIZE];
 extern uint8_t admin_authorized;
