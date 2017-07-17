@@ -1,5 +1,11 @@
 2017-07-18  Anthony Romano <anthony.romano@coreos.com>
 
+	* src/openpgp-do.c (gpg_reset_algo_attr): New.
+	(rw_algorithm_attr): Use gpg_reset_algo_attr.
+	Fix null dereference.
+
+2017-07-18  Anthony Romano <anthony.romano@coreos.com>
+
 	* src/mod.c (mod_reduce): Clean up unused code.
 
 2017-07-18  Anthony Romano <anthony.romano@coreos.com>

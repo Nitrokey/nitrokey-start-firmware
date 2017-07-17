@@ -40,7 +40,7 @@
 #define CLEAN_PAGE_FULL 1
 #define CLEAN_SINGLE    0
 static void gpg_do_delete_prvkey (enum kind_of_key kk, int clean_page_full);
-
+static void gpg_reset_digital_signature_counter (void);
 
 #define PASSWORD_ERRORS_MAX 3	/* >= errors, it will be locked */
 static const uint8_t *pw_err_counter_p[3];
@@ -248,6 +248,28 @@ gpg_get_algo_attr (enum kind_of_key kk)
     return ALGO_RSA2K;
 
   return algo_attr_p[1];
+}
+
+static void
+gpg_reset_algo_attr (enum kind_of_key kk)
+{
+  gpg_do_delete_prvkey (kk, CLEAN_PAGE_FULL);
+  if (kk == GPG_KEY_FOR_SIGNING)
+    {
+      gpg_reset_digital_signature_counter ();
+      gpg_do_write_simple (NR_DO_FP_SIG, NULL, 0);
+      gpg_do_write_simple (NR_DO_KGTIME_SIG, NULL, 0);
+    }
+  else if (kk == GPG_KEY_FOR_DECRYPTION)
+    {
+      gpg_do_write_simple (NR_DO_FP_DEC, NULL, 0);
+      gpg_do_write_simple (NR_DO_KGTIME_DEC, NULL, 0);
+    }
+  else
+    {
+      gpg_do_write_simple (NR_DO_FP_AUT, NULL, 0);
+      gpg_do_write_simple (NR_DO_KGTIME_AUT, NULL, 0);
+    }
 }
 
 static const uint8_t *
@@ -749,47 +771,15 @@ rw_algorithm_attr (uint16_t tag, int with_tag,
 	return 0;		/* Error.  */
       else if (algo == ALGO_RSA2K && *algo_attr_pp != NULL)
 	{
-	  gpg_do_delete_prvkey (kk, CLEAN_PAGE_FULL);
+	  gpg_reset_algo_attr (kk);
 	  flash_enum_clear (algo_attr_pp);
-	  if (kk == GPG_KEY_FOR_SIGNING)
-	    {
-	      gpg_reset_digital_signature_counter ();
-	      gpg_do_write_simple (NR_DO_FP_SIG, NULL, 0);
-	      gpg_do_write_simple (NR_DO_KGTIME_SIG, NULL, 0);
-	    }
-	  else if (kk == GPG_KEY_FOR_DECRYPTION)
-	    {
-	      gpg_do_write_simple (NR_DO_FP_DEC, NULL, 0);
-	      gpg_do_write_simple (NR_DO_KGTIME_DEC, NULL, 0);
-	    }
-	  else
-	    {
-	      gpg_do_write_simple (NR_DO_FP_AUT, NULL, 0);
-	      gpg_do_write_simple (NR_DO_KGTIME_AUT, NULL, 0);
-	    }
 	  if (*algo_attr_pp != NULL)
 	    return 0;
 	}
-      else if ((algo != ALGO_RSA2K && *algo_attr_pp == NULL)
-	       || (*algo_attr_pp)[1] != algo)
+      else if ((algo != ALGO_RSA2K && *algo_attr_pp == NULL) ||
+               (*algo_attr_pp != NULL && (*algo_attr_pp)[1] != algo))
 	{
-	  gpg_do_delete_prvkey (kk, CLEAN_PAGE_FULL);
-	  if (kk == GPG_KEY_FOR_SIGNING)
-	    {
-	      gpg_reset_digital_signature_counter ();
-	      gpg_do_write_simple (NR_DO_FP_SIG, NULL, 0);
-	      gpg_do_write_simple (NR_DO_KGTIME_SIG, NULL, 0);
-	    }
-	  else if (kk == GPG_KEY_FOR_DECRYPTION)
-	    {
-	      gpg_do_write_simple (NR_DO_FP_DEC, NULL, 0);
-	      gpg_do_write_simple (NR_DO_KGTIME_DEC, NULL, 0);
-	    }
-	  else
-	    {
-	      gpg_do_write_simple (NR_DO_FP_AUT, NULL, 0);
-	      gpg_do_write_simple (NR_DO_KGTIME_AUT, NULL, 0);
-	    }
+	  gpg_reset_algo_attr (kk);
 	  *algo_attr_pp = flash_enum_write (kk_to_nr (kk), algo);
 	  if (*algo_attr_pp == NULL)
 	    return 0;
