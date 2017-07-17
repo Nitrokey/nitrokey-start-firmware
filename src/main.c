@@ -457,6 +457,9 @@ gnuk_free (void *p)
   struct mem_head *m = (struct mem_head *)((void *)p - sizeof (uint32_t));
   struct mem_head *m0;
 
+  if (p == NULL)
+    return;
+
   chopstx_mutex_lock (&malloc_mtx);
   m0 = free_list;
   DEBUG_INFO ("free: ");

@@ -1,3 +1,12 @@
+2017-07-18  Anthony Romano <anthony.romano@coreos.com>
+
+	* src/call-rsa.c (modulus_calc): Free modulus on error.
+	(rsa_genkey): Remove bogus check, and call chopstx_cleanup_pop
+	with 1 to release p_q_modulus on error.  Assign NULL to clp.arg
+	when it's goes with no error.
+
+	* src/main.c (gnuk_free): Allow NULL.
+
 2017-07-18  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* Update chopstx (with USBIP emulation).

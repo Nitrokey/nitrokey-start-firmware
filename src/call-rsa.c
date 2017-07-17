@@ -130,9 +130,11 @@ modulus_calc (const uint8_t *p, int len)
  cleanup:
   mpi_free (&P);  mpi_free (&Q);  mpi_free (&N);
   if (ret != 0)
-    return NULL;
-  else
-    return modulus;
+    {
+      free (modulus);
+      return NULL;
+    }
+  return modulus;
 }
 
 
@@ -261,23 +263,14 @@ rsa_genkey (int pubkey_len)
   cs = chopstx_setcancelstate (0); /* Allow cancellation.  */
   MPI_CHK( rsa_gen_key (&rsa_ctx, random_gen, &index, pubkey_len * 8,
 			RSA_EXPONENT) );
-  if (ret != 0)
-    {
-      chopstx_setcancelstate (cs);
-      chopstx_cleanup_pop (0);
-      free (p_q_modulus);
-      rsa_free (&rsa_ctx);
-      return NULL;
-    }
-
   MPI_CHK( mpi_write_binary (&rsa_ctx.P, p, pubkey_len / 2) );
   MPI_CHK( mpi_write_binary (&rsa_ctx.Q, q, pubkey_len / 2) );
   MPI_CHK( mpi_write_binary (&rsa_ctx.N, modulus, pubkey_len) );
+  clp.arg = NULL;
 
  cleanup:
   chopstx_setcancelstate (cs);
-  chopstx_cleanup_pop (0);
-  rsa_free (&rsa_ctx);
+  chopstx_cleanup_pop (1);
   if (ret != 0)
       return NULL;
   else
