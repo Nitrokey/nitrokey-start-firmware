@@ -46,7 +46,11 @@ hid_card_change=no
 factory_reset=no
 
 # Revision number
-if which git >/dev/null 2>&1 && test -e ../.git; then
+if test -e ../.git; then
+  if !type git >/dev/null 2>&1; then
+     echo 'No git available, please install git'
+     exit 1
+  fi
   REVISION=`git describe --dirty="-modified"` 
 else
   REVISION=`cat ../VERSION`

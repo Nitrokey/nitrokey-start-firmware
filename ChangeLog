@@ -1,3 +1,7 @@
+2017-07-18  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/configure: Bark when not git.
+
 2017-07-18  Anthony Romano <anthony.romano@coreos.com>
 
 	* docker: New.
