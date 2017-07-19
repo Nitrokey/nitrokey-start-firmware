@@ -1,5 +1,7 @@
 2017-07-19  NIIBE Yutaka  <gniibe@fsij.org>
 
+	* src/mod.c (mod_inv): Clear TMP.
+
 	* src/configure (REVISION): Generate even when no git.
 
 	* polarssl/library/bignum.c (mpi_exp_mod): Call mpi_grow for X

@@ -156,6 +156,7 @@ mod_inv (bn256 *C, const bn256 *X, const bn256 *N)
 #define borrow carry
   int n = MAX_GCD_STEPS_BN256;
 
+  memset (tmp, 0, sizeof (bn256));
   memset (C, 0, sizeof (bn256));
   memcpy (u, X, sizeof (bn256));
   memcpy (v, N, sizeof (bn256));
