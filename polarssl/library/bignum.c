@@ -1632,7 +1632,6 @@ int mpi_exp_mod( mpi *X, const mpi *A, const mpi *E, const mpi *N, mpi *_RR )
      * Init temps and window size
      */
     mpi_montg_init( &mm, N );
-    MPI_CHK( mpi_grow( X, N->n ) );
 
     /*
      * If 1st call, pre-compute R^2 mod N
@@ -1657,6 +1656,8 @@ int mpi_exp_mod( mpi *X, const mpi *A, const mpi *E, const mpi *N, mpi *_RR )
         memcpy( &RR, _RR, sizeof( mpi ) );
         memset (d, 0, N->n * ciL); /* Set lower half of D zero. */
     }
+
+    MPI_CHK( mpi_grow( X, N->n ) );
 
     /*
      * W[1] = A * R^2 * R^-1 mod N = A * R mod N

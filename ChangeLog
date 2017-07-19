@@ -1,3 +1,8 @@
+2017-07-19  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* polarssl/library/bignum.c (mpi_exp_mod): Call mpi_grow for X
+	after the initialization of RR.
+
 2017-07-18  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* src/configure: Bark when not git.
