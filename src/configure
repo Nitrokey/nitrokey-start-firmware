@@ -36,7 +36,6 @@ fi
 help=no
 vidpid=none
 target=FST_01
-verbose=no
 with_dfu=default
 debug=no
 sys1_compat=yes
@@ -48,28 +47,26 @@ factory_reset=no
 # Revision number
 if test -e ../.git; then
   if type git >/dev/null 2>&1; then
-     REVISION=`git describe --dirty="-modified"` 
+     REVISION=$(git describe --dirty="-modified")
   else
      # echo 'No git available, please install git'
-     GIT_REVISION=$(sed -e 's/^\(.......\).*$/g\1/' ../.git/$(sed -e 's/^ref: //' ../.git/HEAD))
-     REVISION=`cat ../VERSION`-$GIT_REVISION
+     GIT_REVISION=$(sed -e 's/^\(.......\).*$/g\1/' "../.git/$(sed -e 's/^ref: //' ../.git/HEAD)")
+     REVISION=$(cat ../VERSION)-$GIT_REVISION
   fi
 else
-  REVISION=`cat ../VERSION`
+  REVISION=$(cat ../VERSION)
 fi
 
 # Process each option
 for option; do
   case $option in
-  *=*)	optarg=`expr "X$option" : '[^=]*=\(.*\)'` ;;
+  *=*)	optarg=$(expr "X$option" : '[^=]*=\(.*\)') ;;
   *)	optarg=yes ;;
   esac
 
   case $option in
   -h | --help)
     help=yes ;;
-  -v | --verbose)
-    verbose=yes ;;
   --vidpid=*)
     vidpid=$optarg ;;
   --target=*)
@@ -155,9 +152,9 @@ if test "$vidpid" = "none"; then
   exit 1
 fi
 
-BOARD_HEADER_FILE=board-`echo $target | tr '_[:upper:]' '-[:lower:]'`.h
-echo Header file is: $BOARD_HEADER_FILE
-ln -sf ../chopstx/board/$BOARD_HEADER_FILE board.h
+BOARD_HEADER_FILE=board-$(echo $target | tr '_[:upper:]' '-[:lower:]').h
+echo "Header file is: $BOARD_HEADER_FILE"
+ln -sf "../chopstx/board/$BOARD_HEADER_FILE" board.h
 
 # Flash page size in byte
 FLASH_PAGE_SIZE=1024
@@ -211,7 +208,7 @@ if test "$with_dfu" = "yes"; then
   fi
   echo "Configured for DFU"
   ORIGIN=0x08003000
-  FLASH_SIZE=`expr $FLASH_SIZE - 12`
+  FLASH_SIZE=$((FLASH_SIZE - 12))
   DFU_DEFINE="#define DFU_SUPPORT 1"
   HEXOUTPUT_MAKE_OPTION="ENABLE_OUTPUT_HEX=yes"
 else
@@ -272,7 +269,7 @@ else
 fi
 
 ### !!! Replace following string of "FSIJ" to yours !!! ####
-SERIALNO="FSIJ-`cat ../VERSION | sed -e 's%^[^/]*/%%'`-"
+SERIALNO="FSIJ-$(sed -e 's%^[^/]*/%%' <../VERSION)-"
 
 SERIALNO_STR_LEN_DEFINE="#define SERIALNO_STR_LEN ${#SERIALNO}"
 
@@ -292,8 +289,8 @@ else
 fi
 
 output_vid_pid_version () {
-  echo $VIDPID | sed -n -e "s%^\([0-9a-f][0-9a-f]\)\([0-9a-f][0-9a-f]\):\([0-9a-f][0-9a-f]\)\([0-9a-f][0-9a-f]\)$%  0x\2, 0x\1, /* idVendor  */\\${nl}  0x\4, 0x\3, /* idProduct */%p"
-  echo $VERSION | sed -n -e "s%^\([0-9a-f][0-9a-f]\)\([0-9a-f][0-9a-f]\)$%  0x\2, 0x\1, /* bcdDevice  */%p"
+  echo "$VIDPID" | sed -n -e "s%^\([0-9a-f][0-9a-f]\)\([0-9a-f][0-9a-f]\):\([0-9a-f][0-9a-f]\)\([0-9a-f][0-9a-f]\)$%  0x\2, 0x\1, /* idVendor  */\\${nl}  0x\4, 0x\3, /* idProduct */%p"
+  echo "$VERSION" | sed -n -e "s%^\([0-9a-f][0-9a-f]\)\([0-9a-f][0-9a-f]\)$%  0x\2, 0x\1, /* bcdDevice  */%p"
 }
 
 output_vendor_product_serial_strings () {
@@ -303,14 +300,14 @@ output_vendor_product_serial_strings () {
   echo "  ${#VENDOR}*2+2,			/* bLength */"
   echo "  STRING_DESCRIPTOR,		/* bDescriptorType */"
   echo "  /* Manufacturer: \"$VENDOR\" */"
-  echo $VENDOR | sed -e "s/\(........\)/\1\\${nl}/g" | sed -n -e "s/\(.\)/'\1', 0, /g" -e "s/^/  /" -e "/^  ./s/ $//p"
+  echo "$VENDOR" | sed -e "s/\(........\)/\1\\${nl}/g" | sed -n -e "s/\(.\)/'\1', 0, /g" -e "s/^/  /" -e "/^  ./s/ $//p"
   echo '};'
   echo
   echo "static const uint8_t ${prefix}string_product[] = {"
   echo "  ${#PRODUCT}*2+2,			/* bLength */"
   echo "  STRING_DESCRIPTOR,		/* bDescriptorType */"
   echo "  /* Product name: \"$PRODUCT\" */"
-  echo $PRODUCT | sed -e "s/\(........\)/\1\\${nl}/g" | sed -n -e "s/\(.\)/'\1', 0, /g" -e "s/^/  /" -e "/^  ./s/ $//p"
+  echo "$PRODUCT" | sed -e "s/\(........\)/\1\\${nl}/g" | sed -n -e "s/\(.\)/'\1', 0, /g" -e "s/^/  /" -e "/^  ./s/ $//p"
   echo '};'
 
   if test -n "$prefix"; then
@@ -319,7 +316,7 @@ output_vendor_product_serial_strings () {
   echo "  ${#SERIALNO}*2+2+16,			/* bLength */"
   echo "  STRING_DESCRIPTOR,		/* bDescriptorType */"
   echo "  /* Serial number: \"$SERIALNO\" */"
-  echo $SERIALNO | sed -e "s/\(........\)/\1\\${nl}/g" | sed -n -e "s/\(.\)/'\1', 0, /g" -e "s/^/  /" -e "/^  ./s/ $//p"
+  echo "$SERIALNO" | sed -e "s/\(........\)/\1\\${nl}/g" | sed -n -e "s/\(.\)/'\1', 0, /g" -e "s/^/  /" -e "/^  ./s/ $//p"
   echo "  0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,"
   echo "  0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,"
   echo '};'
@@ -329,7 +326,7 @@ output_vendor_product_serial_strings () {
   echo "  ${#REVISION}*2+2,			/* bLength */"
   echo "  STRING_DESCRIPTOR,		/* bDescriptorType */"
   echo "  /* revision detail: \"$REVISION\" */"
-  echo $REVISION | sed -e "s/\(........\)/\1\\${nl}/g" | sed -n -e "s/\(.\)/'\1', 0, /g" -e "s/^/  /" -e "/^  ./s/ $//p"
+  echo "$REVISION" | sed -e "s/\(........\)/\1\\${nl}/g" | sed -n -e "s/\(.\)/'\1', 0, /g" -e "s/^/  /" -e "/^  ./s/ $//p"
   echo '};'
   echo
   echo "static const uint8_t ${prefix}config_options[] = {"
@@ -342,8 +339,8 @@ output_vendor_product_serial_strings () {
   fi
 }
 
-if !(IFS="	"
-  while read VIDPID VERSION PRODUCT VENDOR; do
+if ! (IFS="	"
+  while read -r VIDPID VERSION PRODUCT VENDOR; do
     if test "$vidpid" = "$VIDPID"; then
       output_vid_pid_version > usb-vid-pid-ver.c.inc
       output_vendor_product_serial_strings gnuk_ >usb-strings.c.inc
