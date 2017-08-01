@@ -1,3 +1,8 @@
+2017-08-01  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/openpgp.c (FILE_CARD_TERMINATED_OPENPGP): Remove.
+	(cmd_select_file): Don't change file_selection.
+
 2017-07-19  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* src/mod.c (mod_inv): Clear TMP.

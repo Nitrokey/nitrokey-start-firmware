@@ -98,7 +98,6 @@ set_res_sw (uint8_t sw1, uint8_t sw2)
 #define FILE_EF_UPDATE_KEY_2	7
 #define FILE_EF_UPDATE_KEY_3	8
 #define FILE_EF_CH_CERTIFICATE	9
-#define FILE_CARD_TERMINATED_OPENPGP	254
 #define FILE_CARD_TERMINATED	255
 
 uint8_t file_selection;
@@ -760,8 +759,7 @@ cmd_select_file (void)
 
       if (file_selection == FILE_CARD_TERMINATED)
 	{
-	  file_selection = FILE_CARD_TERMINATED_OPENPGP;
-	  GPG_APPLICATION_TERMINATED();
+	  GPG_APPLICATION_TERMINATED ();
 	  return;
 	}
 
@@ -1323,9 +1321,9 @@ cmd_get_challenge (void)
 static void
 cmd_activate_file (void)
 {
-  if (file_selection != FILE_CARD_TERMINATED_OPENPGP)
+  if (file_selection != FILE_CARD_TERMINATED)
     {
-      GPG_NO_RECORD();
+      GPG_NO_RECORD ();
       return;
     }
 
@@ -1342,7 +1340,7 @@ cmd_terminate_df (void)
 
   if (file_selection != FILE_DF_OPENPGP)
     {
-      GPG_NO_RECORD();
+      GPG_NO_RECORD ();
       return;
     }
 
@@ -1426,13 +1424,13 @@ process_command_apdu (void)
       if (file_selection == FILE_CARD_TERMINATED
 	  && cmd != INS_SELECT_FILE && cmd != INS_ACTIVATE_FILE
 	  && cmd != INS_GET_CHALLENGE && cmd != INS_EXTERNAL_AUTHENTICATE)
-	GPG_APPLICATION_TERMINATED();
+	GPG_APPLICATION_TERMINATED ();
       else if (file_selection != FILE_DF_OPENPGP
 	       && cmd != INS_SELECT_FILE && cmd != INS_ACTIVATE_FILE
 	       && cmd != INS_GET_CHALLENGE && cmd != INS_EXTERNAL_AUTHENTICATE
 	       && cmd != INS_WRITE_BINARY && cmd != INS_UPDATE_BINARY
 	       && cmd != INS_READ_BINARY)
-	GPG_NO_RECORD();
+	GPG_NO_RECORD ();
       else
 	{
 	  chopstx_setcancelstate (1);
