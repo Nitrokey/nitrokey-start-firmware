@@ -1,3 +1,7 @@
+2017-08-02  Jeremy Drake  <jeremydrake+gnuk@eacceleration.com>
+
+	* src/flash.c (flash_terminate): Erase Certificate DO, too.
+
 2017-08-01  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* src/openpgp.c (FILE_CARD_TERMINATED_OPENPGP): Remove.

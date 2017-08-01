@@ -154,6 +154,11 @@ flash_terminate (void)
   flash_erase_page ((uint32_t)(&_data_pool + flash_page_size));
   data_pool = &_data_pool;
   last_p = &_data_pool + FLASH_DATA_POOL_HEADER_SIZE;
+#if defined(CERTDO_SUPPORT)
+  flash_erase_page ((uint32_t)&ch_certificate_start);
+  if (FLASH_CH_CERTIFICATE_SIZE > flash_page_size)
+    flash_erase_page ((uint32_t)(&ch_certificate_start + flash_page_size));
+#endif
 }
 
 void
