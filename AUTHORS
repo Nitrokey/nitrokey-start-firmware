@@ -4,6 +4,10 @@ Anthony Romano:
 	src/main.c
 	src/mod.c
 
+Jeremy Drake:
+    Modified:
+	regnual/regnual.c
+
 Kaz Kojima:
     Added STM32 Primer2 support.
 
