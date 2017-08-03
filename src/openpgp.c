@@ -1335,6 +1335,8 @@ cmd_activate_file (void)
 static void
 cmd_terminate_df (void)
 {
+  const uint8_t *ks_pw3;
+
   uint8_t p1 = P1 (apdu);
   uint8_t p2 = P2 (apdu);
 
@@ -1356,8 +1358,11 @@ cmd_terminate_df (void)
       return;
     }
 
+  ks_pw3 = gpg_do_read_simple (NR_DO_KEYSTRING_PW3);
 
-  if (!ac_check_status (AC_ADMIN_AUTHORIZED) && !gpg_pw_locked (PW_ERR_PW3))
+  if (!ac_check_status (AC_ADMIN_AUTHORIZED)
+      && !((ks_pw3 && gpg_pw_locked (PW_ERR_PW3))
+	   || (ks_pw3 == NULL && gpg_pw_locked (PW_ERR_PW1))))
     {
       /* Only allow the case admin authorized, or, admin pass is locked.  */
       GPG_SECURITY_FAILURE();
