@@ -1,3 +1,7 @@
+2017-08-03  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/openpgp.c (cmd_terminate_df): Fix for admin-less mode.
+
 2017-08-03  Jeremy Drake <jeremydrake+gnuk@eacceleration.com>
 
 	* regnual/regnual.c (main): Allow compile time
