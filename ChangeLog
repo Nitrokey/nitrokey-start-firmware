@@ -1,5 +1,8 @@
 2017-08-11  NIIBE Yutaka  <gniibe@fsij.org>
 
+	* VERSION: 1.2.5.
+	* chopstx: Update to 1.4.
+
 	* src/gnuk.ld.in (__process3_stack_size__): Tweak the size.
 
 	* src/configure: Define STM32F103_OVERRIDE_FLASH_SIZE_KB for
