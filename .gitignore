@@ -2,7 +2,7 @@
 *.o
 *.pyc
 src/.dep
-src/Makefile
+src/config.mk
 src/config.h
 src/gnuk.ld
 src/board.h
