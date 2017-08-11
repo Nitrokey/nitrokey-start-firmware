@@ -27,9 +27,7 @@ CRYPTSRC = $(CRYPTSRCDIR)/bignum.c $(CRYPTSRCDIR)/rsa.c $(CRYPTSRCDIR)/aes.c
 CSRC += $(CRYPTSRC)
 INCDIR += $(CRYPTINCDIR)
 
-@PINPAD_MAKE_OPTION@
-@DEBUG_MAKE_OPTION@
-@HEXOUTPUT_MAKE_OPTION@
+include config.mk
 
 USE_EVENTFLAG = yes
 
@@ -58,8 +56,6 @@ OBJCOPY   = $(CROSS)objcopy
 
 MCU   = cortex-m3
 CWARN = -Wall -Wextra -Wstrict-prototypes
-# DEFS: Add  
-DEFS  = @USE_SYS3@
 OPT   = -O3 -Os -g
 LIBS  =
 
@@ -75,5 +71,5 @@ sys.c: board.h
 build/bignum.o: OPT = -O3 -g
 
 distclean: clean
-	-rm -f gnuk.ld config.h board.h Makefile \
+	-rm -f gnuk.ld config.h board.h config.mk \
 	       usb-strings.c.inc usb-vid-pid-ver.c.inc

@@ -5,6 +5,8 @@ PROJECT = regnual
 OBJS = regnual.o usb-stm32f103.o reset.o
 LDSCRIPT= regnual.ld
 
+include ../src/config.mk
+
 ###################################
 MCU  = cortex-m3
 
@@ -19,7 +21,7 @@ TOPT = -mthumb -DTHUMB -mno-thumb-interwork
 # Define C warning options here
 CWARN = -Wall -Wextra -Wstrict-prototypes
 MCFLAGS= -mcpu=$(MCU)
-DEFS = -DFREE_STANDING
+DEFS += -DFREE_STANDING
 
 CFLAGS = -O2 -g
 CFLAGS += -Wa,-alms=$(notdir $(<:.c=.lst)) -fpie

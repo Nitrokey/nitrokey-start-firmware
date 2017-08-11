@@ -43,6 +43,7 @@ pinpad=no
 certdo=no
 hid_card_change=no
 factory_reset=no
+flash_override=""
 
 # Revision number
 if test -e ../.git; then
@@ -165,6 +166,8 @@ MEMORY_SIZE=20
 
 # Settings for TARGET
 case $target in
+BLUE_PILL)
+  flash_override="-DSTM32F103_OVERRIDE_FLASH_SIZE_KB" ;;
 CQ_STARM|STBEE_MINI)
   if test "$with_dfu" = "default"; then
     with_dfu=yes;
@@ -365,11 +368,12 @@ else
 fi
 
 
-sed -e "s%@USE_SYS3@%$use_sys3%" \
-    -e "s%@DEBUG_MAKE_OPTION@%$DEBUG_MAKE_OPTION%" \
-    -e "s%@PINPAD_MAKE_OPTION@%$PINPAD_MAKE_OPTION%" \
-    -e "s%@HEXOUTPUT_MAKE_OPTION@%$HEXOUTPUT_MAKE_OPTION%" \
-	< Makefile.in > Makefile
+echo -e "DEFS=$use_sys3 $flash_override" '\n'      \
+     "$DEBUG_MAKE_OPTION" '\n'  \
+     "$PINPAD_MAKE_OPTION" '\n' \
+     "$HEXOUTPUT_MAKE_OPTION"   \
+	> config.mk
+
 if test "$certdo" = "yes"; then
   sed -e "/^@CERTDO_SUPPORT_START@$/ d" -e "/^@CERTDO_SUPPORT_END@$/ d" \
       -e "s/@ORIGIN@/$ORIGIN/" -e "s/@FLASH_SIZE@/$FLASH_SIZE/" \

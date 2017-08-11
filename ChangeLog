@@ -1,3 +1,12 @@
+2017-08-11  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/configure: Define STM32F103_OVERRIDE_FLASH_SIZE_KB for
+	BULE_PILL.
+
+	* src/configure: Let generate src/config.mk.
+	* src/Makefile: Rename from src/Makefile.in.
+	* regnual/Makefile: Use src/config.mk.
+
 2017-08-03  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* src/openpgp.c (cmd_terminate_df): Fix for admin-less mode.
