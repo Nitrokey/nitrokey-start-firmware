@@ -10,6 +10,7 @@ nl=$'\n'
 #               Free Software Initiative of Japan
 #
 # This file is a part of Gnuk, a GnuPG USB Token implementation.
+#
 # Gnuk is free software: you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
@@ -191,6 +192,28 @@ STM8S_DISCOVERY)
   ;;
 esac
 
+if test "$target" = "GNU_LINUX"; then
+  ldscript=""
+  chip="gnu-linux"
+  use_sys="yes"
+  emulation="yes"
+  cross=""
+  mcu="none"
+  def_emulation="-DGNU_LINUX_EMULATION"
+  enable_hexoutput=""
+  libs="-lpthread"
+else
+  ldscript="gnuk.ld"
+  chip="stm32f103"
+  use_sys="yes"
+  emulation=""
+  cross="arm-none-eabi-"
+  mcu="cortex-m3"
+  def_emulation=""
+  enable_hexoutput=yes
+  libs=""
+fi
+
 # --enable-debug option
 if test "$debug" = "yes"; then
   DEBUG_MAKE_OPTION="ENABLE_DEBUG=1"
@@ -213,13 +236,11 @@ if test "$with_dfu" = "yes"; then
   ORIGIN=0x08003000
   FLASH_SIZE=$((FLASH_SIZE - 12))
   DFU_DEFINE="#define DFU_SUPPORT 1"
-  HEXOUTPUT_MAKE_OPTION="ENABLE_OUTPUT_HEX=yes"
 else
   with_dfu=no
   echo "Configured for bare system (no-DFU)"
   ORIGIN=0x08000000
   DFU_DEFINE="#undef DFU_SUPPORT"
-  HEXOUTPUT_MAKE_OPTION=""
 fi
 
 # --enable-pinpad option
@@ -278,7 +299,7 @@ SERIALNO_STR_LEN_DEFINE="#define SERIALNO_STR_LEN ${#SERIALNO}"
 
 
 if test "$sys1_compat" = "yes"; then
-  CONFIG="$target:dfu=$with_dfu:debug=$debug:pinpad=$pinpad:certdo=$certdo"
+  CONFIG="$target:dfu=$with_dfu:debug=$debug:pinpad=$pinpad:certdo=$certdo:factory_reset=$factory_reset"
 else
   if test "$with_dfu" = "yes"; then
     echo "Common binary can't support DFU loader, don't use --with-dfu." >&2
@@ -288,27 +309,27 @@ else
   FLASH_PAGE_SIZE=2048
   FLASH_SIZE=128
   MEMORY_SIZE=20
-  CONFIG="common:debug=$debug:pinpad=$pinpad:certdo=$certdo"
+  CONFIG="common:debug=$debug:pinpad=$pinpad:certdo=$certdo:factory_reset=$factory_reset"
 fi
 
 output_vid_pid_version () {
   echo "$VIDPID" | sed -n -e "s%^\([0-9a-f][0-9a-f]\)\([0-9a-f][0-9a-f]\):\([0-9a-f][0-9a-f]\)\([0-9a-f][0-9a-f]\)$%  0x\2, 0x\1, /* idVendor  */\\${nl}  0x\4, 0x\3, /* idProduct */%p"
-  echo "$VERSION" | sed -n -e "s%^\([0-9a-f][0-9a-f]\)\([0-9a-f][0-9a-f]\)$%  0x\2, 0x\1, /* bcdDevice  */%p"
+  echo "$VERSION" | sed -n -e "s%^\([0-9a-f][0-9a-f]\)\([0-9a-f][0-9a-f]\)$%  0x\2, 0x\1, /* bcdDevice */%p"
 }
 
 output_vendor_product_serial_strings () {
   prefix=$1
 
   echo "static const uint8_t ${prefix}string_vendor[] = {"
-  echo "  ${#VENDOR}*2+2,			/* bLength */"
-  echo "  STRING_DESCRIPTOR,		/* bDescriptorType */"
+  echo "  ${#VENDOR}*2+2,                       /* bLength */"
+  echo "  STRING_DESCRIPTOR,            /* bDescriptorType */"
   echo "  /* Manufacturer: \"$VENDOR\" */"
   echo "$VENDOR" | sed -e "s/\(........\)/\1\\${nl}/g" | sed -n -e "s/\(.\)/'\1', 0, /g" -e "s/^/  /" -e "/^  ./s/ $//p"
   echo '};'
   echo
   echo "static const uint8_t ${prefix}string_product[] = {"
-  echo "  ${#PRODUCT}*2+2,			/* bLength */"
-  echo "  STRING_DESCRIPTOR,		/* bDescriptorType */"
+  echo "  ${#PRODUCT}*2+2,                      /* bLength */"
+  echo "  STRING_DESCRIPTOR,            /* bDescriptorType */"
   echo "  /* Product name: \"$PRODUCT\" */"
   echo "$PRODUCT" | sed -e "s/\(........\)/\1\\${nl}/g" | sed -n -e "s/\(.\)/'\1', 0, /g" -e "s/^/  /" -e "/^  ./s/ $//p"
   echo '};'
@@ -316,8 +337,8 @@ output_vendor_product_serial_strings () {
   if test -n "$prefix"; then
   echo
   echo "const uint8_t ${prefix}string_serial[] = {"
-  echo "  ${#SERIALNO}*2+2+16,			/* bLength */"
-  echo "  STRING_DESCRIPTOR,		/* bDescriptorType */"
+  echo "  ${#SERIALNO}*2+2+16,                  /* bLength */"
+  echo "  STRING_DESCRIPTOR,            /* bDescriptorType */"
   echo "  /* Serial number: \"$SERIALNO\" */"
   echo "$SERIALNO" | sed -e "s/\(........\)/\1\\${nl}/g" | sed -n -e "s/\(.\)/'\1', 0, /g" -e "s/^/  /" -e "/^  ./s/ $//p"
   echo "  0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,"
@@ -326,15 +347,15 @@ output_vendor_product_serial_strings () {
   echo
   echo '#ifdef USB_STRINGS_FOR_GNUK'
   echo "static const uint8_t ${prefix}revision_detail[] = {"
-  echo "  ${#REVISION}*2+2,			/* bLength */"
-  echo "  STRING_DESCRIPTOR,		/* bDescriptorType */"
+  echo "  ${#REVISION}*2+2,                     /* bLength */"
+  echo "  STRING_DESCRIPTOR,            /* bDescriptorType */"
   echo "  /* revision detail: \"$REVISION\" */"
   echo "$REVISION" | sed -e "s/\(........\)/\1\\${nl}/g" | sed -n -e "s/\(.\)/'\1', 0, /g" -e "s/^/  /" -e "/^  ./s/ $//p"
   echo '};'
   echo
   echo "static const uint8_t ${prefix}config_options[] = {"
-  echo "  ${#CONFIG}*2+2,			/* bLength */"
-  echo "  STRING_DESCRIPTOR,		/* bDescriptorType */"
+  echo "  ${#CONFIG}*2+2,                       /* bLength */"
+  echo "  STRING_DESCRIPTOR,            /* bDescriptorType */"
   echo "  /* configure options: \"$CONFIG\" */"
   echo $CONFIG | sed -e "s/\(........\)/\1\\${nl}/g" | sed -n -e "s/\(.\)/'\1', 0, /g" -e "s/^/  /" -e "/^  ./s/ $//p"
   echo '};'
@@ -342,7 +363,7 @@ output_vendor_product_serial_strings () {
   fi
 }
 
-if ! (IFS="	"
+if !(IFS="	"
   while read -r VIDPID VERSION PRODUCT VENDOR; do
     if test "$vidpid" = "$VIDPID"; then
       output_vid_pid_version > usb-vid-pid-ver.c.inc
@@ -351,7 +372,7 @@ if ! (IFS="	"
     fi
   done; exit 1) < ../GNUK_USB_DEVICE_ID
 then
-  echo "Please specify valid Vendor ID and Product ID."  >&2
+  echo "Please specify valid Vendor ID and Product ID." >&2
   echo "Check ../GNUK_USB_DEVICE_ID." >&2
   exit 1
 fi
@@ -368,11 +389,19 @@ else
 fi
 
 
-echo -e "DEFS=$use_sys3 $flash_override" '\n'      \
-     "$DEBUG_MAKE_OPTION" '\n'  \
-     "$PINPAD_MAKE_OPTION" '\n' \
-     "$HEXOUTPUT_MAKE_OPTION"   \
-	> config.mk
+(echo "CHIP=$chip";
+ echo "USE_SYS=$use_sys";
+ echo "EMULATION=$emulation";
+ echo "CROSS=$cross";
+ echo "MCU=$mcu";
+ echo "DEFS=$use_sys3 $flash_override $def_emulation";
+ echo "LDSCRIPT=$ldscript";
+ echo "LIBS=$libs";
+ echo "$DEBUG_MAKE_OPTION";
+ echo "$PINPAD_MAKE_OPTION";
+ echo "ENABLE_FRAUCHEKY=$enable_fraucheky";
+ echo "ENABLE_OUTPUT_HEX=$enable_hexoutput"
+)	> config.mk
 
 if test "$certdo" = "yes"; then
   sed -e "/^@CERTDO_SUPPORT_START@$/ d" -e "/^@CERTDO_SUPPORT_END@$/ d" \

@@ -5,9 +5,6 @@ PROJECT = gnuk
 
 CHOPSTX = ../chopstx
 
-# Define linker script file here
-LDSCRIPT= gnuk.ld
-
 CSRC = main.c call-rsa.c mcu-stm32f103.c \
 	usb_desc.c usb_ctrl.c \
 	usb-ccid.c openpgp.c ac.c openpgp-do.c flash.c \
@@ -29,6 +26,9 @@ INCDIR += $(CRYPTINCDIR)
 
 include config.mk
 
+USE_SYS = yes
+USE_USB = yes
+USE_ADC = yes
 USE_EVENTFLAG = yes
 
 ifneq ($(ENABLE_DEBUG),)
@@ -43,21 +43,13 @@ ifeq ($(ENABLE_PINPAD),dnd)
 CSRC += usb-msc.c
 endif
 
-CHIP=stm32f103
-USE_SYS = yes
-USE_USB = yes
-USE_ADC = yes
-
 ###################################
-CROSS = arm-none-eabi-
 CC   = $(CROSS)gcc
 LD   = $(CROSS)gcc
 OBJCOPY   = $(CROSS)objcopy
 
-MCU   = cortex-m3
 CWARN = -Wall -Wextra -Wstrict-prototypes
 OPT   = -O3 -Os -g
-LIBS  =
 
 #######################
 include $(CHOPSTX)/rules.mk

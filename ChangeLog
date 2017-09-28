@@ -1,3 +1,9 @@
+2017-09-28  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/Makefile: Support GNU/Linux emulation.
+	* src/configure: Support GNU/Linux emulation.
+	* emulation: Remove.
+
 2017-08-11  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* VERSION: 1.2.5.
