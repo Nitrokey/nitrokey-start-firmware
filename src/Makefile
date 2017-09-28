@@ -5,7 +5,7 @@ PROJECT = gnuk
 
 CHOPSTX = ../chopstx
 
-CSRC = main.c call-rsa.c mcu-stm32f103.c \
+CSRC = main.c call-rsa.c \
 	usb_desc.c usb_ctrl.c \
 	usb-ccid.c openpgp.c ac.c openpgp-do.c flash.c \
 	bn.c mod.c \
@@ -41,6 +41,10 @@ endif
 
 ifeq ($(ENABLE_PINPAD),dnd)
 CSRC += usb-msc.c
+endif
+
+ifeq ($(CHIP),stm32f103)
+CSRC += mcu-stm32f103.c 
 endif
 
 ###################################

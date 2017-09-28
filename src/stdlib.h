@@ -7,9 +7,7 @@
  * For GNU/Linux emulation, we can use C library.
  */
 
-typedef unsigned long int size_t;
-
-#include <stddef.h> /* NULL */
+#include <stddef.h> /* NULL and size_t */
 
 #define malloc(size)	gnuk_malloc (size)
 #define free(p)		gnuk_free (p)
