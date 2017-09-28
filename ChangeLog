@@ -1,5 +1,7 @@
 2017-09-28  NIIBE Yutaka  <gniibe@fsij.org>
 
+	* src/stdlib.h: Update for GNU/Linux emulation.
+
 	* src/Makefile: Support GNU/Linux emulation.
 	* src/configure: Support GNU/Linux emulation.
 	* emulation: Remove.
