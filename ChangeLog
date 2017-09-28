@@ -1,5 +1,7 @@
 2017-09-28  NIIBE Yutaka  <gniibe@fsij.org>
 
+	* src/call-rsa.c (rsa_decrypt): Fix for 64-bit machine.
+
 	* src/flash.c (flash_do_storage_init): Rename from flash_init.
 	(flash_key_storage_init): Rename from flash_init_keys.
 	* src/openpgp.c (gpg_init): Use new function names.

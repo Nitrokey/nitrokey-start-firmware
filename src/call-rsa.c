@@ -144,6 +144,9 @@ rsa_decrypt (const uint8_t *input, uint8_t *output, int msg_len,
 {
   mpi P1, Q1, H;
   int ret;
+#ifdef GNU_LINUX_EMULATION
+  size_t output_len;
+#endif
 
   DEBUG_INFO ("RSA decrypt:");
   DEBUG_WORD ((uint32_t)&ret);
@@ -179,9 +182,16 @@ rsa_decrypt (const uint8_t *input, uint8_t *output, int msg_len,
       clp.arg = NULL;
       chopstx_cleanup_push (&clp);
       cs = chopstx_setcancelstate (0); /* Allow cancellation.  */
+#ifdef GNU_LINUX_EMULATION
+      ret = rsa_rsaes_pkcs1_v15_decrypt (&rsa_ctx, NULL, NULL,
+					 RSA_PRIVATE, &output_len, input,
+					 output, MAX_RES_APDU_DATA_SIZE);
+      *output_len_p = (unsigned int)output_len;
+#else
       ret = rsa_rsaes_pkcs1_v15_decrypt (&rsa_ctx, NULL, NULL,
 					 RSA_PRIVATE, output_len_p, input,
 					 output, MAX_RES_APDU_DATA_SIZE);
+#endif
       chopstx_setcancelstate (cs);
       chopstx_cleanup_pop (0);
     }
