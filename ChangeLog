@@ -1,5 +1,9 @@
 2017-09-28  NIIBE Yutaka  <gniibe@fsij.org>
 
+	* src/ec_p256k1.c (coefficient_a): Remove.
+
+	* library/bignum.c (mpi_fill_pseudo_random): Fix for 64-bit.
+
 	* src/call-rsa.c (rsa_decrypt): Fix for 64-bit machine.
 
 	* src/flash.c (flash_do_storage_init): Rename from flash_init.

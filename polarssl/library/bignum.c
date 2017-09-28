@@ -2052,17 +2052,19 @@ jkiss (struct jkiss_state *s)
 static int mpi_fill_pseudo_random ( mpi *X, size_t size)
 {
   int ret;
-  uint32_t *p;
+  uint32_t *p, *p_end;
 
   MPI_CHK( mpi_grow( X, CHARS_TO_LIMBS( size ) ) );
   MPI_CHK( mpi_lset( X, 0 ) );
 
   /* Assume little endian.  */
-  p = X->p;
-  while (p < X->p + (size/ciL))
+  p = (uint32_t *)X->p;
+  p_end = (uint32_t *)(X->p + (size/sizeof (uint32_t)));
+  while (p < p_end)
     *p++ = jkiss (&jkiss_state_v);
-  if ((size % ciL))
-    *p = jkiss (&jkiss_state_v) & ((1 << (8*(size % ciL))) - 1);
+
+  if ((size%sizeof (uint32_t)))
+    *p = jkiss (&jkiss_state_v) & ((1 << (8*(size % sizeof (uint32_t)))) - 1);
 
 cleanup:
   return ret;

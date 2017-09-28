@@ -31,6 +31,10 @@ USE_USB = yes
 USE_ADC = yes
 USE_EVENTFLAG = yes
 
+ifneq ($(EMULATION),)
+DEFS += -DBN256_C_IMPLEMENTATION
+endif
+
 ifneq ($(ENABLE_DEBUG),)
 CSRC += debug.c
 endif
