@@ -108,7 +108,7 @@ gpg_init (void)
   const uint8_t *flash_do_start;
   const uint8_t *flash_do_end;
 
-  flash_init (&flash_do_start, &flash_do_end);
+  flash_do_storage_init (&flash_do_start, &flash_do_end);
 
   if (flash_do_start == NULL)
     file_selection = FILE_CARD_TERMINATED;
@@ -116,7 +116,7 @@ gpg_init (void)
     file_selection = FILE_NONE;
 
   gpg_data_scan (flash_do_start, flash_do_end);
-  flash_init_keys ();
+  flash_key_storage_init ();
 }
 
 static void

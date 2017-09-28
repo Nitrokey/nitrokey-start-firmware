@@ -103,7 +103,7 @@ static int key_available_at (const uint8_t *k, int key_size)
 
 #define CHIP_ID_REG      ((uint32_t *)0xe0042000)
 void
-flash_init (const uint8_t **p_do_start, const uint8_t **p_do_end)
+flash_do_storage_init (const uint8_t **p_do_start, const uint8_t **p_do_end)
 {
   uint16_t gen0, gen1;
   uint16_t *gen0_p = (uint16_t *)&_data_pool;
@@ -169,7 +169,7 @@ flash_activate (void)
 
 
 void
-flash_init_keys (void)
+flash_key_storage_init (void)
 {
   const uint8_t *p;
   int i;

@@ -1,5 +1,9 @@
 2017-09-28  NIIBE Yutaka  <gniibe@fsij.org>
 
+	* src/flash.c (flash_do_storage_init): Rename from flash_init.
+	(flash_key_storage_init): Rename from flash_init_keys.
+	* src/openpgp.c (gpg_init): Use new function names.
+
 	* src/stdlib.h: Update for GNU/Linux emulation.
 
 	* src/Makefile: Support GNU/Linux emulation.

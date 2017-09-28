@@ -139,10 +139,10 @@ enum size_of_key {
 int gpg_get_algo_attr (enum kind_of_key kk);
 int gpg_get_algo_attr_key_size (enum kind_of_key kk, enum size_of_key s);
 
-void flash_init (const uint8_t **, const uint8_t **);
+void flash_do_storage_init (const uint8_t **, const uint8_t **);
 void flash_terminate (void);
 void flash_activate (void);
-void flash_init_keys (void);
+void flash_key_storage_init (void);
 void flash_do_release (const uint8_t *);
 const uint8_t *flash_do_write (uint8_t nr, const uint8_t *data, int len);
 uint8_t *flash_key_alloc (enum kind_of_key);
