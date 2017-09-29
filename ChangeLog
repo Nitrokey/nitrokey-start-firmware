@@ -1,6 +1,15 @@
 2017-09-29  NIIBE Yutaka  <gniibe@fsij.org>
 
-	* src/usb_ctrl.c (gnuk_setup_endpoints_for_interface): Add DEV
+	* src/usb-ccid.c (epo_init, epi_init, ccid_thread): Simplify.
+	(EP1_IN_Callback, ccid_prepare_receive, EP1_OUT_Callback)
+	(usb_rx_ready, ccid_error, ccid_power_on, ccid_send_status)
+	(ccid_send_data_block_internal, ccid_send_data_block_0x9000)
+	(ccid_send_data_block_gr, ccid_send_params)
+	(ccid_notify_slot_change, _write) [GNU_LINUX_EMULATION]: Use
+	different usb driver API.
+
+	* src/usb_ctrl.c (usb_device_reset): Fix control endpoint init.
+	(gnuk_setup_endpoints_for_interface): Add DEV
 	argument.
 	(usb_device_reset) [GNU_LINUX_EMULATION]: Use usb_lld_setup_endp.
 

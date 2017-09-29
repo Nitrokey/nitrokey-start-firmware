@@ -211,7 +211,7 @@ usb_device_reset (struct usb_dev *dev)
   usb_lld_setup_endp (dev, ENDP0, 1, 1);
 #else
   usb_lld_setup_endpoint (ENDP0, EP_CONTROL, 0, ENDP0_RXADDR, ENDP0_TXADDR,
-			  GNUK_MAX_PACKET_SIZE);
+			  64);
 #endif
 
   /* Stop the interface */
