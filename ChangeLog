@@ -1,7 +1,13 @@
 2017-09-29  NIIBE Yutaka  <gniibe@fsij.org>
 
-	* src/main.c [FLASH_UPGRADE_SUPPORT] (main): Factor out flash ROM upgrade
-	support.
+	* src/usb_ctrl.c (gnuk_setup_endpoints_for_interface): Add DEV
+	argument.
+	(usb_device_reset) [GNU_LINUX_EMULATION]: Use usb_lld_setup_endp.
+
+2017-09-29  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/main.c [FLASH_UPGRADE_SUPPORT] (main): Factor out flash ROM
+	upgrade support.
 	(calculate_regnual_entry_address): Likewise.
 	* src/usb_ctrl.c (usb_setup, download_check_crc32): Likewise.
 

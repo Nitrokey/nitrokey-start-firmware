@@ -108,15 +108,25 @@ static uint16_t hid_report;
 #endif
 
 static void
-gnuk_setup_endpoints_for_interface (uint16_t interface, int stop)
+gnuk_setup_endpoints_for_interface (struct usb_dev *dev,
+				    uint16_t interface, int stop)
 {
+#if !defined(GNU_LINUX_EMULATION)
+  (void)dev;
+#endif
+
   if (interface == CCID_INTERFACE)
     {
       if (!stop)
 	{
+#ifdef GNU_LINUX_EMULATION
+	  usb_lld_setup_endp (dev, ENDP1, 1, 1);
+	  usb_lld_setup_endp (dev, ENDP2, 0, 1);
+#else
 	  usb_lld_setup_endpoint (ENDP1, EP_BULK, 0, ENDP1_RXADDR,
 				  ENDP1_TXADDR, GNUK_MAX_PACKET_SIZE);
 	  usb_lld_setup_endpoint (ENDP2, EP_INTERRUPT, 0, 0, ENDP2_TXADDR, 0);
+#endif
 	}
       else
 	{
@@ -129,7 +139,11 @@ gnuk_setup_endpoints_for_interface (uint16_t interface, int stop)
   else if (interface == HID_INTERFACE)
     {
       if (!stop)
+#ifdef GNU_LINUX_EMULATION
+	usb_lld_setup_endp (dev, ENDP7, 0, 1);
+#else
 	usb_lld_setup_endpoint (ENDP7, EP_INTERRUPT, 0, 0, ENDP7_TXADDR, 0);
+#endif
       else
 	usb_lld_stall_tx (ENDP7);
     }
@@ -138,7 +152,11 @@ gnuk_setup_endpoints_for_interface (uint16_t interface, int stop)
   else if (interface == VCOM_INTERFACE_0)
     {
       if (!stop)
+#ifdef GNU_LINUX_EMULATION
+	usb_lld_setup_endp (dev, ENDP4, 0, 1);
+#else
 	usb_lld_setup_endpoint (ENDP4, EP_INTERRUPT, 0, 0, ENDP4_TXADDR, 0);
+#endif
       else
 	usb_lld_stall_tx (ENDP4);
     }
@@ -146,9 +164,14 @@ gnuk_setup_endpoints_for_interface (uint16_t interface, int stop)
     {
       if (!stop)
 	{
+#ifdef GNU_LINUX_EMULATION
+	  usb_lld_setup_endp (dev, ENDP3, 0, 1);
+	  usb_lld_setup_endp (dev, ENDP5, 1, 0);
+#else
 	  usb_lld_setup_endpoint (ENDP3, EP_BULK, 0, 0, ENDP3_TXADDR, 0);
 	  usb_lld_setup_endpoint (ENDP5, EP_BULK, 0, ENDP5_RXADDR, 0,
 				  VIRTUAL_COM_PORT_DATA_SIZE);
+#endif
 	}
       else
 	{
@@ -161,8 +184,12 @@ gnuk_setup_endpoints_for_interface (uint16_t interface, int stop)
   else if (interface == MSC_INTERFACE)
     {
       if (!stop)
+#ifdef GNU_LINUX_EMULATION
+	usb_lld_setup_endp (dev, ENDP6, 1, 1);
+#else
 	usb_lld_setup_endpoint (ENDP6, EP_BULK, 0,
 				ENDP6_RXADDR, ENDP6_TXADDR, 64);
+#endif
       else
 	{
 	  usb_lld_stall_tx (ENDP6);
@@ -180,12 +207,16 @@ usb_device_reset (struct usb_dev *dev)
   usb_lld_reset (dev, USB_INITIAL_FEATURE);
 
   /* Initialize Endpoint 0 */
+#ifdef GNU_LINUX_EMULATION
+  usb_lld_setup_endp (dev, ENDP0, 1, 1);
+#else
   usb_lld_setup_endpoint (ENDP0, EP_CONTROL, 0, ENDP0_RXADDR, ENDP0_TXADDR,
 			  GNUK_MAX_PACKET_SIZE);
+#endif
 
   /* Stop the interface */
   for (i = 0; i < NUM_INTERFACES; i++)
-    gnuk_setup_endpoints_for_interface (i, 1);
+    gnuk_setup_endpoints_for_interface (dev, i, 1);
 
   bDeviceState = ATTACHED;
   ccid_usb_reset (1);
@@ -444,7 +475,7 @@ usb_set_configuration (struct usb_dev *dev)
 
       usb_lld_set_configuration (dev, 1);
       for (i = 0; i < NUM_INTERFACES; i++)
-	gnuk_setup_endpoints_for_interface (i, 0);
+	gnuk_setup_endpoints_for_interface (dev, i, 0);
       bDeviceState = CONFIGURED;
     }
   else if (current_conf != dev->dev_req.value)
@@ -454,7 +485,7 @@ usb_set_configuration (struct usb_dev *dev)
 
       usb_lld_set_configuration (dev, 0);
       for (i = 0; i < NUM_INTERFACES; i++)
-	gnuk_setup_endpoints_for_interface (i, 1);
+	gnuk_setup_endpoints_for_interface (dev, i, 1);
       bDeviceState = ADDRESSED;
       ccid_usb_reset (1);
     }
@@ -477,7 +508,7 @@ usb_set_interface (struct usb_dev *dev)
     return -1;
   else
     {
-      gnuk_setup_endpoints_for_interface (interface, 0);
+      gnuk_setup_endpoints_for_interface (dev, interface, 0);
       ccid_usb_reset (0);
       return usb_lld_ctrl_ack (dev);
     }
