@@ -848,7 +848,7 @@ encrypt (const uint8_t *key, const uint8_t *iv, uint8_t *data, int len)
 {
   aes_context aes;
   uint8_t iv0[INITIAL_VECTOR_SIZE];
-  unsigned int iv_offset;
+  size_t iv_offset;
 
   DEBUG_INFO ("ENC\r\n");
   DEBUG_BINARY (data, len);
@@ -867,7 +867,7 @@ decrypt (const uint8_t *key, const uint8_t *iv, uint8_t *data, int len)
 {
   aes_context aes;
   uint8_t iv0[INITIAL_VECTOR_SIZE];
-  unsigned int iv_offset;
+  size_t iv_offset;
 
   aes_setkey_enc (&aes, key, 128); /* This is setkey_enc, because of CFB.  */
   memcpy (iv0, iv, INITIAL_VECTOR_SIZE);
@@ -1263,9 +1263,9 @@ gpg_do_chks_prvkey (enum kind_of_key kk,
   const uint8_t *do_data = do_ptr[nr];
   uint8_t dek[DATA_ENCRYPTION_KEY_SIZE];
   struct prvkey_data *pd;
-  const uint8_t *p;
   uint8_t *dek_p;
   int update_needed = 0;
+  int r = 1;			/* Success */
 
   if (do_data == NULL)
     return 0;			/* No private key */
@@ -1304,18 +1304,20 @@ gpg_do_chks_prvkey (enum kind_of_key kk,
 
   if (update_needed)
     {
+      const uint8_t *p;
+
       flash_do_release (do_data);
       do_ptr[nr] = NULL;
       p = flash_do_write (nr, (const uint8_t *)pd, sizeof (struct prvkey_data));
       do_ptr[nr] = p;
+      if (p == NULL)
+	r = -1;
     }
 
   memset (pd, 0, sizeof (struct prvkey_data));
   free (pd);
-  if (update_needed && p == NULL)
-    return -1;
 
-  return 1;
+  return r;
 }
 
 
@@ -1571,7 +1573,7 @@ gpg_data_scan (const uint8_t *do_start, const uint8_t *do_end)
 
 	      p += second_byte + 1; /* second_byte has length */
 
-	      if (((uint32_t)p & 1))
+	      if (((uintptr_t)p & 1))
 		p++;
 	    }
 	  else if (nr >= 0x80 && nr <= 0xbf)

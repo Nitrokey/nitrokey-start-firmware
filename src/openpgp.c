@@ -1216,7 +1216,7 @@ modify_binary (uint8_t op, uint8_t p1, uint8_t p2, int len)
       if (i == 4)			/* all update keys are removed */
 	{
 	  p = gpg_get_firmware_update_key (0);
-	  flash_erase_page ((uint32_t)p);
+	  flash_erase_page ((uintptr_t)p);
 	}
     }
 
