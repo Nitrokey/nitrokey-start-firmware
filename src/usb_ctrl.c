@@ -1,7 +1,7 @@
 /*
  * usb_ctrl.c - USB control pipe device specific code for Gnuk
  *
- * Copyright (C) 2010, 2011, 2012, 2013, 2015, 2016
+ * Copyright (C) 2010, 2011, 2012, 2013, 2015, 2016, 2017
  *               Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
@@ -38,6 +38,7 @@
 #include "usb_lld.h"
 #include "usb_conf.h"
 #include "gnuk.h"
+#include "neug.h"
 
 #ifdef ENABLE_VIRTUAL_COM_PORT
 #include "usb-cdc.h"
@@ -212,7 +213,15 @@ static const uint8_t *const mem_info[] = { &_regnual_start,  __heap_end__, };
 static int
 download_check_crc32 (struct usb_dev *dev, const uint32_t *end_p)
 {
-  if (check_crc32 ((const uint32_t *)&_regnual_start, end_p))
+  uint32_t crc32 = *end_p;
+  const uint32_t *p;
+
+  crc32_rv_reset ();
+
+  for (p = (const uint32_t *)&_regnual_start; p < end_p; p++)
+    crc32_rv_step (rbit (*p));
+
+  if ((rbit (crc32_rv_get ()) ^ crc32) == 0xffffffff)
     return usb_lld_ctrl_ack (dev);
 
   return -1;

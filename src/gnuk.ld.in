@@ -1,16 +1,6 @@
 /*
  * ST32F103 memory setup.
  */
-__main_stack_size__      = 0x0080;      /* Exception handlers     */
-__process0_stack_size__  = 0x0100;      /* main */
-__process1_stack_size__  = 0x01a0;      /* ccid */
-__process2_stack_size__  = 0x0180;      /* rng */
-__process3_stack_size__  = 0x1660;      /* gpg */
-__process4_stack_size__  = 0;           /* --- */
-__process5_stack_size__  = @MSC_SIZE@;  /* msc */
-__process6_stack_size__  = @TIM_SIZE@;  /* intr: timer */
-__process7_stack_size__  = @EXT_SIZE@;  /* intr: ext */
-
 MEMORY
 {
     flash0 : org = @ORIGIN@, len = 4k
@@ -85,42 +75,15 @@ SECTIONS
     .stacks :
     {
         . = ALIGN(8);
-        __main_stack_base__ = .;
-        . += __main_stack_size__;
-        . = ALIGN(8);
-        __main_stack_end__ = .;
-        __process0_stack_base__ = .;
-        . += __process0_stack_size__;
-        . = ALIGN(8);
-        __process0_stack_end__ = .;
-        __process1_stack_base__ = .;
-        . += __process1_stack_size__;
-        . = ALIGN(8);
-        __process1_stack_end__ = .;
-        __process2_stack_base__ = .;
-        . += __process2_stack_size__;
-        . = ALIGN(8);
-        __process2_stack_end__ = .;
-        __process3_stack_base__ = .;
-        . += __process3_stack_size__;
-        . = ALIGN(8);
-        __process3_stack_end__ = .;
-        __process4_stack_base__ = .;
-        . += __process4_stack_size__;
-        . = ALIGN(8);
-        __process4_stack_end__ = .;
-        __process5_stack_base__ = .;
-        . += __process5_stack_size__;
-        . = ALIGN(8);
-        __process5_stack_end__ = .;
-        __process6_stack_base__ = .;
-        . += __process6_stack_size__;
-        . = ALIGN(8);
-        __process6_stack_end__ = .;
-        __process7_stack_base__ = .;
-        . += __process7_stack_size__;
-        . = ALIGN(8);
-        __process7_stack_end__ = .;
+        *(.main_stack)
+        *(.process_stack.0)
+        *(.process_stack.1)
+        *(.process_stack.2)
+        *(.process_stack.3)
+        *(.process_stack.4)
+        *(.process_stack.5)
+        *(.process_stack.6)
+        *(.process_stack.7)
         . = ALIGN(8);
     } > ram
 

@@ -184,9 +184,11 @@ calculate_regnual_entry_address (const uint8_t *addr)
   return v;
 }
 
-extern uint8_t __process1_stack_base__[], __process1_stack_size__[];
-#define STACK_ADDR_CCID ((uint32_t)__process1_stack_base__)
-#define STACK_SIZE_CCID ((uint32_t)__process1_stack_size__)
+#define STACK_MAIN
+#define STACK_PROCESS_1
+#include "stack-def.h"
+#define STACK_ADDR_CCID ((uintptr_t)process1_base)
+#define STACK_SIZE_CCID (sizeof process1_base)
 
 #define PRIO_CCID 3
 #define PRIO_MAIN 5

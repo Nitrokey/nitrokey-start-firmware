@@ -1,3 +1,22 @@
+2017-09-29  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/stack-def.h: New.
+
+	* src/gnuk.ld.in: Remove stack definitions.
+	* src/configure: Remove stack size modifications.
+
+	* src/main.c (STACK_MAIN, STACK_PROCESS_1): Use stack-def.h.
+	* src/usb-ccid.c (STACK_PROCESS_3): Likewise.
+	* src/usb-msc.c (STACK_PROCESS_5): Likewise.
+	* src/pin-cir.c (STACK_PROCESS_6, STACK_PROCESS_7): Likewise.
+
+	* src/usb_ctrl.c (download_check_crc32): Use chrc32_rv_ functions.
+
+	* src/mcu-stm32f103.c (rbit, check_crc32): Remove.
+
+	* src/neug.c: Update from NeuG.
+	* src/neug.h: Ditto.
+
 2017-09-28  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* src/ec_p256k1.c (coefficient_a): Remove.

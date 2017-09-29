@@ -14,4 +14,3 @@ regnual/regnual.elf
 doc/_build
 tests/.cache
 tests/__pycache__
-emulation/gnuk_emulation

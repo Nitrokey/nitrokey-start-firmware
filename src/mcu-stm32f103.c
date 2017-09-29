@@ -25,30 +25,6 @@
 #include <stdint.h>
 #include "mcu/stm32f103.h"
 
-static uint32_t
-rbit (uint32_t v)
-{
-  uint32_t r;
-
-  asm ("rbit	%0, %1" : "=r" (r) : "r" (v));
-  return r;
-}
-
-int
-check_crc32 (const uint32_t *start_p, const uint32_t *end_p)
-{
-  uint32_t crc32 = *end_p;
-  const uint32_t *p;
-
-  RCC->AHBENR |= RCC_AHBENR_CRCEN;
-  CRC->CR = CRC_CR_RESET;
-
-  for (p = start_p; p < end_p; p++)
-    CRC->DR = rbit (*p);
-
-  return (rbit (CRC->DR) ^ crc32) == 0xffffffff;
-}
-
 uint8_t *
 sram_address (uint32_t offset)
 {

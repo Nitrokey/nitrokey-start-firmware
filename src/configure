@@ -244,9 +244,6 @@ else
 fi
 
 # --enable-pinpad option
-MSC_SIZE="0"
-TIM_SIZE="0"
-EXT_SIZE="0"
 if test "$pinpad" = "no"; then
   PINPAD_MAKE_OPTION="# ENABLE_PINPAD="
   PINPAD_DEFINE="#undef PINPAD_SUPPORT"
@@ -257,12 +254,6 @@ else
   PINPAD_DEFINE="#define PINPAD_SUPPORT 1"
   PINPAD_MORE_DEFINE="#define PINPAD_${pinpad^^[a-z]}_SUPPORT 1"
   echo "PIN pad option enabled ($pinpad)"
-  if test "$pinpad" = "dnd"; then
-     MSC_SIZE="0x0200"
-  elif test "$pinpad" = "cir"; then
-     TIM_SIZE="0x00c0"
-     EXT_SIZE="0x00c0"
-  fi
 fi
 
 # --enable-certdo option
@@ -408,18 +399,12 @@ if test "$certdo" = "yes"; then
       -e "s/@ORIGIN@/$ORIGIN/" -e "s/@FLASH_SIZE@/$FLASH_SIZE/" \
       -e "s/@MEMORY_SIZE@/$MEMORY_SIZE/" \
       -e "s/@FLASH_PAGE_SIZE@/$FLASH_PAGE_SIZE/" \
-      -e "s/@MSC_SIZE@/$MSC_SIZE/" \
-      -e "s/@TIM_SIZE@/$TIM_SIZE/" \
-      -e "s/@EXT_SIZE@/$EXT_SIZE/" \
 	< gnuk.ld.in > gnuk.ld
 else
   sed -e "/^@CERTDO_SUPPORT_START@$/,/^@CERTDO_SUPPORT_END@$/ d" \
       -e "s/@ORIGIN@/$ORIGIN/" -e "s/@FLASH_SIZE@/$FLASH_SIZE/" \
       -e "s/@MEMORY_SIZE@/$MEMORY_SIZE/" \
       -e "s/@FLASH_PAGE_SIZE@/$FLASH_PAGE_SIZE/" \
-      -e "s/@MSC_SIZE@/$MSC_SIZE/" \
-      -e "s/@TIM_SIZE@/$TIM_SIZE/" \
-      -e "s/@EXT_SIZE@/$EXT_SIZE/" \
 	< gnuk.ld.in > gnuk.ld
 fi
 sed -e "s/@DEBUG_DEFINE@/$DEBUG_DEFINE/" \

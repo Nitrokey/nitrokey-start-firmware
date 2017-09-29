@@ -761,9 +761,11 @@ static void ccid_error (struct ccid *c, int offset)
 
 extern void *openpgp_card_thread (void *arg);
 
-extern uint8_t __process3_stack_base__[], __process3_stack_size__[];
-#define STACK_ADDR_GPG ((uint32_t)__process3_stack_base__)
-#define STACK_SIZE_GPG ((uint32_t)__process3_stack_size__)
+#define STACK_PROCESS_3
+#include "stack-def.h"
+#define STACK_ADDR_GPG ((uintptr_t)process3_base)
+#define STACK_SIZE_GPG (sizeof process3_base)
+
 #define PRIO_GPG 1
 
 
