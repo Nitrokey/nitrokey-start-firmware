@@ -31,7 +31,9 @@ USE_USB = yes
 USE_ADC = yes
 USE_EVENTFLAG = yes
 
-ifneq ($(EMULATION),)
+ifeq ($(EMULATION),)
+DEFS += -DFLASH_UPGRADE_SUPPORT
+else
 DEFS += -DBN256_C_IMPLEMENTATION
 endif
 

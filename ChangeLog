@@ -1,5 +1,10 @@
 2017-09-29  NIIBE Yutaka  <gniibe@fsij.org>
 
+	* src/main.c [FLASH_UPGRADE_SUPPORT] (main): Factor out flash ROM upgrade
+	support.
+	(calculate_regnual_entry_address): Likewise.
+	* src/usb_ctrl.c (usb_setup, download_check_crc32): Likewise.
+
 	* src/openpgp.c (modify_binary): Fix for 64-bit machine.
 	* src/openpgp-do.c (encrypt, decrypt): Likewise.
 	(gpg_data_scan): Likewise.

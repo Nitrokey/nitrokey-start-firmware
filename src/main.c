@@ -1,7 +1,7 @@
 /*
  * main.c - main routine of Gnuk
  *
- * Copyright (C) 2010, 2011, 2012, 2013, 2015, 2016
+ * Copyright (C) 2010, 2011, 2012, 2013, 2015, 2016, 2017
  *               Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
@@ -35,8 +35,11 @@
 #include "usb_lld.h"
 #include "usb-cdc.h"
 #include "random.h"
+#ifdef GNU_LINUX_EMULATION
+#include <stdlib.h>
+#else
 #include "mcu/stm32f103.h"
-
+#endif
 
 /*
  * main thread does 1-bit LED display output
@@ -167,22 +170,24 @@ led_blink (int spec)
   eventflag_signal (&led_event, spec);
 }
 
+#ifdef FLASH_UPGRADE_SUPPORT
 /*
  * In Gnuk 1.0.[12], reGNUal was not relocatable.
  * Now, it's relocatable, but we need to calculate its entry address
  * based on it's pre-defined address.
  */
 #define REGNUAL_START_ADDRESS_COMPATIBLE 0x20001400
-static uint32_t
+static uintptr_t
 calculate_regnual_entry_address (const uint8_t *addr)
 {
   const uint8_t *p = addr + 4;
-  uint32_t v = p[0] + (p[1] << 8) + (p[2] << 16) + (p[3] << 24);
+  uintptr_t v = p[0] + (p[1] << 8) + (p[2] << 16) + (p[3] << 24);
 
   v -= REGNUAL_START_ADDRESS_COMPATIBLE;
-  v += (uint32_t)addr;
+  v += (uintptr_t)addr;
   return v;
 }
+#endif
 
 #define STACK_MAIN
 #define STACK_PROCESS_1
@@ -206,7 +211,9 @@ extern uint32_t bDeviceState;
 int
 main (int argc, char *argv[])
 {
-  uint32_t entry;
+#ifdef FLASH_UPGRADE_SUPPORT
+  uintptr_t entry;
+#endif
   chopstx_t ccid_thd;
 
   (void)argc;
@@ -287,8 +294,9 @@ main (int argc, char *argv[])
   /* Finish application.  */
   chopstx_join (ccid_thd, NULL);
 
+#ifdef FLASH_UPGRADE_SUPPORT
   /* Set vector */
-  SCB->VTOR = (uint32_t)&_regnual_start;
+  SCB->VTOR = (uintptr_t)&_regnual_start;
   entry = calculate_regnual_entry_address (&_regnual_start);
 #ifdef DFU_SUPPORT
 #define FLASH_SYS_START_ADDR 0x08000000
@@ -296,7 +304,7 @@ main (int argc, char *argv[])
 #define CHIP_ID_REG ((uint32_t *)0xE0042000)
   {
     extern uint8_t _sys;
-    uint32_t addr;
+    uintptr_t addr;
     handler *new_vector = (handler *)FLASH_SYS_START_ADDR;
     void (*func) (void (*)(void)) = (void (*)(void (*)(void)))new_vector[9];
     uint32_t flash_page_size = 1024; /* 1KiB default */
@@ -319,6 +327,9 @@ main (int argc, char *argv[])
 #else
   /* Leave Gnuk to exec reGNUal */
   flash_erase_all_and_exec ((void (*)(void))entry);
+#endif
+#else
+  exit (0);
 #endif
 
   /* Never reached */

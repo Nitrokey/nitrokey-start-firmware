@@ -202,13 +202,16 @@ static const uint8_t data_rate_table[] = { 0x80, 0x25, 0, 0, }; /* dwDataRate */
 static const uint8_t lun_table[] = { 0, 0, 0, 0, };
 #endif
 
+#ifdef FLASH_UPGRADE_SUPPORT
 static const uint8_t *const mem_info[] = { &_regnual_start,  __heap_end__, };
+#endif
 
 #define USB_FSIJ_GNUK_MEMINFO     0
 #define USB_FSIJ_GNUK_DOWNLOAD    1
 #define USB_FSIJ_GNUK_EXEC        2
 #define USB_FSIJ_GNUK_CARD_CHANGE 3
 
+#ifdef FLASH_UPGRADE_SUPPORT
 /* After calling this function, CRC module remain enabled.  */
 static int
 download_check_crc32 (struct usb_dev *dev, const uint32_t *end_p)
@@ -226,6 +229,7 @@ download_check_crc32 (struct usb_dev *dev, const uint32_t *end_p)
 
   return -1;
 }
+#endif
 
 int
 usb_setup (struct usb_dev *dev)
@@ -237,15 +241,22 @@ usb_setup (struct usb_dev *dev)
     {
       if (USB_SETUP_GET (arg->type))
 	{
+#ifdef FLASH_UPGRADE_SUPPORT
 	  if (arg->request == USB_FSIJ_GNUK_MEMINFO)
 	    return usb_lld_ctrl_send (dev, mem_info, sizeof (mem_info));
+#else
+	  return -1;
+#endif
 	}
       else /* SETUP_SET */
 	{
+#ifdef FLASH_UPGRADE_SUPPORT
 	  uint8_t *addr = sram_address ((arg->value * 0x100) + arg->index);
+#endif
 
 	  if (arg->request == USB_FSIJ_GNUK_DOWNLOAD)
 	    {
+#ifdef FLASH_UPGRADE_SUPPORT
 	      if (*ccid_state_p != CCID_STATE_EXITED)
 		return -1;
 
@@ -257,9 +268,13 @@ usb_setup (struct usb_dev *dev)
 			256 - (arg->index + arg->len));
 
 	      return usb_lld_ctrl_recv (dev, addr, arg->len);
+#else
+	      return -1;
+#endif
 	    }
 	  else if (arg->request == USB_FSIJ_GNUK_EXEC && arg->len == 0)
 	    {
+#ifdef FLASH_UPGRADE_SUPPORT
 	      if (*ccid_state_p != CCID_STATE_EXITED)
 		return -1;
 
@@ -267,6 +282,9 @@ usb_setup (struct usb_dev *dev)
 		return -1;
 
 	      return download_check_crc32 (dev, (uint32_t *)addr);
+#else
+	      return -1;
+#endif
 	    }
 	  else if (arg->request == USB_FSIJ_GNUK_CARD_CHANGE && arg->len == 0)
 	    {
