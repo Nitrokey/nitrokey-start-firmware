@@ -347,15 +347,20 @@ static void get_sw1sw2 (struct ep_in *epi, size_t len)
 }
 
 #ifdef GNU_LINUX_EMULATION
-static uint8_t endp1_tx_buf[64];
+static uint8_t endp1_tx_buf[64]; /* Only support single CCID interface.  */
 #endif
 
 /*
  * Tx done callback
  */
 static void
-EP1_IN_Callback (uint16_t len)
+ccid_tx_done (uint8_t ep_num, uint16_t len)
 {
+  /*
+   * If we support multiple CCID interfaces, we select endpoint object
+   * by EP_NUM.  Because it has only single CCID interface now, it's
+   * hard-coded, here.
+   */
   struct ep_in *epi = &endpoint_in;
 
   (void)len;
@@ -367,9 +372,9 @@ EP1_IN_Callback (uint16_t len)
 	epi->tx_done = 1;
 	/* send ZLP */
 #ifdef GNU_LINUX_EMULATION
-	usb_lld_tx_enable_buf (epi->ep_num, endp1_tx_buf, 0);
+	usb_lld_tx_enable_buf (ep_num, endp1_tx_buf, 0);
 #else
-	usb_lld_tx_enable (epi->ep_num, 0);
+	usb_lld_tx_enable (ep_num, 0);
 #endif
       }
   else
@@ -384,7 +389,7 @@ EP1_IN_Callback (uint16_t len)
 #ifdef GNU_LINUX_EMULATION
 	    memcpy (endp1_tx_buf+offset, epi->buf, epi->buf_len);
 #else
-	    usb_lld_txcpy (epi->buf, epi->ep_num, offset, epi->buf_len);
+	    usb_lld_txcpy (epi->buf, ep_num, offset, epi->buf_len);
 #endif
 	    offset += epi->buf_len;
 	    remain -= epi->buf_len;
@@ -396,7 +401,7 @@ EP1_IN_Callback (uint16_t len)
 #ifdef GNU_LINUX_EMULATION
 	    memcpy (endp1_tx_buf+offset, epi->buf, remain);
 #else
-	    usb_lld_txcpy (epi->buf, epi->ep_num, offset, remain);
+	    usb_lld_txcpy (epi->buf, ep_num, offset, remain);
 #endif
 	    epi->buf += remain;
 	    epi->cnt += remain;
@@ -409,9 +414,9 @@ EP1_IN_Callback (uint16_t len)
 	epi->tx_done = 1;
 
 #ifdef GNU_LINUX_EMULATION
-      usb_lld_tx_enable_buf (epi->ep_num, endp1_tx_buf, tx_size);
+      usb_lld_tx_enable_buf (ep_num, endp1_tx_buf, tx_size);
 #else
-      usb_lld_tx_enable (epi->ep_num, tx_size);
+      usb_lld_tx_enable (ep_num, tx_size);
 #endif
     }
 }
@@ -632,7 +637,7 @@ static void ccid_abdata (struct ep_out *epo, size_t len)
 }
 
 #ifdef GNU_LINUX_EMULATION
-static uint8_t endp1_rx_buf[64];
+static uint8_t endp1_rx_buf[64]; /* Only support single CCID interface.  */
 #endif
 
 static void
@@ -655,10 +660,14 @@ ccid_prepare_receive (struct ccid *c)
 /*
  * Rx ready callback
  */
-
 static void
-EP1_OUT_Callback (uint16_t len)
+ccid_rx_ready (uint8_t ep_num, uint16_t len)
 {
+  /*
+   * If we support multiple CCID interfaces, we select endpoint object
+   * by EP_NUM.  Because it has only single CCID interface now, it's
+   * hard-coded, here.
+   */
   struct ep_out *epo = &endpoint_out;
   int offset = 0;
   int cont;
@@ -672,7 +681,7 @@ EP1_OUT_Callback (uint16_t len)
 #ifdef GNU_LINUX_EMULATION
 	memcpy (epo->buf, endp1_rx_buf + offset, len);
 #else
-	usb_lld_rxcpy (epo->buf, epo->ep_num, offset, len);
+	usb_lld_rxcpy (epo->buf, ep_num, offset, len);
 #endif
 	epo->buf += len;
 	epo->cnt += len;
@@ -684,7 +693,7 @@ EP1_OUT_Callback (uint16_t len)
 #ifdef GNU_LINUX_EMULATION
 	memcpy (epo->buf, endp1_rx_buf + offset, epo->buf_len);
 #else
-	usb_lld_rxcpy (epo->buf, epo->ep_num, offset, epo->buf_len);
+	usb_lld_rxcpy (epo->buf, ep_num, offset, epo->buf_len);
 #endif
 	len -= epo->buf_len;
 	offset += epo->buf_len;
@@ -699,9 +708,9 @@ EP1_OUT_Callback (uint16_t len)
 
   if (cont)
 #ifdef GNU_LINUX_EMULATION
-    usb_lld_rx_enable_buf (epo->ep_num, endp1_rx_buf, 64);
+    usb_lld_rx_enable_buf (ep_num, endp1_rx_buf, 64);
 #else
-    usb_lld_rx_enable (epo->ep_num);
+    usb_lld_rx_enable (ep_num);
 #endif
   else
     notify_icc (epo);
@@ -718,7 +727,7 @@ static void
 usb_rx_ready (uint8_t ep_num, uint16_t len)
 {
   if (ep_num == ENDP1)
-    EP1_OUT_Callback (len);
+    ccid_rx_ready (ep_num, len);
 #ifdef DEBUG
   else if (ep_num == ENDP5)
     {
@@ -737,7 +746,7 @@ static void
 usb_tx_done (uint8_t ep_num, uint16_t len)
 {
   if (ep_num == ENDP1)
-    EP1_IN_Callback (len);
+    ccid_tx_done (ep_num, len);
   else if (ep_num == ENDP2)
     {
       /* INTERRUPT Transfer done */

@@ -1,3 +1,8 @@
+2017-09-30  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/usb-ccid.c (ccid_tx_done): Rename from EP1_IN_Callback.
+	(ccid_rx_ready): Rename from EP1_OUT_Callback.
+
 2017-09-29  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* src/usb-ccid.c (epo_init, epi_init, ccid_thread): Simplify.
