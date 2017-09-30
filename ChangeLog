@@ -1,5 +1,17 @@
 2017-09-30  NIIBE Yutaka  <gniibe@fsij.org>
 
+	* src/flash.c (flash_terminate, flash_activate)
+	(flash_copying_gc, flash_do_write_internal, flash_do_release)
+	(flash_key_write, flash_check_all_other_keys_released)
+	(flash_key_fill_zero_as_released, flash_key_release)
+	(flash_key_release_page, flash_clear_halfword)
+	(flash_put_data_internal, flash_put_data, flash_bool_clear)
+	(flash_bool_write_internal, flash_bool_write)
+	(flash_enum_write_internal, flash_enum_write)
+	(flash_cnt123_write_internal, flash_cnt123_increment)
+	(flash_cnt123_clear, flash_erase_binary, flash_write_binary): Fix
+	for GNU/Linux.
+
 	* src/usb-ccid.c (ccid_tx_done): Rename from EP1_IN_Callback.
 	(ccid_rx_ready): Rename from EP1_OUT_Callback.
 

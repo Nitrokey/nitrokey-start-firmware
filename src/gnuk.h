@@ -152,7 +152,7 @@ int flash_key_write (uint8_t *key_addr,
 		     const uint8_t *key_data, int key_data_len,
 		     const uint8_t *pubkey, int pubkey_len);
 void flash_set_data_pool_last (const uint8_t *p);
-void flash_clear_halfword (uint32_t addr);
+void flash_clear_halfword (uintptr_t addr);
 void flash_increment_counter (uint8_t counter_tag_nr);
 void flash_reset_counter (uint8_t counter_tag_nr);
 
