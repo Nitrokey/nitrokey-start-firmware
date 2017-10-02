@@ -51,6 +51,7 @@
 #define LED_TIMEOUT_STOP	(200*1000)
 
 
+#if !defined (GNU_LINUX_EMULATION)
 #define ID_OFFSET (2+SERIALNO_STR_LEN*2)
 static void
 device_initialize_once (void)
@@ -80,6 +81,7 @@ device_initialize_once (void)
 	}
     }
 }
+#endif
 
 
 static volatile uint8_t fatal_code;
@@ -223,7 +225,9 @@ main (int argc, char *argv[])
   gnuk_malloc_init ();
 
   flash_unlock ();
+#if !defined (GNU_LINUX_EMULATION)
   device_initialize_once ();
+#endif
 
   adc_init ();
 

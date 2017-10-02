@@ -1,5 +1,7 @@
 2017-10-02  NIIBE Yutaka  <gniibe@fsij.org>
 
+	* src/main.c (device_initialize_once): Not for GNU/Linux.
+
 	* src/openpgp.c, src/flash.c: Distinguish FLASH_UPGRADE_SUPPORT.
 
 	* src/main.c [GNU_LINUX_EMULATION]: Use emulated_main.
