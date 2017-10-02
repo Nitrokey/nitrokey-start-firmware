@@ -694,6 +694,7 @@ flash_write_binary (uint8_t file_id, const uint8_t *data,
       maxsize = 6;
       p = &openpgpcard_aid[8];
     }
+#ifdef FLASH_UPGRADE_SUPPORT
   else if (file_id >= FILEID_UPDATE_KEY_0 && file_id <= FILEID_UPDATE_KEY_3)
     {
       maxsize = FIRMWARE_UPDATE_KEY_CONTENT_LEN;
@@ -705,6 +706,7 @@ flash_write_binary (uint8_t file_id, const uint8_t *data,
 	  return 0;
 	}
     }
+#endif
 #if defined(CERTDO_SUPPORT)
   else if (file_id == FILEID_CH_CERTIFICATE)
     {
