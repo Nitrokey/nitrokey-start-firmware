@@ -223,6 +223,7 @@ size_t mpi_lsb( const mpi *X )
     return( 0 );
 }
 
+#if !defined(POLARSSL_HAVE_UDBL)
 /*
  * Count leading zero bits in a given integer
  */
@@ -240,6 +241,7 @@ static size_t int_clz( const t_uint x )
 
     return j;
 }
+#endif
 
 /*
  * Return the number of most significant bits
@@ -1512,9 +1514,22 @@ static void mpi_montred( size_t n, const t_uint *np, t_uint mm, t_uint *d )
 /*
  * Montgomery square: A = A * A * R^-1 mod N
  * A is placed at the upper half of D.
+ *
+ * n : number of limbs of N
+ * np: pointer to limbs of bignum N
+ * mm: m' = -N^(-1) mod b where b = 2^number-of-bit-in-limb
+ * d (destination): the result [<-- temp -->][<--- A ---->]
+ *                               lower part    upper part
+ *                                   n-limb       n-limb
  */
 static void mpi_montsqr( size_t n, const t_uint *np, t_uint mm, t_uint *d )
 {
+#ifdef BIGNUM_C_IMPLEMENTATION
+  t_uint a_input[n];
+
+  memcpy (a_input, &d[n], sizeof (a_input));
+  mpi_montmul (n, np, mm, d, a_input);
+#else
   size_t i;
   register t_uint c = 0;
 
@@ -1526,6 +1541,7 @@ static void mpi_montsqr( size_t n, const t_uint *np, t_uint mm, t_uint *d )
 
       x_i = *xj;
       *xj++ = c;
+
       asm (/* (C,R4,R5) := w_i_i + x_i*x_i; w_i_i := R5; */
            "mov    %[c], #0\n\t"
            "ldr    r5, [%[wij]]\n\t"          /* R5 := w_i_i; */
@@ -1598,6 +1614,7 @@ static void mpi_montsqr( size_t n, const t_uint *np, t_uint mm, t_uint *d )
       mpi_sub_hlp( n, np, d );
   else
       mpi_sub_hlp( n, d - n, d - n);
+#endif
 }
 
 /*
