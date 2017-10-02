@@ -1,5 +1,7 @@
 2017-10-02  NIIBE Yutaka  <gniibe@fsij.org>
 
+	* src/usb-ccid.c (INTR_REQ_USB): Fix for GNU/Linux.
+
 	* library/bignum.c (mpi_montsqr): Easy C implementation.
 
 2017-09-30  NIIBE Yutaka  <gniibe@fsij.org>

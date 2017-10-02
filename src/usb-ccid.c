@@ -1555,7 +1555,12 @@ ccid_notify_slot_change (struct ccid *c)
 #define GPG_THREAD_TERMINATED 0xffff
 
 
+#ifdef GNU_LINUX_EMULATION
+#include <signal.h>
+#define INTR_REQ_USB SIGUSR1
+#else
 #define INTR_REQ_USB 20
+#endif
 
 extern uint32_t bDeviceState;
 extern void usb_device_reset (struct usb_dev *dev);
