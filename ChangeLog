@@ -1,5 +1,8 @@
 2017-10-02  NIIBE Yutaka  <gniibe@fsij.org>
 
+	* src/main.c [GNU_LINUX_EMULATION]: Use emulated_main.
+	(MEMORY_SIZE, MEMORY_END): Fix for GNU/Linux.
+
 	* src/usb-ccid.c (INTR_REQ_USB): Fix for GNU/Linux.
 
 	* library/bignum.c (mpi_montsqr): Easy C implementation.

@@ -37,6 +37,7 @@
 #include "random.h"
 #ifdef GNU_LINUX_EMULATION
 #include <stdlib.h>
+#define main emulated_main
 #else
 #include "mcu/stm32f103.h"
 #endif
@@ -361,13 +362,24 @@ fatal (uint8_t code)
  * reclaimed to system.
  */
 
+#ifdef GNU_LINUX_EMULATION
+#define MEMORY_SIZE (20*1024)
+uint8_t __heap_base__[MEMORY_SIZE];
+
+#define HEAP_START __heap_base__
+#define MEMORY_END (__heap_base__ + MEMORY_SIZE)
+#define MEMORY_ALIGNMENT 16
+#else
 extern uint8_t __heap_base__[];
 extern uint8_t __heap_end__[];
 
+#define HEAP_START __heap_base__
 #define MEMORY_END (__heap_end__)
 #define MEMORY_ALIGNMENT 16
-#define MEMORY_ALIGN(n) (((n) + MEMORY_ALIGNMENT - 1) & ~(MEMORY_ALIGNMENT - 1))
 #define MEMORY_SIZE ((uintptr_t)__heap_end__ -  (uintptr_t)__heap_base__)
+#endif
+
+#define MEMORY_ALIGN(n) (((n) + MEMORY_ALIGNMENT - 1) & ~(MEMORY_ALIGNMENT - 1))
 
 static uint8_t *heap_p;
 static chopstx_mutex_t malloc_mtx;
@@ -389,7 +401,7 @@ static void
 gnuk_malloc_init (void)
 {
   chopstx_mutex_init (&malloc_mtx);
-  heap_p = __heap_base__;
+  heap_p = HEAP_START;
   free_list = NULL;
 }
 
