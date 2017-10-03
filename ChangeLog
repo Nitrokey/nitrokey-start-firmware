@@ -1,5 +1,12 @@
 2017-10-03  NIIBE Yutaka  <gniibe@fsij.org>
 
+	* src/call-ec.c (ecc_compute_public): No use of malloc.
+	* src/call-rsa.c (modulus_calc, rsa_genkey): Likewise.
+	* src/ecc-edwards.c (eddsa_compute_public_25519): Likewise.
+	* src/ecc-mont.c (ecdh_compute_public_25519): Likewise.
+	* src/openpgp-do.c (gpg_do_write_prvkey, gpg_do_chks_prvkey)
+	(proc_key_import, gpg_do_keygen): Likewise.
+
 	* polarssl/library/rsa.c: Don't include stdlib.h.
 	* src/gnuk-malloc.h: Rename from stdlib.h.
 	* polarssl/library/bignum.c: Include gnuk-malloc.h.

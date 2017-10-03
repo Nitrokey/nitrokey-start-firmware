@@ -2,7 +2,7 @@
  * call-ec_p256k1.c - interface between Gnuk and Elliptic curve over
  *                    GF(p256k1)
  *
- * Copyright (C) 2014 Free Software Initiative of Japan
+ * Copyright (C) 2014, 2017  Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
  * This file is a part of Gnuk, a GnuPG USB Token implementation.
@@ -23,7 +23,6 @@
  */
 
 #include <stdint.h>
-#include <stdlib.h>
 #include <string.h>
 #include "bn.h"
 #include "affine.h"

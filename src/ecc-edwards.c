@@ -2,7 +2,7 @@
  * ecc-edwards.c - Elliptic curve computation for
  *                 the twisted Edwards curve: -x^2 + y^2 = 1 + d*x^2*y^2
  *
- * Copyright (C) 2014 Free Software Initiative of Japan
+ * Copyright (C) 2014, 2017  Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
  * This file is a part of Gnuk, a GnuPG USB Token implementation.
@@ -23,7 +23,6 @@
  */
 
 #include <stdint.h>
-#include <stdlib.h>
 #include <string.h>
 
 #include "bn.h"
@@ -708,7 +707,7 @@ eddsa_sign_25519 (const uint8_t *input, size_t ilen, uint32_t *out,
   return 0;
 }
 
-void
+static void
 eddsa_public_key_25519 (bn256 *pk, const bn256 *a)
 {
   ac R[1];
@@ -730,18 +729,10 @@ eddsa_public_key_25519 (bn256 *pk, const bn256 *a)
 }
 
 
-uint8_t *
-eddsa_compute_public_25519 (const uint8_t *kd)
+void
+eddsa_compute_public_25519 (const uint8_t *kd, uint8_t *pubkey)
 {
-  uint8_t *p0;
-  const bn256 *a = (const bn256 *)kd;
-
-  p0 = (uint8_t *)malloc (sizeof (bn256));
-  if (p0 == NULL)
-    return NULL;
-
-  eddsa_public_key_25519 ((bn256 *)p0, a);
-  return p0;
+  eddsa_public_key_25519 ((bn256 *)pubkey, (const bn256 *)kd);
 }
 
 

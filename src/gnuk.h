@@ -265,22 +265,22 @@ void put_binary (const char *s, int len);
 #endif
 
 int rsa_sign (const uint8_t *, uint8_t *, int, struct key_data *, int);
-uint8_t *modulus_calc (const uint8_t *, int);
+int modulus_calc (const uint8_t *, int, uint8_t *);
 int rsa_decrypt (const uint8_t *, uint8_t *, int, struct key_data *,
 		 unsigned int *);
 int rsa_verify (const uint8_t *, int, const uint8_t *, const uint8_t *);
-uint8_t *rsa_genkey (int);
+int rsa_genkey (int, uint8_t *, uint8_t *);
 
 int ecdsa_sign_p256r1 (const uint8_t *hash, uint8_t *output,
 		       const uint8_t *key_data);
-uint8_t *ecc_compute_public_p256r1 (const uint8_t *key_data);
+int ecc_compute_public_p256r1 (const uint8_t *key_data, uint8_t *);
 int ecc_check_secret_p256r1 (const uint8_t *d0, uint8_t *d1);
 int ecdh_decrypt_p256r1 (const uint8_t *input, uint8_t *output,
 			 const uint8_t *key_data);
 
 int ecdsa_sign_p256k1 (const uint8_t *hash, uint8_t *output,
 		       const uint8_t *key_data);
-uint8_t *ecc_compute_public_p256k1 (const uint8_t *key_data);
+int ecc_compute_public_p256k1 (const uint8_t *key_data, uint8_t *);
 int ecc_check_secret_p256k1 (const uint8_t *d0, uint8_t  *d1);
 int ecdh_decrypt_p256k1 (const uint8_t *input, uint8_t *output,
 			 const uint8_t *key_data);
@@ -288,8 +288,8 @@ int ecdh_decrypt_p256k1 (const uint8_t *input, uint8_t *output,
 int eddsa_sign_25519 (const uint8_t *input, size_t ilen, uint32_t *output,
 		      const uint8_t *sk_a, const uint8_t *seed,
 		      const uint8_t *pk);
-uint8_t *eddsa_compute_public_25519 (const uint8_t *a);
-uint8_t *ecdh_compute_public_25519 (const uint8_t *a);
+void eddsa_compute_public_25519 (const uint8_t *a, uint8_t *);
+void ecdh_compute_public_25519 (const uint8_t *a, uint8_t *);
 int ecdh_decrypt_curve25519 (const uint8_t *input, uint8_t *output,
 			     const uint8_t *key_data);
 
