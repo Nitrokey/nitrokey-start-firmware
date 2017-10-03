@@ -37,7 +37,7 @@
 #include "polarssl/bignum.h"
 #include "polarssl/bn_mul.h"
 
-#include <stdlib.h>
+#include <gnuk-malloc.h>
 
 #define ciL    (sizeof(t_uint))         /* chars in limb  */
 #define biL    (ciL << 3)               /* bits  in limb  */

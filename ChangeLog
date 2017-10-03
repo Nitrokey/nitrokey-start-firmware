@@ -1,5 +1,9 @@
 2017-10-03  NIIBE Yutaka  <gniibe@fsij.org>
 
+	* polarssl/library/rsa.c: Don't include stdlib.h.
+	* src/gnuk-malloc.h: Rename from stdlib.h.
+	* polarssl/library/bignum.c: Include gnuk-malloc.h.
+
 	* src/Makefile (build/flash.data): Generate.
 
 	* src/main.c (flash_addr_key_storage_start)
