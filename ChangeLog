@@ -1,5 +1,7 @@
 2017-10-03  NIIBE Yutaka  <gniibe@fsij.org>
 
+	* src/Makefile (build/flash.data): Generate.
+
 	* src/main.c (flash_addr_key_storage_start)
 	(flash_addr_data_storage_start): New.
 	(main): Determine flash address.

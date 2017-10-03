@@ -75,3 +75,14 @@ build/bignum.o: OPT = -O3 -g
 distclean: clean
 	-rm -f gnuk.ld config.h board.h config.mk \
 	       usb-strings.c.inc usb-vid-pid-ver.c.inc
+
+ifneq ($(EMULATION),)
+build/flash.data: Makefile
+	@echo 'Generating 8192-byte flash.data'
+	@/bin/echo -n -e '\xff\xff\xff\xff\xff\xff\xff\xff' >$@
+	@for i in $(shell seq 511); \
+	   do /bin/echo -n -e '\xff\xff\xff\xff\xff\xff\xff\xff' >>$@; done
+	@/bin/echo -n -e '\x00\x00\xff\xff\xff\xff\xff\xff' >>$@
+	@for i in $(shell seq 511); \
+	   do /bin/echo -n -e '\xff\xff\xff\xff\xff\xff\xff\xff' >>$@; done
+endif
