@@ -53,24 +53,21 @@
  *         <alignment to page>
  * ch_certificate_startp
  *         <2048 bytes>
- * _data_pool
- *	   <two pages>
  * _keystore_pool
  *         Three flash pages for keystore
  *         a page contains a key data of:
  *              For RSA-2048: 512-byte (p, q and N)
  *              For RSA-4096: 1024-byte (p, q and N)
  *              For ECDSA/ECDH and EdDSA, there are padding after public key
+ * _data_pool
+ *	   <two pages>
  */
 
 #define FLASH_DATA_POOL_HEADER_SIZE	2
 #define FLASH_DATA_POOL_SIZE		(flash_page_size*2)
 
 static uint16_t flash_page_size;
-
 static const uint8_t *data_pool;
-extern uint8_t _keystore_pool;
-
 static uint8_t *last_p;
 
 /* The first halfword is generation for the data page (little endian) */
@@ -78,8 +75,18 @@ const uint8_t const flash_data[4] __attribute__ ((section (".gnuk_data"))) = {
   0x00, 0x00, 0xff, 0xff
 };
 
-/* Linker set this symbol */
+#ifdef GNU_LINUX_EMULATION
+extern uint8_t *flash_addr_key_storage_start;
+extern uint8_t *flash_addr_data_storage_start;
+#define FLASH_ADDR_KEY_STORAGE_START  flash_addr_key_storage_start
+#define FLASH_ADDR_DATA_STORAGE_START flash_addr_data_storage_start
+#else
+/* Linker sets these symbols */
+extern uint8_t _keystore_pool;
 extern uint8_t _data_pool;
+#define FLASH_ADDR_KEY_STORAGE_START  ((&_keystore_pool))
+#define FLASH_ADDR_DATA_STORAGE_START ((&_data_pool))
+#endif
 
 static int key_available_at (const uint8_t *k, int key_size)
 {
@@ -106,15 +113,17 @@ void
 flash_do_storage_init (const uint8_t **p_do_start, const uint8_t **p_do_end)
 {
   uint16_t gen0, gen1;
-  uint16_t *gen0_p = (uint16_t *)&_data_pool;
+  uint16_t *gen0_p = (uint16_t *)FLASH_ADDR_DATA_STORAGE_START;
   uint16_t *gen1_p;
 
   flash_page_size = 1024;
+#if !defined (GNU_LINUX_EMULATION)
   if (((*CHIP_ID_REG) & 0xfff) == 0x0414)
     flash_page_size = 2048;
+#endif
 
-  gen1_p = (uint16_t *)(&_data_pool + flash_page_size);
-  data_pool = &_data_pool;
+  gen1_p = (uint16_t *)(FLASH_ADDR_DATA_STORAGE_START + flash_page_size);
+  data_pool = FLASH_ADDR_DATA_STORAGE_START;
 
   /* Check data pool generation and choose the page */
   gen0 = *gen0_p;
@@ -129,13 +138,13 @@ flash_do_storage_init (const uint8_t **p_do_start, const uint8_t **p_do_end)
 
   if (gen0 == 0xffff)
     /* Use another page if a page is erased.  */
-    data_pool = &_data_pool + flash_page_size;
+    data_pool = FLASH_ADDR_DATA_STORAGE_START + flash_page_size;
   else if (gen1 == 0xffff)
     /* Or use different page if another page is erased.  */
-    data_pool = &_data_pool;
+    data_pool = FLASH_ADDR_DATA_STORAGE_START;
   else if ((gen0 == 0xfffe && gen1 == 0) || gen1 > gen0)
     /* When both pages have valid header, use newer page.   */
-    data_pool = &_data_pool + flash_page_size;
+    data_pool = FLASH_ADDR_DATA_STORAGE_START + flash_page_size;
 
   *p_do_start = data_pool + FLASH_DATA_POOL_HEADER_SIZE;
   *p_do_end = data_pool + flash_page_size;
@@ -150,10 +159,10 @@ flash_terminate (void)
 
   for (i = 0; i < 3; i++)
     flash_erase_page ((uintptr_t)flash_key_getpage (i));
-  flash_erase_page ((uintptr_t)&_data_pool);
-  flash_erase_page ((uintptr_t)(&_data_pool + flash_page_size));
-  data_pool = &_data_pool;
-  last_p = &_data_pool + FLASH_DATA_POOL_HEADER_SIZE;
+  flash_erase_page ((uintptr_t)FLASH_ADDR_DATA_STORAGE_START);
+  flash_erase_page ((uintptr_t)(FLASH_ADDR_DATA_STORAGE_START + flash_page_size));
+  data_pool = FLASH_ADDR_DATA_STORAGE_START;
+  last_p = FLASH_ADDR_DATA_STORAGE_START + FLASH_DATA_POOL_HEADER_SIZE;
 #if defined(CERTDO_SUPPORT)
   flash_erase_page ((uintptr_t)&ch_certificate_start);
   if (FLASH_CH_CERTIFICATE_SIZE > flash_page_size)
@@ -164,7 +173,7 @@ flash_terminate (void)
 void
 flash_activate (void)
 {
-  flash_program_halfword ((uintptr_t)&_data_pool, 0);
+  flash_program_halfword ((uintptr_t)FLASH_ADDR_DATA_STORAGE_START, 0);
 }
 
 
@@ -175,7 +184,7 @@ flash_key_storage_init (void)
   int i;
 
   /* For each key, find its address.  */
-  p = &_keystore_pool;
+  p = FLASH_ADDR_KEY_STORAGE_START;
   for (i = 0; i < 3; i++)
     {
       const uint8_t *k;
@@ -233,15 +242,15 @@ flash_copying_gc (void)
   uint8_t *src, *dst;
   uint16_t generation;
 
-  if (data_pool == &_data_pool)
+  if (data_pool == FLASH_ADDR_DATA_STORAGE_START)
     {
-      src = &_data_pool;
-      dst = &_data_pool + flash_page_size;
+      src = FLASH_ADDR_DATA_STORAGE_START;
+      dst = FLASH_ADDR_DATA_STORAGE_START + flash_page_size;
     }
   else
     {
-      src = &_data_pool + flash_page_size;
-      dst = &_data_pool;
+      src = FLASH_ADDR_DATA_STORAGE_START + flash_page_size;
+      dst = FLASH_ADDR_DATA_STORAGE_START;
     }
 
   generation = *(uint16_t *)src;
@@ -344,7 +353,8 @@ flash_do_release (const uint8_t *do_data)
   int len = do_data[0];
 
   /* Don't filling zero for data in code (such as ds_count_initial_value) */
-  if (do_data < &_data_pool || do_data > &_data_pool + FLASH_DATA_POOL_SIZE)
+  if (do_data < FLASH_ADDR_DATA_STORAGE_START
+      || do_data > FLASH_ADDR_DATA_STORAGE_START + FLASH_DATA_POOL_SIZE)
     return;
 
   addr += 2;
@@ -373,7 +383,7 @@ static uint8_t *
 flash_key_getpage (enum kind_of_key kk)
 {
   /* There is a page for each KK.  */
-  return &_keystore_pool + (flash_page_size * kk);
+  return FLASH_ADDR_KEY_STORAGE_START + (flash_page_size * kk);
 }
 
 uint8_t *

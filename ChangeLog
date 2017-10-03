@@ -1,3 +1,15 @@
+2017-10-03  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/main.c (flash_addr_key_storage_start)
+	(flash_addr_data_storage_start): New.
+	(main): Determine flash address.
+
+	* src/flash.c (FLASH_ADDR_KEY_STORAGE_START)
+	(FLASH_ADDR_DATA_STORAGE_START): New.
+	(flash_do_storage_init, flash_terminate, flash_activate)
+	(flash_key_storage_init, flash_copying_gc, flash_do_release)
+	(flash_key_getpage): Use new macros.
+
 2017-10-02  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* src/main.c (device_initialize_once): Not for GNU/Linux.

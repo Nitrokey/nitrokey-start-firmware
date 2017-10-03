@@ -51,7 +51,10 @@
 #define LED_TIMEOUT_STOP	(200*1000)
 
 
-#if !defined (GNU_LINUX_EMULATION)
+#ifdef GNU_LINUX_EMULATION
+uint8_t *flash_addr_key_storage_start;
+uint8_t *flash_addr_data_storage_start;
+#else
 #define ID_OFFSET (2+SERIALNO_STR_LEN*2)
 static void
 device_initialize_once (void)
@@ -214,6 +217,9 @@ extern uint32_t bDeviceState;
 int
 main (int argc, char *argv[])
 {
+#ifdef GNU_LINUX_EMULATION
+  uintptr_t flash_addr;
+#endif
 #ifdef FLASH_UPGRADE_SUPPORT
   uintptr_t entry;
 #endif
@@ -224,6 +230,11 @@ main (int argc, char *argv[])
 
   gnuk_malloc_init ();
 
+#ifdef GNU_LINUX_EMULATION
+  flash_addr = flash_init ("flash.data");
+  flash_addr_key_storage_start = (uint8_t *)flash_addr;
+  flash_addr_data_storage_start = (uint8_t *)flash_addr + 4096;
+#endif
   flash_unlock ();
 #if !defined (GNU_LINUX_EMULATION)
   device_initialize_once ();
@@ -314,7 +325,7 @@ main (int argc, char *argv[])
     void (*func) (void (*)(void)) = (void (*)(void (*)(void)))new_vector[9];
     uint32_t flash_page_size = 1024; /* 1KiB default */
 
-   if ((*CHIP_ID_ADDR)&0x07 == 0x04) /* High dencity device.  */
+   if ((*CHIP_ID_REG)&0x07 == 0x04) /* High dencity device.  */
      flash_page_size = 2048; /* It's 2KiB. */
 
     /* Kill DFU */
