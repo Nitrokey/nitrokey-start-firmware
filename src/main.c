@@ -378,12 +378,12 @@ fatal (uint8_t code)
  */
 
 #ifdef GNU_LINUX_EMULATION
-#define MEMORY_SIZE (20*1024)
+#define MEMORY_SIZE (32*1024)
 uint8_t __heap_base__[MEMORY_SIZE];
 
 #define HEAP_START __heap_base__
 #define MEMORY_END (__heap_base__ + MEMORY_SIZE)
-#define MEMORY_ALIGNMENT 16
+#define MEMORY_ALIGNMENT 32
 #else
 extern uint8_t __heap_base__[];
 extern uint8_t __heap_end__[];
@@ -400,7 +400,7 @@ static uint8_t *heap_p;
 static chopstx_mutex_t malloc_mtx;
 
 struct mem_head {
-  uint32_t size;
+  uintptr_t size;
   /**/
   struct mem_head *next, *prev;	/* free list chain */
   struct mem_head *neighbor;	/* backlink to neighbor */
@@ -450,7 +450,7 @@ gnuk_malloc (size_t size)
   struct mem_head *m;
   struct mem_head *m0;
 
-  size = MEMORY_ALIGN (size + sizeof (uint32_t));
+  size = MEMORY_ALIGN (size + sizeof (uintptr_t));
 
   chopstx_mutex_lock (&malloc_mtx);
   DEBUG_INFO ("malloc: ");
@@ -490,8 +490,8 @@ gnuk_malloc (size_t size)
     }
   else
     {
-      DEBUG_WORD ((uint32_t)m + sizeof (uint32_t));
-      return (void *)m + sizeof (uint32_t);
+      DEBUG_WORD ((uintptr_t)m + sizeof (uintptr_t));
+      return (void *)m + sizeof (uintptr_t);
     }
 }
 
@@ -499,7 +499,7 @@ gnuk_malloc (size_t size)
 void
 gnuk_free (void *p)
 {
-  struct mem_head *m = (struct mem_head *)((void *)p - sizeof (uint32_t));
+  struct mem_head *m = (struct mem_head *)((void *)p - sizeof (uintptr_t));
   struct mem_head *m0;
 
   if (p == NULL)
@@ -509,7 +509,7 @@ gnuk_free (void *p)
   m0 = free_list;
   DEBUG_INFO ("free: ");
   DEBUG_SHORT (m->size);
-  DEBUG_WORD ((uint32_t)p);
+  DEBUG_WORD ((uintptr_t)p);
 
   MEM_HEAD_CHECK (m);
   m->neighbor = NULL;

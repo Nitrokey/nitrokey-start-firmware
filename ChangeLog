@@ -1,5 +1,7 @@
 2017-10-04  NIIBE Yutaka  <gniibe@fsij.org>
 
+	* src/main.c (gnuk_malloc, gnuk_free): Fix for 64-bit.
+
 	* src/stack-def.h (SIZE_3): Tweak the size.
 
 	* src/openpgp-do.c (gpg_do_keygen): Do RSA key generation in two
