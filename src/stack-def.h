@@ -1,7 +1,7 @@
 #ifdef GNU_LINUX_EMULATION
 #define SIZE_1 4096
 #define SIZE_2 4096
-#define SIZE_3 4096
+#define SIZE_3 (4 * 4096)
 #else
 #define SIZE_0 0x0100 /* Main         */
 #define SIZE_1 0x00c0 /* CCID         */
