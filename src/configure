@@ -332,8 +332,13 @@ output_vendor_product_serial_strings () {
   echo "  STRING_DESCRIPTOR,            /* bDescriptorType */"
   echo "  /* Serial number: \"$SERIALNO\" */"
   echo "$SERIALNO" | sed -e "s/\(........\)/\1\\${nl}/g" | sed -n -e "s/\(.\)/'\1', 0, /g" -e "s/^/  /" -e "/^  ./s/ $//p"
-  echo "  0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,"
-  echo "  0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,"
+  if test "$emulation" = "yes"; then
+    echo "  'E', 0, 'M', 0, 'U', 0, 'L', 0,"
+    echo "  'A', 0, 'T', 0, 'E', 0, 'D', 0,"
+  else
+    echo "  0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,"
+    echo "  0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,"
+  fi
   echo '};'
   echo
   echo '#ifdef USB_STRINGS_FOR_GNUK'

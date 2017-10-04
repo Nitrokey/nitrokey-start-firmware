@@ -1,5 +1,8 @@
 2017-10-04  NIIBE Yutaka  <gniibe@fsij.org>
 
+	* src/configure (output_vendor_product_serial_strings): Support
+	GNU/Linux emulation.
+
 	* polarssl/library/bignum.c (mpi_div_mpi): Fix for 64-bit machine.
 
 	* src/main.c (gnuk_malloc, gnuk_free): Fix for 64-bit machine.
