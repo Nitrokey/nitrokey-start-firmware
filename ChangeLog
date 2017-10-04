@@ -1,3 +1,11 @@
+2017-10-04  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/openpgp-do.c (gpg_do_keygen): Do RSA key generation in two
+	steps.
+
+	* src/call-rsa.c (rsa_genkey_start, rsa_genkey_finish): New.
+	(rsa_genkey): Remove.
+
 2017-10-03  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* src/call-ec.c (ecc_compute_public): No use of malloc.

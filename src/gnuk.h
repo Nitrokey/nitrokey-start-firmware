@@ -269,7 +269,8 @@ int modulus_calc (const uint8_t *, int, uint8_t *);
 int rsa_decrypt (const uint8_t *, uint8_t *, int, struct key_data *,
 		 unsigned int *);
 int rsa_verify (const uint8_t *, int, const uint8_t *, const uint8_t *);
-int rsa_genkey (int, uint8_t *, uint8_t *);
+int rsa_genkey_start (int);
+int rsa_genkey_finish (int, uint8_t *, uint8_t *);
 
 int ecdsa_sign_p256r1 (const uint8_t *hash, uint8_t *output,
 		       const uint8_t *key_data);
