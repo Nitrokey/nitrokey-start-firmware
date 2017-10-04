@@ -1,6 +1,8 @@
 2017-10-04  NIIBE Yutaka  <gniibe@fsij.org>
 
-	* src/main.c (gnuk_malloc, gnuk_free): Fix for 64-bit.
+	* polarssl/library/bignum.c (mpi_div_mpi): Fix for 64-bit machine.
+
+	* src/main.c (gnuk_malloc, gnuk_free): Fix for 64-bit machine.
 
 	* src/stack-def.h (SIZE_3): Tweak the size.
 
@@ -46,7 +48,7 @@
 
 	* src/usb-ccid.c (INTR_REQ_USB): Fix for GNU/Linux.
 
-	* library/bignum.c (mpi_montsqr): Easy C implementation.
+	* polarssl/library/bignum.c (mpi_montsqr): Easy C implementation.
 
 2017-09-30  NIIBE Yutaka  <gniibe@fsij.org>
 
@@ -113,7 +115,8 @@
 
 	* src/ec_p256k1.c (coefficient_a): Remove.
 
-	* library/bignum.c (mpi_fill_pseudo_random): Fix for 64-bit.
+	* polarssl/library/bignum.c (mpi_fill_pseudo_random): Fix for
+	64-bit machine.
 
 	* src/call-rsa.c (rsa_decrypt): Fix for 64-bit machine.
 

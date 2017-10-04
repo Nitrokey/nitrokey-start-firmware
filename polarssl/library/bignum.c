@@ -1142,9 +1142,9 @@ static t_uint int_div_int(t_uint u1, t_uint u0, t_uint d, t_uint *r)
      */
     if(( 0 == d ) || ( u1 >= d ))
     {
-        if (r != NULL) *r = (~0);
+        if (r != NULL) *r = (~0UL);
 
-        return (~0);
+        return (~0UL);
     }
 
 #if defined(POLARSSL_HAVE_UDBL)
@@ -1270,7 +1270,7 @@ int mpi_div_mpi( mpi *Q, mpi *R, const mpi *A, const mpi *B )
     for( i = n; i > t ; i-- )
     {
         if( X.p[i] >= Y.p[t] )
-            Z.p[i - t - 1] = ~0;
+            Z.p[i - t - 1] = ~0UL;
         else
         {
             Z.p[i - t - 1] = int_div_int( X.p[i], X.p[i-1], Y.p[t], NULL);
@@ -1297,7 +1297,7 @@ int mpi_div_mpi( mpi *Q, mpi *R, const mpi *A, const mpi *B )
         MPI_CHK( mpi_shift_l( &T1,  biL * (i - t - 1) ) );
         MPI_CHK( mpi_sub_mpi( &X, &X, &T1 ) );
 
-        if( mpi_cmp_int( &X, 0 ) < 0 )
+        while( mpi_cmp_int( &X, 0 ) < 0 )
         {
             MPI_CHK( mpi_copy( &T1, &Y ) );
             MPI_CHK( mpi_shift_l( &T1, biL * (i - t - 1) ) );
