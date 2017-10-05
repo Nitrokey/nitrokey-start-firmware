@@ -1,3 +1,8 @@
+2017-10-05  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* polarssl/library/bignum.c (M_LIMBS, limbs_M, MAX_A_LIMBS)
+	(limbs_MAX_A, mpi_gen_prime): Fix for 64-bit machine.
+
 2017-10-04  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* src/configure (output_vendor_product_serial_strings): Support

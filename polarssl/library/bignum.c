@@ -2222,10 +2222,24 @@ cleanup:
  * Value M: multiply all primes up to 701 (except 97) and 797
  * (so that MAX_A will be convenient value)
  */
+#ifdef __LP64__
+#define M_LIMBS 16
+#else
 #define M_LIMBS 31
+#endif
 #define M_SIZE 122
 
 static const t_uint limbs_M[] = { /* Little endian */
+#ifdef __LP64__
+  0x9344A6AB84EEB59EUL, 0xEC855CDAFF21529FUL,
+  0x477E991E009BAB38UL, 0x2EEA23579F5B86F3UL, 
+  0xAC17D30441D6502FUL, 0x38FF52B90A468A6DUL, 
+  0x63630419FD42E5EFUL, 0x48CE17D091DB2572UL, 
+  0x708AB00AE3B57D0EUL, 0xF8A9DE08CD723598UL, 
+  0x731411374432C93BUL, 0x554DF2612779FAB3UL, 
+  0xDEEBDA58953D2BA5UL, 0xD1D66F2F5F57D007UL, 
+  0xB85C9607E84E9F2BUL, 0x000000000000401DUL
+#else
   0x84EEB59E, 0x9344A6AB, 0xFF21529F, 0xEC855CDA,
   0x009BAB38, 0x477E991E, 0x9F5B86F3, 0x2EEA2357,
   0x41D6502F, 0xAC17D304, 0x0A468A6D, 0x38FF52B9,
@@ -2234,6 +2248,7 @@ static const t_uint limbs_M[] = { /* Little endian */
   0x4432C93B, 0x73141137, 0x2779FAB3, 0x554DF261,
   0x953D2BA5, 0xDEEBDA58, 0x5F57D007, 0xD1D66F2F,
   0xE84E9F2B, 0xB85C9607, 0x0000401D
+#endif
 };
 
 static const mpi M[1] = {{ 1, M_LIMBS, (t_uint *)limbs_M }};
@@ -2241,10 +2256,18 @@ static const mpi M[1] = {{ 1, M_LIMBS, (t_uint *)limbs_M }};
 /*
  * MAX_A : 2^1024 / M - 1
  */
+#ifdef __LP64__
+#define MAX_A_LIMBS 1
+#else
 #define MAX_A_LIMBS 2
+#endif
 #define MAX_A_FILL_SIZE  6
 static const t_uint limbs_MAX_A[] = { /* Little endian */
+#ifdef __LP64__
+  0x0003FE2556A2B35FUL
+#else
   0x56A2B35F, 0x0003FE25
+#endif
 };
 
 static const mpi MAX_A[1] = {{ 1, MAX_A_LIMBS, (t_uint *)limbs_MAX_A }};
@@ -2294,9 +2317,8 @@ int mpi_gen_prime( mpi *X, size_t nbits, int dh_flag,
 
       MPI_CHK ( mpi_mul_mpi ( X, X, M ) );
       MPI_CHK ( mpi_add_abs ( X, X, B ) );
-      if (X->n <= 31 || (X->p[31] & 0xc0000000) == 0)
+      if (X->n <= M_LIMBS || (X->p[M_LIMBS-1] & 0xc0000000) == 0)
         continue;
-
       ret = mpi_is_prime ( X );
       if (ret == 0 || ret != POLARSSL_ERR_MPI_NOT_ACCEPTABLE)
         break;
