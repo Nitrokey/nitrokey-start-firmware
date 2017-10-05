@@ -4,9 +4,9 @@
 #define SIZE_3 (4 * 4096)
 #else
 #define SIZE_0 0x0100 /* Main         */
-#define SIZE_1 0x00c0 /* CCID         */
+#define SIZE_1 0x01a0 /* CCID         */
 #define SIZE_2 0x0180 /* RNG          */
-#define SIZE_3 0x1660 /* openpgp-card */
+#define SIZE_3 0x1640 /* openpgp-card */
 #define SIZE_4 0x0000 /* ---          */
 #define SIZE_5 0x0200 /* msc          */
 #define SIZE_6 0x00c0 /* timer (cir)  */

@@ -1,5 +1,7 @@
 2017-10-05  NIIBE Yutaka  <gniibe@fsij.org>
 
+	* src/stack-def.h (SIZE_1, SIZE_3): Tweak the size.
+
 	* src/call-rsa.c (rsa_genkey): Single step.
 	* src/openpgp-do.c (gpg_do_keygen): Do RSA key generation in single
 	step, using APDU buffer.
