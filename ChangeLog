@@ -1,5 +1,13 @@
 2017-10-05  NIIBE Yutaka  <gniibe@fsij.org>
 
+	* src/Makefile (install): New target.
+
+	* src/configure (prefix. exec_prefix, libexecdir): Add.
+
+	* src/main.c [GNU_LINUX_EMULATION] (main): Option handling.
+
+	* tool/gnuk-emulation-setup: New.
+
 	* polarssl/library/bignum.c (M_LIMBS, limbs_M, MAX_A_LIMBS)
 	(limbs_MAX_A, mpi_gen_prime): Fix for 64-bit machine.
 

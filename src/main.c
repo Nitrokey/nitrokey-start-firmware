@@ -36,6 +36,7 @@
 #include "usb-cdc.h"
 #include "random.h"
 #ifdef GNU_LINUX_EMULATION
+#include <stdio.h>
 #include <stdlib.h>
 #define main emulated_main
 #else
@@ -215,28 +216,63 @@ extern uint32_t bDeviceState;
  * Entry point.
  */
 int
-main (int argc, char *argv[])
+main (int argc, const char *argv[])
 {
 #ifdef GNU_LINUX_EMULATION
   uintptr_t flash_addr;
+  const char *flash_image_path;
+  char *path_string = NULL;
 #endif
 #ifdef FLASH_UPGRADE_SUPPORT
   uintptr_t entry;
 #endif
   chopstx_t ccid_thd;
 
-  (void)argc;
-  (void)argv;
-
   gnuk_malloc_init ();
 
 #ifdef GNU_LINUX_EMULATION
-  flash_addr = flash_init ("flash.data");
+#define FLASH_IMAGE_NAME ".gnuk-flash-image"
+
+  if (argc >= 3 || (argc == 2 && !strcmp (argv[1], "--help")))
+    {
+      fprintf (stdout, "Usage: %s [flash-image-file]", argv[0]);
+      exit (0);
+    }
+
+  if (argc == 1)
+    {
+      char *p = getenv ("HOME");
+
+      if (p == NULL)
+	{
+	  fprintf (stderr, "Can't find $HOME\n");
+	  exit (1);
+	}
+
+      path_string = malloc (strlen (p) + strlen (FLASH_IMAGE_NAME) + 2);
+
+      p = stpcpy (path_string, p);
+      *p++ = '/';
+      strcpy (p, FLASH_IMAGE_NAME);
+      flash_image_path = path_string;
+    }
+  else
+    flash_image_path = argv[1];
+
+  flash_addr = flash_init (flash_image_path);
   flash_addr_key_storage_start = (uint8_t *)flash_addr;
   flash_addr_data_storage_start = (uint8_t *)flash_addr + 4096;
+#else
+  (void)argc;
+  (void)argv;
 #endif
+
   flash_unlock ();
-#if !defined (GNU_LINUX_EMULATION)
+
+#ifdef GNU_LINUX_EMULATION
+    if (path_string)
+      free (path_string);
+#else
   device_initialize_once ();
 #endif
 

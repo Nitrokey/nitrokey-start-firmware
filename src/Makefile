@@ -77,12 +77,14 @@ distclean: clean
 	       usb-strings.c.inc usb-vid-pid-ver.c.inc
 
 ifneq ($(EMULATION),)
-build/flash.data: Makefile
-	@echo 'Generating 8192-byte flash.data'
-	@/bin/echo -n -e '\xff\xff\xff\xff\xff\xff\xff\xff' >$@
-	@for i in $(shell seq 511); \
-	   do /bin/echo -n -e '\xff\xff\xff\xff\xff\xff\xff\xff' >>$@; done
-	@/bin/echo -n -e '\x00\x00\xff\xff\xff\xff\xff\xff' >>$@
-	@for i in $(shell seq 511); \
-	   do /bin/echo -n -e '\xff\xff\xff\xff\xff\xff\xff\xff' >>$@; done
+# By specifying DESTDIR on invocation of "make", you can install
+# program to different ROOT.
+
+# The variables prefix, exec_prefix, libexecdir are defined in
+# config.mk.
+
+install: build/gnuk
+	test -d "$(DESTDIR)$(libexecdir)" || mkdir -p "$(DESTDIR)$(libexecdir)"
+	install -c build/gnuk "$(DESTDIR)$(libexecdir)"
+
 endif

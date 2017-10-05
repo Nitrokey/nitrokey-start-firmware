@@ -45,6 +45,10 @@ certdo=no
 hid_card_change=no
 factory_reset=no
 flash_override=""
+# For emulation
+prefix=/usr/local
+exec_prefix='${prefix}'
+libexecdir='${exec_prefix}/libexec'
 
 # Revision number
 if test -e ../.git; then
@@ -101,6 +105,15 @@ for option; do
     with_dfu=yes ;;
   --without-dfu)
     with_dfu=no ;;
+  #
+  # For emulation
+  #
+  --prefix=*)
+    prefix=optarg ;;
+  --exec-prefix=*)
+    exec_prefix=optarg ;;
+  --libexecdir=*)
+    libexecdir=optarg ;;
   *)
     echo "Unrecognized option \`$option'" >&2
     echo "Try \`$0 --help' for more information." >&2
@@ -309,25 +322,25 @@ output_vid_pid_version () {
 }
 
 output_vendor_product_serial_strings () {
-  prefix=$1
+  name=$1
 
-  echo "static const uint8_t ${prefix}string_vendor[] = {"
+  echo "static const uint8_t ${name}string_vendor[] = {"
   echo "  ${#VENDOR}*2+2,                       /* bLength */"
   echo "  STRING_DESCRIPTOR,            /* bDescriptorType */"
   echo "  /* Manufacturer: \"$VENDOR\" */"
   echo "$VENDOR" | sed -e "s/\(........\)/\1\\${nl}/g" | sed -n -e "s/\(.\)/'\1', 0, /g" -e "s/^/  /" -e "/^  ./s/ $//p"
   echo '};'
   echo
-  echo "static const uint8_t ${prefix}string_product[] = {"
+  echo "static const uint8_t ${name}string_product[] = {"
   echo "  ${#PRODUCT}*2+2,                      /* bLength */"
   echo "  STRING_DESCRIPTOR,            /* bDescriptorType */"
   echo "  /* Product name: \"$PRODUCT\" */"
   echo "$PRODUCT" | sed -e "s/\(........\)/\1\\${nl}/g" | sed -n -e "s/\(.\)/'\1', 0, /g" -e "s/^/  /" -e "/^  ./s/ $//p"
   echo '};'
 
-  if test -n "$prefix"; then
+  if test -n "$name"; then
   echo
-  echo "const uint8_t ${prefix}string_serial[] = {"
+  echo "const uint8_t ${name}string_serial[] = {"
   echo "  ${#SERIALNO}*2+2+16,                  /* bLength */"
   echo "  STRING_DESCRIPTOR,            /* bDescriptorType */"
   echo "  /* Serial number: \"$SERIALNO\" */"
@@ -342,14 +355,14 @@ output_vendor_product_serial_strings () {
   echo '};'
   echo
   echo '#ifdef USB_STRINGS_FOR_GNUK'
-  echo "static const uint8_t ${prefix}revision_detail[] = {"
+  echo "static const uint8_t ${name}revision_detail[] = {"
   echo "  ${#REVISION}*2+2,                     /* bLength */"
   echo "  STRING_DESCRIPTOR,            /* bDescriptorType */"
   echo "  /* revision detail: \"$REVISION\" */"
   echo "$REVISION" | sed -e "s/\(........\)/\1\\${nl}/g" | sed -n -e "s/\(.\)/'\1', 0, /g" -e "s/^/  /" -e "/^  ./s/ $//p"
   echo '};'
   echo
-  echo "static const uint8_t ${prefix}config_options[] = {"
+  echo "static const uint8_t ${name}config_options[] = {"
   echo "  ${#CONFIG}*2+2,                       /* bLength */"
   echo "  STRING_DESCRIPTOR,            /* bDescriptorType */"
   echo "  /* configure options: \"$CONFIG\" */"
@@ -397,6 +410,11 @@ fi
  echo "$PINPAD_MAKE_OPTION";
  echo "ENABLE_FRAUCHEKY=$enable_fraucheky";
  echo "ENABLE_OUTPUT_HEX=$enable_hexoutput"
+ if test "$emulation" = "yes"; then
+   echo "prefix=$prefix"
+   echo "exec_prefix=$exec_prefix"
+   echo "libexecdir=$libexecdir"
+ fi
 )	> config.mk
 
 if test "$certdo" = "yes"; then
