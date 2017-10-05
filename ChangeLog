@@ -1,5 +1,10 @@
 2017-10-05  NIIBE Yutaka  <gniibe@fsij.org>
 
+	* src/call-rsa.c (rsa_genkey): Single step.
+	* src/openpgp-do.c (gpg_do_keygen): Do RSA key generation in single
+	step, using APDU buffer.
+	* src/openpgp.c (cmd_pgp_gakp): Supply the APDU as a buffer.
+
 	* src/Makefile (install): New target.
 
 	* src/configure (prefix. exec_prefix, libexecdir): Add.

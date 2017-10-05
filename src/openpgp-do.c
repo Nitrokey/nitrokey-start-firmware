@@ -2058,121 +2058,110 @@ gpg_do_write_simple (uint8_t nr, const uint8_t *data, int size)
 }
 
 void
-gpg_do_keygen (uint8_t kk_byte)
+gpg_do_keygen (uint8_t *buf)
 {
+  uint8_t kk_byte = buf[0];
   enum kind_of_key kk = kkb_to_kk (kk_byte);
   int attr = gpg_get_algo_attr (kk);;
   int prvkey_len = gpg_get_algo_attr_key_size (kk, GPG_KEY_PRIVATE);
+  const uint8_t *prv;
+  const uint8_t *rnd;
   int r = 0;
+#define p_q buf
+#define d buf
+#define d1 (&buf[64])
+#define pubkey (&buf[256])
 
   DEBUG_INFO ("Keygen\r\n");
   DEBUG_BYTE (kk_byte);
 
-  /* RSA key generation is done in two steps to lower memory pressure.  */
   if (attr == ALGO_RSA2K || attr == ALGO_RSA4K)
     {
-      if (rsa_genkey_start (prvkey_len) < 0)
+      if (rsa_genkey (prvkey_len, pubkey, p_q) < 0)
 	{
 	  GPG_MEMORY_FAILURE ();
 	  return;
 	}
+
+      prv = p_q;
+    }
+  else if (attr == ALGO_NISTP256R1 || attr == ALGO_SECP256K1)
+    {
+      const uint8_t *p;
+      int i, r;
+
+      rnd = NULL;
+      do
+	{
+	  if (rnd)
+	    random_bytes_free (rnd);
+	  rnd = random_bytes_get ();
+	  if (attr == ALGO_NISTP256R1)
+	    r = ecc_check_secret_p256r1 (rnd, d1);
+	  else
+	    r = ecc_check_secret_p256k1 (rnd, d1);
+	}
+      while (r == 0);
+
+      /* Convert it to big endian */
+
+      if (r < 0)
+	p = (const uint8_t *)d1;
+      else
+	p = rnd;
+      for (i = 0; i < 32; i++)
+	d[32 - i - 1] = p[i];
+
+      random_bytes_free (rnd);
+
+      prv = d;
+      if (attr == ALGO_SECP256K1)
+	r = ecc_compute_public_p256k1 (prv, pubkey);
+      else if (attr == ALGO_NISTP256R1)
+	r = ecc_compute_public_p256r1 (prv, pubkey);
+    }
+  else if (attr == ALGO_ED25519)
+    {
+      rnd = random_bytes_get ();
+      sha512 (rnd, 32, d);
+      random_bytes_free (rnd);
+      d[0] &= 248;
+      d[31] &= 127;
+      d[31] |= 64;
+      prv = d;
+      eddsa_compute_public_25519 (d, pubkey);
+    }
+  else if (attr == ALGO_CURVE25519)
+    {
+      rnd = random_bytes_get ();
+      memcpy (d, rnd, 32);
+      random_bytes_free (rnd);
+      d[0] &= 248;
+      d[31] &= 127;
+      d[31] |= 64;
+      prv = d;
+      ecdh_compute_public_25519 (prv, pubkey);
+    }
+  else
+    {
+      GPG_CONDITION_NOT_SATISFIED ();
+      return;
     }
 
-  {
-    const uint8_t *prv;
-    const uint8_t *rnd;
-    uint8_t d[64];
-    uint8_t p_q[512];
-    uint8_t pubkey[512];
+  if (r >= 0)
+    {
+      const uint8_t *keystring_admin;
 
-    if (attr == ALGO_RSA2K || attr == ALGO_RSA4K)
-      {
-	if (rsa_genkey_finish (prvkey_len, pubkey, p_q) < 0)
-	  {
-	    GPG_MEMORY_FAILURE ();
-	    return;
-	  }
+      if (admin_authorized == BY_ADMIN)
+	keystring_admin = keystring_md_pw3;
+      else
+	keystring_admin = NULL;
 
-	prv = p_q;
-      }
-    else if (attr == ALGO_NISTP256R1 || attr == ALGO_SECP256K1)
-      {
-	uint8_t d1[32];
-	const uint8_t *p;
-	int i, r;
+      r = gpg_do_write_prvkey (kk, prv, prvkey_len, keystring_admin, pubkey);
+    }
 
-	rnd = NULL;
-	do
-	  {
-	    if (rnd)
-	      random_bytes_free (rnd);
-	    rnd = random_bytes_get ();
-	    if (attr == ALGO_NISTP256R1)
-	      r = ecc_check_secret_p256r1 (rnd, d1);
-	    else
-	      r = ecc_check_secret_p256k1 (rnd, d1);
-	  }
-	while (r == 0);
-
-	/* Convert it to big endian */
-
-	if (r < 0)
-	  p = (const uint8_t *)d1;
-	else
-	  p = rnd;
-	for (i = 0; i < 32; i++)
-	  d[32 - i - 1] = p[i];
-
-	random_bytes_free (rnd);
-
-	prv = d;
-	if (attr == ALGO_SECP256K1)
-	  r = ecc_compute_public_p256k1 (prv, pubkey);
-	else if (attr == ALGO_NISTP256R1)
-	  r = ecc_compute_public_p256r1 (prv, pubkey);
-      }
-    else if (attr == ALGO_ED25519)
-      {
-	rnd = random_bytes_get ();
-	sha512 (rnd, 32, d);
-	random_bytes_free (rnd);
-	d[0] &= 248;
-	d[31] &= 127;
-	d[31] |= 64;
-	prv = d;
-	eddsa_compute_public_25519 (d, pubkey);
-      }
-    else if (attr == ALGO_CURVE25519)
-      {
-	rnd = random_bytes_get ();
-	memcpy (d, rnd, 32);
-	random_bytes_free (rnd);
-	d[0] &= 248;
-	d[31] &= 127;
-	d[31] |= 64;
-	prv = d;
-	ecdh_compute_public_25519 (prv, pubkey);
-      }
-    else
-      {
-	GPG_CONDITION_NOT_SATISFIED ();
-	return;
-      }
-
-    if (r >= 0)
-      {
-	const uint8_t *keystring_admin;
-
-	if (admin_authorized == BY_ADMIN)
-	  keystring_admin = keystring_md_pw3;
-	else
-	  keystring_admin = NULL;
-
-	r = gpg_do_write_prvkey (kk, prv, prvkey_len, keystring_admin, pubkey);
-      }
-
-    /* XXX: clear private key data on stack here.  */
-  }
+  /* Clear private key data in the buffer.  */
+  memset (buf, 0, 256);
 
   if (r < 0)
     {

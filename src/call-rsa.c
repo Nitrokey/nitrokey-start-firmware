@@ -237,10 +237,12 @@ rsa_verify (const uint8_t *pubkey, int pubkey_len,
 #define RSA_EXPONENT 0x10001
 
 int
-rsa_genkey_start (int pubkey_len)
+rsa_genkey (int pubkey_len, uint8_t *pubkey, uint8_t *p_q)
 {
   int ret;
   uint8_t index = 0;
+  uint8_t *p = p_q;
+  uint8_t *q = p_q + pubkey_len / 2;
   int cs;
 
   extern int prng_seed (int (*f_rng)(void *, unsigned char *, size_t),
@@ -258,30 +260,13 @@ rsa_genkey_start (int pubkey_len)
   cs = chopstx_setcancelstate (0); /* Allow cancellation.  */
   MPI_CHK( rsa_gen_key (&rsa_ctx, random_gen, &index, pubkey_len * 8,
 			RSA_EXPONENT) );
-
- cleanup:
-  chopstx_setcancelstate (cs);
-  chopstx_cleanup_pop (0);
-  if (ret != 0)
-    return -1;
-  else
-    return 0;
-}
-
-int
-rsa_genkey_finish (int pubkey_len, uint8_t *pubkey, uint8_t *p_q)
-{
-  int ret;
-  uint8_t *p = p_q;
-  uint8_t *q = p_q + pubkey_len / 2;
-
   MPI_CHK( mpi_write_binary (&rsa_ctx.P, p, pubkey_len / 2) );
   MPI_CHK( mpi_write_binary (&rsa_ctx.Q, q, pubkey_len / 2) );
   MPI_CHK( mpi_write_binary (&rsa_ctx.N, pubkey, pubkey_len) );
 
  cleanup:
-  rsa_free (&rsa_ctx);
-
+  chopstx_setcancelstate (cs);
+  chopstx_cleanup_pop (1);
   if (ret != 0)
     return -1;
   else

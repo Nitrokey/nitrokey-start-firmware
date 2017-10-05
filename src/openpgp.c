@@ -644,7 +644,7 @@ cmd_pgp_gakp (void)
     {
       if (!ac_check_status (AC_ADMIN_AUTHORIZED))
 	GPG_SECURITY_FAILURE ();
-      gpg_do_keygen (apdu.cmd_apdu_data[0]);
+      gpg_do_keygen (&apdu.cmd_apdu_data[0]);
     }
 }
 
