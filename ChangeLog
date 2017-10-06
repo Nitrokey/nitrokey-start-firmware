@@ -1,5 +1,9 @@
 2017-10-06  NIIBE Yutaka  <gniibe@fsij.org>
 
+	* src/configure (flash_override): Fix suggested by Jeremy Drake.
+
+2017-10-06  NIIBE Yutaka  <gniibe@fsij.org>
+
 	* src/gnuk.ld.in (.stacks): Specify NOLOAD type.
 
 	* src/configure: Allow not specifying VIDPID.

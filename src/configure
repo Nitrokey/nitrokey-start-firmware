@@ -175,8 +175,10 @@ MEMORY_SIZE=20
 
 # Settings for TARGET
 case $target in
-BLUE_PILL)
-  flash_override="-DSTM32F103_OVERRIDE_FLASH_SIZE_KB" ;;
+BLUE_PILL|STM8S_DISCOVERY)
+  # It's 64KB version of STM32F103, but actually has 128KB
+  flash_override="-DSTM32F103_OVERRIDE_FLASH_SIZE_KB=128"
+  ;;
 CQ_STARM|STBEE_MINI)
   if test "$with_dfu" = "default"; then
     with_dfu=yes;
@@ -193,9 +195,6 @@ STBEE)
   if test "$with_dfu" = "default"; then
     with_dfu=yes;
   fi  ;;
-STM8S_DISCOVERY)
-  FLASH_SIZE=64
-  ;;
 *)
   ;;
 esac
