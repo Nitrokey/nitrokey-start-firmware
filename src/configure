@@ -141,6 +141,7 @@ Configuration:
 			   ST_NUCLEO_F103
 			   NITROKEY_START
 			   BLUE_PILL
+			   STM8S_DISCOVERY
 			   CQ_STARM
 			   STM32_PRIMER2
 			   STBEE

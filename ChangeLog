@@ -1,6 +1,7 @@
 2017-10-06  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* src/configure (flash_override): Fix suggested by Jeremy Drake.
+	(help): STM8S_DISCOVERY is supported again.
 
 2017-10-06  NIIBE Yutaka  <gniibe@fsij.org>
 
