@@ -1,5 +1,7 @@
 2017-10-06  NIIBE Yutaka  <gniibe@fsij.org>
 
+	* src/gnuk.ld.in (.stacks): Specify NOLOAD type.
+
 	* src/configure: Allow not specifying VIDPID.
 
 	* src/main.c [GNU_LINUX_EMULATION] (main): Handle "--vidpid"

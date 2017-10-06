@@ -72,7 +72,7 @@ SECTIONS
     _etext = .;
     _textdata = _etext;
 
-    .stacks :
+    .stacks (NOLOAD) :
     {
         . = ALIGN(8);
         *(.main_stack)
