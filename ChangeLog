@@ -1,3 +1,14 @@
+2017-10-06  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/configure: Allow not specifying VIDPID.
+
+	* src/main.c [GNU_LINUX_EMULATION] (main): Handle "--vidpid"
+	option to assign vendor ID and product ID of USB.
+
+	* src/usb_desc.c [GNU_LINUX_EMULATION] (device_desc): Export.
+
+	* GNUK_USB_DEVICE_ID (0000:0000): New.
+
 2017-10-05  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* src/stack-def.h (SIZE_1, SIZE_3): Tweak the size.

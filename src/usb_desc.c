@@ -59,7 +59,10 @@ static const uint8_t hid_report_desc[] = {
 #define USB_CCID_DATA_SIZE 64
 
 /* USB Standard Device Descriptor */
-static const uint8_t device_desc[] = {
+#if !defined(GNU_LINUX_EMULATION)
+static const
+#endif
+uint8_t device_desc[] = {
   18,   /* bLength */
   DEVICE_DESCRIPTOR,     /* bDescriptorType */
   0x10, 0x01,   /* bcdUSB = 1.1 */

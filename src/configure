@@ -162,11 +162,6 @@ EOF
   exit 0
 fi
 
-if test "$vidpid" = "none"; then
-  echo "Please specify Vendor ID and Product ID by --vidpid option." >&2
-  exit 1
-fi
-
 BOARD_HEADER_FILE=board-$(echo $target | tr '_[:upper:]' '-[:lower:]').h
 echo "Header file is: $BOARD_HEADER_FILE"
 ln -sf "../chopstx/board/$BOARD_HEADER_FILE" board.h
@@ -225,6 +220,17 @@ else
   def_emulation=""
   enable_hexoutput=yes
   libs=""
+fi
+
+if test "$emulation" = "yes"; then
+  if test "$vidpid" = "none"; then
+     vidpid=0000:0000
+  fi
+else
+  if test "$vidpid" = "none"; then
+    echo "Please specify Vendor ID and Product ID by --vidpid option." >&2
+  exit 1
+  fi
 fi
 
 # --enable-debug option

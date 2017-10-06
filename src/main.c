@@ -233,10 +233,32 @@ main (int argc, const char *argv[])
 #ifdef GNU_LINUX_EMULATION
 #define FLASH_IMAGE_NAME ".gnuk-flash-image"
 
-  if (argc >= 3 || (argc == 2 && !strcmp (argv[1], "--help")))
+  if (argc >= 4 || (argc == 2 && !strcmp (argv[1], "--help")))
     {
-      fprintf (stdout, "Usage: %s [flash-image-file]", argv[0]);
+      fprintf (stdout, "Usage: %s [--vidpid=Vxxx:Pxxx] [flash-image-file]",
+	       argv[0]);
       exit (0);
+    }
+
+  if (argc >= 2 && !strncmp (argv[1], "--vidpid=", 9))
+    {
+      extern uint8_t device_desc[];
+      uint32_t id;
+      char *p;
+
+      id = (uint32_t)strtol (&argv[1][9], &p, 16);
+      device_desc[8] = (id & 0xff);
+      device_desc[9] = (id >> 8);
+
+      if (p && p[0] == ':')
+	{
+	  id = (uint32_t)strtol (&p[1], NULL, 16);
+	  device_desc[10] = (id & 0xff);
+	  device_desc[11] = (id >> 8);
+	}
+
+      argc--;
+      argv++;
     }
 
   if (argc == 1)
