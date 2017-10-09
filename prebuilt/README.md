@@ -37,7 +37,7 @@ Please download firmware repository (branch gnuk1.2-regnual-fix) and enter the f
 
 ```
 git clone -b gnuk1.2-regnual-fix https://github.com/Nitrokey/nitrokey-start-firmware.git
-cd nitrokey-start-firmware
+cd nitrokey-start-firmware/tool
 ```
 
 To make sure firmware is changed on device you can save current version to file: `gpg2 --card-status > before.status`. Since gpg2 claims the device please reinsert it to make it free to use by GNUK.
@@ -48,7 +48,7 @@ Depending on you current firmware you have to choose the right prebuilts:
 
 Now we can proceed with the actual upgrade:
 ```
-./tools/upgrade_by_passwd.py prebuilt/$RTM/regnual.bin prebuilt/$RTM/gnuk.bin
+./upgrade_by_passwd.py ../prebuilt/$RTM/regnual.bin ../prebuilt/$RTM/gnuk.bin
 ```
 
 Please provide the admin-PIN of your NK Start and wait for the results. To check that firmware version was actually changed please run:
@@ -59,4 +59,4 @@ diff before.status after.status
 
 ### Testing the device
 
-It is possible to test the device after flashing. Please make sure python 3 and python-pytest are installed (see requirements above). Now please run `pytest -vx tests/test_*` to test the firmware.
+It is possible to test the device after flashing. Please make sure python 3 and python-pytest are installed (see requirements above). Now please run `pytest -vx ../tests/test_*` to test the firmware.
