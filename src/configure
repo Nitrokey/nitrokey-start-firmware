@@ -147,6 +147,8 @@ Configuration:
 			   STBEE
 			   STBEE_MINI
 			   FST_01_00 (unreleased version with 8MHz XTAL)
+  --enable-factory-reset
+			support life cycle management	[no]
   --enable-debug	debug with virtual COM port	[no]
   --enable-pinpad=cir
 			PIN entry support		[no]
@@ -156,8 +158,6 @@ Configuration:
   --disable-sys1-compat	disable SYS 1.0 compatibility	[no]
 			   executable is target independent
 			   but requires SYS 2.0 or newer
-  --enable-factory-reset
-			support life cycle management	[no]
   --with-dfu		build image for DFU 		[<target specific>]
 EOF
   exit 0
@@ -224,7 +224,11 @@ fi
 
 if test "$emulation" = "yes"; then
   if test "$vidpid" = "none"; then
-     vidpid=0000:0000
+    vidpid=0000:0000
+  else
+    echo "Please don't specify VID:PID for emulation at compile time;"
+    echo "It is a user who should specify VID:PID at run time."
+    exit 1
   fi
 else
   if test "$vidpid" = "none"; then
