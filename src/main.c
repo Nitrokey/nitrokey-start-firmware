@@ -240,6 +240,13 @@ main (int argc, const char *argv[])
       exit (0);
     }
 
+  if (argc >= 2 && !strncmp (argv[1], "--debug=", 8))
+    {
+      debug = strtol (&argv[1][8], NULL, 10);
+      argc--;
+      argv++;
+    }
+
   if (argc >= 2 && !strncmp (argv[1], "--vidpid=", 9))
     {
       extern uint8_t device_desc[];

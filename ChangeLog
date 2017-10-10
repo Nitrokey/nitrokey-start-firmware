@@ -1,3 +1,8 @@
+2017-10-10  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/main.c (main): Support --debug option.
+	* chopstx: Update to 1.5.
+
 2017-10-06  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* src/configure (flash_override): Fix suggested by Jeremy Drake.
