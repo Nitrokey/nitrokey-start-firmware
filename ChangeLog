@@ -1,5 +1,10 @@
 2017-10-11  NIIBE Yutaka  <gniibe@fsij.org>
 
+	* VERSION: 1.2.6.
+
+	* regnual/Makefile (LDSCRIPT): Move after include.
+	* regnual/types.h: Add uintptr_t.
+
 	* test/features/002_get_data_static.feature (data object AID): Fix
 	for any binary value.
 	* 402_get_data_static.feature: Likewise.

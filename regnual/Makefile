@@ -3,9 +3,10 @@
 PROJECT = regnual
 
 OBJS = regnual.o usb-stm32f103.o reset.o
-LDSCRIPT= regnual.ld
 
 include ../src/config.mk
+
+LDSCRIPT= regnual.ld
 
 ###################################
 MCU  = cortex-m3

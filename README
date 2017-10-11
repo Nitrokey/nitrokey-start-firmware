@@ -1,27 +1,34 @@
 Gnuk - An Implementation of USB Cryptographic Token for GnuPG
 
-							  Version 1.2.5
-							     2017-08-11
+							  Version 1.2.6
+							     2017-10-11
 							   Niibe Yutaka
 				      Free Software Initiative of Japan
 
 Release Notes
 =============
 
-This is the release of Gnuk, version 1.2.5, which has major
+This is the release of Gnuk, version 1.2.6, which has major
 incompatible changes to Gnuk 1.0.x.  Specifically, it now supports
 overriding key import, but importing keys (or generating keys) results
-password reset.  Please update your documentation for Gnuk Token, so
+password reset.  Also, you need to import private keys before changing
+your password.  Please update your documentation for Gnuk Token, so
 that the instruction of importing keys won't cause any confusion.
 
 It has supports of EdDSA, ECDSA (with NIST P256 and secp256k1), and
 ECDH (with X25519, NIST P256 and secp256k1), but this ECC feature is
-somehow experimental, and it requires modern GnuPG 2.1 with libgcrypt
+somehow experimental, and it requires modern GnuPG 2.2 with libgcrypt
 1.7.0 or later.
 
 It also supports RSA-4096, but users should know that it takes more
 than 8 seconds to sign/decrypt.  Key generation of RSA-4096 just fails,
 because the device doesn't have enough memory.
+
+With this release, you can test how Gnuk Token works on GNU/Linux,
+without real hardware, by USBIP emulation (--target=GNU_LINUX).
+Please note that this emulation is intended only for testing.  When
+Gnuk does crypto computation on host, it is vulnerable by side channel
+attacks.
 
 
 What's Gnuk?
@@ -224,7 +231,9 @@ Gnuk source code is under src/ directory.
 Note that SHA-2 hash function implementation, src/sha256.c, is based
 on the original implementation by Dr. Brian Gladman.  See:
 
-  http://gladman.plushost.co.uk/oldsite/cryptography_technology/sha/index.php
+  http://brg.a2hosted.com//oldsite/cryptography_technology/sha/index.php
+(was at:
+ http://gladman.plushost.co.uk/oldsite/cryptography_technology/sha/index.php)
 
 
 License
@@ -248,7 +257,7 @@ External source code
 
 Gnuk is distributed with external source code.
 
-* chopstx/  -- Chopstx 1.3
+* chopstx/  -- Chopstx 1.5
 
   We use Chopstx as the kernel for Gnuk.
 
@@ -361,7 +370,7 @@ You need GNU toolchain and newlib for 'arm-none-eabi' target.
 On Debian we can install the packages of gcc-arm-none-eabi,
 gdb-arm-none-eabi and its friends.  I'm using:
 
-	binutils-arm-none-eabi	2.28-4+9+b2
+	binutils-arm-none-eabi	2.28-4+9+b3
 	gcc-arm-none-eabi 	15:5.4.1+svn241155-1
 	gdb-arm-none-eabi 	7.12-6+9+b2
 	libnewlib-arm-none-eabi	2.4.0.20160527-2
@@ -537,7 +546,7 @@ Gnuk supports key generation, but this feature is young and should be
 considered experimental.
 
 For detail, please see documentation under doc/.  You can see the HTML
-version at: http://www.fsij.org/doc-gnuk/
+version at: https://www.fsij.org/doc-gnuk/
 
 
 How to debug
@@ -583,24 +592,17 @@ You can get it by:
     $ git clone git://anonscm.debian.org/gnuk/gnuk/gnuk.git
 
 It's also available at: www.gniibe.org
-You can browse at: http://git.gniibe.org/gitweb?p=gnuk/gnuk.git;a=summary
+You can browse at: https://git.gniibe.org/gitweb?p=gnuk/gnuk.git;a=summary
 
 I put Chopstx as a submodule of Git.  Please do this:
 
     $ git submodule update --init
 
-Gnuk 1.0 uses ChibiOS/RT, and then, we have migrated from to Chopstx
-in the development phase of Gnuk 1.1.  If you have old code of
-ChibiOS/RT, you need:
-
-    Edit .git/config to remove chibios reference and
-    $ git rm --cached chibios
-
 
 Information on the Web
 ======================
 
-Please visit: http://www.fsij.org/gnuk/
+For more information, please visit: https://www.fsij.org/gnuk/
 
 Please see the FST-01 support pages:
 
@@ -609,6 +611,8 @@ Please see the FST-01 support pages:
 Please consider to join Gnuk-users mailing list:
 
     https://lists.alioth.debian.org/mailman/listinfo/gnuk-users
+
+The mailing list will be moved to lists.debian.org.
 
 
 Your Contributions

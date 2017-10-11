@@ -1,5 +1,16 @@
 Gnuk NEWS - User visible changes
 
+* Major changes in Gnuk 1.2.6
+
+  Released 2017-10-11, by NIIBE Yutaka
+
+** Port to GNU/Linux emulation
+We can "run" Gnuk Token on GNU/Linux by emulation through USBIP.
+
+** Upgrade of Chopstx
+We use Chopstx 1.5.
+
+
 * Major changes in Gnuk 1.2.5
 
   Released 2017-08-11, by NIIBE Yutaka
