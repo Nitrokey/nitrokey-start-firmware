@@ -1,3 +1,10 @@
+2017-10-11  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* test/features/002_get_data_static.feature (data object AID): Fix
+	for any binary value.
+	* 402_get_data_static.feature: Likewise.
+	* 802_get_data_static.feature: Likewise.
+
 2017-10-10  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* src/main.c (main): Support --debug option.
