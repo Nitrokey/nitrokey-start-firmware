@@ -203,7 +203,6 @@ esac
 if test "$target" = "GNU_LINUX"; then
   ldscript=""
   chip="gnu-linux"
-  use_sys="yes"
   emulation="yes"
   cross=""
   mcu="none"
@@ -213,7 +212,6 @@ if test "$target" = "GNU_LINUX"; then
 else
   ldscript="gnuk.ld"
   chip="stm32f103"
-  use_sys="yes"
   emulation=""
   cross="arm-none-eabi-"
   mcu="cortex-m3"
@@ -409,7 +407,6 @@ fi
 
 
 (echo "CHIP=$chip";
- echo "USE_SYS=$use_sys";
  echo "EMULATION=$emulation";
  echo "CROSS=$cross";
  echo "MCU=$mcu";
