@@ -556,7 +556,7 @@
        : "r4", "r5", "r6", "r7", "r8", "r9", "r10", "memory", "cc" );
 
 /* Just for reference (dead code) */
-#define MULADDC_HUIT                                   \
+#define MULADDC_HUIT_DEAD                              \
                   "ldmia  %0!, { r4, r5 } \n\t"        \
                   "ldmia  %1, { r8, r9 }  \n\t"        \
                   "umull  r6, r7, %3, r4  \n\t"        \
