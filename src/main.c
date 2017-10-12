@@ -443,23 +443,23 @@ fatal (uint8_t code)
  */
 
 #ifdef GNU_LINUX_EMULATION
-#define MEMORY_SIZE (32*1024)
-uint8_t __heap_base__[MEMORY_SIZE];
+#define HEAP_SIZE (32*1024)
+uint8_t __heap_base__[HEAP_SIZE];
 
 #define HEAP_START __heap_base__
-#define MEMORY_END (__heap_base__ + MEMORY_SIZE)
-#define MEMORY_ALIGNMENT 32
+#define HEAP_END (__heap_base__ + HEAP_SIZE)
+#define HEAP_ALIGNMENT 32
 #else
 extern uint8_t __heap_base__[];
 extern uint8_t __heap_end__[];
 
 #define HEAP_START __heap_base__
-#define MEMORY_END (__heap_end__)
-#define MEMORY_ALIGNMENT 16
-#define MEMORY_SIZE ((uintptr_t)__heap_end__ -  (uintptr_t)__heap_base__)
+#define HEAP_END (__heap_end__)
+#define HEAP_ALIGNMENT 16
+#define HEAP_SIZE ((uintptr_t)__heap_end__ -  (uintptr_t)__heap_base__)
 #endif
 
-#define MEMORY_ALIGN(n) (((n) + MEMORY_ALIGNMENT - 1) & ~(MEMORY_ALIGNMENT - 1))
+#define HEAP_ALIGN(n) (((n) + HEAP_ALIGNMENT - 1) & ~(HEAP_ALIGNMENT - 1))
 
 static uint8_t *heap_p;
 static chopstx_mutex_t malloc_mtx;
@@ -472,7 +472,7 @@ struct mem_head {
 };
 
 #define MEM_HEAD_IS_CORRUPT(x) \
-    ((x)->size != MEMORY_ALIGN((x)->size) || (x)->size > MEMORY_SIZE)
+    ((x)->size != HEAP_ALIGN((x)->size) || (x)->size > HEAP_SIZE)
 #define MEM_HEAD_CHECK(x) if (MEM_HEAD_IS_CORRUPT(x)) fatal (FATAL_HEAP)
 
 static struct mem_head *free_list;
@@ -490,7 +490,7 @@ sbrk (size_t size)
 {
   void *p = (void *)heap_p;
 
-  if ((size_t)(MEMORY_END - heap_p) < size)
+  if ((size_t)(HEAP_END - heap_p) < size)
     return NULL;
 
   heap_p += size;
@@ -515,7 +515,7 @@ gnuk_malloc (size_t size)
   struct mem_head *m;
   struct mem_head *m0;
 
-  size = MEMORY_ALIGN (size + sizeof (uintptr_t));
+  size = HEAP_ALIGN (size + sizeof (uintptr_t));
 
   chopstx_mutex_lock (&malloc_mtx);
   DEBUG_INFO ("malloc: ");
