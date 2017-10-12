@@ -495,6 +495,67 @@
 #endif /* TriCore */
 
 #if defined(__arm__)
+#if defined(__ARM_FEATURE_DSP)
+/* The ARM DSP instructions are available on Cortex M4, M7 and
+   Cortex A CPUs */
+
+#define MULADDC_1024_CORE \
+        "ldmia  %[s]!, { r7, r8, r9, r10 } \n\t" \
+        "ldmia  %[d], { r3, r4, r5, r6 }   \n\t" \
+        "umaal  r3, %2, %[b], r7           \n\t" \
+        "umaal  r4, %2, %[b], r8           \n\t" \
+        "umaal  r5, %2, %[b], r9           \n\t" \
+        "umaal  r6, %2, %[b], r10          \n\t" \
+        "stmia  %[d]!, {r3, r4, r5, r6}    \n\t"
+
+#define MULADDC_1024_LOOP                        \
+   asm( "tst    %[i], #0xfe0           \n\t"     \
+        "beq    0f                     \n"       \
+"1:	 sub    %[i], %[i], #32        \n\t"     \
+        MULADDC_1024_CORE MULADDC_1024_CORE      \
+        MULADDC_1024_CORE MULADDC_1024_CORE      \
+        MULADDC_1024_CORE MULADDC_1024_CORE      \
+        MULADDC_1024_CORE MULADDC_1024_CORE      \
+        "tst    %[i], #0xfe0           \n\t"     \
+        "bne    1b                     \n"       \
+"0:"                                             \
+        : [s] "=r" (s), [d] "=r" (d), [c] "=r" (c), [i] "=r" (i)    \
+        : [b] "r" (b), "[s]" (s), "[d]" (d), "[c]" (c), "[i]" (i)   \
+        : "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "memory", "cc" );
+
+#define MULADDC_INIT                                      \
+    asm(
+
+#define MULADDC_CORE                                      \
+                  "ldr    r0, [%0], #4            \n\t"   \
+                  "ldr    r1, [%1]                \n\t"   \
+                  "umaal  r1, %2, %3, r0          \n\t"   \
+                  "str    r1, [%1], #4            \n\t"
+
+#define MULADDC_HUIT                                      \
+                  "ldmia  %0!, {r0, r1, r2, r3}   \n\t"   \
+                  "ldmia  %1, {r4, r5, r6, r7}    \n\t"   \
+                  "umaal  r4, %2, %3, r0          \n\t"   \
+                  "umaal  r5, %2, %3, r1          \n\t"   \
+                  "umaal  r6, %2, %3, r2          \n\t"   \
+                  "umaal  r7, %2, %3, r3          \n\t"   \
+                  "stmia  %1!, {r4, r5, r6, r7}   \n\t"   \
+                  "ldmia  %0!, {r0, r1, r2, r3}   \n\t"   \
+                  "ldmia  %1, {r4, r5, r6, r7}    \n\t"   \
+                  "umaal  r4, %2, %3, r0          \n\t"   \
+                  "umaal  r5, %2, %3, r1          \n\t"   \
+                  "umaal  r6, %2, %3, r2          \n\t"   \
+                  "umaal  r7, %2, %3, r3          \n\t"   \
+                  "stmia  %1!, {r4, r5, r6, r7}   \n\t"
+
+#define MULADDC_STOP                                      \
+                  : "=r" (s), "=r" (d), "=r" (c)          \
+                  : "r" (b), "0" (s), "1" (d), "2" (c)    \
+                  : "r0", "r1", "r2", "r3", "r4", "r5",   \
+                    "r6", "r7", "memory");
+
+#else /* __ARM_FEATURE_DSP */
+
 #define MULADDC_1024_CORE                        \
        "ldmia  %[s]!, { r8, r9, r10 } \n\t"      \
        "ldmia  %[d], { r5, r6, r7 }   \n\t"      \
@@ -620,6 +681,7 @@
                   : "r" (b), "0" (s), "1" (d), "2" (c)          \
                   : "r4", "r5", "r6", "r7", "memory", "cc" );
 
+#endif /* __ARM_FEATURE_DSP */
 #endif /* ARMv3 */
 
 #if defined(__alpha__)
