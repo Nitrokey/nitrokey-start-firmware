@@ -811,8 +811,8 @@
 #else
 #define MULADDC_INIT                    \
 {                                       \
-    t_int s0, s1, b0, b1;               \
-    t_int r0, r1, rx, ry;               \
+    t_uint s0, s1, b0, b1;              \
+    t_uint r0, r1, rx, ry;              \
     b0 = ( b << biH ) >> biH;           \
     b1 = ( b >> biH );
 
