@@ -223,8 +223,8 @@ Some tools are written in Python.  If your Python is not installed as
 Python 2.7 and PyUSB 0.4.3 is assumed.
 
 
-Souce code
-==========
+Source code
+===========
 
 Gnuk source code is under src/ directory.
 
