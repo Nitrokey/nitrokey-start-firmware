@@ -1537,6 +1537,51 @@ static void mpi_montsqr( size_t n, const t_uint *np, t_uint mm, t_uint *d )
       x_i = *xj;
       *xj++ = c;
 
+#if defined(__ARM_FEATURE_DSP)
+      asm (/* (C,R4,R5) := w_i_i + x_i*x_i; w_i_i := R5; */
+           "mov    %[c], #0\n\t"
+           "ldr    r5, [%[wij]]\n\t"          /* R5 := w_i_i; */
+           "mov    r4, %[c]\n\t"
+           "umlal  r5, r4, %[x_i], %[x_i]\n\t"
+           "str    r5, [%[wij]], #4\n\t"
+           "cmp    %[xj], %[x_max1]\n\t"
+           "bhi    0f\n\t"
+           "mov    r9, %[c]\n\t"  /* R9 := 0, the constant ZERO from here.  */
+           "beq    1f\n"
+   "2:\n\t"
+           "ldmia  %[xj]!, { r7, r8 }\n\t"
+           "ldmia  %[wij], { r5, r6 }\n\t"
+           /* (C,R4,R5) := (C,R4) + w_i_j + 2*x_i*x_j; */
+           "umaal  r5, r4, %[x_i], r7\n\t"
+           "umlal  r5, %[c], %[x_i], r7\n\t"
+           "umaal  r4, %[c], r9, r9\n\t"
+           /* (C,R4,R6) := (C,R4) + w_i_j + 2*x_i*x_j; */
+           "umaal  r6, r4, %[x_i], r8\n\t"
+           "umlal  r6, %[c], %[x_i], r8\n\t"
+           "umaal  r4, %[c], r9, r9\n\t"
+           /**/
+           "stmia  %[wij]!, { r5, r6 }\n\t"
+           "cmp    %[xj], %[x_max1]\n\t"
+           "bcc    2b\n\t"
+           "bne    0f\n"
+   "1:\n\t"
+           /* (C,R4,R5) := (C,R4) + w_i_j + 2*x_i*x_j; */
+           "ldr    r5, [%[wij]]\n\t"
+           "ldr    r6, [%[xj]], #4\n\t"
+           "umaal  r5, r4, %[x_i], r6\n\t"
+           "umlal  r5, %[c], %[x_i], r6\n\t"
+           "umaal  r4, %[c], r9, r9\n\t"
+           "str    r5, [%[wij]], #4\n"
+   "0:\n\t"
+           "ldr    r5, [%[wij]]\n\t"
+           "adds   r4, r4, r5\n\t"
+           "adc    %[c], %[c], #0\n\t"
+           "str    r4, [%[wij]]"
+           : [c] "=&r" (c), [wij] "=r" (wij), [xj] "=r" (xj)
+           : [x_i] "r" (x_i), [x_max1] "r" (&d[n*2-1]),
+             "[wij]" (wij), "[xj]" (xj)
+           : "r4", "r5", "r6", "r7", "r8", "r9", "memory", "cc");
+#else
       asm (/* (C,R4,R5) := w_i_i + x_i*x_i; w_i_i := R5; */
            "mov    %[c], #0\n\t"
            "ldr    r5, [%[wij]]\n\t"          /* R5 := w_i_i; */
@@ -1598,6 +1643,7 @@ static void mpi_montsqr( size_t n, const t_uint *np, t_uint mm, t_uint *d )
            : [x_i] "r" (x_i), [x_max1] "r" (&d[n*2-1]),
              "[wij]" (wij), "[xj]" (xj)
            : "r4", "r5", "r6", "r7", "r8", "r9", "r12", "memory", "cc");
+#endif
 
         c += mpi_mul_hlp( n, np, &d[i], d[i] * mm );
     }
