@@ -207,6 +207,7 @@ if test "$target" = "GNU_LINUX"; then
   cross=""
   mcu="none"
   def_emulation="-DGNU_LINUX_EMULATION"
+  def_memory_size="-DMEMORY_SIZE=1024"
   enable_hexoutput=""
   libs="-lpthread"
 else
@@ -216,6 +217,7 @@ else
   cross="arm-none-eabi-"
   mcu="cortex-m3"
   def_emulation=""
+  def_memory_size="-DMEMORY_SIZE=$MEMORY_SIZE"
   enable_hexoutput=yes
   libs=""
 fi
@@ -410,7 +412,7 @@ fi
  echo "EMULATION=$emulation";
  echo "CROSS=$cross";
  echo "MCU=$mcu";
- echo "DEFS=$use_sys3 $flash_override $def_emulation";
+ echo "DEFS=$use_sys3 $flash_override $def_emulation $def_memory_size";
  echo "LDSCRIPT=$ldscript";
  echo "LIBS=$libs";
  echo "$DEBUG_MAKE_OPTION";

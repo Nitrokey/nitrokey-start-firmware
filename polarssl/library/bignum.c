@@ -1666,11 +1666,18 @@ static void mpi_montsqr( size_t n, const t_uint *np, t_uint mm, t_uint *d )
 /*
  * Sliding-window exponentiation: X = A^E mod N  (HAC 14.85)
  */
+#if MEMORY_SIZE >= 32
+#define MAX_WSIZE 6
+#elif MEMORY_SIZE >= 24
+#define MAX_WSIZE 5
+#else
+#define MAX_WSIZE 4
+#endif
 int mpi_exp_mod( mpi *X, const mpi *A, const mpi *E, const mpi *N, mpi *_RR )
 {
     int ret;
     size_t i = mpi_msb( E );
-    size_t wsize = ( i > 1024 ) ? 4 : /* Because of not enough memory.  */
+    size_t wsize = ( i > 1024 ) ? MAX_WSIZE :
       		   ( i > 671 ) ? 6 : ( i > 239 ) ? 5 :
                    ( i >  79 ) ? 4 : ( i >  23 ) ? 3 : 1;
     size_t wbits, one = 1;

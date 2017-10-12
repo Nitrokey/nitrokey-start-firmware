@@ -1,12 +1,18 @@
 #ifdef GNU_LINUX_EMULATION
 #define SIZE_1 4096
 #define SIZE_2 4096
-#define SIZE_3 (4 * 4096)
+#define SIZE_3 (5 * 4096)
 #else
 #define SIZE_0 0x0100 /* Main         */
 #define SIZE_1 0x01a0 /* CCID         */
 #define SIZE_2 0x0180 /* RNG          */
+#if MEMORY_SIZE >= 32
+#define SIZE_3 0x4640 /* openpgp-card */
+#elif MEMORY_SIZE >= 24
+#define SIZE_3 0x2640 /* openpgp-card */
+#else
 #define SIZE_3 0x1640 /* openpgp-card */
+#endif
 #define SIZE_4 0x0000 /* ---          */
 #define SIZE_5 0x0200 /* msc          */
 #define SIZE_6 0x00c0 /* timer (cir)  */
