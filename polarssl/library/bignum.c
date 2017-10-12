@@ -1524,12 +1524,7 @@ static void mpi_montred( size_t n, const t_uint *np, t_uint mm, t_uint *d )
  */
 static void mpi_montsqr( size_t n, const t_uint *np, t_uint mm, t_uint *d )
 {
-#ifdef BIGNUM_C_IMPLEMENTATION
-  t_uint a_input[n];
-
-  memcpy (a_input, &d[n], sizeof (a_input));
-  mpi_montmul (n, np, mm, d, a_input);
-#else
+#if defined(POLARSSL_HAVE_ASM) && defined(__arm__)
   size_t i;
   register t_uint c = 0;
 
@@ -1614,6 +1609,11 @@ static void mpi_montsqr( size_t n, const t_uint *np, t_uint mm, t_uint *d )
       mpi_sub_hlp( n, np, d );
   else
       mpi_sub_hlp( n, d - n, d - n);
+#else
+  t_uint a_input[n];
+
+  memcpy (a_input, &d[n], sizeof (a_input));
+  mpi_montmul (n, np, mm, d, a_input);
 #endif
 }
 
