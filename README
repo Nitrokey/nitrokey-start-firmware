@@ -306,6 +306,15 @@ Gnuk is distributed with external source code.
   POLARSSL_SELF_TEST, and POLARSSL_PADLOCK_C, and only define
   POLARSSL_GENPRIME when defined KEYGEN_SUPPORT.
 
+  And polarssl/library/bignum.c is modified to work on 64-bit machine.
+
+  Aurelien Jarno also modified:
+
+	polarssl/include/polarssl/bn_mul.h
+	polarssl/library/bignum.c
+
+  See ChangeLog (and/or history of git) for detail.
+
 
 USB vendor ID and product ID (USB device ID)
 ============================================

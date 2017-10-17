@@ -1,3 +1,10 @@
+Aurelien Jarno:
+    Modified:
+	src/Makefile
+	src/configure
+	src/main.c
+	src/stack-def.h
+
 Anthony Romano:
     Modified:
 	src/call-rsa.c

@@ -1,3 +1,24 @@
+2017-10-12  Aurelien Jarno <aurelien@aurel32.net>
+
+	* polarssl/include/polarssl/bn_mul.h (MULADDC_HUIT_DEAD): Rename
+	from MULADDC_HUIT.
+	[__ARM_FEATURE_DSP] (MULADDC_1024_CORE, MULADDC_1024_LOOP)
+	(MULADDC_INIT, MULADDC_CORE, MULADDC_HUIT, MULADDC_STOP): New.
+
+	* polarssl/library/bignum.c (mpi_montsqr): Check on
+	POLARSSL_HAVE_ASM and __arm__.
+	[__ARM_FEATURE_DSP] (mpi_montsqr): New.
+	(MAX_WSIZE): New.
+	(mpi_exp_mod): Use MAX_WSIZE.
+
+	* src/Makefile (DEFS): Remove BIGNUM_C_IMPLEMENTATION.
+
+	* src/main.c (HEAP_SIZE): Rename from MEMORY_SIZE.
+	(HEAP_END, HEAP_ALIGNMENT, HEAP_ALIGN): Likewise.
+
+	* src/stack-def.h (SIZE_3): Depend on MEMORY_SIZE.
+	* src/configure: Emit DEFS with MEMORY_SIZE.
+
 2017-10-11  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* VERSION: 1.2.6.
