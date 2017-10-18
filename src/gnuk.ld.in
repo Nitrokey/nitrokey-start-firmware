@@ -135,11 +135,11 @@ SECTIONS
     {
         . = ALIGN (@FLASH_PAGE_SIZE@);
         _keystore_pool = .;
-        . += 512;
+        . += 1024;
         . = ALIGN(@FLASH_PAGE_SIZE@);
-        . += 512;
+        . += 1024;
         . = ALIGN(@FLASH_PAGE_SIZE@);
-        . += 512;
+        . += 1024;
         . = ALIGN(@FLASH_PAGE_SIZE@);
         _updatekey_store = .;
         . += 1024;
