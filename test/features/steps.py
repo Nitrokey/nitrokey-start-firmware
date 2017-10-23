@@ -17,9 +17,18 @@ def text_to_bin(v):
     try:
         import binascii
         vr = vr.replace('\\x', '')
+        vr = vr.replace('"', '')
         vr = binascii.unhexlify(vr)
     except:
         vr = v
+        print('not binasci')
+
+    try:
+        vr = vr.encode()
+    except:
+        print('not encoded in text_to_bin')
+        pass
+
     return vr
 
 @given("cmd_verify with {who_str} and \"{pass_str}\"")
@@ -31,6 +40,7 @@ def cmd_verify(context,who_str,pass_str):
 @given("cmd_change_reference_data with {who_str} and \"{pass_str}\"")
 def cmd_change_reference_data(context,who_str,pass_str):
     who = int(who_str)
+    pass_str = pass_str.encode()
     context.result = context.token.cmd_change_reference_data(who, pass_str)
 
 @given('cmd_put_data with {tag_str} and {content_str_repr}') # TODO test
@@ -39,6 +49,13 @@ def cmd_put_data(context,tag_str,content_str_repr):
         content_str_repr = ''
     # content_str = ast.literal_eval("b" + content_str_repr + "")
     content_str = text_to_bin(content_str_repr)
+    try:
+        content_str = content_str.encode()
+    except:
+        print('not encoded')
+        pass
+    print(content_str_repr)
+    print(content_str)
     tag = int(tag_str, 16)
     tagh = tag >> 8
     tagl = tag & 0xff
@@ -47,16 +64,17 @@ def cmd_put_data(context,tag_str,content_str_repr):
 @given('cmd_reset_retry_counter with {how_str} and "{data}"')
 def cmd_reset_retry_counter(context,how_str, data):
     how = int(how_str)
+    data = data.encode()
     context.result = context.token.cmd_reset_retry_counter(how, 0x81, data)
 
 @given("a RSA key pair {keyno_str}")
 def set_rsa_key(context,keyno_str):
-    context.scc.keyno = int(keyno_str)
+    context.keyno = int(keyno_str)
 
 @given("importing it to the token as OPENPGP.{openpgp_keyno_str}")
 def import_key(context,openpgp_keyno_str):
     openpgp_keyno = int(openpgp_keyno_str)
-    t = rsa_keys.build_privkey_template(openpgp_keyno, context.scc.keyno)
+    t = rsa_keys.build_privkey_template(openpgp_keyno, context.keyno)
     context.result = context.token.cmd_put_data_odd(0x3f, 0xff, t)
 
 @given("a fingerprint of OPENPGP.{openpgp_keyno_str} key")
@@ -80,47 +98,47 @@ def cmd_put_data_with_result(context,tag_str):
 def set_msg(context,content_str_repr):
     v = text_to_bin(content_str_repr)
     msg = v.encode('UTF-8')
-    context.scc.digestinfo = rsa_keys.compute_digestinfo(msg)
+    context.digestinfo = rsa_keys.compute_digestinfo(msg)
 
 @given("a public key from token for OPENPGP.{openpgp_keyno_str}")
 def get_public_key(context,openpgp_keyno_str):
     openpgp_keyno = int(openpgp_keyno_str)
-    context.scc.pubkey_info = context.token.cmd_get_public_key(openpgp_keyno)
+    context.pubkey_info = context.token.cmd_get_public_key(openpgp_keyno)
 
 @given("verify signature")
 def verify_signature(context):
-    context.result = rsa_keys.verify_signature(context.scc.pubkey_info, context.scc.digestinfo, context.scc.sig)
+    context.result = rsa_keys.verify_signature(context.pubkey_info, context.digestinfo, context.sig)
 
 @given("let a token compute digital signature")
 def compute_signature(context):
-    context.scc.sig = int(hexlify(context.token.cmd_pso(0x9e, 0x9a, context.scc.digestinfo)),16)
+    context.sig = int(hexlify(context.token.cmd_pso(0x9e, 0x9a, context.digestinfo)),16)
 
 @given("let a token authenticate")
 def internal_authenticate(context):
-    context.scc.sig = int(hexlify(context.token.cmd_internal_authenticate(context.scc.digestinfo)),16)
+    context.sig = int(hexlify(context.token.cmd_internal_authenticate(context.digestinfo)),16)
 
 @given("compute digital signature on host with RSA key pair {keyno_str}")
 def compute_signature_on_host(context,keyno_str):
     keyno = int(keyno_str)
-    context.result = rsa_keys.compute_signature(keyno, context.scc.digestinfo)
+    context.result = rsa_keys.compute_signature(keyno, context.digestinfo)
 
 @given('a plain text {content_str_repr}') #  TODO TEST
 def set_plaintext(context,content_str_repr):
-    # context.scc.plaintext = ast.literal_eval("b" + content_str_repr + "")
-    context.scc.plaintext = text_to_bin(content_str_repr)
+    # context.plaintext = ast.literal_eval("b" + content_str_repr + "")
+    context.plaintext = text_to_bin(content_str_repr)
 
 @given("encrypt it on host with RSA key pair {keyno_str}")
 def encrypt_on_host(context,keyno_str):
     keyno = int(keyno_str)
-    context.scc.ciphertext = rsa_keys.encrypt(keyno, context.scc.plaintext)
+    context.ciphertext = rsa_keys.encrypt(keyno, context.plaintext)
 
 @given("encrypt it on host")
 def encrypt_on_host_public_key(context):
-    context.scc.ciphertext = rsa_keys.encrypt_with_pubkey(context.scc.pubkey_info, context.scc.plaintext)
+    context.ciphertext = rsa_keys.encrypt_with_pubkey(context.pubkey_info, context.plaintext)
 
 @given("let a token decrypt encrypted data")
 def decrypt(context):
-    context.result = context.token.cmd_pso_longdata(0x80, 0x86, context.scc.ciphertext).tostring()
+    context.result = context.token.cmd_pso_longdata(0x80, 0x86, context.ciphertext).tostring()
 
 @given("USB version string of the token")
 def usb_version_string(context):
@@ -144,27 +162,28 @@ def generate_key(context,openpgp_keyno_str):
     return
     openpgp_keyno = int(openpgp_keyno_str)
     pubkey_info = context.token.cmd_genkey(openpgp_keyno)
-    context.scc.data = rsa_keys.calc_fpr(pubkey_info[0].tostring(), pubkey_info[1].tostring())
+    context.data = rsa_keys.calc_fpr(pubkey_info[0].tostring(), pubkey_info[1].tostring())
 
 @when("put the first data to {tag_str}")
 def cmd_put_data_first_with_result(context,tag_str):
     tag = int(tag_str, 16)
     tagh = tag >> 8
     tagl = tag & 0xff
-    context.result = context.token.cmd_put_data(tagh, tagl, context.scc.data[0])
+    context.result = context.token.cmd_put_data(tagh, tagl, context.data[0])
 
 @when("put the second data to {tag_str}")
 def cmd_put_data_second_with_result(context,tag_str):
     tag = int(tag_str, 16)
     tagh = tag >> 8
     tagl = tag & 0xff
-    result = context.token.cmd_put_data(tagh, tagl, context.scc.data[1])
+    result = context.token.cmd_put_data(tagh, tagl, context.data[1])
     context.result = (context.result and result)
 
-@then("you should get: {v}")
+@then('you should get: {v}')
 def check_result(context,v):
     # value = ast.literal_eval("b'" + v + "'")
     # v = v.replace('\\x', '')
+    v = '"'+v+'"'
     v = text_to_bin(v)
     assert_equal(context.result, v)
 
@@ -183,8 +202,8 @@ def check_regexp(context,re):
 
 @then("results should be same")
 def check_signature(context):
-    assert_equal(context.scc.sig, context.result)
+    assert_equal(context.sig, context.result)
 
 @then("decrypted data should be same as a plain text")
 def check_decrypt(context):
-    assert_equal(context.scc.plaintext, context.result)
+    assert_equal(context.plaintext, context.result)
