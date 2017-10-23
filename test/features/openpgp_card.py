@@ -1,0 +1,1 @@
+../../tests/openpgp_card.py

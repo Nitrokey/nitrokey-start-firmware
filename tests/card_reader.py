@@ -40,6 +40,7 @@ def compute_edc(pcb, info):
     edc = pcb
     edc ^= len(info)
     for i in range(len(info)):
+        # edc ^= ord(info[i])
         edc ^= info[i]
     return edc
 
@@ -158,6 +159,9 @@ class CardReader(object):
         data = msg[10:]
         # XXX: check msg_type, data_len, slot, seq, error
         return (status, chain, data.tobytes())
+        # import binascii
+        # return (status, chain,  data)
+
 
     def ccid_get_status(self):
         msg = ccid_compose(0x65, self.__seq)
@@ -247,6 +251,8 @@ class CardReader(object):
         elif no_error:
             data = compose_r_block(self.nr)
         msg = ccid_compose(0x6f, self.__seq, data=data)
+        import binascii
+        print((self.__bulkout, binascii.hexlify(msg), self.__timeout))
         self.__dev.write(self.__bulkout, msg, self.__timeout)
         self.increment_seq()
 
