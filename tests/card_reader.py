@@ -1,7 +1,7 @@
 """
 card_reader.py - a library for smartcard reader
 
-Copyright (C) 2016  Free Software Initiative of Japan
+Copyright (C) 2016, 2017  Free Software Initiative of Japan
 Author: NIIBE Yutaka <gniibe@fsij.org>
 
 This file is a part of Gnuk, a GnuPG USB Token implementation.
@@ -179,9 +179,11 @@ class CardReader(object):
             # TPDU reader configuration
             self.ns = 0
             self.nr = 0
-            # Set PPS
-            pps = b"\xFF\x11\x18\xF6"
-            status, chain, ret_pps = self.ccid_send_data_block(pps)
+            # For Gemalto USB GemPC Pinpad SmartCard Reader
+            if self.__dev.idVendor == 0x08E6 and self.__dev.idProduct == 0x3478:
+                # Set PPS
+                pps = b"\xFF\x11\x18\xF6"
+                status, chain, ret_pps = self.ccid_send_data_block(pps)
             # Set parameters
             param = b"\x18\x10\xFF\x75\x00\xFE\x00"
             # ^--- This shoud be adapted by ATR string, see update_param_by_atr

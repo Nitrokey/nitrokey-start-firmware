@@ -1,3 +1,12 @@
+2017-10-24  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* tests/card_reader.py (CardReader.ccid_power_on): Setting
+	PPS only for Gemalto GemPC reader.
+
+2017-10-18 Aurelien Jarno <aurelien@aurel32.net>
+
+	* src/gnuk.ld.in: Fix keystore_pool size.
+
 2017-10-12  Aurelien Jarno <aurelien@aurel32.net>
 
 	* polarssl/include/polarssl/bn_mul.h (MULADDC_HUIT_DEAD): Rename
