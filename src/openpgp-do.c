@@ -2088,7 +2088,7 @@ gpg_do_keygen (uint8_t *buf)
   else if (attr == ALGO_NISTP256R1 || attr == ALGO_SECP256K1)
     {
       const uint8_t *p;
-      int i, r;
+      int i;
 
       rnd = NULL;
       do
