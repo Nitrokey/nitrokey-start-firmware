@@ -13,7 +13,9 @@ Output of sha512sum utility is located in checksums.sha512 file.
 
 Binaries based on GNUK 1.2.3 are available under RTM.3/ and RTM.1_to_RTM.3_upgrade/ directories for devices with red and green LED respectively. Devices upgraded earlier with RTM.1_to_RTM.2_upgrade/ firmware can be safely upgraded with RTM.1_to_RTM.3_upgrade/ binaries. 
 
-Similarly for later releases - RTM.4 is based on GNUK 1.2.4.
+Similarly for later releases:
+- RTM.4 is based on GNUK 1.2.4.
+- RTM.5 is based on GNUK 1.2.6 with not yet released (2017-10-31) fix for key generation.
 
 Firmware upgrade instructions
 -------
