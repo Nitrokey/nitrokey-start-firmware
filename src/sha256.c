@@ -47,7 +47,6 @@
 
 #include <string.h>
 #include <stdint.h>
-#include <stdlib.h>
 #include "sha256.h"
 
 #define SHA256_MASK (SHA256_BLOCK_SIZE - 1)

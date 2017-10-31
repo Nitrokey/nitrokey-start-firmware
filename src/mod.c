@@ -36,7 +36,6 @@ mod_reduce (bn256 *X, const bn512 *A, const bn256 *B, const bn256 *MU_lower)
   bn512 q_big[1], tmp[1];
   uint32_t carry;
 #define borrow carry
-  uint32_t borrow_next;
 
   memset (q, 0, sizeof (bn256));
   q->word[0] = A->word[15];
@@ -110,9 +109,7 @@ mod_reduce (bn256 *X, const bn512 *A, const bn256 *B, const bn256 *MU_lower)
     = tmp->word[11] = tmp->word[10] = tmp->word[9] = 0;
 
   borrow = bn256_sub (X, (bn256 *)&q_big->word[0], (bn256 *)&tmp->word[0]);
-  borrow_next = (q_big->word[8] < borrow);
   q_big->word[8] -= borrow;
-  borrow_next += (q_big->word[8] < tmp->word[8]);
   q_big->word[8] -= tmp->word[8];
 
   carry = q_big->word[8];
@@ -122,7 +119,7 @@ mod_reduce (bn256 *X, const bn512 *A, const bn256 *B, const bn256 *MU_lower)
     bn256_sub (q, X, B);
 
   if (carry)
-    carry -= bn256_sub (X, X, B);
+    bn256_sub (X, X, B);
   else
     bn256_sub (q, X, B);
 
@@ -159,6 +156,7 @@ mod_inv (bn256 *C, const bn256 *X, const bn256 *N)
 #define borrow carry
   int n = MAX_GCD_STEPS_BN256;
 
+  memset (tmp, 0, sizeof (bn256));
   memset (C, 0, sizeof (bn256));
   memcpy (u, X, sizeof (bn256));
   memcpy (v, N, sizeof (bn256));

@@ -964,9 +964,14 @@ cir_timer_interrupt (void)
 }
 
 
-extern uint8_t __process6_stack_base__[], __process6_stack_size__[];
-#define STACK_ADDR_TIM ((uint32_t)__process6_stack_base__)
-#define STACK_SIZE_TIM ((uint32_t)__process6_stack_size__)
+#define STACK_PROCESS_6
+#define STACK_PROCESS_7
+#include "stack-def.h"
+#define STACK_ADDR_TIM ((uintptr_t)process6_base)
+#define STACK_SIZE_TIM (sizeof process6_base)
+#define STACK_ADDR_EXT ((uintptr_t)process7_base)
+#define STACK_SIZE_EXT (sizeof process7_base)
+
 #define PRIO_TIM 4
 
 static void *
@@ -986,9 +991,7 @@ tim_main (void *arg)
   return NULL;
 }
 
-extern uint8_t __process7_stack_base__, __process7_stack_size__;
-const uint32_t __stackaddr_ext = (uint32_t)&__process7_stack_base__;
-const size_t __stacksize_ext = (size_t)&__process7_stack_size__;
+
 #define PRIO_EXT 4
 
 static void *

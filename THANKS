@@ -7,16 +7,19 @@ Gnuk was originally written by NIIBE Yutaka.  People contributed by
 encouraging the development, testing the implementation, suggesting
 improvements, or fixing bugs.  Here is a list of those people.
 
+Aurelien Jarno		aurelien@aurel32.net
 Achim Pietig		achim@pietig.com
 Aidan Thornton
 Anibal Monsalve Salazar	anibal@debian.org
 Andre Zepezauer		andre.zepezauer@student.uni-halle.de
+Anthony Romano		anthony.romano@coreos.com
 Bertrand Jacquin	bertrand@jacquin.bzh
 Clint Adams		clint@softwarefreedom.org
 Daniel Kahn Gillmor	dkg@fifthhorseman.net
 Elliott Mitchell
 Hironobu SUZUKI		hironobu@h2np.net
 Jan Suhr		jan@suhr.info
+Jeremy Drake		jeremydrake+gnuk@eacceleration.com
 Jonathan McDowell	noodles@earth.li
 Kaz Kojima		kkojima@rr.iij4u.or.jp
 Kenji Rikitake
@@ -33,6 +36,7 @@ Paul Fertser
 Paul Bakker		polarssl_maintainer@polarssl.org
 Santiago Ruano Rincón	santiago@debian.org
 Shane Coughlan		scoughlan@openinventionnetwork.com
+Stanislas Bach		sbach@0g.re
 Szczepan Zalega		szczepan@nitrokey.com
 Vasily Evseenko
 Werner Koch		wk@gnupg.org

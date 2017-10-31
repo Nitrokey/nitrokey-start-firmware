@@ -37,7 +37,7 @@
 #include "polarssl/bignum.h"
 #include "polarssl/bn_mul.h"
 
-#include <stdlib.h>
+#include <gnuk-malloc.h>
 
 #define ciL    (sizeof(t_uint))         /* chars in limb  */
 #define biL    (ciL << 3)               /* bits  in limb  */
@@ -223,6 +223,7 @@ size_t mpi_lsb( const mpi *X )
     return( 0 );
 }
 
+#if !defined(POLARSSL_HAVE_UDBL)
 /*
  * Count leading zero bits in a given integer
  */
@@ -240,6 +241,7 @@ static size_t int_clz( const t_uint x )
 
     return j;
 }
+#endif
 
 /*
  * Return the number of most significant bits
@@ -1140,9 +1142,9 @@ static t_uint int_div_int(t_uint u1, t_uint u0, t_uint d, t_uint *r)
      */
     if(( 0 == d ) || ( u1 >= d ))
     {
-        if (r != NULL) *r = (~0);
+        if (r != NULL) *r = (~0UL);
 
-        return (~0);
+        return (~0UL);
     }
 
 #if defined(POLARSSL_HAVE_UDBL)
@@ -1268,7 +1270,7 @@ int mpi_div_mpi( mpi *Q, mpi *R, const mpi *A, const mpi *B )
     for( i = n; i > t ; i-- )
     {
         if( X.p[i] >= Y.p[t] )
-            Z.p[i - t - 1] = ~0;
+            Z.p[i - t - 1] = ~0UL;
         else
         {
             Z.p[i - t - 1] = int_div_int( X.p[i], X.p[i-1], Y.p[t], NULL);
@@ -1295,7 +1297,7 @@ int mpi_div_mpi( mpi *Q, mpi *R, const mpi *A, const mpi *B )
         MPI_CHK( mpi_shift_l( &T1,  biL * (i - t - 1) ) );
         MPI_CHK( mpi_sub_mpi( &X, &X, &T1 ) );
 
-        if( mpi_cmp_int( &X, 0 ) < 0 )
+        while( mpi_cmp_int( &X, 0 ) < 0 )
         {
             MPI_CHK( mpi_copy( &T1, &Y ) );
             MPI_CHK( mpi_shift_l( &T1, biL * (i - t - 1) ) );
@@ -1512,9 +1514,17 @@ static void mpi_montred( size_t n, const t_uint *np, t_uint mm, t_uint *d )
 /*
  * Montgomery square: A = A * A * R^-1 mod N
  * A is placed at the upper half of D.
+ *
+ * n : number of limbs of N
+ * np: pointer to limbs of bignum N
+ * mm: m' = -N^(-1) mod b where b = 2^number-of-bit-in-limb
+ * d (destination): the result [<-- temp -->][<--- A ---->]
+ *                               lower part    upper part
+ *                                   n-limb       n-limb
  */
 static void mpi_montsqr( size_t n, const t_uint *np, t_uint mm, t_uint *d )
 {
+#if defined(POLARSSL_HAVE_ASM) && defined(__arm__)
   size_t i;
   register t_uint c = 0;
 
@@ -1526,6 +1536,52 @@ static void mpi_montsqr( size_t n, const t_uint *np, t_uint mm, t_uint *d )
 
       x_i = *xj;
       *xj++ = c;
+
+#if defined(__ARM_FEATURE_DSP)
+      asm (/* (C,R4,R5) := w_i_i + x_i*x_i; w_i_i := R5; */
+           "mov    %[c], #0\n\t"
+           "ldr    r5, [%[wij]]\n\t"          /* R5 := w_i_i; */
+           "mov    r4, %[c]\n\t"
+           "umlal  r5, r4, %[x_i], %[x_i]\n\t"
+           "str    r5, [%[wij]], #4\n\t"
+           "cmp    %[xj], %[x_max1]\n\t"
+           "bhi    0f\n\t"
+           "mov    r9, %[c]\n\t"  /* R9 := 0, the constant ZERO from here.  */
+           "beq    1f\n"
+   "2:\n\t"
+           "ldmia  %[xj]!, { r7, r8 }\n\t"
+           "ldmia  %[wij], { r5, r6 }\n\t"
+           /* (C,R4,R5) := (C,R4) + w_i_j + 2*x_i*x_j; */
+           "umaal  r5, r4, %[x_i], r7\n\t"
+           "umlal  r5, %[c], %[x_i], r7\n\t"
+           "umaal  r4, %[c], r9, r9\n\t"
+           /* (C,R4,R6) := (C,R4) + w_i_j + 2*x_i*x_j; */
+           "umaal  r6, r4, %[x_i], r8\n\t"
+           "umlal  r6, %[c], %[x_i], r8\n\t"
+           "umaal  r4, %[c], r9, r9\n\t"
+           /**/
+           "stmia  %[wij]!, { r5, r6 }\n\t"
+           "cmp    %[xj], %[x_max1]\n\t"
+           "bcc    2b\n\t"
+           "bne    0f\n"
+   "1:\n\t"
+           /* (C,R4,R5) := (C,R4) + w_i_j + 2*x_i*x_j; */
+           "ldr    r5, [%[wij]]\n\t"
+           "ldr    r6, [%[xj]], #4\n\t"
+           "umaal  r5, r4, %[x_i], r6\n\t"
+           "umlal  r5, %[c], %[x_i], r6\n\t"
+           "umaal  r4, %[c], r9, r9\n\t"
+           "str    r5, [%[wij]], #4\n"
+   "0:\n\t"
+           "ldr    r5, [%[wij]]\n\t"
+           "adds   r4, r4, r5\n\t"
+           "adc    %[c], %[c], #0\n\t"
+           "str    r4, [%[wij]]"
+           : [c] "=&r" (c), [wij] "=r" (wij), [xj] "=r" (xj)
+           : [x_i] "r" (x_i), [x_max1] "r" (&d[n*2-1]),
+             "[wij]" (wij), "[xj]" (xj)
+           : "r4", "r5", "r6", "r7", "r8", "r9", "memory", "cc");
+#else
       asm (/* (C,R4,R5) := w_i_i + x_i*x_i; w_i_i := R5; */
            "mov    %[c], #0\n\t"
            "ldr    r5, [%[wij]]\n\t"          /* R5 := w_i_i; */
@@ -1587,6 +1643,7 @@ static void mpi_montsqr( size_t n, const t_uint *np, t_uint mm, t_uint *d )
            : [x_i] "r" (x_i), [x_max1] "r" (&d[n*2-1]),
              "[wij]" (wij), "[xj]" (xj)
            : "r4", "r5", "r6", "r7", "r8", "r9", "r12", "memory", "cc");
+#endif
 
         c += mpi_mul_hlp( n, np, &d[i], d[i] * mm );
     }
@@ -1598,16 +1655,29 @@ static void mpi_montsqr( size_t n, const t_uint *np, t_uint mm, t_uint *d )
       mpi_sub_hlp( n, np, d );
   else
       mpi_sub_hlp( n, d - n, d - n);
+#else
+  t_uint a_input[n];
+
+  memcpy (a_input, &d[n], sizeof (a_input));
+  mpi_montmul (n, np, mm, d, a_input);
+#endif
 }
 
 /*
  * Sliding-window exponentiation: X = A^E mod N  (HAC 14.85)
  */
+#if MEMORY_SIZE >= 32
+#define MAX_WSIZE 6
+#elif MEMORY_SIZE >= 24
+#define MAX_WSIZE 5
+#else
+#define MAX_WSIZE 4
+#endif
 int mpi_exp_mod( mpi *X, const mpi *A, const mpi *E, const mpi *N, mpi *_RR )
 {
     int ret;
     size_t i = mpi_msb( E );
-    size_t wsize = ( i > 1024 ) ? 4 : /* Because of not enough memory.  */
+    size_t wsize = ( i > 1024 ) ? MAX_WSIZE :
       		   ( i > 671 ) ? 6 : ( i > 239 ) ? 5 :
                    ( i >  79 ) ? 4 : ( i >  23 ) ? 3 : 1;
     size_t wbits, one = 1;
@@ -1632,7 +1702,6 @@ int mpi_exp_mod( mpi *X, const mpi *A, const mpi *E, const mpi *N, mpi *_RR )
      * Init temps and window size
      */
     mpi_montg_init( &mm, N );
-    MPI_CHK( mpi_grow( X, N->n ) );
 
     /*
      * If 1st call, pre-compute R^2 mod N
@@ -1657,6 +1726,8 @@ int mpi_exp_mod( mpi *X, const mpi *A, const mpi *E, const mpi *N, mpi *_RR )
         memcpy( &RR, _RR, sizeof( mpi ) );
         memset (d, 0, N->n * ciL); /* Set lower half of D zero. */
     }
+
+    MPI_CHK( mpi_grow( X, N->n ) );
 
     /*
      * W[1] = A * R^2 * R^-1 mod N = A * R mod N
@@ -2051,17 +2122,19 @@ jkiss (struct jkiss_state *s)
 static int mpi_fill_pseudo_random ( mpi *X, size_t size)
 {
   int ret;
-  uint32_t *p;
+  uint32_t *p, *p_end;
 
   MPI_CHK( mpi_grow( X, CHARS_TO_LIMBS( size ) ) );
   MPI_CHK( mpi_lset( X, 0 ) );
 
   /* Assume little endian.  */
-  p = X->p;
-  while (p < X->p + (size/ciL))
+  p = (uint32_t *)X->p;
+  p_end = (uint32_t *)(X->p + (size/sizeof (uint32_t)));
+  while (p < p_end)
     *p++ = jkiss (&jkiss_state_v);
-  if ((size % ciL))
-    *p = jkiss (&jkiss_state_v) & ((1 << (8*(size % ciL))) - 1);
+
+  if ((size%sizeof (uint32_t)))
+    *p = jkiss (&jkiss_state_v) & ((1 << (8*(size % sizeof (uint32_t)))) - 1);
 
 cleanup:
   return ret;
@@ -2202,10 +2275,24 @@ cleanup:
  * Value M: multiply all primes up to 701 (except 97) and 797
  * (so that MAX_A will be convenient value)
  */
+#ifdef __LP64__
+#define M_LIMBS 16
+#else
 #define M_LIMBS 31
+#endif
 #define M_SIZE 122
 
 static const t_uint limbs_M[] = { /* Little endian */
+#ifdef __LP64__
+  0x9344A6AB84EEB59EUL, 0xEC855CDAFF21529FUL,
+  0x477E991E009BAB38UL, 0x2EEA23579F5B86F3UL, 
+  0xAC17D30441D6502FUL, 0x38FF52B90A468A6DUL, 
+  0x63630419FD42E5EFUL, 0x48CE17D091DB2572UL, 
+  0x708AB00AE3B57D0EUL, 0xF8A9DE08CD723598UL, 
+  0x731411374432C93BUL, 0x554DF2612779FAB3UL, 
+  0xDEEBDA58953D2BA5UL, 0xD1D66F2F5F57D007UL, 
+  0xB85C9607E84E9F2BUL, 0x000000000000401DUL
+#else
   0x84EEB59E, 0x9344A6AB, 0xFF21529F, 0xEC855CDA,
   0x009BAB38, 0x477E991E, 0x9F5B86F3, 0x2EEA2357,
   0x41D6502F, 0xAC17D304, 0x0A468A6D, 0x38FF52B9,
@@ -2214,6 +2301,7 @@ static const t_uint limbs_M[] = { /* Little endian */
   0x4432C93B, 0x73141137, 0x2779FAB3, 0x554DF261,
   0x953D2BA5, 0xDEEBDA58, 0x5F57D007, 0xD1D66F2F,
   0xE84E9F2B, 0xB85C9607, 0x0000401D
+#endif
 };
 
 static const mpi M[1] = {{ 1, M_LIMBS, (t_uint *)limbs_M }};
@@ -2221,10 +2309,18 @@ static const mpi M[1] = {{ 1, M_LIMBS, (t_uint *)limbs_M }};
 /*
  * MAX_A : 2^1024 / M - 1
  */
+#ifdef __LP64__
+#define MAX_A_LIMBS 1
+#else
 #define MAX_A_LIMBS 2
+#endif
 #define MAX_A_FILL_SIZE  6
 static const t_uint limbs_MAX_A[] = { /* Little endian */
+#ifdef __LP64__
+  0x0003FE2556A2B35FUL
+#else
   0x56A2B35F, 0x0003FE25
+#endif
 };
 
 static const mpi MAX_A[1] = {{ 1, MAX_A_LIMBS, (t_uint *)limbs_MAX_A }};
@@ -2274,9 +2370,8 @@ int mpi_gen_prime( mpi *X, size_t nbits, int dh_flag,
 
       MPI_CHK ( mpi_mul_mpi ( X, X, M ) );
       MPI_CHK ( mpi_add_abs ( X, X, B ) );
-      if (X->n <= 31 || (X->p[31] & 0xc0000000) == 0)
+      if (X->n <= M_LIMBS || (X->p[M_LIMBS-1] & 0xc0000000) == 0)
         continue;
-
       ret = mpi_is_prime ( X );
       if (ret == 0 || ret != POLARSSL_ERR_MPI_NOT_ACCEPTABLE)
         break;

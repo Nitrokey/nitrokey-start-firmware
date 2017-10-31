@@ -10,6 +10,7 @@ nl=$'\n'
 #               Free Software Initiative of Japan
 #
 # This file is a part of Gnuk, a GnuPG USB Token implementation.
+#
 # Gnuk is free software: you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
@@ -36,7 +37,6 @@ fi
 help=no
 vidpid=none
 target=FST_01
-verbose=no
 with_dfu=default
 debug=no
 sys1_compat=yes
@@ -44,26 +44,35 @@ pinpad=no
 certdo=no
 hid_card_change=no
 factory_reset=no
+flash_override=""
+# For emulation
+prefix=/usr/local
+exec_prefix='${prefix}'
+libexecdir='${exec_prefix}/libexec'
 
 # Revision number
 if test -e ../.git; then
-  REVISION=`git describe --dirty="-modified"` 
+  if type git >/dev/null 2>&1; then
+     REVISION=$(git describe --dirty="-modified")
+  else
+     # echo 'No git available, please install git'
+     GIT_REVISION=$(sed -e 's/^\(.......\).*$/g\1/' "../.git/$(sed -e 's/^ref: //' ../.git/HEAD)")
+     REVISION=$(cat ../VERSION)-$GIT_REVISION
+  fi
 else
-  REVISION=`cat ../VERSION`
+  REVISION=$(cat ../VERSION)
 fi
 
 # Process each option
 for option; do
   case $option in
-  *=*)	optarg=`expr "X$option" : '[^=]*=\(.*\)'` ;;
+  *=*)	optarg=$(expr "X$option" : '[^=]*=\(.*\)') ;;
   *)	optarg=yes ;;
   esac
 
   case $option in
   -h | --help)
     help=yes ;;
-  -v | --verbose)
-    verbose=yes ;;
   --vidpid=*)
     vidpid=$optarg ;;
   --target=*)
@@ -96,6 +105,15 @@ for option; do
     with_dfu=yes ;;
   --without-dfu)
     with_dfu=no ;;
+  #
+  # For emulation
+  #
+  --prefix=*)
+    prefix=optarg ;;
+  --exec-prefix=*)
+    exec_prefix=optarg ;;
+  --libexecdir=*)
+    libexecdir=optarg ;;
   *)
     echo "Unrecognized option \`$option'" >&2
     echo "Try \`$0 --help' for more information." >&2
@@ -123,11 +141,14 @@ Configuration:
 			   ST_NUCLEO_F103
 			   NITROKEY_START
 			   BLUE_PILL
+			   STM8S_DISCOVERY
 			   CQ_STARM
 			   STM32_PRIMER2
 			   STBEE
 			   STBEE_MINI
 			   FST_01_00 (unreleased version with 8MHz XTAL)
+  --enable-factory-reset
+			support life cycle management	[no]
   --enable-debug	debug with virtual COM port	[no]
   --enable-pinpad=cir
 			PIN entry support		[no]
@@ -137,21 +158,14 @@ Configuration:
   --disable-sys1-compat	disable SYS 1.0 compatibility	[no]
 			   executable is target independent
 			   but requires SYS 2.0 or newer
-  --enable-factory-reset
-			support life cycle management	[no]
   --with-dfu		build image for DFU 		[<target specific>]
 EOF
   exit 0
 fi
 
-if test "$vidpid" = "none"; then
-  echo "Please specify Vendor ID and Product ID by --vidpid option." >&2
-  exit 1
-fi
-
-BOARD_HEADER_FILE=board-`echo $target | tr '_[:upper:]' '-[:lower:]'`.h
-echo Header file is: $BOARD_HEADER_FILE
-ln -sf ../chopstx/board/$BOARD_HEADER_FILE board.h
+BOARD_HEADER_FILE=board-$(echo $target | tr '_[:upper:]' '-[:lower:]').h
+echo "Header file is: $BOARD_HEADER_FILE"
+ln -sf "../chopstx/board/$BOARD_HEADER_FILE" board.h
 
 # Flash page size in byte
 FLASH_PAGE_SIZE=1024
@@ -162,6 +176,10 @@ MEMORY_SIZE=20
 
 # Settings for TARGET
 case $target in
+BLUE_PILL|STM8S_DISCOVERY)
+  # It's 64KB version of STM32F103, but actually has 128KB
+  flash_override="-DSTM32F103_OVERRIDE_FLASH_SIZE_KB=128"
+  ;;
 CQ_STARM|STBEE_MINI)
   if test "$with_dfu" = "default"; then
     with_dfu=yes;
@@ -178,12 +196,46 @@ STBEE)
   if test "$with_dfu" = "default"; then
     with_dfu=yes;
   fi  ;;
-STM8S_DISCOVERY)
-  FLASH_SIZE=64
-  ;;
 *)
   ;;
 esac
+
+if test "$target" = "GNU_LINUX"; then
+  ldscript=""
+  chip="gnu-linux"
+  emulation="yes"
+  cross=""
+  mcu="none"
+  def_emulation="-DGNU_LINUX_EMULATION"
+  def_memory_size="-DMEMORY_SIZE=1024"
+  enable_hexoutput=""
+  libs="-lpthread"
+else
+  ldscript="gnuk.ld"
+  chip="stm32f103"
+  emulation=""
+  cross="arm-none-eabi-"
+  mcu="cortex-m3"
+  def_emulation=""
+  def_memory_size="-DMEMORY_SIZE=$MEMORY_SIZE"
+  enable_hexoutput=yes
+  libs=""
+fi
+
+if test "$emulation" = "yes"; then
+  if test "$vidpid" = "none"; then
+    vidpid=0000:0000
+  else
+    echo "Please don't specify VID:PID for emulation at compile time;"
+    echo "It is a user who should specify VID:PID at run time."
+    exit 1
+  fi
+else
+  if test "$vidpid" = "none"; then
+    echo "Please specify Vendor ID and Product ID by --vidpid option." >&2
+  exit 1
+  fi
+fi
 
 # --enable-debug option
 if test "$debug" = "yes"; then
@@ -205,21 +257,16 @@ if test "$with_dfu" = "yes"; then
   fi
   echo "Configured for DFU"
   ORIGIN=0x08003000
-  FLASH_SIZE=`expr $FLASH_SIZE - 12`
+  FLASH_SIZE=$((FLASH_SIZE - 12))
   DFU_DEFINE="#define DFU_SUPPORT 1"
-  HEXOUTPUT_MAKE_OPTION="ENABLE_OUTPUT_HEX=yes"
 else
   with_dfu=no
   echo "Configured for bare system (no-DFU)"
   ORIGIN=0x08000000
   DFU_DEFINE="#undef DFU_SUPPORT"
-  HEXOUTPUT_MAKE_OPTION=""
 fi
 
 # --enable-pinpad option
-MSC_SIZE="0"
-TIM_SIZE="0"
-EXT_SIZE="0"
 if test "$pinpad" = "no"; then
   PINPAD_MAKE_OPTION="# ENABLE_PINPAD="
   PINPAD_DEFINE="#undef PINPAD_SUPPORT"
@@ -230,12 +277,6 @@ else
   PINPAD_DEFINE="#define PINPAD_SUPPORT 1"
   PINPAD_MORE_DEFINE="#define PINPAD_${pinpad^^[a-z]}_SUPPORT 1"
   echo "PIN pad option enabled ($pinpad)"
-  if test "$pinpad" = "dnd"; then
-     MSC_SIZE="0x0200"
-  elif test "$pinpad" = "cir"; then
-     TIM_SIZE="0x00c0"
-     EXT_SIZE="0x00c0"
-  fi
 fi
 
 # --enable-certdo option
@@ -266,13 +307,13 @@ else
 fi
 
 ### !!! Replace following string of "FSIJ" to yours !!! ####
-SERIALNO="FSIJ-`cat ../VERSION | sed -e 's%^[^/]*/%%'`-"
+SERIALNO="FSIJ-$(sed -e 's%^[^/]*/%%' <../VERSION)-"
 
 SERIALNO_STR_LEN_DEFINE="#define SERIALNO_STR_LEN ${#SERIALNO}"
 
 
 if test "$sys1_compat" = "yes"; then
-  CONFIG="$target:dfu=$with_dfu:debug=$debug:pinpad=$pinpad:certdo=$certdo"
+  CONFIG="$target:dfu=$with_dfu:debug=$debug:pinpad=$pinpad:certdo=$certdo:factory_reset=$factory_reset"
 else
   if test "$with_dfu" = "yes"; then
     echo "Common binary can't support DFU loader, don't use --with-dfu." >&2
@@ -282,53 +323,58 @@ else
   FLASH_PAGE_SIZE=2048
   FLASH_SIZE=128
   MEMORY_SIZE=20
-  CONFIG="common:debug=$debug:pinpad=$pinpad:certdo=$certdo"
+  CONFIG="common:debug=$debug:pinpad=$pinpad:certdo=$certdo:factory_reset=$factory_reset"
 fi
 
 output_vid_pid_version () {
-  echo $VIDPID | sed -n -e "s%^\([0-9a-f][0-9a-f]\)\([0-9a-f][0-9a-f]\):\([0-9a-f][0-9a-f]\)\([0-9a-f][0-9a-f]\)$%  0x\2, 0x\1, /* idVendor  */\\${nl}  0x\4, 0x\3, /* idProduct */%p"
-  echo $VERSION | sed -n -e "s%^\([0-9a-f][0-9a-f]\)\([0-9a-f][0-9a-f]\)$%  0x\2, 0x\1, /* bcdDevice  */%p"
+  echo "$VIDPID" | sed -n -e "s%^\([0-9a-f][0-9a-f]\)\([0-9a-f][0-9a-f]\):\([0-9a-f][0-9a-f]\)\([0-9a-f][0-9a-f]\)$%  0x\2, 0x\1, /* idVendor  */\\${nl}  0x\4, 0x\3, /* idProduct */%p"
+  echo "$VERSION" | sed -n -e "s%^\([0-9a-f][0-9a-f]\)\([0-9a-f][0-9a-f]\)$%  0x\2, 0x\1, /* bcdDevice */%p"
 }
 
 output_vendor_product_serial_strings () {
-  prefix=$1
+  name=$1
 
-  echo "static const uint8_t ${prefix}string_vendor[] = {"
-  echo "  ${#VENDOR}*2+2,			/* bLength */"
-  echo "  STRING_DESCRIPTOR,		/* bDescriptorType */"
+  echo "static const uint8_t ${name}string_vendor[] = {"
+  echo "  ${#VENDOR}*2+2,                       /* bLength */"
+  echo "  STRING_DESCRIPTOR,            /* bDescriptorType */"
   echo "  /* Manufacturer: \"$VENDOR\" */"
-  echo $VENDOR | sed -e "s/\(........\)/\1\\${nl}/g" | sed -n -e "s/\(.\)/'\1', 0, /g" -e "s/^/  /" -e "/^  ./s/ $//p"
+  echo "$VENDOR" | sed -e "s/\(........\)/\1\\${nl}/g" | sed -n -e "s/\(.\)/'\1', 0, /g" -e "s/^/  /" -e "/^  ./s/ $//p"
   echo '};'
   echo
-  echo "static const uint8_t ${prefix}string_product[] = {"
-  echo "  ${#PRODUCT}*2+2,			/* bLength */"
-  echo "  STRING_DESCRIPTOR,		/* bDescriptorType */"
+  echo "static const uint8_t ${name}string_product[] = {"
+  echo "  ${#PRODUCT}*2+2,                      /* bLength */"
+  echo "  STRING_DESCRIPTOR,            /* bDescriptorType */"
   echo "  /* Product name: \"$PRODUCT\" */"
-  echo $PRODUCT | sed -e "s/\(........\)/\1\\${nl}/g" | sed -n -e "s/\(.\)/'\1', 0, /g" -e "s/^/  /" -e "/^  ./s/ $//p"
+  echo "$PRODUCT" | sed -e "s/\(........\)/\1\\${nl}/g" | sed -n -e "s/\(.\)/'\1', 0, /g" -e "s/^/  /" -e "/^  ./s/ $//p"
   echo '};'
 
-  if test -n "$prefix"; then
+  if test -n "$name"; then
   echo
-  echo "const uint8_t ${prefix}string_serial[] = {"
-  echo "  ${#SERIALNO}*2+2+16,			/* bLength */"
-  echo "  STRING_DESCRIPTOR,		/* bDescriptorType */"
+  echo "const uint8_t ${name}string_serial[] = {"
+  echo "  ${#SERIALNO}*2+2+16,                  /* bLength */"
+  echo "  STRING_DESCRIPTOR,            /* bDescriptorType */"
   echo "  /* Serial number: \"$SERIALNO\" */"
-  echo $SERIALNO | sed -e "s/\(........\)/\1\\${nl}/g" | sed -n -e "s/\(.\)/'\1', 0, /g" -e "s/^/  /" -e "/^  ./s/ $//p"
-  echo "  0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,"
-  echo "  0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,"
+  echo "$SERIALNO" | sed -e "s/\(........\)/\1\\${nl}/g" | sed -n -e "s/\(.\)/'\1', 0, /g" -e "s/^/  /" -e "/^  ./s/ $//p"
+  if test "$emulation" = "yes"; then
+    echo "  'E', 0, 'M', 0, 'U', 0, 'L', 0,"
+    echo "  'A', 0, 'T', 0, 'E', 0, 'D', 0,"
+  else
+    echo "  0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,"
+    echo "  0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,"
+  fi
   echo '};'
   echo
   echo '#ifdef USB_STRINGS_FOR_GNUK'
-  echo "static const uint8_t ${prefix}revision_detail[] = {"
-  echo "  ${#REVISION}*2+2,			/* bLength */"
-  echo "  STRING_DESCRIPTOR,		/* bDescriptorType */"
+  echo "static const uint8_t ${name}revision_detail[] = {"
+  echo "  ${#REVISION}*2+2,                     /* bLength */"
+  echo "  STRING_DESCRIPTOR,            /* bDescriptorType */"
   echo "  /* revision detail: \"$REVISION\" */"
-  echo $REVISION | sed -e "s/\(........\)/\1\\${nl}/g" | sed -n -e "s/\(.\)/'\1', 0, /g" -e "s/^/  /" -e "/^  ./s/ $//p"
+  echo "$REVISION" | sed -e "s/\(........\)/\1\\${nl}/g" | sed -n -e "s/\(.\)/'\1', 0, /g" -e "s/^/  /" -e "/^  ./s/ $//p"
   echo '};'
   echo
-  echo "static const uint8_t ${prefix}config_options[] = {"
-  echo "  ${#CONFIG}*2+2,			/* bLength */"
-  echo "  STRING_DESCRIPTOR,		/* bDescriptorType */"
+  echo "static const uint8_t ${name}config_options[] = {"
+  echo "  ${#CONFIG}*2+2,                       /* bLength */"
+  echo "  STRING_DESCRIPTOR,            /* bDescriptorType */"
   echo "  /* configure options: \"$CONFIG\" */"
   echo $CONFIG | sed -e "s/\(........\)/\1\\${nl}/g" | sed -n -e "s/\(.\)/'\1', 0, /g" -e "s/^/  /" -e "/^  ./s/ $//p"
   echo '};'
@@ -337,7 +383,7 @@ output_vendor_product_serial_strings () {
 }
 
 if !(IFS="	"
-  while read VIDPID VERSION PRODUCT VENDOR; do
+  while read -r VIDPID VERSION PRODUCT VENDOR; do
     if test "$vidpid" = "$VIDPID"; then
       output_vid_pid_version > usb-vid-pid-ver.c.inc
       output_vendor_product_serial_strings gnuk_ >usb-strings.c.inc
@@ -345,7 +391,7 @@ if !(IFS="	"
     fi
   done; exit 1) < ../GNUK_USB_DEVICE_ID
 then
-  echo "Please specify valid Vendor ID and Product ID."  >&2
+  echo "Please specify valid Vendor ID and Product ID." >&2
   echo "Check ../GNUK_USB_DEVICE_ID." >&2
   exit 1
 fi
@@ -362,28 +408,35 @@ else
 fi
 
 
-sed -e "s%@USE_SYS3@%$use_sys3%" \
-    -e "s%@DEBUG_MAKE_OPTION@%$DEBUG_MAKE_OPTION%" \
-    -e "s%@PINPAD_MAKE_OPTION@%$PINPAD_MAKE_OPTION%" \
-    -e "s%@HEXOUTPUT_MAKE_OPTION@%$HEXOUTPUT_MAKE_OPTION%" \
-	< Makefile.in > Makefile
+(echo "CHIP=$chip";
+ echo "EMULATION=$emulation";
+ echo "CROSS=$cross";
+ echo "MCU=$mcu";
+ echo "DEFS=$use_sys3 $flash_override $def_emulation $def_memory_size";
+ echo "LDSCRIPT=$ldscript";
+ echo "LIBS=$libs";
+ echo "$DEBUG_MAKE_OPTION";
+ echo "$PINPAD_MAKE_OPTION";
+ echo "ENABLE_FRAUCHEKY=$enable_fraucheky";
+ echo "ENABLE_OUTPUT_HEX=$enable_hexoutput"
+ if test "$emulation" = "yes"; then
+   echo "prefix=$prefix"
+   echo "exec_prefix=$exec_prefix"
+   echo "libexecdir=$libexecdir"
+ fi
+)	> config.mk
+
 if test "$certdo" = "yes"; then
   sed -e "/^@CERTDO_SUPPORT_START@$/ d" -e "/^@CERTDO_SUPPORT_END@$/ d" \
       -e "s/@ORIGIN@/$ORIGIN/" -e "s/@FLASH_SIZE@/$FLASH_SIZE/" \
       -e "s/@MEMORY_SIZE@/$MEMORY_SIZE/" \
       -e "s/@FLASH_PAGE_SIZE@/$FLASH_PAGE_SIZE/" \
-      -e "s/@MSC_SIZE@/$MSC_SIZE/" \
-      -e "s/@TIM_SIZE@/$TIM_SIZE/" \
-      -e "s/@EXT_SIZE@/$EXT_SIZE/" \
 	< gnuk.ld.in > gnuk.ld
 else
   sed -e "/^@CERTDO_SUPPORT_START@$/,/^@CERTDO_SUPPORT_END@$/ d" \
       -e "s/@ORIGIN@/$ORIGIN/" -e "s/@FLASH_SIZE@/$FLASH_SIZE/" \
       -e "s/@MEMORY_SIZE@/$MEMORY_SIZE/" \
       -e "s/@FLASH_PAGE_SIZE@/$FLASH_PAGE_SIZE/" \
-      -e "s/@MSC_SIZE@/$MSC_SIZE/" \
-      -e "s/@TIM_SIZE@/$TIM_SIZE/" \
-      -e "s/@EXT_SIZE@/$EXT_SIZE/" \
 	< gnuk.ld.in > gnuk.ld
 fi
 sed -e "s/@DEBUG_DEFINE@/$DEBUG_DEFINE/" \

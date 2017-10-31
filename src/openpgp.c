@@ -98,7 +98,6 @@ set_res_sw (uint8_t sw1, uint8_t sw2)
 #define FILE_EF_UPDATE_KEY_2	7
 #define FILE_EF_UPDATE_KEY_3	8
 #define FILE_EF_CH_CERTIFICATE	9
-#define FILE_CARD_TERMINATED_OPENPGP	254
 #define FILE_CARD_TERMINATED	255
 
 uint8_t file_selection;
@@ -109,7 +108,7 @@ gpg_init (void)
   const uint8_t *flash_do_start;
   const uint8_t *flash_do_end;
 
-  flash_init (&flash_do_start, &flash_do_end);
+  flash_do_storage_init (&flash_do_start, &flash_do_end);
 
   if (flash_do_start == NULL)
     file_selection = FILE_CARD_TERMINATED;
@@ -117,7 +116,7 @@ gpg_init (void)
     file_selection = FILE_NONE;
 
   gpg_data_scan (flash_do_start, flash_do_end);
-  flash_init_keys ();
+  flash_key_storage_init ();
 }
 
 static void
@@ -645,10 +644,11 @@ cmd_pgp_gakp (void)
     {
       if (!ac_check_status (AC_ADMIN_AUTHORIZED))
 	GPG_SECURITY_FAILURE ();
-      gpg_do_keygen (apdu.cmd_apdu_data[0]);
+      gpg_do_keygen (&apdu.cmd_apdu_data[0]);
     }
 }
 
+#ifdef FLASH_UPGRADE_SUPPORT
 const uint8_t *
 gpg_get_firmware_update_key (uint8_t keyno)
 {
@@ -658,6 +658,7 @@ gpg_get_firmware_update_key (uint8_t keyno)
   p = &_updatekey_store + keyno * FIRMWARE_UPDATE_KEY_CONTENT_LEN;
   return p;
 }
+#endif
 
 #ifdef CERTDO_SUPPORT
 #define FILEID_CH_CERTIFICATE_IS_VALID 1
@@ -670,7 +671,6 @@ cmd_read_binary (void)
 {
   int is_short_EF = (P1 (apdu) & 0x80) != 0;
   uint8_t file_id;
-  const uint8_t *p;
   uint16_t offset;
 
   DEBUG_INFO (" - Read binary\r\n");
@@ -679,13 +679,6 @@ cmd_read_binary (void)
     file_id = (P1 (apdu) & 0x1f);
   else
     file_id = file_selection - FILE_EF_SERIAL_NO + FILEID_SERIAL_NO;
-
-  if ((!FILEID_CH_CERTIFICATE_IS_VALID && file_id == FILEID_CH_CERTIFICATE)
-      || file_id > FILEID_CH_CERTIFICATE)
-    {
-      GPG_NO_FILE ();
-      return;
-    }
 
   if (is_short_EF)
     {
@@ -706,22 +699,26 @@ cmd_read_binary (void)
 	}
       return;
     }
-
-  if (file_id >= FILEID_UPDATE_KEY_0 && file_id <= FILEID_UPDATE_KEY_3)
+#ifdef FLASH_UPGRADE_SUPPORT
+  else if (file_id >= FILEID_UPDATE_KEY_0 && file_id <= FILEID_UPDATE_KEY_3)
     {
       if (offset != 0)
 	GPG_MEMORY_FAILURE ();
       else
 	{
+	  const uint8_t *p;
+
 	  p = gpg_get_firmware_update_key (file_id - FILEID_UPDATE_KEY_0);
 	  res_APDU_size = FIRMWARE_UPDATE_KEY_CONTENT_LEN;
 	  memcpy (res_APDU, p, FIRMWARE_UPDATE_KEY_CONTENT_LEN);
 	  GPG_SUCCESS ();
 	}
     }
+#endif
 #if defined(CERTDO_SUPPORT)
-  else /* file_id == FILEID_CH_CERTIFICATE */
+  else if (file_id == FILEID_CH_CERTIFICATE)
     {
+      const uint8_t *p;
       uint16_t len = 256;
 
       p = &ch_certificate_start;
@@ -738,6 +735,11 @@ cmd_read_binary (void)
 	}
     }
 #endif
+  else
+    {
+      GPG_NO_FILE ();
+      return;
+    }
 }
 
 static void
@@ -760,8 +762,7 @@ cmd_select_file (void)
 
       if (file_selection == FILE_CARD_TERMINATED)
 	{
-	  file_selection = FILE_CARD_TERMINATED_OPENPGP;
-	  GPG_APPLICATION_TERMINATED();
+	  GPG_APPLICATION_TERMINATED ();
 	  return;
 	}
 
@@ -1202,6 +1203,7 @@ modify_binary (uint8_t op, uint8_t p1, uint8_t p2, int len)
       return;
     }
 
+#ifdef FLASH_UPGRADE_SUPPORT
   if (file_id >= FILEID_UPDATE_KEY_0 && file_id <= FILEID_UPDATE_KEY_3
       && len == 0 && offset == 0)
     {
@@ -1218,9 +1220,10 @@ modify_binary (uint8_t op, uint8_t p1, uint8_t p2, int len)
       if (i == 4)			/* all update keys are removed */
 	{
 	  p = gpg_get_firmware_update_key (0);
-	  flash_erase_page ((uint32_t)p);
+	  flash_erase_page ((uintptr_t)p);
 	}
     }
+#endif
 
   GPG_SUCCESS ();
 }
@@ -1250,6 +1253,7 @@ cmd_write_binary (void)
 }
 
 
+#ifdef FLASH_UPGRADE_SUPPORT
 static void
 cmd_external_authenticate (void)
 {
@@ -1291,6 +1295,7 @@ cmd_external_authenticate (void)
   set_res_sw (0xff, 0xff);
   DEBUG_INFO ("EXTERNAL AUTHENTICATE done.\r\n");
 }
+#endif
 
 static void
 cmd_get_challenge (void)
@@ -1323,9 +1328,9 @@ cmd_get_challenge (void)
 static void
 cmd_activate_file (void)
 {
-  if (file_selection != FILE_CARD_TERMINATED_OPENPGP)
+  if (file_selection != FILE_CARD_TERMINATED)
     {
-      GPG_NO_RECORD();
+      GPG_NO_RECORD ();
       return;
     }
 
@@ -1337,12 +1342,14 @@ cmd_activate_file (void)
 static void
 cmd_terminate_df (void)
 {
+  const uint8_t *ks_pw3;
+
   uint8_t p1 = P1 (apdu);
   uint8_t p2 = P2 (apdu);
 
   if (file_selection != FILE_DF_OPENPGP)
     {
-      GPG_NO_RECORD();
+      GPG_NO_RECORD ();
       return;
     }
 
@@ -1358,8 +1365,11 @@ cmd_terminate_df (void)
       return;
     }
 
+  ks_pw3 = gpg_do_read_simple (NR_DO_KEYSTRING_PW3);
 
-  if (!ac_check_status (AC_ADMIN_AUTHORIZED) && !gpg_pw_locked (PW_ERR_PW3))
+  if (!ac_check_status (AC_ADMIN_AUTHORIZED)
+      && !((ks_pw3 && gpg_pw_locked (PW_ERR_PW3))
+	   || (ks_pw3 == NULL && gpg_pw_locked (PW_ERR_PW1))))
     {
       /* Only allow the case admin authorized, or, admin pass is locked.  */
       GPG_SECURITY_FAILURE();
@@ -1392,8 +1402,10 @@ const struct command cmds[] = {
   { INS_ACTIVATE_FILE, cmd_activate_file },
 #endif
   { INS_PGP_GENERATE_ASYMMETRIC_KEY_PAIR, cmd_pgp_gakp },
+#ifdef FLASH_UPGRADE_SUPPORT
   { INS_EXTERNAL_AUTHENTICATE,	            /* Not in OpenPGP card protocol */
     cmd_external_authenticate },
+#endif
   { INS_GET_CHALLENGE, cmd_get_challenge }, /* Not in OpenPGP card protocol */
   { INS_INTERNAL_AUTHENTICATE, cmd_internal_authenticate },
   { INS_SELECT_FILE, cmd_select_file },
@@ -1426,13 +1438,13 @@ process_command_apdu (void)
       if (file_selection == FILE_CARD_TERMINATED
 	  && cmd != INS_SELECT_FILE && cmd != INS_ACTIVATE_FILE
 	  && cmd != INS_GET_CHALLENGE && cmd != INS_EXTERNAL_AUTHENTICATE)
-	GPG_APPLICATION_TERMINATED();
+	GPG_APPLICATION_TERMINATED ();
       else if (file_selection != FILE_DF_OPENPGP
 	       && cmd != INS_SELECT_FILE && cmd != INS_ACTIVATE_FILE
 	       && cmd != INS_GET_CHALLENGE && cmd != INS_EXTERNAL_AUTHENTICATE
 	       && cmd != INS_WRITE_BINARY && cmd != INS_UPDATE_BINARY
 	       && cmd != INS_READ_BINARY)
-	GPG_NO_RECORD();
+	GPG_NO_RECORD ();
       else
 	{
 	  chopstx_setcancelstate (1);

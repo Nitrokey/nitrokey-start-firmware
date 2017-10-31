@@ -1,7 +1,7 @@
 /*
  * main.c - main routine of Gnuk
  *
- * Copyright (C) 2010, 2011, 2012, 2013, 2015, 2016
+ * Copyright (C) 2010, 2011, 2012, 2013, 2015, 2016, 2017
  *               Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
@@ -35,8 +35,13 @@
 #include "usb_lld.h"
 #include "usb-cdc.h"
 #include "random.h"
+#ifdef GNU_LINUX_EMULATION
+#include <stdio.h>
+#include <stdlib.h>
+#define main emulated_main
+#else
 #include "mcu/stm32f103.h"
-
+#endif
 
 /*
  * main thread does 1-bit LED display output
@@ -47,6 +52,10 @@
 #define LED_TIMEOUT_STOP	(200*1000)
 
 
+#ifdef GNU_LINUX_EMULATION
+uint8_t *flash_addr_key_storage_start;
+uint8_t *flash_addr_data_storage_start;
+#else
 #define ID_OFFSET (2+SERIALNO_STR_LEN*2)
 static void
 device_initialize_once (void)
@@ -76,6 +85,7 @@ device_initialize_once (void)
 	}
     }
 }
+#endif
 
 
 static volatile uint8_t fatal_code;
@@ -167,26 +177,30 @@ led_blink (int spec)
   eventflag_signal (&led_event, spec);
 }
 
+#ifdef FLASH_UPGRADE_SUPPORT
 /*
  * In Gnuk 1.0.[12], reGNUal was not relocatable.
  * Now, it's relocatable, but we need to calculate its entry address
  * based on it's pre-defined address.
  */
 #define REGNUAL_START_ADDRESS_COMPATIBLE 0x20001400
-static uint32_t
+static uintptr_t
 calculate_regnual_entry_address (const uint8_t *addr)
 {
   const uint8_t *p = addr + 4;
-  uint32_t v = p[0] + (p[1] << 8) + (p[2] << 16) + (p[3] << 24);
+  uintptr_t v = p[0] + (p[1] << 8) + (p[2] << 16) + (p[3] << 24);
 
   v -= REGNUAL_START_ADDRESS_COMPATIBLE;
-  v += (uint32_t)addr;
+  v += (uintptr_t)addr;
   return v;
 }
+#endif
 
-extern uint8_t __process1_stack_base__[], __process1_stack_size__[];
-#define STACK_ADDR_CCID ((uint32_t)__process1_stack_base__)
-#define STACK_SIZE_CCID ((uint32_t)__process1_stack_size__)
+#define STACK_MAIN
+#define STACK_PROCESS_1
+#include "stack-def.h"
+#define STACK_ADDR_CCID ((uintptr_t)process1_base)
+#define STACK_SIZE_CCID (sizeof process1_base)
 
 #define PRIO_CCID 3
 #define PRIO_MAIN 5
@@ -202,18 +216,94 @@ extern uint32_t bDeviceState;
  * Entry point.
  */
 int
-main (int argc, char *argv[])
+main (int argc, const char *argv[])
 {
-  uint32_t entry;
+#ifdef GNU_LINUX_EMULATION
+  uintptr_t flash_addr;
+  const char *flash_image_path;
+  char *path_string = NULL;
+#endif
+#ifdef FLASH_UPGRADE_SUPPORT
+  uintptr_t entry;
+#endif
   chopstx_t ccid_thd;
-
-  (void)argc;
-  (void)argv;
 
   gnuk_malloc_init ();
 
+#ifdef GNU_LINUX_EMULATION
+#define FLASH_IMAGE_NAME ".gnuk-flash-image"
+
+  if (argc >= 4 || (argc == 2 && !strcmp (argv[1], "--help")))
+    {
+      fprintf (stdout, "Usage: %s [--vidpid=Vxxx:Pxxx] [flash-image-file]",
+	       argv[0]);
+      exit (0);
+    }
+
+  if (argc >= 2 && !strncmp (argv[1], "--debug=", 8))
+    {
+      debug = strtol (&argv[1][8], NULL, 10);
+      argc--;
+      argv++;
+    }
+
+  if (argc >= 2 && !strncmp (argv[1], "--vidpid=", 9))
+    {
+      extern uint8_t device_desc[];
+      uint32_t id;
+      char *p;
+
+      id = (uint32_t)strtol (&argv[1][9], &p, 16);
+      device_desc[8] = (id & 0xff);
+      device_desc[9] = (id >> 8);
+
+      if (p && p[0] == ':')
+	{
+	  id = (uint32_t)strtol (&p[1], NULL, 16);
+	  device_desc[10] = (id & 0xff);
+	  device_desc[11] = (id >> 8);
+	}
+
+      argc--;
+      argv++;
+    }
+
+  if (argc == 1)
+    {
+      char *p = getenv ("HOME");
+
+      if (p == NULL)
+	{
+	  fprintf (stderr, "Can't find $HOME\n");
+	  exit (1);
+	}
+
+      path_string = malloc (strlen (p) + strlen (FLASH_IMAGE_NAME) + 2);
+
+      p = stpcpy (path_string, p);
+      *p++ = '/';
+      strcpy (p, FLASH_IMAGE_NAME);
+      flash_image_path = path_string;
+    }
+  else
+    flash_image_path = argv[1];
+
+  flash_addr = flash_init (flash_image_path);
+  flash_addr_key_storage_start = (uint8_t *)flash_addr;
+  flash_addr_data_storage_start = (uint8_t *)flash_addr + 4096;
+#else
+  (void)argc;
+  (void)argv;
+#endif
+
   flash_unlock ();
+
+#ifdef GNU_LINUX_EMULATION
+    if (path_string)
+      free (path_string);
+#else
   device_initialize_once ();
+#endif
 
   adc_init ();
 
@@ -285,8 +375,9 @@ main (int argc, char *argv[])
   /* Finish application.  */
   chopstx_join (ccid_thd, NULL);
 
+#ifdef FLASH_UPGRADE_SUPPORT
   /* Set vector */
-  SCB->VTOR = (uint32_t)&_regnual_start;
+  SCB->VTOR = (uintptr_t)&_regnual_start;
   entry = calculate_regnual_entry_address (&_regnual_start);
 #ifdef DFU_SUPPORT
 #define FLASH_SYS_START_ADDR 0x08000000
@@ -294,12 +385,12 @@ main (int argc, char *argv[])
 #define CHIP_ID_REG ((uint32_t *)0xE0042000)
   {
     extern uint8_t _sys;
-    uint32_t addr;
+    uintptr_t addr;
     handler *new_vector = (handler *)FLASH_SYS_START_ADDR;
     void (*func) (void (*)(void)) = (void (*)(void (*)(void)))new_vector[9];
     uint32_t flash_page_size = 1024; /* 1KiB default */
 
-   if ((*CHIP_ID_ADDR)&0x07 == 0x04) /* High dencity device.  */
+   if ((*CHIP_ID_REG)&0x07 == 0x04) /* High dencity device.  */
      flash_page_size = 2048; /* It's 2KiB. */
 
     /* Kill DFU */
@@ -317,6 +408,9 @@ main (int argc, char *argv[])
 #else
   /* Leave Gnuk to exec reGNUal */
   flash_erase_all_and_exec ((void (*)(void))entry);
+#endif
+#else
+  exit (0);
 #endif
 
   /* Never reached */
@@ -348,22 +442,38 @@ fatal (uint8_t code)
  * reclaimed to system.
  */
 
+#ifdef GNU_LINUX_EMULATION
+#define HEAP_SIZE (32*1024)
+uint8_t __heap_base__[HEAP_SIZE];
+
+#define HEAP_START __heap_base__
+#define HEAP_END (__heap_base__ + HEAP_SIZE)
+#define HEAP_ALIGNMENT 32
+#else
 extern uint8_t __heap_base__[];
 extern uint8_t __heap_end__[];
 
-#define MEMORY_END (__heap_end__)
-#define MEMORY_ALIGNMENT 16
-#define MEMORY_ALIGN(n) (((n) + MEMORY_ALIGNMENT - 1) & ~(MEMORY_ALIGNMENT - 1))
+#define HEAP_START __heap_base__
+#define HEAP_END (__heap_end__)
+#define HEAP_ALIGNMENT 16
+#define HEAP_SIZE ((uintptr_t)__heap_end__ -  (uintptr_t)__heap_base__)
+#endif
+
+#define HEAP_ALIGN(n) (((n) + HEAP_ALIGNMENT - 1) & ~(HEAP_ALIGNMENT - 1))
 
 static uint8_t *heap_p;
 static chopstx_mutex_t malloc_mtx;
 
 struct mem_head {
-  uint32_t size;
+  uintptr_t size;
   /**/
   struct mem_head *next, *prev;	/* free list chain */
   struct mem_head *neighbor;	/* backlink to neighbor */
 };
+
+#define MEM_HEAD_IS_CORRUPT(x) \
+    ((x)->size != HEAP_ALIGN((x)->size) || (x)->size > HEAP_SIZE)
+#define MEM_HEAD_CHECK(x) if (MEM_HEAD_IS_CORRUPT(x)) fatal (FATAL_HEAP)
 
 static struct mem_head *free_list;
 
@@ -371,7 +481,7 @@ static void
 gnuk_malloc_init (void)
 {
   chopstx_mutex_init (&malloc_mtx);
-  heap_p = __heap_base__;
+  heap_p = HEAP_START;
   free_list = NULL;
 }
 
@@ -380,7 +490,7 @@ sbrk (size_t size)
 {
   void *p = (void *)heap_p;
 
-  if ((size_t)(MEMORY_END - heap_p) < size)
+  if ((size_t)(HEAP_END - heap_p) < size)
     return NULL;
 
   heap_p += size;
@@ -405,7 +515,7 @@ gnuk_malloc (size_t size)
   struct mem_head *m;
   struct mem_head *m0;
 
-  size = MEMORY_ALIGN (size + sizeof (uint32_t));
+  size = HEAP_ALIGN (size + sizeof (uintptr_t));
 
   chopstx_mutex_lock (&malloc_mtx);
   DEBUG_INFO ("malloc: ");
@@ -421,7 +531,7 @@ gnuk_malloc (size_t size)
 	    m->size = size;
 	  break;
 	}
-
+      MEM_HEAD_CHECK (m);
       if (m->size == size)
 	{
 	  remove_from_free_list (m);
@@ -445,8 +555,8 @@ gnuk_malloc (size_t size)
     }
   else
     {
-      DEBUG_WORD ((uint32_t)m + sizeof (uint32_t));
-      return (void *)m + sizeof (uint32_t);
+      DEBUG_WORD ((uintptr_t)m + sizeof (uintptr_t));
+      return (void *)m + sizeof (uintptr_t);
     }
 }
 
@@ -454,18 +564,23 @@ gnuk_malloc (size_t size)
 void
 gnuk_free (void *p)
 {
-  struct mem_head *m = (struct mem_head *)((void *)p - sizeof (uint32_t));
+  struct mem_head *m = (struct mem_head *)((void *)p - sizeof (uintptr_t));
   struct mem_head *m0;
+
+  if (p == NULL)
+    return;
 
   chopstx_mutex_lock (&malloc_mtx);
   m0 = free_list;
   DEBUG_INFO ("free: ");
   DEBUG_SHORT (m->size);
-  DEBUG_WORD ((uint32_t)p);
+  DEBUG_WORD ((uintptr_t)p);
 
+  MEM_HEAD_CHECK (m);
   m->neighbor = NULL;
   while (m0)
     {
+      MEM_HEAD_CHECK (m0);
       if ((void *)m + m->size == (void *)m0)
 	m0->neighbor = m;
       else if ((void *)m0 + m0->size == (void *)m)
@@ -481,6 +596,7 @@ gnuk_free (void *p)
       heap_p -= m->size;
       while (mn)
 	{
+	  MEM_HEAD_CHECK (mn);
 	  heap_p -= mn->size;
 	  remove_from_free_list (mn);
 	  mn = mn->neighbor;

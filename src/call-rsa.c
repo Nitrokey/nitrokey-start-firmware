@@ -1,7 +1,7 @@
 /*
  * call-rsa.c -- Glue code between RSA computation and OpenPGP card protocol
  *
- * Copyright (C) 2010, 2011, 2012, 2013, 2014, 2015
+ * Copyright (C) 2010, 2011, 2012, 2013, 2014, 2015, 2017
  *               Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
@@ -24,7 +24,6 @@
 
 #include <stdint.h>
 #include <string.h>
-#include <stdlib.h>
 #include <chopstx.h>
 
 #include "config.h"
@@ -41,7 +40,7 @@ static struct chx_cleanup clp;
 static void
 rsa_cleanup (void *arg)
 {
-  free (arg);
+  (void)arg;
   rsa_free (&rsa_ctx);
 }
 
@@ -111,28 +110,23 @@ rsa_sign (const uint8_t *raw_message, uint8_t *output, int msg_len,
 /*
  * LEN: length in byte
  */
-uint8_t *
-modulus_calc (const uint8_t *p, int len)
+int
+modulus_calc (const uint8_t *p, int len, uint8_t *pubkey)
 {
   mpi P, Q, N;
-  uint8_t *modulus;
   int ret;
-
-  modulus = malloc (len);
-  if (modulus == NULL)
-    return NULL;
 
   mpi_init (&P);  mpi_init (&Q);  mpi_init (&N);
   MPI_CHK( mpi_read_binary (&P, p, len / 2) );
   MPI_CHK( mpi_read_binary (&Q, p + len / 2, len / 2) );
   MPI_CHK( mpi_mul_mpi (&N, &P, &Q) );
-  MPI_CHK( mpi_write_binary (&N, modulus, len) );
+  MPI_CHK( mpi_write_binary (&N, pubkey, len) );
  cleanup:
   mpi_free (&P);  mpi_free (&Q);  mpi_free (&N);
   if (ret != 0)
-    return NULL;
-  else
-    return modulus;
+    return -1;
+
+  return 0;
 }
 
 
@@ -142,6 +136,9 @@ rsa_decrypt (const uint8_t *input, uint8_t *output, int msg_len,
 {
   mpi P1, Q1, H;
   int ret;
+#ifdef GNU_LINUX_EMULATION
+  size_t output_len;
+#endif
 
   DEBUG_INFO ("RSA decrypt:");
   DEBUG_WORD ((uint32_t)&ret);
@@ -177,9 +174,16 @@ rsa_decrypt (const uint8_t *input, uint8_t *output, int msg_len,
       clp.arg = NULL;
       chopstx_cleanup_push (&clp);
       cs = chopstx_setcancelstate (0); /* Allow cancellation.  */
+#ifdef GNU_LINUX_EMULATION
+      ret = rsa_rsaes_pkcs1_v15_decrypt (&rsa_ctx, NULL, NULL,
+					 RSA_PRIVATE, &output_len, input,
+					 output, MAX_RES_APDU_DATA_SIZE);
+      *output_len_p = (unsigned int)output_len;
+#else
       ret = rsa_rsaes_pkcs1_v15_decrypt (&rsa_ctx, NULL, NULL,
 					 RSA_PRIVATE, output_len_p, input,
 					 output, MAX_RES_APDU_DATA_SIZE);
+#endif
       chopstx_setcancelstate (cs);
       chopstx_cleanup_pop (0);
     }
@@ -232,23 +236,18 @@ rsa_verify (const uint8_t *pubkey, int pubkey_len,
 
 #define RSA_EXPONENT 0x10001
 
-uint8_t *
-rsa_genkey (int pubkey_len)
+int
+rsa_genkey (int pubkey_len, uint8_t *pubkey, uint8_t *p_q)
 {
   int ret;
   uint8_t index = 0;
-  uint8_t *p_q_modulus = (uint8_t *)malloc (pubkey_len * 2);
-  uint8_t *p = p_q_modulus;
-  uint8_t *q = p_q_modulus + pubkey_len / 2;
-  uint8_t *modulus = p_q_modulus + pubkey_len;
+  uint8_t *p = p_q;
+  uint8_t *q = p_q + pubkey_len / 2;
   int cs;
 
   extern int prng_seed (int (*f_rng)(void *, unsigned char *, size_t),
 			void *p_rng);
   extern void neug_flush (void);
-
-  if (p_q_modulus == NULL)
-    return NULL;
 
   neug_flush ();
   prng_seed (random_gen, &index);
@@ -256,30 +255,20 @@ rsa_genkey (int pubkey_len)
 
   clp.next = NULL;
   clp.routine = rsa_cleanup;
-  clp.arg = (void *)p_q_modulus;
+  clp.arg = NULL;
   chopstx_cleanup_push (&clp);
   cs = chopstx_setcancelstate (0); /* Allow cancellation.  */
   MPI_CHK( rsa_gen_key (&rsa_ctx, random_gen, &index, pubkey_len * 8,
 			RSA_EXPONENT) );
-  if (ret != 0)
-    {
-      chopstx_setcancelstate (cs);
-      chopstx_cleanup_pop (0);
-      free (p_q_modulus);
-      rsa_free (&rsa_ctx);
-      return NULL;
-    }
-
   MPI_CHK( mpi_write_binary (&rsa_ctx.P, p, pubkey_len / 2) );
   MPI_CHK( mpi_write_binary (&rsa_ctx.Q, q, pubkey_len / 2) );
-  MPI_CHK( mpi_write_binary (&rsa_ctx.N, modulus, pubkey_len) );
+  MPI_CHK( mpi_write_binary (&rsa_ctx.N, pubkey, pubkey_len) );
 
  cleanup:
   chopstx_setcancelstate (cs);
-  chopstx_cleanup_pop (0);
-  rsa_free (&rsa_ctx);
+  chopstx_cleanup_pop (1);
   if (ret != 0)
-      return NULL;
+    return -1;
   else
-    return p_q_modulus;
+    return 0;
 }

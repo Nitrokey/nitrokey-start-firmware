@@ -1,7 +1,7 @@
 /*
  * usb_ctrl.c - USB control pipe device specific code for Gnuk
  *
- * Copyright (C) 2010, 2011, 2012, 2013, 2015, 2016
+ * Copyright (C) 2010, 2011, 2012, 2013, 2015, 2016, 2017
  *               Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
@@ -38,6 +38,7 @@
 #include "usb_lld.h"
 #include "usb_conf.h"
 #include "gnuk.h"
+#include "neug.h"
 
 #ifdef ENABLE_VIRTUAL_COM_PORT
 #include "usb-cdc.h"
@@ -107,15 +108,25 @@ static uint16_t hid_report;
 #endif
 
 static void
-gnuk_setup_endpoints_for_interface (uint16_t interface, int stop)
+gnuk_setup_endpoints_for_interface (struct usb_dev *dev,
+				    uint16_t interface, int stop)
 {
+#if !defined(GNU_LINUX_EMULATION)
+  (void)dev;
+#endif
+
   if (interface == CCID_INTERFACE)
     {
       if (!stop)
 	{
+#ifdef GNU_LINUX_EMULATION
+	  usb_lld_setup_endp (dev, ENDP1, 1, 1);
+	  usb_lld_setup_endp (dev, ENDP2, 0, 1);
+#else
 	  usb_lld_setup_endpoint (ENDP1, EP_BULK, 0, ENDP1_RXADDR,
 				  ENDP1_TXADDR, GNUK_MAX_PACKET_SIZE);
 	  usb_lld_setup_endpoint (ENDP2, EP_INTERRUPT, 0, 0, ENDP2_TXADDR, 0);
+#endif
 	}
       else
 	{
@@ -128,7 +139,11 @@ gnuk_setup_endpoints_for_interface (uint16_t interface, int stop)
   else if (interface == HID_INTERFACE)
     {
       if (!stop)
+#ifdef GNU_LINUX_EMULATION
+	usb_lld_setup_endp (dev, ENDP7, 0, 1);
+#else
 	usb_lld_setup_endpoint (ENDP7, EP_INTERRUPT, 0, 0, ENDP7_TXADDR, 0);
+#endif
       else
 	usb_lld_stall_tx (ENDP7);
     }
@@ -137,7 +152,11 @@ gnuk_setup_endpoints_for_interface (uint16_t interface, int stop)
   else if (interface == VCOM_INTERFACE_0)
     {
       if (!stop)
+#ifdef GNU_LINUX_EMULATION
+	usb_lld_setup_endp (dev, ENDP4, 0, 1);
+#else
 	usb_lld_setup_endpoint (ENDP4, EP_INTERRUPT, 0, 0, ENDP4_TXADDR, 0);
+#endif
       else
 	usb_lld_stall_tx (ENDP4);
     }
@@ -145,9 +164,14 @@ gnuk_setup_endpoints_for_interface (uint16_t interface, int stop)
     {
       if (!stop)
 	{
+#ifdef GNU_LINUX_EMULATION
+	  usb_lld_setup_endp (dev, ENDP3, 0, 1);
+	  usb_lld_setup_endp (dev, ENDP5, 1, 0);
+#else
 	  usb_lld_setup_endpoint (ENDP3, EP_BULK, 0, 0, ENDP3_TXADDR, 0);
 	  usb_lld_setup_endpoint (ENDP5, EP_BULK, 0, ENDP5_RXADDR, 0,
 				  VIRTUAL_COM_PORT_DATA_SIZE);
+#endif
 	}
       else
 	{
@@ -160,8 +184,12 @@ gnuk_setup_endpoints_for_interface (uint16_t interface, int stop)
   else if (interface == MSC_INTERFACE)
     {
       if (!stop)
+#ifdef GNU_LINUX_EMULATION
+	usb_lld_setup_endp (dev, ENDP6, 1, 1);
+#else
 	usb_lld_setup_endpoint (ENDP6, EP_BULK, 0,
 				ENDP6_RXADDR, ENDP6_TXADDR, 64);
+#endif
       else
 	{
 	  usb_lld_stall_tx (ENDP6);
@@ -179,12 +207,16 @@ usb_device_reset (struct usb_dev *dev)
   usb_lld_reset (dev, USB_INITIAL_FEATURE);
 
   /* Initialize Endpoint 0 */
+#ifdef GNU_LINUX_EMULATION
+  usb_lld_setup_endp (dev, ENDP0, 1, 1);
+#else
   usb_lld_setup_endpoint (ENDP0, EP_CONTROL, 0, ENDP0_RXADDR, ENDP0_TXADDR,
-			  GNUK_MAX_PACKET_SIZE);
+			  64);
+#endif
 
   /* Stop the interface */
   for (i = 0; i < NUM_INTERFACES; i++)
-    gnuk_setup_endpoints_for_interface (i, 1);
+    gnuk_setup_endpoints_for_interface (dev, i, 1);
 
   bDeviceState = ATTACHED;
   ccid_usb_reset (1);
@@ -201,22 +233,34 @@ static const uint8_t data_rate_table[] = { 0x80, 0x25, 0, 0, }; /* dwDataRate */
 static const uint8_t lun_table[] = { 0, 0, 0, 0, };
 #endif
 
+#ifdef FLASH_UPGRADE_SUPPORT
 static const uint8_t *const mem_info[] = { &_regnual_start,  __heap_end__, };
+#endif
 
 #define USB_FSIJ_GNUK_MEMINFO     0
 #define USB_FSIJ_GNUK_DOWNLOAD    1
 #define USB_FSIJ_GNUK_EXEC        2
 #define USB_FSIJ_GNUK_CARD_CHANGE 3
 
+#ifdef FLASH_UPGRADE_SUPPORT
 /* After calling this function, CRC module remain enabled.  */
 static int
 download_check_crc32 (struct usb_dev *dev, const uint32_t *end_p)
 {
-  if (check_crc32 ((const uint32_t *)&_regnual_start, end_p))
+  uint32_t crc32 = *end_p;
+  const uint32_t *p;
+
+  crc32_rv_reset ();
+
+  for (p = (const uint32_t *)&_regnual_start; p < end_p; p++)
+    crc32_rv_step (rbit (*p));
+
+  if ((rbit (crc32_rv_get ()) ^ crc32) == 0xffffffff)
     return usb_lld_ctrl_ack (dev);
 
   return -1;
 }
+#endif
 
 int
 usb_setup (struct usb_dev *dev)
@@ -228,15 +272,22 @@ usb_setup (struct usb_dev *dev)
     {
       if (USB_SETUP_GET (arg->type))
 	{
+#ifdef FLASH_UPGRADE_SUPPORT
 	  if (arg->request == USB_FSIJ_GNUK_MEMINFO)
 	    return usb_lld_ctrl_send (dev, mem_info, sizeof (mem_info));
+#else
+	  return -1;
+#endif
 	}
       else /* SETUP_SET */
 	{
+#ifdef FLASH_UPGRADE_SUPPORT
 	  uint8_t *addr = sram_address ((arg->value * 0x100) + arg->index);
+#endif
 
 	  if (arg->request == USB_FSIJ_GNUK_DOWNLOAD)
 	    {
+#ifdef FLASH_UPGRADE_SUPPORT
 	      if (*ccid_state_p != CCID_STATE_EXITED)
 		return -1;
 
@@ -248,9 +299,13 @@ usb_setup (struct usb_dev *dev)
 			256 - (arg->index + arg->len));
 
 	      return usb_lld_ctrl_recv (dev, addr, arg->len);
+#else
+	      return -1;
+#endif
 	    }
 	  else if (arg->request == USB_FSIJ_GNUK_EXEC && arg->len == 0)
 	    {
+#ifdef FLASH_UPGRADE_SUPPORT
 	      if (*ccid_state_p != CCID_STATE_EXITED)
 		return -1;
 
@@ -258,6 +313,9 @@ usb_setup (struct usb_dev *dev)
 		return -1;
 
 	      return download_check_crc32 (dev, (uint32_t *)addr);
+#else
+	      return -1;
+#endif
 	    }
 	  else if (arg->request == USB_FSIJ_GNUK_CARD_CHANGE && arg->len == 0)
 	    {
@@ -417,7 +475,7 @@ usb_set_configuration (struct usb_dev *dev)
 
       usb_lld_set_configuration (dev, 1);
       for (i = 0; i < NUM_INTERFACES; i++)
-	gnuk_setup_endpoints_for_interface (i, 0);
+	gnuk_setup_endpoints_for_interface (dev, i, 0);
       bDeviceState = CONFIGURED;
     }
   else if (current_conf != dev->dev_req.value)
@@ -427,7 +485,7 @@ usb_set_configuration (struct usb_dev *dev)
 
       usb_lld_set_configuration (dev, 0);
       for (i = 0; i < NUM_INTERFACES; i++)
-	gnuk_setup_endpoints_for_interface (i, 1);
+	gnuk_setup_endpoints_for_interface (dev, i, 1);
       bDeviceState = ADDRESSED;
       ccid_usb_reset (1);
     }
@@ -450,7 +508,7 @@ usb_set_interface (struct usb_dev *dev)
     return -1;
   else
     {
-      gnuk_setup_endpoints_for_interface (interface, 0);
+      gnuk_setup_endpoints_for_interface (dev, interface, 0);
       ccid_usb_reset (0);
       return usb_lld_ctrl_ack (dev);
     }

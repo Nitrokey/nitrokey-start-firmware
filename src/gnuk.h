@@ -112,7 +112,7 @@ void gpg_do_terminate (void);
 void gpg_do_get_data (uint16_t tag, int with_tag);
 void gpg_do_put_data (uint16_t tag, const uint8_t *data, int len);
 void gpg_do_public_key (uint8_t kk_byte);
-void gpg_do_keygen (uint8_t kk_byte);
+void gpg_do_keygen (uint8_t *buf);
 
 const uint8_t *gpg_get_firmware_update_key (uint8_t keyno);
 
@@ -139,10 +139,10 @@ enum size_of_key {
 int gpg_get_algo_attr (enum kind_of_key kk);
 int gpg_get_algo_attr_key_size (enum kind_of_key kk, enum size_of_key s);
 
-void flash_init (const uint8_t **, const uint8_t **);
+void flash_do_storage_init (const uint8_t **, const uint8_t **);
 void flash_terminate (void);
 void flash_activate (void);
-void flash_init_keys (void);
+void flash_key_storage_init (void);
 void flash_do_release (const uint8_t *);
 const uint8_t *flash_do_write (uint8_t nr, const uint8_t *data, int len);
 uint8_t *flash_key_alloc (enum kind_of_key);
@@ -152,7 +152,7 @@ int flash_key_write (uint8_t *key_addr,
 		     const uint8_t *key_data, int key_data_len,
 		     const uint8_t *pubkey, int pubkey_len);
 void flash_set_data_pool_last (const uint8_t *p);
-void flash_clear_halfword (uint32_t addr);
+void flash_clear_halfword (uintptr_t addr);
 void flash_increment_counter (uint8_t counter_tag_nr);
 void flash_reset_counter (uint8_t counter_tag_nr);
 
@@ -265,22 +265,22 @@ void put_binary (const char *s, int len);
 #endif
 
 int rsa_sign (const uint8_t *, uint8_t *, int, struct key_data *, int);
-uint8_t *modulus_calc (const uint8_t *, int);
+int modulus_calc (const uint8_t *, int, uint8_t *);
 int rsa_decrypt (const uint8_t *, uint8_t *, int, struct key_data *,
 		 unsigned int *);
 int rsa_verify (const uint8_t *, int, const uint8_t *, const uint8_t *);
-uint8_t *rsa_genkey (int);
+int rsa_genkey (int, uint8_t *, uint8_t *);
 
 int ecdsa_sign_p256r1 (const uint8_t *hash, uint8_t *output,
 		       const uint8_t *key_data);
-uint8_t *ecc_compute_public_p256r1 (const uint8_t *key_data);
+int ecc_compute_public_p256r1 (const uint8_t *key_data, uint8_t *);
 int ecc_check_secret_p256r1 (const uint8_t *d0, uint8_t *d1);
 int ecdh_decrypt_p256r1 (const uint8_t *input, uint8_t *output,
 			 const uint8_t *key_data);
 
 int ecdsa_sign_p256k1 (const uint8_t *hash, uint8_t *output,
 		       const uint8_t *key_data);
-uint8_t *ecc_compute_public_p256k1 (const uint8_t *key_data);
+int ecc_compute_public_p256k1 (const uint8_t *key_data, uint8_t *);
 int ecc_check_secret_p256k1 (const uint8_t *d0, uint8_t  *d1);
 int ecdh_decrypt_p256k1 (const uint8_t *input, uint8_t *output,
 			 const uint8_t *key_data);
@@ -288,8 +288,8 @@ int ecdh_decrypt_p256k1 (const uint8_t *input, uint8_t *output,
 int eddsa_sign_25519 (const uint8_t *input, size_t ilen, uint32_t *output,
 		      const uint8_t *sk_a, const uint8_t *seed,
 		      const uint8_t *pk);
-uint8_t *eddsa_compute_public_25519 (const uint8_t *a);
-uint8_t *ecdh_compute_public_25519 (const uint8_t *a);
+void eddsa_compute_public_25519 (const uint8_t *a, uint8_t *);
+void ecdh_compute_public_25519 (const uint8_t *a, uint8_t *);
 int ecdh_decrypt_curve25519 (const uint8_t *input, uint8_t *output,
 			     const uint8_t *key_data);
 
@@ -301,6 +301,7 @@ void gpg_increment_digital_signature_counter (void);
 void fatal (uint8_t code) __attribute__ ((noreturn));
 #define FATAL_FLASH  1
 #define FATAL_RANDOM 2
+#define FATAL_HEAP   3
 
 extern uint8_t keystring_md_pw3[KEYSTRING_MD_SIZE];
 extern uint8_t admin_authorized;
@@ -460,5 +461,4 @@ int pinpad_getline (int msg_code, uint32_t timeout_usec);
 
 extern uint8_t _regnual_start, __heap_end__[];
 
-int check_crc32 (const uint32_t *start_p, const uint32_t *end_p);
 uint8_t * sram_address (uint32_t offset);

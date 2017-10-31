@@ -1,5 +1,30 @@
 Gnuk NEWS - User visible changes
 
+* Major changes in Gnuk 1.2.6
+
+  Released 2017-10-11, by NIIBE Yutaka
+
+** Port to GNU/Linux emulation
+We can "run" Gnuk Token on GNU/Linux by emulation through USBIP.
+
+** Upgrade of Chopstx
+We use Chopstx 1.5.
+
+
+* Major changes in Gnuk 1.2.5
+
+  Released 2017-08-11, by NIIBE Yutaka
+
+** "factory-reset" fix
+Gnuk's behavior was implemented by referring the gpg implementation.
+It found that gpg implementation was not good from the viewpoint of
+the OpenPGP card specification.  GnuPG was fixed to match the OpenPGP
+card specification already.  Thus, Gnuk is now fixed.
+
+** Upgrade of Chopstx
+We use Chopstx 1.4.
+
+
 * Major changes in Gnuk 1.2.4
 
   Released 2017-05-12, by NIIBE Yutaka

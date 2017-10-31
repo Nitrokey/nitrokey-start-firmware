@@ -1,7 +1,7 @@
 /*
  * usb-ccid.c -- USB CCID protocol handling
  *
- * Copyright (C) 2010, 2011, 2012, 2013, 2014, 2015, 2016
+ * Copyright (C) 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
  *               Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
@@ -30,6 +30,7 @@
 #include "config.h"
 
 #ifdef DEBUG
+#include "usb-cdc.h"
 #include "debug.h"
 struct stdout stdout;
 #endif
@@ -345,13 +346,21 @@ static void get_sw1sw2 (struct ep_in *epi, size_t len)
   epi->next_buf = no_buf;
 }
 
+#ifdef GNU_LINUX_EMULATION
+static uint8_t endp1_tx_buf[64]; /* Only support single CCID interface.  */
+#endif
 
 /*
  * Tx done callback
  */
 static void
-EP1_IN_Callback (uint16_t len)
+ccid_tx_done (uint8_t ep_num, uint16_t len)
 {
+  /*
+   * If we support multiple CCID interfaces, we select endpoint object
+   * by EP_NUM.  Because it has only single CCID interface now, it's
+   * hard-coded, here.
+   */
   struct ep_in *epi = &endpoint_in;
 
   (void)len;
@@ -361,7 +370,12 @@ EP1_IN_Callback (uint16_t len)
     else
       {
 	epi->tx_done = 1;
-	usb_lld_tx_enable (epi->ep_num, 0); /* send ZLP */
+	/* send ZLP */
+#ifdef GNU_LINUX_EMULATION
+	usb_lld_tx_enable_buf (ep_num, endp1_tx_buf, 0);
+#else
+	usb_lld_tx_enable (ep_num, 0);
+#endif
       }
   else
     {
@@ -372,7 +386,11 @@ EP1_IN_Callback (uint16_t len)
       while (epi->buf)
 	if (epi->buf_len < remain)
 	  {
-	    usb_lld_txcpy (epi->buf, epi->ep_num, offset, epi->buf_len);
+#ifdef GNU_LINUX_EMULATION
+	    memcpy (endp1_tx_buf+offset, epi->buf, epi->buf_len);
+#else
+	    usb_lld_txcpy (epi->buf, ep_num, offset, epi->buf_len);
+#endif
 	    offset += epi->buf_len;
 	    remain -= epi->buf_len;
 	    tx_size += epi->buf_len;
@@ -380,7 +398,11 @@ EP1_IN_Callback (uint16_t len)
 	  }
 	else
 	  {
-	    usb_lld_txcpy (epi->buf, epi->ep_num, offset, remain);
+#ifdef GNU_LINUX_EMULATION
+	    memcpy (endp1_tx_buf+offset, epi->buf, remain);
+#else
+	    usb_lld_txcpy (epi->buf, ep_num, offset, remain);
+#endif
 	    epi->buf += remain;
 	    epi->cnt += remain;
 	    epi->buf_len -= remain;
@@ -390,7 +412,12 @@ EP1_IN_Callback (uint16_t len)
 
       if (tx_size < USB_LL_BUF_SIZE)
 	epi->tx_done = 1;
-      usb_lld_tx_enable (epi->ep_num, tx_size);
+
+#ifdef GNU_LINUX_EMULATION
+      usb_lld_tx_enable_buf (ep_num, endp1_tx_buf, tx_size);
+#else
+      usb_lld_tx_enable (ep_num, tx_size);
+#endif
     }
 }
 
@@ -609,6 +636,9 @@ static void ccid_abdata (struct ep_out *epo, size_t len)
     }
 }
 
+#ifdef GNU_LINUX_EMULATION
+static uint8_t endp1_rx_buf[64]; /* Only support single CCID interface.  */
+#endif
 
 static void
 ccid_prepare_receive (struct ccid *c)
@@ -619,17 +649,25 @@ ccid_prepare_receive (struct ccid *c)
   c->epo->cnt = 0;
   c->epo->next_buf = ccid_abdata;
   c->epo->end_rx = end_ccid_rx;
+#ifdef GNU_LINUX_EMULATION
+  usb_lld_rx_enable_buf (c->epo->ep_num, endp1_rx_buf, 64);
+#else
   usb_lld_rx_enable (c->epo->ep_num);
+#endif
   DEBUG_INFO ("Rx ready\r\n");
 }
 
 /*
  * Rx ready callback
  */
-
 static void
-EP1_OUT_Callback (uint16_t len)
+ccid_rx_ready (uint8_t ep_num, uint16_t len)
 {
+  /*
+   * If we support multiple CCID interfaces, we select endpoint object
+   * by EP_NUM.  Because it has only single CCID interface now, it's
+   * hard-coded, here.
+   */
   struct ep_out *epo = &endpoint_out;
   int offset = 0;
   int cont;
@@ -640,7 +678,11 @@ EP1_OUT_Callback (uint16_t len)
       break;
     else if (len <= epo->buf_len)
       {
-	usb_lld_rxcpy (epo->buf, epo->ep_num, offset, len);
+#ifdef GNU_LINUX_EMULATION
+	memcpy (epo->buf, endp1_rx_buf + offset, len);
+#else
+	usb_lld_rxcpy (epo->buf, ep_num, offset, len);
+#endif
 	epo->buf += len;
 	epo->cnt += len;
 	epo->buf_len -= len;
@@ -648,7 +690,11 @@ EP1_OUT_Callback (uint16_t len)
       }
     else /* len > buf_len */
       {
-	usb_lld_rxcpy (epo->buf, epo->ep_num, offset, epo->buf_len);
+#ifdef GNU_LINUX_EMULATION
+	memcpy (epo->buf, endp1_rx_buf + offset, epo->buf_len);
+#else
+	usb_lld_rxcpy (epo->buf, ep_num, offset, epo->buf_len);
+#endif
 	len -= epo->buf_len;
 	offset += epo->buf_len;
 	epo->next_buf (epo, len); /* Update epo->buf, cnt, buf_len */
@@ -661,7 +707,11 @@ EP1_OUT_Callback (uint16_t len)
   cont = epo->end_rx (epo, orig_len);
 
   if (cont)
-    usb_lld_rx_enable (epo->ep_num);
+#ifdef GNU_LINUX_EMULATION
+    usb_lld_rx_enable_buf (ep_num, endp1_rx_buf, 64);
+#else
+    usb_lld_rx_enable (ep_num);
+#endif
   else
     notify_icc (epo);
 }
@@ -669,16 +719,24 @@ EP1_OUT_Callback (uint16_t len)
 
 extern void EP6_IN_Callback (uint16_t len);
 
+#if defined(DEBUG) && defined(GNU_LINUX_EMULATION)
+static uint8_t endp5_buf[VIRTUAL_COM_PORT_DATA_SIZE];
+#endif
+
 static void
 usb_rx_ready (uint8_t ep_num, uint16_t len)
 {
   if (ep_num == ENDP1)
-    EP1_OUT_Callback (len);
+    ccid_rx_ready (ep_num, len);
 #ifdef DEBUG
   else if (ep_num == ENDP5)
     {
       chopstx_mutex_lock (&stdout.m_dev);
+#ifdef GNU_LINUX_EMULATION
+      usb_lld_rx_enable (ep_num, endp5_buf, VIRTUAL_COM_PORT_DATA_SIZE);
+#else
       usb_lld_rx_enable (ep_num);
+#endif
       chopstx_mutex_unlock (&stdout.m_dev);
     }
 #endif
@@ -688,7 +746,7 @@ static void
 usb_tx_done (uint8_t ep_num, uint16_t len)
 {
   if (ep_num == ENDP1)
-    EP1_IN_Callback (len);
+    ccid_tx_done (ep_num, len);
   else if (ep_num == ENDP2)
     {
       /* INTERRUPT Transfer done */
@@ -756,14 +814,21 @@ static void ccid_error (struct ccid *c, int offset)
   /* This is a single packet Bulk-IN transaction */
   c->epi->buf = NULL;
   c->epi->tx_done = 1;
+#ifdef GNU_LINUX_EMULATION
+  memcpy (endp1_tx_buf, ccid_reply, CCID_MSG_HEADER_SIZE);
+  usb_lld_tx_enable_buf (c->epi->ep_num, endp1_tx_buf, CCID_MSG_HEADER_SIZE);
+#else
   usb_lld_write (c->epi->ep_num, ccid_reply, CCID_MSG_HEADER_SIZE);
+#endif
 }
 
 extern void *openpgp_card_thread (void *arg);
 
-extern uint8_t __process3_stack_base__[], __process3_stack_size__[];
-#define STACK_ADDR_GPG ((uint32_t)__process3_stack_base__)
-#define STACK_SIZE_GPG ((uint32_t)__process3_stack_size__)
+#define STACK_PROCESS_3
+#include "stack-def.h"
+#define STACK_ADDR_GPG ((uintptr_t)process3_base)
+#define STACK_SIZE_GPG (sizeof process3_base)
+
 #define PRIO_GPG 1
 
 
@@ -793,9 +858,14 @@ ccid_power_on (struct ccid *c)
   p[CCID_MSG_ERROR_OFFSET] = 0x00;
   p[CCID_MSG_CHAIN_OFFSET] = 0x00;
 
+#ifdef GNU_LINUX_EMULATION
+  memcpy (endp1_tx_buf, p, CCID_MSG_HEADER_SIZE);
+  memcpy (endp1_tx_buf+CCID_MSG_HEADER_SIZE, ATR_head, sizeof (ATR_head));
+#else
   usb_lld_txcpy (p, c->epi->ep_num, 0, CCID_MSG_HEADER_SIZE);
   usb_lld_txcpy (ATR_head, c->epi->ep_num, CCID_MSG_HEADER_SIZE,
 		 sizeof (ATR_head));
+#endif
   for (i = 1; i < (int)sizeof (ATR_head); i++)
     xor_check ^= ATR_head[i];
   memcpy (p, historical_bytes + 1, hist_len);
@@ -806,13 +876,22 @@ ccid_power_on (struct ccid *c)
   for (i = 0; i < hist_len; i++)
     xor_check ^= p[i];
   p[i] = xor_check;
+#ifdef GNU_LINUX_EMULATION
+  memcpy (endp1_tx_buf+CCID_MSG_HEADER_SIZE+sizeof (ATR_head), p, hist_len+1);
+#else
   usb_lld_txcpy (p, c->epi->ep_num, CCID_MSG_HEADER_SIZE + sizeof (ATR_head),
 		 hist_len+1);
+#endif
 
   /* This is a single packet Bulk-IN transaction */
   c->epi->buf = NULL;
   c->epi->tx_done = 1;
+#ifdef GNU_LINUX_EMULATION
+  usb_lld_tx_enable_buf (c->epi->ep_num, endp1_tx_buf,
+			 CCID_MSG_HEADER_SIZE + size_atr);
+#else
   usb_lld_tx_enable (c->epi->ep_num, CCID_MSG_HEADER_SIZE + size_atr);
+#endif
   DEBUG_INFO ("ON\r\n");
 
   return CCID_STATE_WAIT;
@@ -843,7 +922,13 @@ ccid_send_status (struct ccid *c)
   /* This is a single packet Bulk-IN transaction */
   c->epi->buf = NULL;
   c->epi->tx_done = 1;
+
+#ifdef GNU_LINUX_EMULATION
+  memcpy (endp1_tx_buf, ccid_reply, CCID_MSG_HEADER_SIZE);
+  usb_lld_tx_enable_buf (c->epi->ep_num, endp1_tx_buf, CCID_MSG_HEADER_SIZE);
+#else
   usb_lld_write (c->epi->ep_num, ccid_reply, CCID_MSG_HEADER_SIZE);
+#endif
 
 //  led_blink (LED_SHOW_STATUS); //blinks regularly after running gpg2 command
 #ifdef DEBUG_MORE
@@ -890,19 +975,35 @@ ccid_send_data_block_internal (struct ccid *c, uint8_t status, uint8_t error)
   p[CCID_MSG_ERROR_OFFSET] = error;
   p[CCID_MSG_CHAIN_OFFSET] = 0;
 
+#ifdef GNU_LINUX_EMULATION
+  memcpy (endp1_tx_buf, p, CCID_MSG_HEADER_SIZE);
+#else
   usb_lld_txcpy (p, c->epi->ep_num, 0, CCID_MSG_HEADER_SIZE);
+#endif
   if (len == 0)
     {
+#ifdef GNU_LINUX_EMULATION
+      usb_lld_tx_enable_buf (c->epi->ep_num, endp1_tx_buf,
+			     CCID_MSG_HEADER_SIZE);
+#else
       usb_lld_tx_enable (c->epi->ep_num, CCID_MSG_HEADER_SIZE);
+#endif
       return;
     }
 
   if (CCID_MSG_HEADER_SIZE + len <= USB_LL_BUF_SIZE)
     {
+#ifdef GNU_LINUX_EMULATION
+      memcpy (endp1_tx_buf+CCID_MSG_HEADER_SIZE,
+	      c->a->res_apdu_data, c->a->res_apdu_data_len);
+      memcpy (endp1_tx_buf+CCID_MSG_HEADER_SIZE+c->a->res_apdu_data_len,
+	      c->sw1sw2, 2);
+#else
       usb_lld_txcpy (c->a->res_apdu_data, c->epi->ep_num,
 		     CCID_MSG_HEADER_SIZE, c->a->res_apdu_data_len);
       usb_lld_txcpy (c->sw1sw2, c->epi->ep_num,
 		     CCID_MSG_HEADER_SIZE + c->a->res_apdu_data_len, 2);
+#endif
       c->epi->buf = NULL;
       if (CCID_MSG_HEADER_SIZE + len < USB_LL_BUF_SIZE)
 	c->epi->tx_done = 1;
@@ -910,10 +1011,17 @@ ccid_send_data_block_internal (struct ccid *c, uint8_t status, uint8_t error)
     }
   else if (CCID_MSG_HEADER_SIZE + len - 1 == USB_LL_BUF_SIZE)
     {
+#ifdef GNU_LINUX_EMULATION
+      memcpy (endp1_tx_buf+CCID_MSG_HEADER_SIZE,
+	      c->a->res_apdu_data, c->a->res_apdu_data_len);
+      memcpy (endp1_tx_buf+CCID_MSG_HEADER_SIZE+c->a->res_apdu_data_len,
+	      c->sw1sw2, 1);
+#else
       usb_lld_txcpy (c->a->res_apdu_data, c->epi->ep_num,
 		     CCID_MSG_HEADER_SIZE, c->a->res_apdu_data_len);
       usb_lld_txcpy (c->sw1sw2, c->epi->ep_num,
 		     CCID_MSG_HEADER_SIZE + c->a->res_apdu_data_len, 1);
+#endif
       c->epi->buf = &c->sw1sw2[1];
       c->epi->cnt = 1;
       c->epi->buf_len = 1;
@@ -921,8 +1029,13 @@ ccid_send_data_block_internal (struct ccid *c, uint8_t status, uint8_t error)
     }
   else if (CCID_MSG_HEADER_SIZE + len - 2 == USB_LL_BUF_SIZE)
     {
+#ifdef GNU_LINUX_EMULATION
+      memcpy (endp1_tx_buf+CCID_MSG_HEADER_SIZE,
+	      c->a->res_apdu_data, c->a->res_apdu_data_len);
+#else
       usb_lld_txcpy (c->a->res_apdu_data, c->epi->ep_num,
 		     CCID_MSG_HEADER_SIZE, c->a->res_apdu_data_len);
+#endif
       c->epi->buf = &c->sw1sw2[0];
       c->epi->cnt = 0;
       c->epi->buf_len = 2;
@@ -930,8 +1043,13 @@ ccid_send_data_block_internal (struct ccid *c, uint8_t status, uint8_t error)
     }
   else
     {
+#ifdef GNU_LINUX_EMULATION
+      memcpy (endp1_tx_buf+CCID_MSG_HEADER_SIZE,
+	      c->a->res_apdu_data, USB_LL_BUF_SIZE - CCID_MSG_HEADER_SIZE);
+#else
       usb_lld_txcpy (c->a->res_apdu_data, c->epi->ep_num, CCID_MSG_HEADER_SIZE,
 		     USB_LL_BUF_SIZE - CCID_MSG_HEADER_SIZE);
+#endif
       c->epi->buf = c->a->res_apdu_data + USB_LL_BUF_SIZE - CCID_MSG_HEADER_SIZE;
       c->epi->cnt = USB_LL_BUF_SIZE - CCID_MSG_HEADER_SIZE;
       c->epi->buf_len = c->a->res_apdu_data_len
@@ -939,7 +1057,11 @@ ccid_send_data_block_internal (struct ccid *c, uint8_t status, uint8_t error)
       c->epi->next_buf = get_sw1sw2;
     }
 
+#ifdef GNU_LINUX_EMULATION
+  usb_lld_tx_enable_buf (c->epi->ep_num, endp1_tx_buf, tx_size);
+#else
   usb_lld_tx_enable (c->epi->ep_num, tx_size);
+#endif
 #ifdef DEBUG_MORE
   DEBUG_INFO ("DATA\r\n");
 #endif
@@ -976,11 +1098,20 @@ ccid_send_data_block_0x9000 (struct ccid *c)
   p[CCID_MSG_CHAIN_OFFSET+1] = 0x90;
   p[CCID_MSG_CHAIN_OFFSET+2] = 0x00;
 
+#ifdef GNU_LINUX_EMULATION
+  memcpy (endp1_tx_buf, p, CCID_MSG_HEADER_SIZE + len);
+#else
   usb_lld_txcpy (p, c->epi->ep_num, 0, CCID_MSG_HEADER_SIZE + len);
+#endif
   c->epi->buf = NULL;
   c->epi->tx_done = 1;
 
+#ifdef GNU_LINUX_EMULATION
+  usb_lld_tx_enable_buf (c->epi->ep_num, endp1_tx_buf,
+			 CCID_MSG_HEADER_SIZE + len);
+#else
   usb_lld_tx_enable (c->epi->ep_num, CCID_MSG_HEADER_SIZE + len);
+#endif
 #ifdef DEBUG_MORE
   DEBUG_INFO ("DATA\r\n");
 #endif
@@ -1007,7 +1138,11 @@ ccid_send_data_block_gr (struct ccid *c, size_t chunk_len)
   p[CCID_MSG_ERROR_OFFSET] = 0;
   p[CCID_MSG_CHAIN_OFFSET] = 0;
 
+#ifdef GNU_LINUX_EMULATION
+  memcpy (endp1_tx_buf, p, CCID_MSG_HEADER_SIZE);
+#else
   usb_lld_txcpy (p, c->epi->ep_num, 0, CCID_MSG_HEADER_SIZE);
+#endif
 
   set_sw1sw2 (c, chunk_len);
 
@@ -1022,10 +1157,19 @@ ccid_send_data_block_gr (struct ccid *c, size_t chunk_len)
       else
 	size_for_sw = 0;
 
+#ifdef GNU_LINUX_EMULATION
+      memcpy (endp1_tx_buf+CCID_MSG_HEADER_SIZE, c->p, chunk_len);
+#else
       usb_lld_txcpy (c->p, c->epi->ep_num, CCID_MSG_HEADER_SIZE, chunk_len);
+#endif
       if (size_for_sw)
+#ifdef GNU_LINUX_EMULATION
+	memcpy (endp1_tx_buf+CCID_MSG_HEADER_SIZE+chunk_len,
+		c->sw1sw2, size_for_sw);
+#else
 	usb_lld_txcpy (c->sw1sw2, c->epi->ep_num,
 		       CCID_MSG_HEADER_SIZE + chunk_len, size_for_sw);
+#endif
       tx_size = CCID_MSG_HEADER_SIZE + chunk_len + size_for_sw;
       if (size_for_sw == 2)
 	{
@@ -1044,8 +1188,13 @@ ccid_send_data_block_gr (struct ccid *c, size_t chunk_len)
     }
   else
     {
+#ifdef GNU_LINUX_EMULATION
+      memcpy (endp1_tx_buf+CCID_MSG_HEADER_SIZE,
+	      c->p, USB_LL_BUF_SIZE - CCID_MSG_HEADER_SIZE);
+#else
       usb_lld_txcpy (c->p, c->epi->ep_num, CCID_MSG_HEADER_SIZE,
 		     USB_LL_BUF_SIZE - CCID_MSG_HEADER_SIZE);
+#endif
       c->epi->buf = c->p + USB_LL_BUF_SIZE - CCID_MSG_HEADER_SIZE;
       c->epi->cnt = 0;
       c->epi->buf_len = chunk_len - (USB_LL_BUF_SIZE - CCID_MSG_HEADER_SIZE);
@@ -1054,7 +1203,11 @@ ccid_send_data_block_gr (struct ccid *c, size_t chunk_len)
 
   c->p += chunk_len;
   c->len -= chunk_len;
+#ifdef GNU_LINUX_EMULATION
+  usb_lld_tx_enable_buf (c->epi->ep_num, endp1_tx_buf, tx_size);
+#else
   usb_lld_tx_enable (c->epi->ep_num, tx_size);
+#endif
 #ifdef DEBUG_MORE
   DEBUG_INFO ("DATA\r\n");
 #endif
@@ -1086,13 +1239,23 @@ ccid_send_params (struct ccid *c)
   p[CCID_MSG_ERROR_OFFSET] = 0;
   p[CCID_MSG_CHAIN_OFFSET] = 0x01;  /* ProtocolNum: T=1 */
 
+#ifdef GNU_LINUX_EMULATION
+  memcpy (endp1_tx_buf, p, CCID_MSG_HEADER_SIZE);
+  memcpy (endp1_tx_buf+CCID_MSG_HEADER_SIZE, params, sizeof params);
+#else
   usb_lld_txcpy (p, c->epi->ep_num, 0, CCID_MSG_HEADER_SIZE);
   usb_lld_txcpy (params, c->epi->ep_num, CCID_MSG_HEADER_SIZE, sizeof params);
+#endif
 
   /* This is a single packet Bulk-IN transaction */
   c->epi->buf = NULL;
   c->epi->tx_done = 1;
+#ifdef GNU_LINUX_EMULATION
+  usb_lld_tx_enable_buf (c->epi->ep_num, endp1_tx_buf,
+			 CCID_MSG_HEADER_SIZE + sizeof params);
+#else
   usb_lld_tx_enable (c->epi->ep_num, CCID_MSG_HEADER_SIZE + sizeof params);
+#endif
 #ifdef DEBUG_MORE
   DEBUG_INFO ("PARAMS\r\n");
 #endif
@@ -1359,6 +1522,9 @@ ccid_usb_reset (int full)
 		    full ? EV_USB_DEVICE_RESET : EV_USB_SET_INTERFACE);
 }
 
+#ifdef GNU_LINUX_EMULATION
+static uint8_t endp2_tx_buf[2];
+#endif
 
 #define NOTIFY_SLOT_CHANGE 0x50
 static void
@@ -1374,7 +1540,12 @@ ccid_notify_slot_change (struct ccid *c)
 
   notification[0] = NOTIFY_SLOT_CHANGE;
   notification[1] = msg;
+#ifdef GNU_LINUX_EMULATION
+  memcpy (endp2_tx_buf, notification, sizeof notification);
+  usb_lld_tx_enable_buf (ENDP2, endp2_tx_buf, sizeof notification);
+#else
   usb_lld_write (ENDP2, notification, sizeof notification);
+#endif
   led_blink (LED_TWOSHOTS);
 }
 
@@ -1384,7 +1555,12 @@ ccid_notify_slot_change (struct ccid *c)
 #define GPG_THREAD_TERMINATED 0xffff
 
 
+#ifdef GNU_LINUX_EMULATION
+#include <signal.h>
+#define INTR_REQ_USB SIGUSR1
+#else
 #define INTR_REQ_USB 20
+#endif
 
 extern uint32_t bDeviceState;
 extern void usb_device_reset (struct usb_dev *dev);
@@ -1687,7 +1863,11 @@ _write (const char *s, int len)
 	(len < VIRTUAL_COM_PORT_DATA_SIZE) ? len : VIRTUAL_COM_PORT_DATA_SIZE;
 
       chopstx_mutex_lock (&stdout.m_dev);
+#ifdef GNU_LINUX_EMULATION
+      usb_lld_tx_enable_buf (ENDP3, s, packet_len);
+#else
       usb_lld_write (ENDP3, s, packet_len);
+#endif
       chopstx_cond_wait (&stdout.cond_dev, &stdout.m_dev);
       chopstx_mutex_unlock (&stdout.m_dev);
 

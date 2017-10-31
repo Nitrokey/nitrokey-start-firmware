@@ -5,10 +5,7 @@ PROJECT = gnuk
 
 CHOPSTX = ../chopstx
 
-# Define linker script file here
-LDSCRIPT= gnuk.ld
-
-CSRC = main.c call-rsa.c mcu-stm32f103.c \
+CSRC = main.c call-rsa.c \
 	usb_desc.c usb_ctrl.c \
 	usb-ccid.c openpgp.c ac.c openpgp-do.c flash.c \
 	bn.c mod.c \
@@ -27,11 +24,18 @@ CRYPTSRC = $(CRYPTSRCDIR)/bignum.c $(CRYPTSRCDIR)/rsa.c $(CRYPTSRCDIR)/aes.c
 CSRC += $(CRYPTSRC)
 INCDIR += $(CRYPTINCDIR)
 
-@PINPAD_MAKE_OPTION@
-@DEBUG_MAKE_OPTION@
-@HEXOUTPUT_MAKE_OPTION@
+include config.mk
 
+USE_SYS = yes
+USE_USB = yes
+USE_ADC = yes
 USE_EVENTFLAG = yes
+
+ifeq ($(EMULATION),)
+DEFS += -DFLASH_UPGRADE_SUPPORT
+else
+DEFS += -DBN256_C_IMPLEMENTATION
+endif
 
 ifneq ($(ENABLE_DEBUG),)
 CSRC += debug.c
@@ -45,23 +49,17 @@ ifeq ($(ENABLE_PINPAD),dnd)
 CSRC += usb-msc.c
 endif
 
-CHIP=stm32f103
-USE_SYS = yes
-USE_USB = yes
-USE_ADC = yes
+ifeq ($(CHIP),stm32f103)
+CSRC += mcu-stm32f103.c 
+endif
 
 ###################################
-CROSS = arm-none-eabi-
 CC   = $(CROSS)gcc
 LD   = $(CROSS)gcc
 OBJCOPY   = $(CROSS)objcopy
 
-MCU   = cortex-m3
 CWARN = -Wall -Wextra -Wstrict-prototypes
-# DEFS: Add  
-DEFS  = @USE_SYS3@
 OPT   = -O3 -Os -g
-LIBS  =
 
 #######################
 include $(CHOPSTX)/rules.mk
@@ -75,5 +73,18 @@ sys.c: board.h
 build/bignum.o: OPT = -O3 -g
 
 distclean: clean
-	-rm -f gnuk.ld config.h board.h Makefile \
+	-rm -f gnuk.ld config.h board.h config.mk \
 	       usb-strings.c.inc usb-vid-pid-ver.c.inc
+
+ifneq ($(EMULATION),)
+# By specifying DESTDIR on invocation of "make", you can install
+# program to different ROOT.
+
+# The variables prefix, exec_prefix, libexecdir are defined in
+# config.mk.
+
+install: build/gnuk
+	test -d "$(DESTDIR)$(libexecdir)" || mkdir -p "$(DESTDIR)$(libexecdir)"
+	install -c build/gnuk "$(DESTDIR)$(libexecdir)"
+
+endif

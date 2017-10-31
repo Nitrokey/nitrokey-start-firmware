@@ -32,7 +32,6 @@
 
 #include <string.h>
 #include <stdint.h>
-#include <stdlib.h>
 #include "sha512.h"
 
 #define SHA512_MASK (SHA512_BLOCK_SIZE - 1)

@@ -1,7 +1,7 @@
 /*
  * regnual.c -- Firmware installation for STM32F103 Flash ROM
  *
- * Copyright (C) 2012, 2013, 2015, 2016
+ * Copyright (C) 2012, 2013, 2015, 2016, 2017
  *               Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
@@ -365,7 +365,11 @@ main (int argc, char *argv[])
 
   set_led (0);
 
+#if defined(STM32F103_OVERRIDE_FLASH_SIZE_KB)
+  flash_end = FLASH_START_ADDR + STM32F103_OVERRIDE_FLASH_SIZE_KB*1024;
+#else
   flash_end = FLASH_START_ADDR + (*FLASH_SIZE_REG)*1024;
+#endif
 
   /*
    * NVIC interrupt priority was set by Gnuk.

@@ -1,3 +1,307 @@
+2017-10-31  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/openpgp-do.c (gpg_do_keygen): Bug fix for memory alignment.
+
+2017-10-24  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* tests/card_reader.py (CardReader.ccid_power_on): Setting
+	PPS only for Gemalto GemPC reader.
+
+2017-10-18 Aurelien Jarno <aurelien@aurel32.net>
+
+	* src/gnuk.ld.in: Fix keystore_pool size.
+
+2017-10-12  Aurelien Jarno <aurelien@aurel32.net>
+
+	* polarssl/include/polarssl/bn_mul.h (MULADDC_HUIT_DEAD): Rename
+	from MULADDC_HUIT.
+	[__ARM_FEATURE_DSP] (MULADDC_1024_CORE, MULADDC_1024_LOOP)
+	(MULADDC_INIT, MULADDC_CORE, MULADDC_HUIT, MULADDC_STOP): New.
+
+	* polarssl/library/bignum.c (mpi_montsqr): Check on
+	POLARSSL_HAVE_ASM and __arm__.
+	[__ARM_FEATURE_DSP] (mpi_montsqr): New.
+	(MAX_WSIZE): New.
+	(mpi_exp_mod): Use MAX_WSIZE.
+
+	* src/Makefile (DEFS): Remove BIGNUM_C_IMPLEMENTATION.
+
+	* src/main.c (HEAP_SIZE): Rename from MEMORY_SIZE.
+	(HEAP_END, HEAP_ALIGNMENT, HEAP_ALIGN): Likewise.
+
+	* src/stack-def.h (SIZE_3): Depend on MEMORY_SIZE.
+	* src/configure: Emit DEFS with MEMORY_SIZE.
+
+2017-10-11  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* VERSION: 1.2.6.
+
+	* regnual/Makefile (LDSCRIPT): Move after include.
+	* regnual/types.h: Add uintptr_t.
+
+	* test/features/002_get_data_static.feature (data object AID): Fix
+	for any binary value.
+	* 402_get_data_static.feature: Likewise.
+	* 802_get_data_static.feature: Likewise.
+
+2017-10-10  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/main.c (main): Support --debug option.
+	* chopstx: Update to 1.5.
+
+2017-10-06  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/configure (flash_override): Fix suggested by Jeremy Drake.
+	(help): STM8S_DISCOVERY is supported again.
+
+2017-10-06  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/gnuk.ld.in (.stacks): Specify NOLOAD type.
+
+	* src/configure: Allow not specifying VIDPID.
+
+	* src/main.c [GNU_LINUX_EMULATION] (main): Handle "--vidpid"
+	option to assign vendor ID and product ID of USB.
+
+	* src/usb_desc.c [GNU_LINUX_EMULATION] (device_desc): Export.
+
+	* GNUK_USB_DEVICE_ID (0000:0000): New.
+
+2017-10-05  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/stack-def.h (SIZE_1, SIZE_3): Tweak the size.
+
+	* src/call-rsa.c (rsa_genkey): Single step.
+	* src/openpgp-do.c (gpg_do_keygen): Do RSA key generation in single
+	step, using APDU buffer.
+	* src/openpgp.c (cmd_pgp_gakp): Supply the APDU as a buffer.
+
+	* src/Makefile (install): New target.
+
+	* src/configure (prefix. exec_prefix, libexecdir): Add.
+
+	* src/main.c [GNU_LINUX_EMULATION] (main): Option handling.
+
+	* tool/gnuk-emulation-setup: New.
+
+	* polarssl/library/bignum.c (M_LIMBS, limbs_M, MAX_A_LIMBS)
+	(limbs_MAX_A, mpi_gen_prime): Fix for 64-bit machine.
+
+2017-10-04  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/configure (output_vendor_product_serial_strings): Support
+	GNU/Linux emulation.
+
+	* polarssl/library/bignum.c (mpi_div_mpi): Fix for 64-bit machine.
+
+	* src/main.c (gnuk_malloc, gnuk_free): Fix for 64-bit machine.
+
+	* src/stack-def.h (SIZE_3): Tweak the size.
+
+	* src/openpgp-do.c (gpg_do_keygen): Do RSA key generation in two
+	steps.
+
+	* src/call-rsa.c (rsa_genkey_start, rsa_genkey_finish): New.
+	(rsa_genkey): Remove.
+
+2017-10-03  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/call-ec.c (ecc_compute_public): No use of malloc.
+	* src/call-rsa.c (modulus_calc, rsa_genkey): Likewise.
+	* src/ecc-edwards.c (eddsa_compute_public_25519): Likewise.
+	* src/ecc-mont.c (ecdh_compute_public_25519): Likewise.
+	* src/openpgp-do.c (gpg_do_write_prvkey, gpg_do_chks_prvkey)
+	(proc_key_import, gpg_do_keygen): Likewise.
+
+	* polarssl/library/rsa.c: Don't include stdlib.h.
+	* src/gnuk-malloc.h: Rename from stdlib.h.
+	* polarssl/library/bignum.c: Include gnuk-malloc.h.
+
+	* src/Makefile (build/flash.data): Generate.
+
+	* src/main.c (flash_addr_key_storage_start)
+	(flash_addr_data_storage_start): New.
+	(main): Determine flash address.
+
+	* src/flash.c (FLASH_ADDR_KEY_STORAGE_START)
+	(FLASH_ADDR_DATA_STORAGE_START): New.
+	(flash_do_storage_init, flash_terminate, flash_activate)
+	(flash_key_storage_init, flash_copying_gc, flash_do_release)
+	(flash_key_getpage): Use new macros.
+
+2017-10-02  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/main.c (device_initialize_once): Not for GNU/Linux.
+
+	* src/openpgp.c, src/flash.c: Distinguish FLASH_UPGRADE_SUPPORT.
+
+	* src/main.c [GNU_LINUX_EMULATION]: Use emulated_main.
+	(MEMORY_SIZE, MEMORY_END): Fix for GNU/Linux.
+
+	* src/usb-ccid.c (INTR_REQ_USB): Fix for GNU/Linux.
+
+	* polarssl/library/bignum.c (mpi_montsqr): Easy C implementation.
+
+2017-09-30  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/flash.c (flash_terminate, flash_activate)
+	(flash_copying_gc, flash_do_write_internal, flash_do_release)
+	(flash_key_write, flash_check_all_other_keys_released)
+	(flash_key_fill_zero_as_released, flash_key_release)
+	(flash_key_release_page, flash_clear_halfword)
+	(flash_put_data_internal, flash_put_data, flash_bool_clear)
+	(flash_bool_write_internal, flash_bool_write)
+	(flash_enum_write_internal, flash_enum_write)
+	(flash_cnt123_write_internal, flash_cnt123_increment)
+	(flash_cnt123_clear, flash_erase_binary, flash_write_binary): Fix
+	for GNU/Linux.
+
+	* src/usb-ccid.c (ccid_tx_done): Rename from EP1_IN_Callback.
+	(ccid_rx_ready): Rename from EP1_OUT_Callback.
+
+2017-09-29  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/usb-ccid.c (epo_init, epi_init, ccid_thread): Simplify.
+	(EP1_IN_Callback, ccid_prepare_receive, EP1_OUT_Callback)
+	(usb_rx_ready, ccid_error, ccid_power_on, ccid_send_status)
+	(ccid_send_data_block_internal, ccid_send_data_block_0x9000)
+	(ccid_send_data_block_gr, ccid_send_params)
+	(ccid_notify_slot_change, _write) [GNU_LINUX_EMULATION]: Use
+	different usb driver API.
+
+	* src/usb_ctrl.c (usb_device_reset): Fix control endpoint init.
+	(gnuk_setup_endpoints_for_interface): Add DEV
+	argument.
+	(usb_device_reset) [GNU_LINUX_EMULATION]: Use usb_lld_setup_endp.
+
+2017-09-29  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/main.c [FLASH_UPGRADE_SUPPORT] (main): Factor out flash ROM
+	upgrade support.
+	(calculate_regnual_entry_address): Likewise.
+	* src/usb_ctrl.c (usb_setup, download_check_crc32): Likewise.
+
+	* src/openpgp.c (modify_binary): Fix for 64-bit machine.
+	* src/openpgp-do.c (encrypt, decrypt): Likewise.
+	(gpg_data_scan): Likewise.
+	(gpg_do_chks_prvkey): Fix error return path.
+
+	* src/stack-def.h: New.
+
+	* src/gnuk.ld.in: Remove stack definitions.
+	* src/configure: Remove stack size modifications.
+
+	* src/main.c (STACK_MAIN, STACK_PROCESS_1): Use stack-def.h.
+	* src/usb-ccid.c (STACK_PROCESS_3): Likewise.
+	* src/usb-msc.c (STACK_PROCESS_5): Likewise.
+	* src/pin-cir.c (STACK_PROCESS_6, STACK_PROCESS_7): Likewise.
+
+	* src/usb_ctrl.c (download_check_crc32): Use chrc32_rv_ functions.
+
+	* src/mcu-stm32f103.c (rbit, check_crc32): Remove.
+
+	* src/neug.c: Update from NeuG.
+	* src/neug.h: Ditto.
+
+2017-09-28  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/ec_p256k1.c (coefficient_a): Remove.
+
+	* polarssl/library/bignum.c (mpi_fill_pseudo_random): Fix for
+	64-bit machine.
+
+	* src/call-rsa.c (rsa_decrypt): Fix for 64-bit machine.
+
+	* src/flash.c (flash_do_storage_init): Rename from flash_init.
+	(flash_key_storage_init): Rename from flash_init_keys.
+	* src/openpgp.c (gpg_init): Use new function names.
+
+	* src/stdlib.h: Update for GNU/Linux emulation.
+
+	* src/Makefile: Support GNU/Linux emulation.
+	* src/configure: Support GNU/Linux emulation.
+	* emulation: Remove.
+
+2017-08-11  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* VERSION: 1.2.5.
+	* chopstx: Update to 1.4.
+
+	* src/gnuk.ld.in (__process3_stack_size__): Tweak the size.
+
+	* src/configure: Define STM32F103_OVERRIDE_FLASH_SIZE_KB for
+	BULE_PILL.
+
+	* src/configure: Let generate src/config.mk.
+	* src/Makefile: Rename from src/Makefile.in.
+	* regnual/Makefile: Use src/config.mk.
+
+2017-08-03  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/openpgp.c (cmd_terminate_df): Fix for admin-less mode.
+
+2017-08-03  Jeremy Drake <jeremydrake+gnuk@eacceleration.com>
+
+	* regnual/regnual.c (main): Allow compile time
+	flash size definition by STM32F103_OVERRIDE_FLASH_SIZE_KB.
+
+2017-08-02  Jeremy Drake  <jeremydrake+gnuk@eacceleration.com>
+
+	* src/flash.c (flash_terminate): Erase Certificate DO, too.
+
+2017-08-01  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/openpgp.c (FILE_CARD_TERMINATED_OPENPGP): Remove.
+	(cmd_select_file): Don't change file_selection.
+
+2017-07-19  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/mod.c (mod_inv): Clear TMP.
+
+	* src/configure (REVISION): Generate even when no git.
+
+	* polarssl/library/bignum.c (mpi_exp_mod): Call mpi_grow for X
+	after the initialization of RR.
+
+2017-07-18  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/configure: Bark when no git available.
+
+2017-07-18  Anthony Romano <anthony.romano@coreos.com>
+
+	* docker: New.
+
+2017-07-18  Anthony Romano <anthony.romano@coreos.com>
+
+	* src/main.c (MEMORY_SIZE, MEM_HEAD_IS_CORRUPT, MEM_HEAD_CHECK):
+	New.
+	(gnuk_malloc, gnuk_free): Add calls to MEM_HEAD_CHECK.
+
+	* src/gnuk.h (FATAL_HEAP): New.
+
+2017-07-18  Anthony Romano <anthony.romano@coreos.com>
+
+	* src/openpgp-do.c (gpg_reset_algo_attr): New.
+	(rw_algorithm_attr): Use gpg_reset_algo_attr.
+	Fix null dereference.
+
+2017-07-18  Anthony Romano <anthony.romano@coreos.com>
+
+	* src/mod.c (mod_reduce): Clean up unused code.
+
+2017-07-18  Anthony Romano <anthony.romano@coreos.com>
+
+	* src/call-rsa.c (modulus_calc): Free modulus on error.
+	(rsa_genkey): Remove bogus check, and call chopstx_cleanup_pop
+	with 1 to release p_q_modulus on error.  Assign NULL to clp.arg
+	when it's goes with no error.
+
+	* src/main.c (gnuk_free): Allow NULL.
+
+2017-07-18  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* Update chopstx (with USBIP emulation).
+
 2017-05-12  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* VERSION: 1.2.4.

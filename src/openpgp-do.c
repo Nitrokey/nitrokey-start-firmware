@@ -24,7 +24,6 @@
 
 #include <stdint.h>
 #include <string.h>
-#include <stdlib.h>
 
 #include "config.h"
 
@@ -40,7 +39,7 @@
 #define CLEAN_PAGE_FULL 1
 #define CLEAN_SINGLE    0
 static void gpg_do_delete_prvkey (enum kind_of_key kk, int clean_page_full);
-
+static void gpg_reset_digital_signature_counter (void);
 
 #define PASSWORD_ERRORS_MAX 3	/* >= errors, it will be locked */
 static const uint8_t *pw_err_counter_p[3];
@@ -248,6 +247,28 @@ gpg_get_algo_attr (enum kind_of_key kk)
     return ALGO_RSA2K;
 
   return algo_attr_p[1];
+}
+
+static void
+gpg_reset_algo_attr (enum kind_of_key kk)
+{
+  gpg_do_delete_prvkey (kk, CLEAN_PAGE_FULL);
+  if (kk == GPG_KEY_FOR_SIGNING)
+    {
+      gpg_reset_digital_signature_counter ();
+      gpg_do_write_simple (NR_DO_FP_SIG, NULL, 0);
+      gpg_do_write_simple (NR_DO_KGTIME_SIG, NULL, 0);
+    }
+  else if (kk == GPG_KEY_FOR_DECRYPTION)
+    {
+      gpg_do_write_simple (NR_DO_FP_DEC, NULL, 0);
+      gpg_do_write_simple (NR_DO_KGTIME_DEC, NULL, 0);
+    }
+  else
+    {
+      gpg_do_write_simple (NR_DO_FP_AUT, NULL, 0);
+      gpg_do_write_simple (NR_DO_KGTIME_AUT, NULL, 0);
+    }
 }
 
 static const uint8_t *
@@ -749,47 +770,15 @@ rw_algorithm_attr (uint16_t tag, int with_tag,
 	return 0;		/* Error.  */
       else if (algo == ALGO_RSA2K && *algo_attr_pp != NULL)
 	{
-	  gpg_do_delete_prvkey (kk, CLEAN_PAGE_FULL);
+	  gpg_reset_algo_attr (kk);
 	  flash_enum_clear (algo_attr_pp);
-	  if (kk == GPG_KEY_FOR_SIGNING)
-	    {
-	      gpg_reset_digital_signature_counter ();
-	      gpg_do_write_simple (NR_DO_FP_SIG, NULL, 0);
-	      gpg_do_write_simple (NR_DO_KGTIME_SIG, NULL, 0);
-	    }
-	  else if (kk == GPG_KEY_FOR_DECRYPTION)
-	    {
-	      gpg_do_write_simple (NR_DO_FP_DEC, NULL, 0);
-	      gpg_do_write_simple (NR_DO_KGTIME_DEC, NULL, 0);
-	    }
-	  else
-	    {
-	      gpg_do_write_simple (NR_DO_FP_AUT, NULL, 0);
-	      gpg_do_write_simple (NR_DO_KGTIME_AUT, NULL, 0);
-	    }
 	  if (*algo_attr_pp != NULL)
 	    return 0;
 	}
-      else if ((algo != ALGO_RSA2K && *algo_attr_pp == NULL)
-	       || (*algo_attr_pp)[1] != algo)
+      else if ((algo != ALGO_RSA2K && *algo_attr_pp == NULL) ||
+               (*algo_attr_pp != NULL && (*algo_attr_pp)[1] != algo))
 	{
-	  gpg_do_delete_prvkey (kk, CLEAN_PAGE_FULL);
-	  if (kk == GPG_KEY_FOR_SIGNING)
-	    {
-	      gpg_reset_digital_signature_counter ();
-	      gpg_do_write_simple (NR_DO_FP_SIG, NULL, 0);
-	      gpg_do_write_simple (NR_DO_KGTIME_SIG, NULL, 0);
-	    }
-	  else if (kk == GPG_KEY_FOR_DECRYPTION)
-	    {
-	      gpg_do_write_simple (NR_DO_FP_DEC, NULL, 0);
-	      gpg_do_write_simple (NR_DO_KGTIME_DEC, NULL, 0);
-	    }
-	  else
-	    {
-	      gpg_do_write_simple (NR_DO_FP_AUT, NULL, 0);
-	      gpg_do_write_simple (NR_DO_KGTIME_AUT, NULL, 0);
-	    }
+	  gpg_reset_algo_attr (kk);
 	  *algo_attr_pp = flash_enum_write (kk_to_nr (kk), algo);
 	  if (*algo_attr_pp == NULL)
 	    return 0;
@@ -858,7 +847,7 @@ encrypt (const uint8_t *key, const uint8_t *iv, uint8_t *data, int len)
 {
   aes_context aes;
   uint8_t iv0[INITIAL_VECTOR_SIZE];
-  unsigned int iv_offset;
+  size_t iv_offset;
 
   DEBUG_INFO ("ENC\r\n");
   DEBUG_BINARY (data, len);
@@ -877,7 +866,7 @@ decrypt (const uint8_t *key, const uint8_t *iv, uint8_t *data, int len)
 {
   aes_context aes;
   uint8_t iv0[INITIAL_VECTOR_SIZE];
-  unsigned int iv_offset;
+  size_t iv_offset;
 
   aes_setkey_enc (&aes, key, 128); /* This is setkey_enc, because of CFB.  */
   memcpy (iv0, iv, INITIAL_VECTOR_SIZE);
@@ -1093,11 +1082,11 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data,
   int attr = gpg_get_algo_attr (kk);;
   const uint8_t *p;
   int r;
-  struct prvkey_data *pd;
+  struct prvkey_data prv;
+  struct prvkey_data *pd = &prv;
   uint8_t *key_addr;
   const uint8_t *dek, *iv;
   struct key_data_internal kdi;
-  uint8_t *pubkey_allocated_here = NULL;
   int pubkey_len;
   uint8_t ks[KEYSTRING_MD_SIZE];
   enum kind_of_key kk0;
@@ -1107,10 +1096,6 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data,
 
   /* Delete it first, if any.  */
   gpg_do_delete_prvkey (kk, CLEAN_SINGLE);
-
-  pd = (struct prvkey_data *)malloc (sizeof (struct prvkey_data));
-  if (pd == NULL)
-    return -1;
 
   if (attr == ALGO_NISTP256R1 || attr == ALGO_SECP256K1)
     {
@@ -1139,38 +1124,11 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data,
 	return -1;
     }
 
-  if (pubkey == NULL)
-    {
-      if (attr == ALGO_SECP256K1)
-	pubkey_allocated_here = ecc_compute_public_p256k1 (key_data);
-      else if (attr == ALGO_NISTP256R1)
-	pubkey_allocated_here = ecc_compute_public_p256r1 (key_data);
-      else if (attr == ALGO_ED25519)
-	pubkey_allocated_here = eddsa_compute_public_25519 (key_data);
-      else if (attr == ALGO_CURVE25519)
-	pubkey_allocated_here = ecdh_compute_public_25519 (key_data);
-      else				/* RSA */
-	pubkey_allocated_here = modulus_calc (key_data, prvkey_len);
-
-      if (pubkey_allocated_here == NULL)
-	{
-	  free (pd);
-	  return -1;
-	}
-    }
-
   DEBUG_INFO ("Getting keystore address...\r\n");
   key_addr = flash_key_alloc (kk);
   if (key_addr == NULL)
-    {
-      if (pubkey_allocated_here)
-	{
-	  memset (pubkey_allocated_here, 0, pubkey_len);
-	  free (pubkey_allocated_here);
-	}
-      free (pd);
-      return -1;
-    }
+    return -1;
+
   kd[kk].pubkey = key_addr + prvkey_len;
 
   num_prv_keys++;
@@ -1206,19 +1164,11 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data,
   encrypt (dek, iv, (uint8_t *)&kdi, kdi_len (prvkey_len));
 
   r = flash_key_write (key_addr, (const uint8_t *)kdi.data, prvkey_len,
-		       pubkey_allocated_here? pubkey_allocated_here: pubkey,
-		       pubkey_len);
-  if (pubkey_allocated_here)
-    {
-      memset (pubkey_allocated_here, 0, pubkey_len);
-      free (pubkey_allocated_here);
-    }
-
+		       pubkey, pubkey_len);
   if (r < 0)
     {
       random_bytes_free (dek);
       memset (pd, 0, sizeof (struct prvkey_data));
-      free (pd);
       return r;
     }
 
@@ -1240,7 +1190,6 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data,
 
   random_bytes_free (dek);
   memset (pd, 0, sizeof (struct prvkey_data));
-  free (pd);
   if (p == NULL)
     return -1;
 
@@ -1272,17 +1221,14 @@ gpg_do_chks_prvkey (enum kind_of_key kk,
   uint8_t nr = get_do_ptr_nr_for_kk (kk);
   const uint8_t *do_data = do_ptr[nr];
   uint8_t dek[DATA_ENCRYPTION_KEY_SIZE];
-  struct prvkey_data *pd;
-  const uint8_t *p;
+  struct prvkey_data prv;
+  struct prvkey_data *pd = &prv;
   uint8_t *dek_p;
   int update_needed = 0;
+  int r = 1;			/* Success */
 
   if (do_data == NULL)
     return 0;			/* No private key */
-
-  pd = (struct prvkey_data *)malloc (sizeof (struct prvkey_data));
-  if (pd == NULL)
-    return -1;
 
   memcpy (pd, &do_data[1], sizeof (struct prvkey_data));
 
@@ -1314,18 +1260,19 @@ gpg_do_chks_prvkey (enum kind_of_key kk,
 
   if (update_needed)
     {
+      const uint8_t *p;
+
       flash_do_release (do_data);
       do_ptr[nr] = NULL;
       p = flash_do_write (nr, (const uint8_t *)pd, sizeof (struct prvkey_data));
       do_ptr[nr] = p;
+      if (p == NULL)
+	r = -1;
     }
 
   memset (pd, 0, sizeof (struct prvkey_data));
-  free (pd);
-  if (update_needed && p == NULL)
-    return -1;
 
-  return 1;
+  return r;
 }
 
 
@@ -1380,6 +1327,7 @@ proc_key_import (const uint8_t *data, int len)
   const uint8_t *keystring_admin;
   int attr;
   const uint8_t *p = data;
+  uint8_t pubkey[512];
 
   if (admin_authorized == BY_ADMIN)
     keystring_admin = keystring_md_pw3;
@@ -1419,13 +1367,35 @@ proc_key_import (const uint8_t *data, int len)
     }
 
   if (attr == ALGO_RSA2K)
-    /* It should starts with 00 01 00 01 (E), skiping E (4-byte) */
-    r = gpg_do_write_prvkey (kk, &data[26], len - 26, keystring_admin, NULL);
+    {
+      /* It should starts with 00 01 00 01 (E), skiping E (4-byte) */
+      r = modulus_calc (&data[26], len - 26, pubkey);
+      if (r >= 0)
+	r = gpg_do_write_prvkey (kk, &data[26], len - 26, keystring_admin,
+				 pubkey);
+    }
   else if (attr == ALGO_RSA4K)
-    /* It should starts with 00 01 00 01 (E), skiping E (4-byte) */
-    r = gpg_do_write_prvkey (kk, &data[28], len - 28, keystring_admin, NULL);
-  else if (attr == ALGO_NISTP256R1 || attr == ALGO_SECP256K1)
-    r = gpg_do_write_prvkey (kk, &data[12], len - 12, keystring_admin, NULL);
+    {
+      /* It should starts with 00 01 00 01 (E), skiping E (4-byte) */
+      r = modulus_calc (&data[28], len - 28, pubkey);
+      if (r >= 0)
+	r = gpg_do_write_prvkey (kk, &data[28], len - 28, keystring_admin,
+				 pubkey);
+    }
+  else if (attr == ALGO_NISTP256R1)
+    {
+      r = ecc_compute_public_p256r1 (&data[12], pubkey);
+      if (r >= 0)
+	r = gpg_do_write_prvkey (kk, &data[12], len - 12, keystring_admin,
+				 pubkey);
+    }
+  else if (attr == ALGO_SECP256K1)
+    {
+      r = ecc_compute_public_p256k1 (&data[12], pubkey);
+      if (r >= 0)
+	r = gpg_do_write_prvkey (kk, &data[12], len - 12, keystring_admin,
+				 pubkey);
+    }
   else if (attr == ALGO_ED25519)
     {
       uint8_t hash[64];
@@ -1437,7 +1407,8 @@ proc_key_import (const uint8_t *data, int len)
       hash[0] &= 248;
       hash[31] &= 127;
       hash[31] |= 64;
-      r = gpg_do_write_prvkey (kk, hash, 64, keystring_admin, NULL);
+      eddsa_compute_public_25519 (hash, pubkey);
+      r = gpg_do_write_prvkey (kk, hash, 64, keystring_admin, pubkey);
     }
   else if (attr == ALGO_CURVE25519)
     {
@@ -1449,7 +1420,8 @@ proc_key_import (const uint8_t *data, int len)
 
       for (i = 0; i < 32; i++)
 	priv[31-i] = data[12+i];
-      r = gpg_do_write_prvkey (kk, priv, 32, keystring_admin, NULL);
+      ecdh_compute_public_25519 (priv, pubkey);
+      r = gpg_do_write_prvkey (kk, priv, 32, keystring_admin, pubkey);
     }
 
   if (r < 0)
@@ -1581,7 +1553,7 @@ gpg_data_scan (const uint8_t *do_start, const uint8_t *do_end)
 
 	      p += second_byte + 1; /* second_byte has length */
 
-	      if (((uint32_t)p & 1))
+	      if (((uintptr_t)p & 1))
 		p++;
 	    }
 	  else if (nr >= 0x80 && nr <= 0xbf)
@@ -2086,44 +2058,37 @@ gpg_do_write_simple (uint8_t nr, const uint8_t *data, int size)
 }
 
 void
-gpg_do_keygen (uint8_t kk_byte)
+gpg_do_keygen (uint8_t *buf)
 {
+  uint8_t kk_byte = buf[0];
   enum kind_of_key kk = kkb_to_kk (kk_byte);
   int attr = gpg_get_algo_attr (kk);;
   int prvkey_len = gpg_get_algo_attr_key_size (kk, GPG_KEY_PRIVATE);
-  const uint8_t *keystring_admin;
-  uint8_t *p_q_modulus = NULL;
-  uint8_t d[64];
-  const uint8_t *rnd;
   const uint8_t *prv;
-  const uint8_t *pubkey;
-  int r;
+  const uint8_t *rnd;
+  int r = 0;
+#define p_q (&buf[3])
+#define d (&buf[3])
+#define d1 (&buf[3+64])
+#define pubkey (&buf[3+256])
 
   DEBUG_INFO ("Keygen\r\n");
   DEBUG_BYTE (kk_byte);
 
-  if (admin_authorized == BY_ADMIN)
-    keystring_admin = keystring_md_pw3;
-  else
-    keystring_admin = NULL;
-
   if (attr == ALGO_RSA2K || attr == ALGO_RSA4K)
     {
-      p_q_modulus = rsa_genkey (prvkey_len);
-      if (p_q_modulus == NULL)
+      if (rsa_genkey (prvkey_len, pubkey, p_q) < 0)
 	{
 	  GPG_MEMORY_FAILURE ();
 	  return;
 	}
 
-      prv = p_q_modulus;
-      pubkey = p_q_modulus + prvkey_len;
+      prv = p_q;
     }
   else if (attr == ALGO_NISTP256R1 || attr == ALGO_SECP256K1)
     {
-      uint8_t d1[32];
       const uint8_t *p;
-      int i, r;
+      int i;
 
       rnd = NULL;
       do
@@ -2150,7 +2115,10 @@ gpg_do_keygen (uint8_t kk_byte)
       random_bytes_free (rnd);
 
       prv = d;
-      pubkey = NULL;
+      if (attr == ALGO_SECP256K1)
+	r = ecc_compute_public_p256k1 (prv, pubkey);
+      else if (attr == ALGO_NISTP256R1)
+	r = ecc_compute_public_p256r1 (prv, pubkey);
     }
   else if (attr == ALGO_ED25519)
     {
@@ -2161,7 +2129,7 @@ gpg_do_keygen (uint8_t kk_byte)
       d[31] &= 127;
       d[31] |= 64;
       prv = d;
-      pubkey = NULL;
+      eddsa_compute_public_25519 (d, pubkey);
     }
   else if (attr == ALGO_CURVE25519)
     {
@@ -2172,7 +2140,7 @@ gpg_do_keygen (uint8_t kk_byte)
       d[31] &= 127;
       d[31] |= 64;
       prv = d;
-      pubkey = NULL;
+      ecdh_compute_public_25519 (prv, pubkey);
     }
   else
     {
@@ -2180,12 +2148,21 @@ gpg_do_keygen (uint8_t kk_byte)
       return;
     }
 
-  r = gpg_do_write_prvkey (kk, prv, prvkey_len, keystring_admin, pubkey);
-  if (p_q_modulus)
+  if (r >= 0)
     {
-      memset (p_q_modulus, 0, prvkey_len * 2);
-      free (p_q_modulus);
+      const uint8_t *keystring_admin;
+
+      if (admin_authorized == BY_ADMIN)
+	keystring_admin = keystring_md_pw3;
+      else
+	keystring_admin = NULL;
+
+      r = gpg_do_write_prvkey (kk, prv, prvkey_len, keystring_admin, pubkey);
     }
+
+  /* Clear private key data in the buffer.  */
+  memset (buf, 0, 256);
+
   if (r < 0)
     {
       GPG_ERROR ();

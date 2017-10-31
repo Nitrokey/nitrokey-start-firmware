@@ -1,7 +1,7 @@
 /*
  * call-ec.c - interface between Gnuk and Elliptic curve over GF(prime)
  *
- * Copyright (C) 2013, 2014 Free Software Initiative of Japan
+ * Copyright (C) 2013, 2014, 2017  Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
  * This file is a part of Gnuk, a GnuPG USB Token implementation.
@@ -54,28 +54,21 @@ FUNC(ecdsa_sign) (const uint8_t *hash, uint8_t *output,
   return 0;
 }
 
-uint8_t *
-FUNC(ecc_compute_public) (const uint8_t *key_data)
+int
+FUNC(ecc_compute_public) (const uint8_t *key_data, uint8_t *pubkey)
 {
-  uint8_t *p0, *p, *p1;
+  uint8_t *p, *p1;
   ac q[1];
   bn256 k[1];
   int i;
-
-  p0 = (uint8_t *)malloc (ECDSA_BYTE_SIZE * 2);
-  if (p0 == NULL)
-    return NULL;
 
   p = (uint8_t *)k;
   for (i = 0; i < ECDSA_BYTE_SIZE; i++)
     p[ECDSA_BYTE_SIZE - i - 1] = key_data[i];
   if (FUNC(compute_kG) (q, k) < 0)
-    {
-      free (p0);
-      return NULL;
-    }
+    return -1;
 
-  p = p0;
+  p = pubkey;
   p1 = (uint8_t *)q->x;
   for (i = 0; i < ECDSA_BYTE_SIZE; i++)
     *p++ = p1[ECDSA_BYTE_SIZE - i - 1];
@@ -83,7 +76,7 @@ FUNC(ecc_compute_public) (const uint8_t *key_data)
   for (i = 0; i < ECDSA_BYTE_SIZE; i++)
     *p++ = p1[ECDSA_BYTE_SIZE - i - 1];
 
-  return p0;
+  return 0;
 }
 
 int

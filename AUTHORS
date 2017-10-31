@@ -1,3 +1,20 @@
+Aurelien Jarno:
+    Modified:
+	src/Makefile
+	src/configure
+	src/main.c
+	src/stack-def.h
+
+Anthony Romano:
+    Modified:
+	src/call-rsa.c
+	src/main.c
+	src/mod.c
+
+Jeremy Drake:
+    Modified:
+	regnual/regnual.c
+
 Kaz Kojima:
     Added STM32 Primer2 support.
 
