@@ -2067,10 +2067,10 @@ gpg_do_keygen (uint8_t *buf)
   const uint8_t *prv;
   const uint8_t *rnd;
   int r = 0;
-#define p_q buf
-#define d buf
-#define d1 (&buf[64])
-#define pubkey (&buf[256])
+#define p_q (&buf[3])
+#define d (&buf[3])
+#define d1 (&buf[3+64])
+#define pubkey (&buf[3+256])
 
   DEBUG_INFO ("Keygen\r\n");
   DEBUG_BYTE (kk_byte);

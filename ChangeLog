@@ -1,3 +1,7 @@
+2017-10-31  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/openpgp-do.c (gpg_do_keygen): Bug fix for memory alignment.
+
 2017-10-24  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* tests/card_reader.py (CardReader.ccid_power_on): Setting
