@@ -334,7 +334,8 @@ extern uint8_t admin_authorized;
 #define NR_DO_KEYSTRING_PW1	0x11
 #define NR_DO_KEYSTRING_RC	0x12
 #define NR_DO_KEYSTRING_PW3	0x13
-#define NR_DO__LAST__		20   /* == 0x14 */
+#define NR_DO_KDF		0x14
+#define NR_DO__LAST__		21   /* == 0x15 */
 /* 14-bit counter for DS: Recorded in flash memory by 1-halfword (2-byte).  */
 /*
  * Representation of 14-bit counter:

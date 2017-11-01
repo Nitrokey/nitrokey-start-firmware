@@ -452,12 +452,17 @@ static const struct do_table_entry *get_do_entry (uint16_t tag);
 #define GPG_DO_KGTIME_DEC	0x00cf
 #define GPG_DO_KGTIME_AUT	0x00d0
 #define GPG_DO_RESETTING_CODE	0x00d3
+#define GPG_DO_UIF_SIG		0x00d6
+#define GPG_DO_UIF_DEC		0x00d7
+#define GPG_DO_UIF_AUT		0x00d8
+#define GPG_DO_KDF		0x00f9
 #define GPG_DO_KEY_IMPORT	0x3fff
 #define GPG_DO_LANGUAGE		0x5f2d
 #define GPG_DO_SEX		0x5f35
 #define GPG_DO_URL		0x5f50
 #define GPG_DO_HIST_BYTES	0x5f52
 #define GPG_DO_CH_CERTIFICATE	0x7f21
+#define GPG_DO_FEATURE_MNGMNT	0x7f74
 
 static const uint8_t *do_ptr[NR_DO__LAST__];
 
@@ -494,6 +499,8 @@ do_tag_to_nr (uint16_t tag)
       return NR_DO_NAME;
     case GPG_DO_LANGUAGE:
       return NR_DO_LANGUAGE;
+    case GPG_DO_KDF:
+      return NR_DO_KDF;
     default:
       return -1;
     }
@@ -794,6 +801,56 @@ rw_algorithm_attr (uint16_t tag, int with_tag,
       /* Override the byte when GPG_DO_ALG_DEC.  */
       if (tag == GPG_DO_ALG_DEC && algo_attr_do[1] == OPENPGP_ALGO_ECDSA)
 	*(res_p - algo_attr_do[0]) = OPENPGP_ALGO_ECDH;
+      return 1;
+    }
+}
+
+#define SIZE_OF_KDF_DO             104
+#define OPENPGP_KDF_ITERSALTED_S2K 3
+#define OPENPGP_SHA256             8
+
+static int
+rw_kdf (uint16_t tag, int with_tag, const uint8_t *data, int len, int is_write)
+{
+  if (tag != GPG_DO_KDF)
+    return 0;		/* Failure */
+
+  if (is_write)
+    {
+      const uint8_t **do_data_p = (const uint8_t **)&do_ptr[NR_DO_KDF];
+
+      if (*do_data_p)
+	flash_do_release (*do_data_p);
+
+      if (len == 0)
+	{
+	  *do_data_p = NULL;
+	  return 1;
+	}
+      else if (len != SIZE_OF_KDF_DO)
+	return 0;
+      else
+	{
+	  /* XXX: Validate input format
+	    81 01 03 = KDF_ITERSALTED_S2K
+	    82 01 08 = SHA256
+	    83 04 4-byte... = count
+	    84 08 8-byte... = salt user
+	    85 08 8-byte... = salt reset-code
+	    86 08 8-byte... = salt admin
+	    87 20 32-byte user hash
+	    88 20 32-byte admin hash
+	  */
+	  *do_data_p = flash_do_write (NR_DO_KDF, data, SIZE_OF_KDF_DO);
+	  if (*do_data_p)
+	    return 1;
+	  else
+	    return 0;
+	}
+    }
+  else
+    {
+      copy_do_1 (tag, do_ptr[NR_DO_KDF], with_tag);
       return 1;
     }
 }
@@ -1488,6 +1545,8 @@ gpg_do_table[] = {
     rw_algorithm_attr },
   { GPG_DO_ALG_AUT, DO_PROC_READWRITE, AC_ALWAYS, AC_ADMIN_AUTHORIZED,
     rw_algorithm_attr },
+  { GPG_DO_KDF, DO_PROC_READWRITE, AC_ALWAYS, AC_ADMIN_AUTHORIZED,
+    rw_kdf },
   /* Fixed data */
   { GPG_DO_HIST_BYTES, DO_FIXED, AC_ALWAYS, AC_NEVER, historical_bytes },
   { GPG_DO_EXTCAP, DO_FIXED, AC_ALWAYS, AC_NEVER, extended_capabilities },
