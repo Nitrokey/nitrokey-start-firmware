@@ -112,13 +112,15 @@ const uint8_t historical_bytes[] __attribute__ ((aligned (1))) = {
 /* Extended Capabilities */
 static const uint8_t extended_capabilities[] __attribute__ ((aligned (1))) = {
   10,
-  0x74,				/*
+  0x75,				/*
 				 * No Secure Messaging supported
 				 * GET CHALLENGE supported
 				 * Key import supported
 				 * PW status byte can be put
 				 * No private_use_DO
 				 * Algorithm attrs are changable
+				 * No DEC with AES
+				 * KDF-DO available
 				 */
   0,		  /* Secure Messaging Algorithm: N/A (TDES=0, AES=1) */
   0x00, CHALLENGE_LEN, 		/* Max size of GET CHALLENGE */

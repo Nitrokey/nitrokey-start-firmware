@@ -4,6 +4,8 @@
 	(gpg_do_get_initial_pw_setting): New.
 	(gpg_do_write_prvkey): Use gpg_do_get_initial_pw_setting.
 	(gpg_do_keygen): Likewise.
+	(extended_capabilities): Enable KDF-DO available bit.
+
 	* src/openpgp.c (cmd_change_password): Use
 	gpg_do_get_initial_pw_setting.
 	* src/ac.c (verify_user_0, verify_admin_0): Likewise.
