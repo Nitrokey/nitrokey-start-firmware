@@ -805,7 +805,7 @@ rw_algorithm_attr (uint16_t tag, int with_tag,
     }
 }
 
-#define SIZE_OF_KDF_DO             104
+#define SIZE_OF_KDF_DO             110
 #define OPENPGP_KDF_ITERSALTED_S2K 3
 #define OPENPGP_SHA256             8
 
@@ -819,6 +819,11 @@ rw_kdf (uint16_t tag, int with_tag, const uint8_t *data, int len, int is_write)
     {
       const uint8_t **do_data_p = (const uint8_t **)&do_ptr[NR_DO_KDF];
 
+      /* KDF DO can be changed only when no keys are registered.  */
+      if (do_ptr[NR_DO_PRVKEY_SIG] || do_ptr[NR_DO_PRVKEY_DEC]
+	  || do_ptr[NR_DO_PRVKEY_AUT])
+	return 0;
+
       if (*do_data_p)
 	flash_do_release (*do_data_p);
 
@@ -827,11 +832,11 @@ rw_kdf (uint16_t tag, int with_tag, const uint8_t *data, int len, int is_write)
 	  *do_data_p = NULL;
 	  return 1;
 	}
-      else if (len != SIZE_OF_KDF_DO)
-	return 0;
-      else
-	{
-	  /* XXX: Validate input format
+      else if (len != SIZE_OF_KDF_DO ||
+	       !(data[0] == 0x81 && data[3] == 0x82 && data[6] == 0x83
+		 && data[12] == 0x84 && data[22] == 0x85 && data[32] == 0x86
+		 && data[42] == 0x87 && data[76] == 0x88))
+	  /* Format validation failed.  The valid format is:
 	    81 01 03 = KDF_ITERSALTED_S2K
 	    82 01 08 = SHA256
 	    83 04 4-byte... = count
@@ -841,6 +846,9 @@ rw_kdf (uint16_t tag, int with_tag, const uint8_t *data, int len, int is_write)
 	    87 20 32-byte user hash
 	    88 20 32-byte admin hash
 	  */
+	return 0;
+      else
+	{
 	  *do_data_p = flash_do_write (NR_DO_KDF, data, SIZE_OF_KDF_DO);
 	  if (*do_data_p)
 	    return 1;
