@@ -296,7 +296,8 @@ int ecdh_decrypt_curve25519 (const uint8_t *input, uint8_t *output,
 const uint8_t *gpg_do_read_simple (uint8_t);
 void gpg_do_write_simple (uint8_t, const uint8_t *, int);
 void gpg_increment_digital_signature_counter (void);
-
+void gpg_do_get_initial_pw_setting (int is_pw3, int *r_len,
+				    const uint8_t **r_p);
 
 void fatal (uint8_t code) __attribute__ ((noreturn));
 #define FATAL_FLASH  1

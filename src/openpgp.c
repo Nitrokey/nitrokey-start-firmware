@@ -378,8 +378,10 @@ cmd_change_password (void)
 	  newpw_len = len - pw_len;
 	  if (newpw_len == 0 && admin_authorized == BY_ADMIN)
 	    {
-	      newpw_len = strlen (OPENPGP_CARD_INITIAL_PW3);
-	      memcpy (newpw, OPENPGP_CARD_INITIAL_PW3, newpw_len);
+	      const uint8_t *initial_pw;
+
+	      gpg_do_get_initial_pw_setting (1, &newpw_len, &initial_pw);
+	      memcpy (newpw, initial_pw, newpw_len);
 	      newsalt_len = 0;
 	      pw3_null = 1;
 	    }

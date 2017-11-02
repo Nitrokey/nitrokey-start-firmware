@@ -863,6 +863,34 @@ rw_kdf (uint16_t tag, int with_tag, const uint8_t *data, int len, int is_write)
     }
 }
 
+void
+gpg_do_get_initial_pw_setting (int is_pw3, int *r_len, const uint8_t **r_p)
+{
+  const uint8_t *kdf_spec = gpg_do_read_simple (NR_DO_KDF);
+
+  if (kdf_spec)
+    {
+      *r_len = 32;
+      if (is_pw3)
+	*r_p = kdf_spec + 78;
+      else
+	*r_p = kdf_spec + 44;
+    }
+  else
+    {
+      if (is_pw3)
+	{
+	  *r_len = strlen (OPENPGP_CARD_INITIAL_PW3);
+	  *r_p = (const uint8_t *)OPENPGP_CARD_INITIAL_PW3;
+	}
+      else
+	{
+	  *r_len = strlen (OPENPGP_CARD_INITIAL_PW1);
+	  *r_p = (const uint8_t *)OPENPGP_CARD_INITIAL_PW1;
+	}
+    }
+}
+
 static int
 proc_resetting_code (const uint8_t *data, int len)
 {
@@ -1155,6 +1183,8 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data,
   int pubkey_len;
   uint8_t ks[KEYSTRING_MD_SIZE];
   enum kind_of_key kk0;
+  int pw_len;
+  const uint8_t *initial_pw;
 
   DEBUG_INFO ("Key import\r\n");
   DEBUG_SHORT (prvkey_len);
@@ -1212,8 +1242,8 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data,
   memcpy (pd->dek_encrypted_2, dek, DATA_ENCRYPTION_KEY_SIZE);
   memcpy (pd->dek_encrypted_3, dek, DATA_ENCRYPTION_KEY_SIZE);
 
-  s2k (NULL, 0, (const uint8_t *)OPENPGP_CARD_INITIAL_PW1,
-       strlen (OPENPGP_CARD_INITIAL_PW1), ks);
+  gpg_do_get_initial_pw_setting (0, &pw_len, &initial_pw);
+  s2k (NULL, 0, initial_pw, pw_len, ks);
 
   /* Handle existing keys and keystring DOs.  */
   gpg_do_write_simple (NR_DO_KEYSTRING_PW1, NULL, 0);
@@ -2240,14 +2270,16 @@ gpg_do_keygen (uint8_t *buf)
 
   if (kk == GPG_KEY_FOR_SIGNING)
     {
-      const uint8_t *pw = (const uint8_t *)OPENPGP_CARD_INITIAL_PW1;
+      int pw_len;
+      const uint8_t *initial_pw;
       uint8_t keystring[KEYSTRING_MD_SIZE];
 
       /* GnuPG expects it's ready for signing. */
       /* Don't call ac_reset_pso_cds here, but load the private key */
 
       gpg_reset_digital_signature_counter ();
-      s2k (NULL, 0, pw, strlen (OPENPGP_CARD_INITIAL_PW1), keystring);
+      gpg_do_get_initial_pw_setting (0, &pw_len, &initial_pw);
+      s2k (NULL, 0, initial_pw, pw_len, keystring);
       gpg_do_load_prvkey (GPG_KEY_FOR_SIGNING, BY_USER, keystring);
     }
   else

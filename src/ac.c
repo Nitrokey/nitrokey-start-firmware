@@ -1,7 +1,7 @@
 /*
  * ac.c -- Check access condition
  *
- * Copyright (C) 2010, 2012, 2013 Free Software Initiative of Japan
+ * Copyright (C) 2010, 2012, 2013, 2017 Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
  * This file is a part of Gnuk, a GnuPG USB Token implementation.
@@ -73,12 +73,14 @@ verify_user_0 (uint8_t access, const uint8_t *pw, int buf_len, int pw_len_known,
 
   if (ks_pw1 == NULL)
     {
-      pw_len = strlen (OPENPGP_CARD_INITIAL_PW1);
+      const uint8_t *initial_pw;
+
       salt = NULL;
       salt_len = 0;
+      gpg_do_get_initial_pw_setting (0, &pw_len, &initial_pw);
       if ((pw_len_known >= 0 && pw_len_known != pw_len)
 	  || buf_len < pw_len
-	  || strncmp ((const char *)pw, OPENPGP_CARD_INITIAL_PW1, pw_len))
+	  || memcmp (pw, initial_pw, pw_len))
 	goto failure;
     }
   else
@@ -220,6 +222,7 @@ verify_admin_0 (const uint8_t *pw, int buf_len, int pw_len_known,
     }
   else
     {
+      const uint8_t *initial_pw;
       const uint8_t *ks_pw1 = gpg_do_read_simple (NR_DO_KEYSTRING_PW1);
 
       if (ks_pw1 != NULL)
@@ -237,13 +240,13 @@ verify_admin_0 (const uint8_t *pw, int buf_len, int pw_len_known,
 	return 0;
 
       /*
-       * For the case of empty PW3 (with empty PW1), pass phrase
-       * should be OPENPGP_CARD_INITIAL_PW3
+       * For the case of empty PW3 (with empty PW1), passphrase is
+       * OPENPGP_CARD_INITIAL_PW3, or defined by KDF DO.
        */
-      pw_len = strlen (OPENPGP_CARD_INITIAL_PW3);
+      gpg_do_get_initial_pw_setting (1, &pw_len, &initial_pw);
       if ((pw_len_known >=0 && pw_len_known != pw_len)
 	  || buf_len < pw_len
-	  || strncmp ((const char *)pw, OPENPGP_CARD_INITIAL_PW3, pw_len))
+	  || memcmp (pw, initial_pw, pw_len))
 	goto failure;
 
       admin_authorized = BY_ADMIN;

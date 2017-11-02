@@ -1,6 +1,12 @@
 2017-11-02  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* src/openpgp-do.c (rw_kdf): Only writable when no keys.
+	(gpg_do_get_initial_pw_setting): New.
+	(gpg_do_write_prvkey): Use gpg_do_get_initial_pw_setting.
+	(gpg_do_keygen): Likewise.
+	* src/openpgp.c (cmd_change_password): Use
+	gpg_do_get_initial_pw_setting.
+	* src/ac.c (verify_user_0, verify_admin_0): Likewise.
 
 2017-11-01  NIIBE Yutaka  <gniibe@fsij.org>
 
