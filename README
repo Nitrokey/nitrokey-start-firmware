@@ -380,9 +380,9 @@ On Debian we can install the packages of gcc-arm-none-eabi,
 gdb-arm-none-eabi and its friends.  I'm using:
 
 	binutils-arm-none-eabi	2.28-4+9+b3
-	gcc-arm-none-eabi 	15:5.4.1+svn241155-1
+	gcc-arm-none-eabi 	15:6.3.1+svn253039-1
 	gdb-arm-none-eabi 	7.12-6+9+b2
-	libnewlib-arm-none-eabi	2.4.0.20160527-2
+	libnewlib-arm-none-eabi	2.4.0.20160527-3
 
 Or else, see https://launchpad.net/gcc-arm-embedded for preparation of
 GNU Toolchain for 'arm-none-eabi' target.
