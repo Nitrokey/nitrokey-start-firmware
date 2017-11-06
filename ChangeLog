@@ -1,3 +1,11 @@
+2017-11-06  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* tests/test_empty_card.py (test_extended_capabilities): Support
+	KDF-DO.
+	* test/features/802_get_data_static.feature: Likewise.
+	* test/features/402_get_data_static.feature: Likewise.
+	* test/features/002_get_data_static.feature: Likewise.
+
 2017-11-02  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* src/openpgp-do.c (rw_kdf): Only writable when no keys.
