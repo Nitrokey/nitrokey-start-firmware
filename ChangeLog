@@ -1,3 +1,12 @@
+2017-11-07  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/openpgp-do.c (proc_resetting_code): Error when
+	it's not pass-hash.
+
+	* src/openpgp.c (cmd_verify, cmd_change_password)
+	(cmd_reset_user_password): Avoid authentication error
+	by old GnuPG which doesn't support KDF.
+
 2017-11-06  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* tests/test_empty_card.py (test_extended_capabilities): Support

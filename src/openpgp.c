@@ -192,6 +192,12 @@ cmd_verify (void)
       return;
     }
 
+  if (gpg_do_read_simple (NR_DO_KDF) && len != 32)
+    {
+      GPG_CONDITION_NOT_SATISFIED ();
+      return;
+    }
+
   /* This is real authentication.  */
   if (p2 == 0x81)
     r = verify_pso_cds (pw, len);
@@ -296,6 +302,12 @@ cmd_change_password (void)
   if (p1 != 0)
     {
       GPG_FUNCTION_NOT_SUPPORTED ();
+      return;
+    }
+
+  if (gpg_do_read_simple (NR_DO_KDF) && len != 64)
+    {
+      GPG_CONDITION_NOT_SATISFIED ();
       return;
     }
 
@@ -519,6 +531,12 @@ cmd_reset_user_password (void)
       const uint8_t *ks_rc = gpg_do_read_simple (NR_DO_KEYSTRING_RC);
       uint8_t old_ks[KEYSTRING_MD_SIZE];
 
+      if (gpg_do_read_simple (NR_DO_KDF) && len != 64)
+	{
+	  GPG_CONDITION_NOT_SATISFIED ();
+	  return;
+	}
+
       if (gpg_pw_locked (PW_ERR_RC))
 	{
 	  DEBUG_INFO ("blocked.\r\n");
@@ -580,6 +598,12 @@ cmd_reset_user_password (void)
 	{
 	  DEBUG_INFO ("permission denied.\r\n");
 	  GPG_SECURITY_FAILURE ();
+	  return;
+	}
+
+      if (gpg_do_read_simple (NR_DO_KDF) && len != 32)
+	{
+	  GPG_CONDITION_NOT_SATISFIED ();
 	  return;
 	}
 

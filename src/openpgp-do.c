@@ -906,6 +906,9 @@ proc_resetting_code (const uint8_t *data, int len)
 
   DEBUG_INFO ("Resetting Code!\r\n");
 
+  if (gpg_do_read_simple (NR_DO_KDF) && len != 32)
+    return 0;
+
   newpw_len = len;
   newpw = data;
   new_ks0[0] = newpw_len;
