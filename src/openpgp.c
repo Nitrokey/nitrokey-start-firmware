@@ -192,7 +192,7 @@ cmd_verify (void)
       return;
     }
 
-  if (gpg_do_read_simple (NR_DO_KDF) && len != 32)
+  if (gpg_do_kdf_check (len, 1) == 0)
     {
       GPG_CONDITION_NOT_SATISFIED ();
       return;
@@ -305,7 +305,7 @@ cmd_change_password (void)
       return;
     }
 
-  if (gpg_do_read_simple (NR_DO_KDF) && len != 64)
+  if (gpg_do_kdf_check (len, 2) == 0)
     {
       GPG_CONDITION_NOT_SATISFIED ();
       return;
@@ -531,7 +531,7 @@ cmd_reset_user_password (void)
       const uint8_t *ks_rc = gpg_do_read_simple (NR_DO_KEYSTRING_RC);
       uint8_t old_ks[KEYSTRING_MD_SIZE];
 
-      if (gpg_do_read_simple (NR_DO_KDF) && len != 64)
+      if (gpg_do_kdf_check (len, 2) == 0)
 	{
 	  GPG_CONDITION_NOT_SATISFIED ();
 	  return;
@@ -601,7 +601,7 @@ cmd_reset_user_password (void)
 	  return;
 	}
 
-      if (gpg_do_read_simple (NR_DO_KDF) && len != 32)
+      if (gpg_do_kdf_check (len, 1) == 0)
 	{
 	  GPG_CONDITION_NOT_SATISFIED ();
 	  return;

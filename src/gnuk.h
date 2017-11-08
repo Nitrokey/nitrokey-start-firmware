@@ -298,6 +298,8 @@ void gpg_do_write_simple (uint8_t, const uint8_t *, int);
 void gpg_increment_digital_signature_counter (void);
 void gpg_do_get_initial_pw_setting (int is_pw3, int *r_len,
 				    const uint8_t **r_p);
+int gpg_do_kdf_check (int len, int how_many);
+
 
 void fatal (uint8_t code) __attribute__ ((noreturn));
 #define FATAL_FLASH  1

@@ -865,6 +865,17 @@ rw_kdf (uint16_t tag, int with_tag, const uint8_t *data, int len, int is_write)
     }
 }
 
+int
+gpg_do_kdf_check (int len, int how_many)
+{
+  const uint8_t *kdf_spec = gpg_do_read_simple (NR_DO_KDF);
+
+  if (kdf_spec && (kdf_spec[43] * how_many) != len)
+    return 0;
+
+  return 1;
+}
+
 void
 gpg_do_get_initial_pw_setting (int is_pw3, int *r_len, const uint8_t **r_p)
 {
@@ -906,7 +917,7 @@ proc_resetting_code (const uint8_t *data, int len)
 
   DEBUG_INFO ("Resetting Code!\r\n");
 
-  if (gpg_do_read_simple (NR_DO_KDF) && len != 32)
+  if (gpg_do_kdf_check (len, 1) == 0)
     return 0;
 
   newpw_len = len;
