@@ -45,8 +45,8 @@ cd nitrokey-start-firmware/tool
 To make sure firmware is changed on device you can save current version to file: `gpg2 --card-status > before.status`. Since gpg2 claims the device please reinsert it to make it free to use by GNUK.
 
 Depending on you current firmware you have to choose the right prebuilts:
-- If your LED flashes green on operation please type `RTM=RTM.1_to_RTM.4` in your console
-- If your LED flashes red then please type `RTM=RTM.4` in your console
+- If your LED flashes green on operation please type `RTM=RTM.1_to_RTM.5` in your console
+- If your LED flashes red then please type `RTM=RTM.5` in your console
 
 Now we can proceed with the actual upgrade:
 ```
@@ -61,4 +61,9 @@ diff before.status after.status
 
 ### Testing the device
 
-It is possible to test the device after flashing. Please make sure python 3 and python-pytest are installed (see requirements above). Now please run `pytest -vx ../tests/test_*` to test the firmware.
+It is possible to test the device after flashing. Please make sure python 3 and python-pytest are installed (see requirements above). Now please run 
+```
+cd ../tests/
+pytest -vx test_*
+```
+to test the firmware.
