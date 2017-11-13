@@ -210,6 +210,8 @@ class CardReader(object):
 
     def ccid_send_data_block(self, data):
         msg = ccid_compose(0x6f, self.__seq, data=data)
+        import binascii
+        print((self.__bulkout, binascii.hexlify(msg), self.__timeout))
         self.__dev.write(self.__bulkout, msg, self.__timeout)
         self.increment_seq()
         return self.ccid_get_result()
@@ -224,6 +226,8 @@ class CardReader(object):
             d = data_rcv
             while True:
                 msg = ccid_compose(0x6f, self.__seq, param=0x10)
+                import binascii
+                print((self.__bulkout, binascii.hexlify(msg), self.__timeout))
                 self.__dev.write(self.__bulkout, msg, self.__timeout)
                 self.increment_seq()
                 status, chain, data_rcv = self.ccid_get_result()
