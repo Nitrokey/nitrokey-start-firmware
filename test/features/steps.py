@@ -96,8 +96,7 @@ def cmd_put_data_with_result(context,tag_str):
 
 @given('a message {content_str_repr}')
 def set_msg(context,content_str_repr):
-    v = text_to_bin(content_str_repr)
-    msg = v.encode('UTF-8')
+    msg = text_to_bin(content_str_repr)
     context.digestinfo = rsa_keys.compute_digestinfo(msg)
 
 @given("a public key from token for OPENPGP.{openpgp_keyno_str}")
@@ -138,7 +137,8 @@ def encrypt_on_host_public_key(context):
 
 @given("let a token decrypt encrypted data")
 def decrypt(context):
-    context.result = context.token.cmd_pso_longdata(0x80, 0x86, context.ciphertext).tostring()
+    print(context.ciphertext)
+    context.result = context.token.cmd_pso(0x80, 0x86, context.ciphertext)
 
 @given("USB version string of the token")
 def usb_version_string(context):
@@ -159,10 +159,9 @@ def remove_key(context,openpgp_keyno_str):
 
 @when("generating a key of OPENPGP.{openpgp_keyno_str}")
 def generate_key(context,openpgp_keyno_str):
-    return
     openpgp_keyno = int(openpgp_keyno_str)
     pubkey_info = context.token.cmd_genkey(openpgp_keyno)
-    context.data = rsa_keys.calc_fpr(pubkey_info[0].tostring(), pubkey_info[1].tostring())
+    context.data = rsa_keys.calc_fpr(pubkey_info[0], pubkey_info[1])
 
 @when("put the first data to {tag_str}")
 def cmd_put_data_first_with_result(context,tag_str):
