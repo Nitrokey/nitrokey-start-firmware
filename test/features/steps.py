@@ -65,6 +65,7 @@ def cmd_put_data(context,tag_str,content_str_repr):
 def cmd_reset_retry_counter(context,how_str, data):
     how = int(how_str)
     data = data.encode()
+    print((how, data))
     context.result = context.token.cmd_reset_retry_counter(how, 0x81, data)
 
 @given("a RSA key pair {keyno_str}")
@@ -103,6 +104,7 @@ def set_msg(context,content_str_repr):
 def get_public_key(context,openpgp_keyno_str):
     openpgp_keyno = int(openpgp_keyno_str)
     context.pubkey_info = context.token.cmd_get_public_key(openpgp_keyno)
+    print(context.pubkey_info)
 
 @given("verify signature")
 def verify_signature(context):
