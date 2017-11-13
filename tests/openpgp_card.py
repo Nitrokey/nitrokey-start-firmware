@@ -21,6 +21,17 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
+def wrong_value(data, sw1, sw2):
+    raise ValueError("%02x%02x" % (sw1, sw2))
+
+errorchecker = wrong_value
+try:
+    from smartcard.sw.ISO7816_4ErrorChecker import ISO7816_4ErrorChecker
+    errorchecker = ISO7816_4ErrorChecker()
+    # errorchecker([], 0x90, 0x00)
+except:
+    pass
+
 from struct import pack
 
 def iso7816_compose(ins, p1, p2, data, cls=0x00, le=None):
@@ -65,7 +76,7 @@ class OpenPGP_Card(object):
             if sw[0] == 0x90 and sw[1] == 0x00:
                 return result
             elif sw[0] != 0x61:
-                raise ValueError("%02x%02x" % (sw[0], sw[1]))
+                errorchecker([], sw[0], sw[1])
             else:
                 expected_len = sw[1]
 
@@ -75,7 +86,7 @@ class OpenPGP_Card(object):
         if len(sw) != 2:
             raise ValueError(sw)
         if not (sw[0] == 0x90 and sw[1] == 0x00):
-            raise ValueError("%02x%02x" % (sw[0], sw[1]))
+            errorchecker([], sw[0], sw[1])
         return True
 
     def cmd_read_binary(self, fileid):
@@ -84,7 +95,7 @@ class OpenPGP_Card(object):
         if len(sw) != 2:
             raise ValueError(sw)
         if sw[0] != 0x61:
-            raise ValueError("%02x%02x" % (sw[0], sw[1]))
+            errorchecker([], sw[0], sw[1])
         return self.cmd_get_response(sw[1])
 
     def cmd_write_binary(self, fileid, data, is_update):
@@ -133,7 +144,7 @@ class OpenPGP_Card(object):
             self.cmd_get_response(sw[1])
             return True
         if not (sw[0] == 0x90 and sw[1] == 0x00):
-            raise ValueError("%02x%02x" % (sw[0], sw[1]))
+            errorchecker([], sw[0], sw[1])
         return True
 
     def cmd_get_data(self, tagh, tagl):
@@ -148,7 +159,7 @@ class OpenPGP_Card(object):
         if sw[0] == 0x6a and sw[1] == 0x88:
             return None
         else:
-            raise ValueError("%02x%02x" % (sw[0], sw[1]))
+            errorchecker([], sw[0], sw[1])
 
     def cmd_change_reference_data(self, who, data):
         cmd_data = iso7816_compose(0x24, 0x00, 0x80+who, data)
@@ -156,7 +167,7 @@ class OpenPGP_Card(object):
         if len(sw) != 2:
             raise ValueError(sw)
         if not (sw[0] == 0x90 and sw[1] == 0x00):
-            raise ValueError("%02x%02x" % (sw[0], sw[1]))
+            errorchecker([], sw[0], sw[1])
         return True
 
     def cmd_put_data(self, tagh, tagl, content):
@@ -165,7 +176,7 @@ class OpenPGP_Card(object):
         if len(sw) != 2:
             raise ValueError(sw)
         if not (sw[0] == 0x90 and sw[1] == 0x00):
-            raise ValueError("%02x%02x" % (sw[0], sw[1]))
+            errorchecker([], sw[0], sw[1])
         return True
 
     def cmd_put_data_odd(self, tagh, tagl, content):
@@ -179,12 +190,12 @@ class OpenPGP_Card(object):
             if len(sw) != 2:
                 raise ValueError(sw)
             if not (sw[0] == 0x90 and sw[1] == 0x00):
-                raise ValueError("%02x%02x" % (sw[0], sw[1]))
+                errorchecker([], sw[0], sw[1])
             sw = self.__reader.send_cmd(cmd_data1)
         if len(sw) != 2:
             raise ValueError(sw)
         if not (sw[0] == 0x90 and sw[1] == 0x00):
-            raise ValueError("%02x%02x" % (sw[0], sw[1]))
+            errorchecker([], sw[0], sw[1])
         return True
 
     def cmd_reset_retry_counter(self, how, who, data):
@@ -193,7 +204,7 @@ class OpenPGP_Card(object):
         if len(sw) != 2:
             raise ValueError(sw)
         if not (sw[0] == 0x90 and sw[1] == 0x00):
-            raise ValueError("%02x%02x" % (sw[0], sw[1]))
+            errorchecker([], sw[0], sw[1])
         return True
 
     def cmd_pso(self, p1, p2, data):
@@ -209,7 +220,7 @@ class OpenPGP_Card(object):
             elif sw[0] == 0x90 and sw[1] == 0x00:
                 return r
             else:
-                raise ValueError("%02x%02x" % (sw[0], sw[1]))
+                errorchecker([], sw[0], sw[1])
         else:
             if len(data) > 128:
                 cmd_data0 = iso7816_compose(0x2a, p1, p2, data[:128], 0x10)
@@ -218,12 +229,12 @@ class OpenPGP_Card(object):
                 if len(sw) != 2:
                     raise ValueError(sw)
                 if not (sw[0] == 0x90 and sw[1] == 0x00):
-                    raise ValueError("%02x%02x" % (sw[0], sw[1]))
+                    errorchecker([], sw[0], sw[1])
                 sw = self.__reader.send_cmd(cmd_data1)
                 if len(sw) != 2:
                     raise ValueError(sw)
                 elif sw[0] != 0x61:
-                    raise ValueError("%02x%02x" % (sw[0], sw[1]))
+                    errorchecker([], sw[0], sw[1])
                 return self.cmd_get_response(sw[1])
             else:
                 cmd_data = iso7816_compose(0x2a, p1, p2, data)
@@ -233,7 +244,7 @@ class OpenPGP_Card(object):
                 if sw[0] == 0x90 and sw[1] == 0x00:
                     return b""
                 elif sw[0] != 0x61:
-                    raise ValueError("%02x%02x" % (sw[0], sw[1]))
+                    errorchecker([], sw[0], sw[1])
                 return self.cmd_get_response(sw[1])
 
     def cmd_internal_authenticate(self, data):
@@ -251,7 +262,7 @@ class OpenPGP_Card(object):
         elif sw[0] == 0x90 and sw[1] == 0x00:
             return r
         else:
-            raise ValueError("%02x%02x" % (sw[0], sw[1]))
+            errorchecker([], sw[0], sw[1])
 
     def cmd_genkey(self, keyno):
         if keyno == 1:
@@ -267,7 +278,7 @@ class OpenPGP_Card(object):
         if sw[0] == 0x90 and sw[1] == 0x00:
             return b""
         elif sw[0] != 0x61:
-            raise ValueError("%02x%02x" % (sw[0], sw[1]))
+            errorchecker([], sw[0], sw[1])
         pk = self.cmd_get_response(sw[1])
         return (pk[9:9+256], pk[9+256+2:9+256+2+3])
 
@@ -293,14 +304,14 @@ class OpenPGP_Card(object):
         elif sw[0] == 0x90 and sw[1] == 0x00:
             pk = r
         else:
-            raise ValueError("%02x%02x" % (sw[0], sw[1]))
+            errorchecker([], sw[0], sw[1])
         return pk
 
     def cmd_put_data_remove(self, tagh, tagl):
         cmd_data = iso7816_compose(0xda, tagh, tagl, b"")
         sw = self.__reader.send_cmd(cmd_data)
         if sw[0] != 0x90 and sw[1] != 0x00:
-            raise ValueError("%02x%02x" % (sw[0], sw[1]))
+            errorchecker([], sw[0], sw[1])
 
     def cmd_put_data_key_import_remove(self, keyno):
         if keyno == 1:
@@ -312,7 +323,7 @@ class OpenPGP_Card(object):
         cmd_data = iso7816_compose(0xdb, 0x3f, 0xff, b"\x4d\x02" +  keyspec)
         sw = self.__reader.send_cmd(cmd_data)
         if sw[0] != 0x90 and sw[1] != 0x00:
-            raise ValueError("%02x%02x" % (sw[0], sw[1]))
+            errorchecker([], sw[0], sw[1])
 
     def cmd_get_challenge(self):
         cmd_data = iso7816_compose(0x84, 0x00, 0x00, '')
@@ -320,7 +331,7 @@ class OpenPGP_Card(object):
         if len(sw) != 2:
             raise ValueError(sw)
         if sw[0] != 0x61:
-            raise ValueError("%02x%02x" % (sw[0], sw[1]))
+            errorchecker([], sw[0], sw[1])
         return self.cmd_get_response(sw[1])
 
     def cmd_external_authenticate(self, keyno, signed):
@@ -329,10 +340,10 @@ class OpenPGP_Card(object):
         if len(sw) != 2:
             raise ValueError(sw)
         if not (sw[0] == 0x90 and sw[1] == 0x00):
-            raise ValueError("%02x%02x" % (sw[0], sw[1]))
+            errorchecker([], sw[0], sw[1])
         cmd_data = iso7816_compose(0x82, 0x00, keyno, signed[128:])
         sw = self.__reader.send_cmd(cmd_data)
         if len(sw) != 2:
             raise ValueError(sw)
         if not (sw[0] == 0x90 and sw[1] == 0x00):
-            raise ValueError("%02x%02x" % (sw[0], sw[1]))
+            errorchecker([], sw[0], sw[1])
