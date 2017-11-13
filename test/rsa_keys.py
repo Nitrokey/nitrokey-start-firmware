@@ -130,7 +130,7 @@ def integer_to_bytes_256(i):
     s = s.rstrip('L')
     if len(s) & 1:
         s = '0' + s
-    return string.rjust(unhexlify(s), 256, '\x00')
+    return bytes.rjust(unhexlify(s), 256, b'\x00')
 
 def encrypt(keyno, plaintext):
     e = key[keyno][4]
@@ -139,14 +139,16 @@ def encrypt(keyno, plaintext):
     return b'\x00' + integer_to_bytes_256(pow(m, e, n))
 
 def encrypt_with_pubkey(pubkey_info, plaintext):
-    n = int(hexlify(pubkey_info[0]), 16)
-    e = int(hexlify(pubkey_info[1]), 16)
+    n = pubkey_info[0]
+    e = pubkey_info[1]
     m = pkcs1_pad_for_crypt(plaintext)
+    print ((n,e,m))
     return b'\x00' + integer_to_bytes_256(pow(m, e, n))
 
 def verify_signature(pubkey_info, digestinfo, sig):
-    n = int(hexlify(pubkey_info[0]), 16)
-    e = int(hexlify(pubkey_info[1]), 16)
+    n = pubkey_info[0]
+    e = pubkey_info[1]
+    print ((n,e,sig))
     di_pkcs1 = pow(sig,e,n)
     m = pkcs1_pad_for_sign(digestinfo)
     return di_pkcs1 == m
