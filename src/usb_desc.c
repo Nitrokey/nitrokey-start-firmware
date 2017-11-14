@@ -65,7 +65,7 @@ static const
 uint8_t device_desc[] = {
   18,   /* bLength */
   DEVICE_DESCRIPTOR,     /* bDescriptorType */
-  0x10, 0x01,   /* bcdUSB = 1.1 */
+  0x00, 0x02,            /* bcdUSB = 2.0 */
   0x00,   /* bDeviceClass: 0 means deferred to interface */
   0x00,   /* bDeviceSubClass */
   0x00,   /* bDeviceProtocol */

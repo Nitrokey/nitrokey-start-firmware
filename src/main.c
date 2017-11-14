@@ -329,7 +329,7 @@ main (int argc, const char *argv[])
 
   while (1)
     {
-      if (bDeviceState != UNCONNECTED)
+      if (bDeviceState != USB_DEVICE_STATE_UNCONNECTED)
 	break;
 
       chopstx_usec_wait (250*1000);

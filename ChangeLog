@@ -1,3 +1,28 @@
+2017-11-14  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/usb-ccid.c (ccid_usb_reset): Remove
+	(usb_event_handle): Return value change to notify
+	caller about needs for going out of the loop.
+	Support USB suspend/resume.
+	(ccid_thread): Supporting USB suspend, sleep forever with
+	timeout_p = NULL.
+
+	* src/main.c (main): Add USB_DEVICE_STATE_ prefix.
+	* src/usb_ctrl.c: Likewise.
+	(usb_device_reset): Don't call ccid_usb_reset.
+	(usb_set_configuration, usb_set_interface): Likewise.
+
+	* src/usb_desc.c (device_desc): bcdUSB = 2.0, supporting
+	suspend/resume.
+
+2017-11-13  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/usb_ctrl.c: Use new const USB_DEVICE_STATE_*
+	* src/main.c (main): Likewise.
+	* src/usb-ccid.c: Likewise.
+	(INTR_REQ_USB): Remove.  Use the definition
+	in usb-lld.h.
+
 2017-11-08  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* src/openpgp-do.c (gpg_do_kdf_check): New.
