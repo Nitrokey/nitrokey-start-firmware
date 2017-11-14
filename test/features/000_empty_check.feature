@@ -28,7 +28,7 @@ Feature: confirm empty token
 
   Scenario: data object pw1 status bytes
      When requesting pw1 status bytes: c4
-     Then you should get: \x00\x7f\x7f\x7f\x03\x03\x03
+     Then you should get: 00202020030003
 
   Scenario: data object finger print 0
      When requesting finger print: c5

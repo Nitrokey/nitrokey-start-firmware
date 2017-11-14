@@ -4,7 +4,8 @@ Feature: command GET DATA
 
   Scenario: data object historical bytes
      When requesting historical bytes: 5f52
-     Then data should match: \x00\x31\x84\x73\x80\x01\x80[\x00\x05]\x90\x00
+#     Then data should match: \x00\x31\x84\x73\x80\x01\x80[\x00\x05]\x90\x00
+     Then data should match: \x001\xc5s\xc0\x01@\x05\x90\x00
 
   Scenario: data object extended capabilities
      When requesting extended capabilities: c0
@@ -12,16 +13,16 @@ Feature: command GET DATA
 
   Scenario: data object algorithm attributes 1
      When requesting algorithm attributes 1: c1
-     Then you should get: \x01\x08\x00\x00\x20\x00
+     Then you should get NULL
 
   Scenario: data object algorithm attributes 2
      When requesting algorithm attributes 2: c2
-     Then you should get: \x01\x08\x00\x00\x20\x00
+     Then you should get NULL
 
   Scenario: data object algorithm attributes 3
      When requesting algorighm attributes 3: c3
-     Then you should get: \x01\x08\x00\x00\x20\x00
+     Then you should get NULL
 
   Scenario: data object AID
      When requesting AID: 4f
-     Then data should match: \xd2\x76\x00\x01\x24\x01\x02\x00[\x00-\xff][\x00-\xff][\x00-\xff][\x00-\xff][\x00-\xff][\x00-\xff]\x00\x00
+     Then data should match: \xd2v\x00\x01$\x01\x02\x01\x00\x05\x00\x001\x9e\x00\x00
