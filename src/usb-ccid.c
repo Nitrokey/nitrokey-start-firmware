@@ -1648,10 +1648,12 @@ usb_event_handle (struct usb_dev *dev)
       break;
 
     case USB_EVENT_DEVICE_SUSPEND:
+      chopstx_conf_idle (1);
       bDeviceState |= USB_DEVICE_STATE_SUSPEND;
       break;
 
     case USB_EVENT_DEVICE_WAKEUP:
+      chopstx_conf_idle (0);
       bDeviceState &= ~USB_DEVICE_STATE_SUSPEND;
       break;
 
@@ -1731,8 +1733,9 @@ ccid_thread (void *arg)
 
 	  /* RESET handling:
 	   * (1) After DEVICE_RESET, it needs to re-start out of the loop.
-	   * (2) After SET_INTERFACE, the endpoint is reset to RX_NAK.
-	   *     It needs to prepare receive again.
+	   * (2) After SET_CONFIGURATION or SET_INTERFACE, the
+	   *     endpoint is reset to RX_NAK.  It needs to prepare
+	   *     receive again.
 	   */
 	  if (c->application)
 	    {

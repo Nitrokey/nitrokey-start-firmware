@@ -218,7 +218,7 @@ usb_device_reset (struct usb_dev *dev)
   for (i = 0; i < NUM_INTERFACES; i++)
     gnuk_setup_endpoints_for_interface (dev, i, 1);
 
-  bDeviceState = USB_DEVICE_STATE_ATTACHED;
+  bDeviceState = USB_DEVICE_STATE_DEFAULT;
 }
 
 #define USB_CCID_REQ_ABORT			0x01
