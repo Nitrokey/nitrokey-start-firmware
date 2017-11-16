@@ -1,7 +1,9 @@
 2017-11-16  NIIBE Yutaka  <gniibe@fsij.org>
 
-	* src/usb-ccid.c (ccid_thread): Use constant pointer for
-	chopstx_poll.
+	* src/gnuk.h (LED_OFF): New.
+
+	* src/usb-ccid.c (usb_event_handle): LED off on sleep.
+	(ccid_thread): Use constant pointer for	chopstx_poll.
 	(poll_event_intr): Remove.
 
 2017-11-15  NIIBE Yutaka  <gniibe@fsij.org>

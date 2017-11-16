@@ -1648,6 +1648,7 @@ usb_event_handle (struct usb_dev *dev)
       break;
 
     case USB_EVENT_DEVICE_SUSPEND:
+      led_blink (LED_OFF);
       chopstx_conf_idle (1);
       bDeviceState |= USB_DEVICE_STATE_SUSPEND;
       break;
