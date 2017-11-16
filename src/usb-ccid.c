@@ -1665,24 +1665,18 @@ usb_event_handle (struct usb_dev *dev)
   return 0;
 }
 
-static void
-poll_event_intr (uint32_t *timeout_p,
-		 struct eventflag *ev, chopstx_intr_t *intr)
-{
-  chopstx_poll_cond_t poll_desc;
-  struct chx_poll_head *pd_array[2] = {
-    (struct chx_poll_head *)intr,
-    (struct chx_poll_head *)&poll_desc
-  };
 
-  eventflag_prepare_poll (ev, &poll_desc);
-  chopstx_poll (timeout_p, 2, pd_array);
-}
+static chopstx_intr_t interrupt;
+static chopstx_poll_cond_t cond_poll_desc;
+static struct chx_poll_head *const pd_array[] = {
+  (struct chx_poll_head *const)&interrupt,
+  (struct chx_poll_head *const)&cond_poll_desc
+};
+#define PD_SIZE (sizeof (pd_array)/sizeof (struct chx_poll_head *))
 
 void *
 ccid_thread (void *arg)
 {
-  chopstx_intr_t interrupt;
   uint32_t timeout;
   struct usb_dev dev;
   struct ccid *c = &ccid;
@@ -1725,7 +1719,9 @@ ccid_thread (void *arg)
       else
 	timeout_p = NULL;
 
-      poll_event_intr (timeout_p, &c->ccid_comm, &interrupt);
+      eventflag_prepare_poll (&c->ccid_comm, &cond_poll_desc);
+      chopstx_poll (timeout_p, PD_SIZE, pd_array);
+
       if (interrupt.ready)
 	{
 	  if (usb_event_handle (&dev) == 0)
