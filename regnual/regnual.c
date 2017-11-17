@@ -147,19 +147,33 @@ static uint32_t fetch (int i)
 }
 
 struct CRC {
-  __IO uint32_t DR;
-  __IO uint8_t  IDR;
+  volatile uint32_t DR;
+  volatile uint8_t  IDR;
   uint8_t   RESERVED0;
   uint16_t  RESERVED1;
-  __IO uint32_t CR;
+  volatile uint32_t CR;
 };
+static struct CRC *const CRC = (struct CRC *)0x40023000;
+
+struct RCC {
+  volatile uint32_t CR;
+  volatile uint32_t CFGR;
+  volatile uint32_t CIR;
+  volatile uint32_t APB2RSTR;
+  volatile uint32_t APB1RSTR;
+  volatile uint32_t AHBENR;
+  /* ... */
+};
+static struct RCC *const RCC = (struct RCC *)0x40021000;
+#define RCC_AHBENR_CRCEN        0x00000040
+
 
 #define  CRC_CR_RESET 0x01
 static uint32_t calc_crc32 (void)
 {
-  struct CRC *CRC = (struct CRC *)0x40023000;
   int i;
 
+  RCC->AHBENR &= ~RCC_AHBENR_CRCEN;
   CRC->CR = CRC_CR_RESET;
 
   for (i = 0; i < 256/4; i++)

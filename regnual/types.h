@@ -9,5 +9,3 @@ typedef unsigned int uintptr_t;
 #define FALSE 0
 
 #define NULL  0
-
-#define     __IO    volatile
