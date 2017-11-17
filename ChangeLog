@@ -1,5 +1,13 @@
 2017-11-17  NIIBE Yutaka  <gniibe@fsij.org>
 
+	* src/stack-def.h (SIZE_0): Decrease.
+
+	* src/main.c (emit_led, display_status_code, main): Use
+	chopstx_poll instead of eventflag_wait_timeout.
+
+
+2017-11-17  NIIBE Yutaka  <gniibe@fsij.org>
+
 	* src/stack-def.h (SIZE_0): Increase.
 
 	* src/main.c (emit_led, display_status_code, main): Use

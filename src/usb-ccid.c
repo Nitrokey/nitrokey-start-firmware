@@ -1675,12 +1675,12 @@ usb_event_handle (struct usb_dev *dev)
 
 
 static chopstx_intr_t interrupt;
-static chopstx_poll_cond_t cond_poll_desc;
-static struct chx_poll_head *const pd_array[] = {
+static chopstx_poll_cond_t ccid_event_poll_desc;
+static struct chx_poll_head *const ccid_poll[] = {
   (struct chx_poll_head *const)&interrupt,
-  (struct chx_poll_head *const)&cond_poll_desc
+  (struct chx_poll_head *const)&ccid_event_poll_desc
 };
-#define PD_SIZE (sizeof (pd_array)/sizeof (struct chx_poll_head *))
+#define CCID_POLL_NUM (sizeof (ccid_poll)/sizeof (struct chx_poll_head *))
 
 void *
 ccid_thread (void *arg)
@@ -1698,6 +1698,8 @@ ccid_thread (void *arg)
   usb_lld_init (&dev, USB_INITIAL_FEATURE);
   chopstx_claim_irq (&interrupt, INTR_REQ_USB);
   usb_event_handle (&dev);	/* For old SYS < 3.0 */
+
+  eventflag_prepare_poll (&c->ccid_comm, &ccid_event_poll_desc);
 
  reset:
   {
@@ -1727,8 +1729,7 @@ ccid_thread (void *arg)
       else
 	timeout_p = NULL;
 
-      eventflag_prepare_poll (&c->ccid_comm, &cond_poll_desc);
-      chopstx_poll (timeout_p, PD_SIZE, pd_array);
+      chopstx_poll (timeout_p, CCID_POLL_NUM, ccid_poll);
 
       if (interrupt.ready)
 	{
