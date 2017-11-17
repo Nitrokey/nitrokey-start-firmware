@@ -1,3 +1,10 @@
+2017-11-17  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/main.c (main): Call chopstx_conf_idle.
+
+	* src/usb-ccid.c (usb_event_handle): Use 2 for call of
+	chopstx_conf_idle on suspend.
+
 2017-11-16  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* src/gnuk.h (LED_OFF): New.

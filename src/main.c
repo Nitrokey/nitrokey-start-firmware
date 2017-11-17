@@ -40,6 +40,7 @@
 #include <stdlib.h>
 #define main emulated_main
 #else
+#include "mcu/cortex-m.h"
 #include "mcu/stm32f103.h"
 #endif
 
@@ -227,6 +228,8 @@ main (int argc, const char *argv[])
   uintptr_t entry;
 #endif
   chopstx_t ccid_thd;
+
+  chopstx_conf_idle (1);
 
   gnuk_malloc_init ();
 

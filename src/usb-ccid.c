@@ -1649,12 +1649,12 @@ usb_event_handle (struct usb_dev *dev)
 
     case USB_EVENT_DEVICE_SUSPEND:
       led_blink (LED_OFF);
-      chopstx_conf_idle (1);
+      chopstx_conf_idle (2);
       bDeviceState |= USB_DEVICE_STATE_SUSPEND;
       break;
 
     case USB_EVENT_DEVICE_WAKEUP:
-      chopstx_conf_idle (0);
+      chopstx_conf_idle (1);
       bDeviceState &= ~USB_DEVICE_STATE_SUSPEND;
       break;
 
