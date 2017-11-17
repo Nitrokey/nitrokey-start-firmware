@@ -23,6 +23,7 @@
  */
 
 #include <stdint.h>
+#include "mcu/stm32.h"
 #include "mcu/stm32f103.h"
 
 uint8_t *
