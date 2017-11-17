@@ -10,6 +10,7 @@
 	* src/usb-ccid.c (usb_event_handle): Use 2 for call of
 	chopstx_conf_idle on suspend.  Call random_fini on suspend
 	to stop ADC module.  Call random_init on wakeup.
+	Sleep a bit to switch main thread.
 
 2017-11-16  NIIBE Yutaka  <gniibe@fsij.org>
 
