@@ -30,6 +30,7 @@
 #include "sys.h"
 #include "neug.h"
 #ifndef GNU_LINUX_EMULATION
+#include "mcu/stm32.h"
 #include "mcu/stm32f103.h"
 #endif
 #include "adc.h"
@@ -142,6 +143,12 @@ rbit (uint32_t v)
 
   asm ("rbit	%0, %1" : "=r" (r) : "r" (v));
   return r;
+}
+
+void
+crc32_rv_stop (void)
+{
+  RCC->AHBENR &= ~RCC_AHBENR_CRCEN;
 }
 #endif
 
@@ -894,6 +901,7 @@ neug_fini (void)
   rng_should_terminate = 1;
   neug_get (1);
   chopstx_join (rng_thread, NULL);
+  crc32_rv_stop ();
 }
 
 void

@@ -1,5 +1,8 @@
 2017-11-17  NIIBE Yutaka  <gniibe@fsij.org>
 
+	* src/neug.c (crc32_rv_stop): New.
+	(neug_fini): Call crc32_rv_stop.
+
 	* src/main.c (main): Call chopstx_conf_idle.
 
 	* src/usb-ccid.c (usb_event_handle): Use 2 for call of
