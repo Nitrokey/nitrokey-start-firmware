@@ -132,39 +132,52 @@ static void display_fatal_code (void)
 
 static uint8_t led_inverted;
 
-static void emit_led (int on_time, int off_time)
+static eventmask_t
+emit_led (int on_time, int off_time)
 {
+  eventmask_t m;
+
   set_led (!led_inverted);
-  chopstx_usec_wait (on_time);
+  m = eventflag_wait_timeout (&led_event, on_time);
   set_led (led_inverted);
-  chopstx_usec_wait (off_time);
+  if (!m)
+    m = eventflag_wait_timeout (&led_event, off_time);
+  return m;
 }
 
-static void display_status_code (void)
+static eventmask_t
+display_status_code (void)
 {
+  eventmask_t m;
   enum ccid_state ccid_state = *ccid_state_p;
 
   if (ccid_state == CCID_STATE_START)
-    emit_led (LED_TIMEOUT_ONE, LED_TIMEOUT_STOP);
+    m = emit_led (LED_TIMEOUT_ONE, LED_TIMEOUT_STOP);
   else
     /* OpenPGP card thread is running */
     {
-      emit_led ((auth_status & AC_ADMIN_AUTHORIZED)?
-		LED_TIMEOUT_ONE : LED_TIMEOUT_ZERO, LED_TIMEOUT_INTERVAL);
-      emit_led ((auth_status & AC_OTHER_AUTHORIZED)?
-		LED_TIMEOUT_ONE : LED_TIMEOUT_ZERO, LED_TIMEOUT_INTERVAL);
-      emit_led ((auth_status & AC_PSO_CDS_AUTHORIZED)?
-		LED_TIMEOUT_ONE : LED_TIMEOUT_ZERO, LED_TIMEOUT_INTERVAL);
+      m = emit_led ((auth_status & AC_ADMIN_AUTHORIZED)?
+		    LED_TIMEOUT_ONE : LED_TIMEOUT_ZERO, LED_TIMEOUT_INTERVAL);
+      if (m) return m;
+      m = emit_led ((auth_status & AC_OTHER_AUTHORIZED)?
+		    LED_TIMEOUT_ONE : LED_TIMEOUT_ZERO, LED_TIMEOUT_INTERVAL);
+      if (m) return m;
+      m = emit_led ((auth_status & AC_PSO_CDS_AUTHORIZED)?
+		    LED_TIMEOUT_ONE : LED_TIMEOUT_ZERO, LED_TIMEOUT_INTERVAL);
+      if (m) return m;
 
       if (ccid_state == CCID_STATE_WAIT)
-	chopstx_usec_wait (LED_TIMEOUT_STOP * 2);
+	m = eventflag_wait_timeout (&led_event, LED_TIMEOUT_STOP * 2);
       else
 	{
-	  chopstx_usec_wait (LED_TIMEOUT_INTERVAL);
-	  emit_led (ccid_state == CCID_STATE_RECEIVE?
-		    LED_TIMEOUT_ONE : LED_TIMEOUT_ZERO, LED_TIMEOUT_STOP);
+	  m = eventflag_wait_timeout (&led_event, LED_TIMEOUT_INTERVAL);
+	  if (m) return m;
+	  m = emit_led (ccid_state == CCID_STATE_RECEIVE?
+			LED_TIMEOUT_ONE : LED_TIMEOUT_ZERO, LED_TIMEOUT_STOP);
 	}
     }
+
+  return m;
 }
 
 void
@@ -344,30 +357,36 @@ main (int argc, const char *argv[])
       eventmask_t m;
 
       m = eventflag_wait (&led_event);
-      switch (m)
-	{
-	case LED_ONESHOT:
-	  emit_led (100*1000, LED_TIMEOUT_STOP);
-	  break;
-	case LED_TWOSHOTS:
-	  emit_led (50*1000, 50*1000);
-	  emit_led (50*1000, LED_TIMEOUT_STOP);
-	  break;
-	case LED_SHOW_STATUS:
-	  display_status_code ();
-	  break;
-	case LED_FATAL:
-	  display_fatal_code ();
-	  break;
-	case LED_SYNC:
-	  set_led (led_inverted);
-	  break;
-	case LED_GNUK_EXEC:
-	  goto exec;
-	default:
-	  emit_led (LED_TIMEOUT_ZERO, LED_TIMEOUT_STOP);
-	  break;
-	}
+
+      do
+	switch (m)
+	  {
+	  case LED_ONESHOT:
+	    m = emit_led (100*1000, LED_TIMEOUT_STOP);
+	    break;
+	  case LED_TWOSHOTS:
+	    m = emit_led (50*1000, 50*1000);
+	    if (m)
+	      break;
+	    m = emit_led (50*1000, LED_TIMEOUT_STOP);
+	    break;
+	  case LED_SHOW_STATUS:
+	    m = display_status_code ();
+	    break;
+	  case LED_FATAL:
+	    display_fatal_code ();
+	    break;
+	  case LED_SYNC:
+	    set_led (led_inverted);
+	    m = 0;
+	    break;
+	  case LED_GNUK_EXEC:
+	    goto exec;
+	  default:
+	    m = emit_led (LED_TIMEOUT_ZERO, LED_TIMEOUT_STOP);
+	    break;
+	  }
+      while (m);
     }
 
  exec:

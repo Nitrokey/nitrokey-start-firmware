@@ -1,5 +1,12 @@
 2017-11-17  NIIBE Yutaka  <gniibe@fsij.org>
 
+	* src/stack-def.h (SIZE_0): Increase.
+
+	* src/main.c (emit_led, display_status_code, main): Use
+	eventflag_wait_timeout instead of chopstx_usec_wait.
+
+2017-11-17  NIIBE Yutaka  <gniibe@fsij.org>
+
 	* regnual/regnual.c (calc_crc32): Enable CRC module.
 
 	* src/neug.c (crc32_rv_stop): New.
