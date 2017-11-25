@@ -1,5 +1,26 @@
 Gnuk NEWS - User visible changes
 
+* Major changes in Gnuk 1.2.7
+
+  Released 2017-11-XX, by NIIBE Yutaka
+
+** reGNUal
+reGNUal enables CRC module by itself.
+
+** Flash update change
+CRC module is disabled when Gnuk stops.  It's reGNUal which needs to
+enable CRC module.
+
+** Support of USB suspend
+USB suspend and wakeup event are now handled.
+
+** KDF-DO support and KDF by host
+KDF-DO is now available.  Host can use this feature.
+
+** Upgrade of Chopstx
+We use Chopstx 1.6.
+
+
 * Major changes in Gnuk 1.2.6
 
   Released 2017-10-11, by NIIBE Yutaka
