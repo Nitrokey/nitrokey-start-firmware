@@ -1,5 +1,7 @@
 2017-11-24  NIIBE Yutaka  <gniibe@fsij.org>
 
+	* regnual/regnual.c (calc_crc32): Enable CRC module fix.
+
 	* chopstx: Update to 1.6.
 
 2017-11-17  NIIBE Yutaka  <gniibe@fsij.org>

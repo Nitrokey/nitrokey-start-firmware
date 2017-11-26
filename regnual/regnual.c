@@ -173,7 +173,7 @@ static uint32_t calc_crc32 (void)
 {
   int i;
 
-  RCC->AHBENR &= ~RCC_AHBENR_CRCEN;
+  RCC->AHBENR |= RCC_AHBENR_CRCEN;
   CRC->CR = CRC_CR_RESET;
 
   for (i = 0; i < 256/4; i++)
