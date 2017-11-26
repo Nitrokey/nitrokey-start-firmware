@@ -429,7 +429,11 @@ cmd_change_password (void)
       gpg_do_write_simple (NR_DO_KEYSTRING_PW1, new_ks0, KS_META_SIZE);
       ac_reset_pso_cds ();
       ac_reset_other ();
-      if (admin_authorized == BY_USER)
+      /* When it was already admin-less mode, admin_authorized is
+       * BY_USER.  If no PW3 keystring, it's becoming admin-less mode,
+       * now.  For these two cases, we need to reset admin
+       * authorization status.  */
+      if (admin_authorized == BY_USER || ks_pw3 == NULL)
 	ac_reset_admin ();
       DEBUG_INFO ("Changed length of DO_KEYSTRING_PW1.\r\n");
       GPG_SUCCESS ();
