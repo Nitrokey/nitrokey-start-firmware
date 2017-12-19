@@ -1,3 +1,7 @@
+2017-12-19  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* chopstx: Update to 1.7.
+
 2017-11-26  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* src/openpgp.c (cmd_change_password): Bug fix for admin-less
