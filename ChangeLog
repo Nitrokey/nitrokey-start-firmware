@@ -1,3 +1,8 @@
+2018-01-09  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* tests/card_reader.py (CardReader.ccid_power_on): Fix for
+	other card readers for Gemalto's.
+
 2017-12-19  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* chopstx: Update to 1.7.
