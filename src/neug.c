@@ -1,7 +1,7 @@
 /*
  * neug.c - true random number generation
  *
- * Copyright (C) 2011, 2012, 2013, 2016, 2017
+ * Copyright (C) 2011, 2012, 2013, 2016, 2017, 2018
  *               Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
@@ -114,6 +114,11 @@ rbit (uint32_t v)
   v = ((v >> 8) & 0x00FF00FF) | ((v & 0x00FF00FF) << 8);
   v = ( v >> 16             ) | ( v               << 16);
   return v;
+}
+
+void
+crc32_rv_stop (void)
+{
 }
 #else
 void

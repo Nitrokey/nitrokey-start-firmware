@@ -1,3 +1,7 @@
+2018-01-18  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/neug.c: Update from NeuG.
+
 2018-01-09  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* tests/card_reader.py (CardReader.ccid_power_on): Fix for
