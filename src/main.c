@@ -40,8 +40,6 @@
 #include <stdlib.h>
 #define main emulated_main
 #else
-#include "mcu/cortex-m.h"
-#include "mcu/stm32.h"
 #include "mcu/stm32f103.h"
 #endif
 
