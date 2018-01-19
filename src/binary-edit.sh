@@ -1,11 +1,8 @@
 # This is a Bash script to be included.
 
-FILE="build/neug-vidpid.elf"
-
 # Idx Name          Size      VMA       LMA       File off  Algn
 # =================
 #   2 .text         00004a40  080010f0  080010f0  000110f0  2**4
-# 08006500 l     O .text	00000012 vcom_device_desc
 # 08006550 l     O .text	00000012 device_desc
 # =================
 # VMA =0x080010f0

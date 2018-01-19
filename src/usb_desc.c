@@ -70,7 +70,9 @@ uint8_t device_desc[] = {
   0x00,   /* bDeviceSubClass */
   0x00,   /* bDeviceProtocol */
   0x40,   /* bMaxPacketSize0 */
-#include "usb-vid-pid-ver.c.inc"
+  0x00, 0x00,			/* idVendor  (will be replaced)     */
+  0x00, 0x00,			/* idProduct (will be replaced)     */
+  0x00, 0x00,			/* bcdDevice (will be replaced)     */
   1, /* Index of string descriptor describing manufacturer */
   2, /* Index of string descriptor describing product */
   3, /* Index of string descriptor describing the device's serial number */

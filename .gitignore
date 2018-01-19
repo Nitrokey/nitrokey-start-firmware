@@ -8,6 +8,7 @@ src/gnuk.ld
 src/board.h
 src/build/*
 src/*.inc
+src/put-vid-pid-ver.sh
 regnual/regnual.bin
 regnual/regnual.hex
 regnual/regnual.elf

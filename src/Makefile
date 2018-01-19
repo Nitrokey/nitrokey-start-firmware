@@ -76,7 +76,13 @@ distclean: clean
 	-rm -f gnuk.ld config.h board.h config.mk \
 	       usb-strings.c.inc usb-vid-pid-ver.c.inc
 
-ifneq ($(EMULATION),)
+ifeq ($(EMULATION),)
+build/gnuk-vidpid.elf: build/gnuk.elf binary-edit.sh put-vid-pid-ver.sh
+	cp -p build/gnuk.elf build/gnuk-vidpid.elf
+	bash put-vid-pid-ver.sh
+	$(OBJCOPY) -O ihex build/gnuk-vidpid.elf build/gnuk-vidpid.hex
+	$(OBJCOPY) -O binary build/gnuk-vidpid.elf build/gnuk-vidpid.bin
+else
 # By specifying DESTDIR on invocation of "make", you can install
 # program to different ROOT.
 

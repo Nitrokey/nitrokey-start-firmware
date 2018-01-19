@@ -1,6 +1,9 @@
 2018-01-19  NIIBE Yutaka  <gniibe@fsij.org>
 
-	* src/binary-edit.sh: Copied from NeuG 1.0.8.
+	* src/binary-edit.sh: Copied from NeuG 1.0.8.  Exclude FILE.
+	* src/configure (output_vid_pid_version): Generate a shell script.
+	* src/Makefile (build/gnuk-vidpid.elf): New target.
+	* src/usb_desc.c (device_desc): Make this array as a template.
 
 	* chopstx: Update to 1.8.
 
