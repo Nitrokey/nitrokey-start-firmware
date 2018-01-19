@@ -1,5 +1,7 @@
 2018-01-19  NIIBE Yutaka  <gniibe@fsij.org>
 
+	* src/binary-edit.sh: Copied from NeuG 1.0.8.
+
 	* chopstx: Update to 1.8.
 
 2018-01-18  NIIBE Yutaka  <gniibe@fsij.org>

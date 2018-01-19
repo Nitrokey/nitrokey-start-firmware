@@ -1,5 +1,21 @@
 Gnuk NEWS - User visible changes
 
+* Major changes in Gnuk 1.2.8
+
+  Released 2018-01-2X, by NIIBE Yutaka
+
+** No inclusion of VID:PID in gnuk.elf
+
+Distribution of binary image with VID:PID would violate vendor ID
+agreement to USB Forum.  Now, we have new file named gnuk-vidpid.elf
+for flashing.  The file gnuk.elf can be used to generate
+gnuk-vidpid.elf and we can check if it is reproducible or not.
+
+
+** Upgrade of Chopstx
+We use Chopstx 1.8.
+
+
 * Major changes in Gnuk 1.2.7
 
   Released 2017-11-26, by NIIBE Yutaka
