@@ -37,6 +37,7 @@
 
 static struct eventflag *openpgp_comm;
 
+#define USER_PASSWD_MINLEN 6
 #define ADMIN_PASSWD_MINLEN 8
 
 #define CLS(a) a.cmd_apdu_head[0]
@@ -347,8 +348,9 @@ cmd_change_password (void)
 	  newpw_len = len - pw_len;
 	  ks_pw3 = gpg_do_read_simple (NR_DO_KEYSTRING_PW3);
 
-	  /* Check length of password for admin-less mode.  */
-	  if (ks_pw3 == NULL && newpw_len < ADMIN_PASSWD_MINLEN)
+	  /* Check length of password */
+	  if ((ks_pw3 == NULL && newpw_len < ADMIN_PASSWD_MINLEN)
+	      || newpw_len < USER_PASSWD_MINLEN)
 	    {
 	      DEBUG_INFO ("new password length is too short.");
 	      GPG_CONDITION_NOT_SATISFIED ();
@@ -388,6 +390,7 @@ cmd_change_password (void)
 	{
 	  newpw = pw + pw_len;
 	  newpw_len = len - pw_len;
+
 	  if (newpw_len == 0 && admin_authorized == BY_ADMIN)
 	    {
 	      const uint8_t *initial_pw;
@@ -396,6 +399,12 @@ cmd_change_password (void)
 	      memcpy (newpw, initial_pw, newpw_len);
 	      newsalt_len = 0;
 	      pw3_null = 1;
+	    }
+	  else if (newpw_len < ADMIN_PASSWD_MINLEN)
+	    {
+	      DEBUG_INFO ("new password length is too short.");
+	      GPG_CONDITION_NOT_SATISFIED ();
+	      return;
 	    }
 
 	  who_old = admin_authorized;

@@ -1,5 +1,10 @@
 2018-01-22  NIIBE Yutaka  <gniibe@fsij.org>
 
+	* src/openpgp.c (USER_PASSWD_MINLEN): New.
+	(cmd_change_password): Check passphrase length.
+
+2018-01-22  NIIBE Yutaka  <gniibe@fsij.org>
+
 	* src/openpgp.c (cmd_change_password): Remove access to private
 	key with BY_ADMIN when it's becoming admin-less mode.
 
