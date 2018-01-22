@@ -1,3 +1,8 @@
+2018-01-22  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/openpgp.c (cmd_change_password): Remove access to private
+	key with BY_ADMIN when it's becoming admin-less mode.
+
 2018-01-19  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* src/binary-edit.sh: Copied from NeuG 1.0.8.  Exclude FILE.

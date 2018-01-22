@@ -1,7 +1,7 @@
 /*
  * openpgp.c -- OpenPGP card protocol support
  *
- * Copyright (C) 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+ * Copyright (C) 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
  *               Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
@@ -426,15 +426,26 @@ cmd_change_password (void)
     }
   else if (r > 0 && who == BY_USER)
     {
-      gpg_do_write_simple (NR_DO_KEYSTRING_PW1, new_ks0, KS_META_SIZE);
-      ac_reset_pso_cds ();
-      ac_reset_other ();
       /* When it was already admin-less mode, admin_authorized is
        * BY_USER.  If no PW3 keystring, it's becoming admin-less mode,
        * now.  For these two cases, we need to reset admin
        * authorization status.  */
-      if (admin_authorized == BY_USER || ks_pw3 == NULL)
+      if (admin_authorized == BY_USER)
 	ac_reset_admin ();
+      else if (ks_pw3 == NULL)
+	{
+	  enum kind_of_key kk0;
+
+	  /* Remove keystrings for BY_ADMIN.  */
+	  for (kk0 = 0; kk0 <= GPG_KEY_FOR_AUTHENTICATION; kk0++)
+	    gpg_do_chks_prvkey (kk0, BY_ADMIN, NULL, 0, NULL);
+
+	  ac_reset_admin ();
+	}
+
+      gpg_do_write_simple (NR_DO_KEYSTRING_PW1, new_ks0, KS_META_SIZE);
+      ac_reset_pso_cds ();
+      ac_reset_other ();
       DEBUG_INFO ("Changed length of DO_KEYSTRING_PW1.\r\n");
       GPG_SUCCESS ();
     }

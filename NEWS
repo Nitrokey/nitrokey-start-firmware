@@ -11,6 +11,12 @@ agreement to USB Forum.  Now, we have new file named gnuk-vidpid.elf
 for flashing.  The file gnuk.elf can be used to generate
 gnuk-vidpid.elf and we can check if it is reproducible or not.
 
+** Remove access with BY_ADMIN
+
+For admin-less mode, access by OPENPGP_CARD_INITIAL_PW3 remained on
+flash ROM.  This could be considered a backdoor, if some other person
+had or kept access to the flash ROM.  Now, the entry is cleared by
+zero when the token is set to admin-less mode.
 
 ** Upgrade of Chopstx
 We use Chopstx 1.8.
