@@ -73,16 +73,20 @@ and make:  ::
   $ make
 
 Please take care of configure options.  The default target in 1.0.x
-series is Olimex STM32 H103 (not FST-01).  The default target in 1.1.8
+series is Olimex STM32 H103 (not FST-01).  The default target in 1.2.x
 is FST-01.
 
+Then you get build/gnuk.elf.
 
-Then you get build/gnuk.elf and build/gnuk.bin.
+Next, we can get the final image by running following command.
 
-Invoking configure with FSIJ's USB ID (234b:0000) means that you are
-using FSIJ's USB ID (for reGNUal in this case).  Please note that FSIJ
-only allows use of its USB ID for specific situations.  Please read
-README of Gnuk about that.
+  $ make build/gnuk-vidpid.elf
+
+
+Invoking configure with FSIJ's USB ID (234b:0000) and generating
+gnuk-vidpid.elf means that you are using FSIJ's USB ID (for reGNUal in
+this case).  Please note that FSIJ only allows use of its USB ID for
+specific situations.  Please read README of Gnuk about that.
 
 
 Bulding reGNUal
@@ -117,13 +121,13 @@ your environment for Gnuk Token.
 How to run the script: ::
 
   $ cd tool
-  $ ./upgrade_by_passwd.py ../regnual/regnual.bin ../src/build/gnuk.bin
+  $ ./upgrade_by_passwd.py ../regnual/regnual.bin ../src/build/gnuk-vidpid.bin
 
 Then, the script on your host PC invoke the steps described above, and
 you will get new version of Gnuk installed.
 
-You can also specify -p option to enter your password (other than
-factory setting).
+You can also specify -f option to skip entering your password (it
+assumes the factory setting).
 
 If you already have configured another upgrade key installed, you can
 specify different slot by -k ``<slot_no>`` option.  SLOT_NO can be 0

@@ -65,7 +65,7 @@ Invoking firmware update
 
 We specify reGNUal binary and Gnuk binary.
 
-  $ ../tool/gnuk_upgrade.py ../regnual/regnual.bin gnuk.bin 
+  $ ../tool/gnuk_upgrade.py ../regnual/regnual.bin gnuk-vidpid.bin 
 
 
 Two or more tokens
