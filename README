@@ -256,7 +256,7 @@ External source code
 
 Gnuk is distributed with external source code.
 
-* chopstx/  -- Chopstx 1.5
+* chopstx/  -- Chopstx 1.8
 
   We use Chopstx as the kernel for Gnuk.
 
@@ -597,11 +597,11 @@ See doc/note/firmware-update.
 Git Repositories
 ================
 
-Please use: https://anonscm.debian.org/cgit/gnuk/gnuk/
+Please use: https://salsa.debian.org/gnuk-team/gnuk/
 
 You can get it by:
  
-    $ git clone git://anonscm.debian.org/gnuk/gnuk/gnuk.git
+    $ git clone https://salsa.debian.org/gnuk-team/gnuk/gnuk.git
 
 It's also available at: www.gniibe.org
 You can browse at: https://git.gniibe.org/gitweb?p=gnuk/gnuk.git;a=summary
@@ -622,9 +622,8 @@ Please see the FST-01 support pages:
 
 Please consider to join Gnuk-users mailing list:
 
-    https://lists.alioth.debian.org/mailman/listinfo/gnuk-users
+    https://lists.gnupg.org/mailman/listinfo/gnuk-users
 
-The mailing list will be moved to lists.debian.org.
 
 
 Your Contributions
