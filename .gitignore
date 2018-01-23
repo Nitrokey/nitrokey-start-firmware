@@ -1,6 +1,7 @@
 *.lst
 *.o
 *.pyc
+regnual/regnual-no-vidpid.elf
 src/.dep
 src/config.mk
 src/config.h
