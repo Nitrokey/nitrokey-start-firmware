@@ -1,5 +1,7 @@
 2018-01-23  NIIBE Yutaka  <gniibe@fsij.org>
 
+	* VERSION: 1.2.8.
+
 	* src/Makefile (build/gnuk-vidpid.elf): Supply FILE here.
 	* src/configure (output_vendor_product_serial_strings): For
 	generating put-vid-pid-ver.sh, don't set FILE.
