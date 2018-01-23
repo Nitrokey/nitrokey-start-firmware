@@ -408,8 +408,7 @@ output_vendor_product_serial_strings () {
 
 (echo "#! /bin/bash"
  echo
- echo 'FILE="build/gnuk-vidpid.elf"'
- echo '. "binary-edit.sh"') > put-vid-pid-ver.sh
+ echo 'source "binary-edit.sh"') > put-vid-pid-ver.sh
 
 if !(IFS="	"
   while read -r VIDPID VERSION PRODUCT VENDOR; do

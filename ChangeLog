@@ -1,3 +1,13 @@
+2018-01-23  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/Makefile (build/gnuk-vidpid.elf): Supply FILE here.
+	* src/configure (output_vendor_product_serial_strings): For
+	generating put-vid-pid-ver.sh, don't set FILE.
+
+	* regnual/regnual.c (regnual_device_desc): Make this array as a
+	template.
+	* regnual/Makefile (regnual.elf): Substitute VID:PID.
+
 2018-01-22  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* src/openpgp.c (USER_PASSWD_MINLEN): New.
