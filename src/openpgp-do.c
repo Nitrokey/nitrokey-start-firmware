@@ -860,7 +860,11 @@ rw_kdf (uint16_t tag, int with_tag, const uint8_t *data, int len, int is_write)
     }
   else
     {
-      copy_do_1 (tag, do_ptr[NR_DO_KDF], with_tag);
+      if (do_ptr[NR_DO_KDF])
+	copy_do_1 (tag, do_ptr[NR_DO_KDF], with_tag);
+      else
+	return 0;
+
       return 1;
     }
 }

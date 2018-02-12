@@ -1,3 +1,7 @@
+2018-02-12  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/openpgp-do.c (rw_kdf): Return 0 when NULL.
+
 2018-01-23  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* VERSION: 1.2.8.
