@@ -1,3 +1,7 @@
+2018-03-22  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/openpgp-do.c (rw_kdf): Do format validation earlier.
+
 2018-03-13  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* src/flash.c [FLASH_UPGRADE_SUPPORT] (flash_terminate): Erase
