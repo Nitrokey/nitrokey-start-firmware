@@ -1,3 +1,9 @@
+2018-03-30  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/openpgp-do.c (rw_kdf): Support single-salt KDF.
+	(gpg_do_get_initial_pw_setting): Likewise.
+	(gpg_do_kdf_check): Likewise.
+
 2018-03-22  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* src/openpgp-do.c (rw_kdf): Do format validation earlier.

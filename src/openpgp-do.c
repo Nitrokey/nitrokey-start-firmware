@@ -1,7 +1,7 @@
 /*
  * openpgp-do.c -- OpenPGP card Data Objects (DO) handling
  *
- * Copyright (C) 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+ * Copyright (C) 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
  *               Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
@@ -807,7 +807,8 @@ rw_algorithm_attr (uint16_t tag, int with_tag,
     }
 }
 
-#define SIZE_OF_KDF_DO             110
+#define SIZE_OF_KDF_DO_MIN              90
+#define SIZE_OF_KDF_DO_MAX             110
 #define OPENPGP_KDF_ITERSALTED_S2K 3
 #define OPENPGP_SHA256             8
 
@@ -827,19 +828,33 @@ rw_kdf (uint16_t tag, int with_tag, const uint8_t *data, int len, int is_write)
 	return 0;
 
       /* The valid data format is:
-	 81 01 03 = KDF_ITERSALTED_S2K
-	 82 01 08 = SHA256
-	 83 04 4-byte... = count
-	 84 08 8-byte... = salt user
-	 85 08 8-byte... = salt reset-code
-	 86 08 8-byte... = salt admin
-	 87 20 32-byte user hash
-	 88 20 32-byte admin hash
+	 Deleting:
+           nothing
+	 Minimum (for admin-less):
+	   81 01 03 = KDF_ITERSALTED_S2K
+	   82 01 08 = SHA256
+	   83 04 4-byte... = count
+	   84 08 8-byte... = salt
+	   87 20 32-byte user hash
+	   88 20 32-byte admin hash
+	 Full:
+	   81 01 03 = KDF_ITERSALTED_S2K
+	   82 01 08 = SHA256
+	   83 04 4-byte... = count
+	   84 08 8-byte... = salt user
+	   85 08 8-byte... = salt reset-code
+	   86 08 8-byte... = salt admin
+	   87 20 32-byte user hash
+	   88 20 32-byte admin hash
       */
-      if (len != SIZE_OF_KDF_DO ||
-	  !(data[0] == 0x81 && data[3] == 0x82 && data[6] == 0x83
-	    && data[12] == 0x84 && data[22] == 0x85 && data[32] == 0x86
-	    && data[42] == 0x87 && data[76] == 0x88))
+      if (!(len == 0
+	    || (len == SIZE_OF_KDF_DO_MIN &&
+		(data[0] == 0x81 && data[3] == 0x82 && data[6] == 0x83
+		 && data[12] == 0x84 && data[22] == 0x87 && data[56] == 0x88))
+	    || (len == SIZE_OF_KDF_DO_MAX &&
+		(data[0] == 0x81 && data[3] == 0x82 && data[6] == 0x83
+		 && data[12] == 0x84 && data[22] == 0x85 && data[32] == 0x86
+		 && data[42] == 0x87 && data[76] == 0x88))))
 	return 0;
 
       if (*do_data_p)
@@ -852,7 +867,7 @@ rw_kdf (uint16_t tag, int with_tag, const uint8_t *data, int len, int is_write)
 	}
       else
 	{
-	  *do_data_p = flash_do_write (NR_DO_KDF, data, SIZE_OF_KDF_DO);
+	  *do_data_p = flash_do_write (NR_DO_KDF, data, len);
 	  if (*do_data_p)
 	    return 1;
 	  else
@@ -873,10 +888,22 @@ rw_kdf (uint16_t tag, int with_tag, const uint8_t *data, int len, int is_write)
 int
 gpg_do_kdf_check (int len, int how_many)
 {
-  const uint8_t *kdf_spec = gpg_do_read_simple (NR_DO_KDF);
+  const uint8_t *kdf_do = do_ptr[NR_DO_KDF];
 
-  if (kdf_spec && (kdf_spec[43] * how_many) != len)
-    return 0;
+  if (kdf_do)
+    {
+      const uint8_t *kdf_spec = kdf_do+1;
+      int kdf_do_len = kdf_do[0];
+      int hash_len;
+
+      if (kdf_do_len == SIZE_OF_KDF_DO_MAX)      
+	hash_len = kdf_spec[43];
+      else
+	hash_len = kdf_spec[23];
+
+      if ((hash_len * how_many) == len)
+	return 0;
+    }
 
   return 1;
 }
@@ -884,15 +911,29 @@ gpg_do_kdf_check (int len, int how_many)
 void
 gpg_do_get_initial_pw_setting (int is_pw3, int *r_len, const uint8_t **r_p)
 {
-  const uint8_t *kdf_spec = gpg_do_read_simple (NR_DO_KDF);
+  const uint8_t *kdf_do = do_ptr[NR_DO_KDF];
 
-  if (kdf_spec)
+  if (kdf_do)
     {
+      int len = kdf_do[0];
+      const uint8_t *kdf_spec = kdf_do+1;
+
       *r_len = 32;
-      if (is_pw3)
-	*r_p = kdf_spec + 78;
+
+      if (len == SIZE_OF_KDF_DO_MIN)
+	{
+	  if (is_pw3)
+	    *r_p = kdf_spec + 58;
+	  else
+	    *r_p = kdf_spec + 24;
+	}
       else
-	*r_p = kdf_spec + 44;
+	{
+	  if (is_pw3)
+	    *r_p = kdf_spec + 78;
+	  else
+	    *r_p = kdf_spec + 44;
+	}
     }
   else
     {
