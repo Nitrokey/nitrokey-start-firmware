@@ -896,12 +896,12 @@ gpg_do_kdf_check (int len, int how_many)
       int kdf_do_len = kdf_do[0];
       int hash_len;
 
-      if (kdf_do_len == SIZE_OF_KDF_DO_MAX)      
-	hash_len = kdf_spec[43];
-      else
+      if (kdf_do_len == SIZE_OF_KDF_DO_MIN)
 	hash_len = kdf_spec[23];
+      else
+	hash_len = kdf_spec[43];
 
-      if ((hash_len * how_many) == len)
+      if ((hash_len * how_many) != len)
 	return 0;
     }
 
