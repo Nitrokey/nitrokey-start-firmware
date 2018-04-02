@@ -44,4 +44,4 @@ def kdf_calc(pw_string, salt_byte, iterations):
                                   GCRY_MD_SHA256, salt, 8, iterations, 32, kb)
     if r != 0:
         raise ValueError("libgcrypt error", r)
-    return ffi.string(kb)
+    return ffi.unpack(kb, 32)
