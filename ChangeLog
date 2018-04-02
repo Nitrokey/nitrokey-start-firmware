@@ -1,3 +1,11 @@
+2018-04-02  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* tool/gnuk_token.py (parse_kdf_data): New.
+	* tool/kdf_calc.py: New.
+
+	* tool/gnuk_remove_keys_libusb.py (main): Support KDF auth.
+	* tool/upgrade_by_passwd.py (main): Likewise.
+
 2018-03-30  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* src/openpgp-do.c (rw_kdf): Support single-salt KDF.

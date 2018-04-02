@@ -3,7 +3,7 @@
 """
 gnuk_remove_keys_libusb.py - a tool to remove keys in Gnuk Token
 
-Copyright (C) 2012 Free Software Initiative of Japan
+Copyright (C) 2012, 2018 Free Software Initiative of Japan
 Author: NIIBE Yutaka <gniibe@fsij.org>
 
 This file is a part of Gnuk, a GnuPG USB Token implementation.
@@ -24,7 +24,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import sys, os
 
-from gnuk_token import *
+from gnuk_token import gnuk_devices, gnuk_token, parse_kdf_data
+from kdf_calc import kdf_calc
 
 # Assume only single CCID device is attached to computer and it's Gnuk Token
 
@@ -42,13 +43,28 @@ def main(passwd):
             break
         except:
             pass
+    if not gnuk:
+        raise ValueError("No ICC present")
     if gnuk.icc_get_status() == 2:
         raise ValueError("No ICC present")
     elif gnuk.icc_get_status() == 1:
         gnuk.icc_power_on()
     gnuk.cmd_select_openpgp()
-    gnuk.cmd_verify(BY_ADMIN, passwd.encode('UTF-8'))
-    gnuk.cmd_select_openpgp()
+    # Compute passwd data
+    kdf_data = gnuk.cmd_get_data(0x00, 0xf9).tostring()
+    if kdf_data == "":
+        passwd_data = passwd.encode('UTF-8')
+    else:
+        algo, subalgo, iters, salt_user, salt_reset, salt_admin, \
+            hash_user, hash_admin = parse_kdf_data(kdf_data)
+        if salt_admin:
+            salt = salt_admin
+        else:
+            salt = salt_user
+        passwd_data = kdf_calc(passwd, salt, iters)
+    # And authenticate with the passwd data
+    gnuk.cmd_verify(BY_ADMIN, passwd_data)
+    # Do remove keys and related data objects
     gnuk.cmd_put_data_remove(0x00, 0xc7) # FP_SIG
     gnuk.cmd_put_data_remove(0x00, 0xce) # KGTIME_SIG
     gnuk.cmd_put_data_key_import_remove(1)
