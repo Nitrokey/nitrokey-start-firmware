@@ -642,7 +642,7 @@ def parse_kdf_data(kdf_data):
     elif len(kdf_data) == 110:
         single_salt = False
     else:
-        raise ValueError("length does not much")
+        raise ValueError("length does not much", kdf_data)
 
     if kdf_data[0:2] != b'\x81\x01':
         raise ValueError("data does not much")

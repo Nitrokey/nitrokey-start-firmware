@@ -52,7 +52,7 @@ def main(passwd):
     gnuk.cmd_select_openpgp()
     # Compute passwd data
     kdf_data = gnuk.cmd_get_data(0x00, 0xf9).tostring()
-    if kdf_data == "":
+    if kdf_data == b"":
         passwd_data = passwd.encode('UTF-8')
     else:
         algo, subalgo, iters, salt_user, salt_reset, salt_admin, \

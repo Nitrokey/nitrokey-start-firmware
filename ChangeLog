@@ -1,3 +1,8 @@
+2018-04-03  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* tool/upgrade_by_passwd.py (main): Fix for byte compare.
+	* tool/gnuk_remove_keys_libusb.py (main): Likewise.
+
 2018-04-02  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* tool/gnuk_token.py (parse_kdf_data): New.
