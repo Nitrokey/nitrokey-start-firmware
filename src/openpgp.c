@@ -171,7 +171,8 @@ cmd_verify (void)
 	    r = ac_check_status (AC_ADMIN_AUTHORIZED);
 
 	  if (r)
-	    GPG_SUCCESS ();	/* If authentication done already, return success.  */
+	    /* If authentication done already, return success.  */
+	    GPG_SUCCESS ();
 	  else
 	    {		 /* If not, return retry counter, encoded.  */
 	      r = gpg_pw_get_retry_counter (p2);

@@ -860,6 +860,14 @@ rw_kdf (uint16_t tag, int with_tag, const uint8_t *data, int len, int is_write)
       if (*do_data_p)
 	flash_do_release (*do_data_p);
 
+      /* Clear all keystrings and auth states */
+      gpg_do_write_simple (NR_DO_KEYSTRING_PW1, NULL, 0);
+      gpg_do_write_simple (NR_DO_KEYSTRING_RC, NULL, 0);
+      gpg_do_write_simple (NR_DO_KEYSTRING_PW3, NULL, 0);
+      ac_reset_admin ();
+      ac_reset_pso_cds ();
+      ac_reset_other ();
+
       if (len == 0)
 	{
 	  *do_data_p = NULL;
