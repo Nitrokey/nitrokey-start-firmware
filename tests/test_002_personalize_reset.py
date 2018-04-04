@@ -1,7 +1,7 @@
 """
 test_personalize_reset.py - test resetting personalization of card
 
-Copyright (C) 2016  g10 Code GmbH
+Copyright (C) 2016, 2018  g10 Code GmbH
 Author: NIIBE Yutaka <gniibe@fsij.org>
 
 This file is a part of Gnuk, a GnuPG USB Token implementation.
@@ -76,6 +76,6 @@ def test_verify_pw1_0_2(card):
     v = card.verify(2, FACTORY_PASSPHRASE_PW1)
     assert v
 
-def test_setup_reset_code(card):
+def test_delete_reset_code(card):
     r = card.cmd_put_data(0x00, 0xd3, b"")
     assert r

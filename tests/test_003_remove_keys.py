@@ -1,7 +1,7 @@
 """
 test_remove_keys.py - test removing keys on card
 
-Copyright (C) 2016  g10 Code GmbH
+Copyright (C) 2016, 2018  g10 Code GmbH
 Author: NIIBE Yutaka <gniibe@fsij.org>
 
 This file is a part of Gnuk, a GnuPG USB Token implementation.
