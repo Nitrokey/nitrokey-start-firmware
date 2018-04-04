@@ -909,7 +909,7 @@ gpg_do_kdf_check (int len, int how_many)
       else
 	hash_len = kdf_spec[43];
 
-      if ((hash_len * how_many) != len)
+      if ((hash_len * how_many) != len && hash_len != len)
 	return 0;
     }
 

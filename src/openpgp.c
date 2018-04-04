@@ -555,6 +555,7 @@ cmd_reset_user_password (void)
     {
       const uint8_t *ks_rc = gpg_do_read_simple (NR_DO_KEYSTRING_RC);
       uint8_t old_ks[KEYSTRING_MD_SIZE];
+      const uint8_t *ks_pw3 = gpg_do_read_simple (NR_DO_KEYSTRING_PW3);
 
       if (gpg_do_kdf_check (len, 2) == 0)
 	{
@@ -581,6 +582,16 @@ cmd_reset_user_password (void)
       salt_len = SALT_SIZE;
       newpw = pw + pw_len;
       newpw_len = len - pw_len;
+
+      /* Check length of new password */
+      if ((ks_pw3 == NULL && newpw_len < ADMIN_PASSWD_MINLEN)
+	  || newpw_len < USER_PASSWD_MINLEN)
+	{
+	  DEBUG_INFO ("new password length is too short.");
+	  GPG_CONDITION_NOT_SATISFIED ();
+	  return;
+	}
+
       random_get_salt (new_salt);
       s2k (salt, salt_len, pw, pw_len, old_ks);
       s2k (new_salt, SALT_SIZE, newpw, newpw_len, new_ks);

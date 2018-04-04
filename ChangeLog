@@ -1,6 +1,10 @@
 2018-04-04  NIIBE Yutaka  <gniibe@fsij.org>
 
+	* src/openpgp.c (cmd_reset_user_password): Check length of
+	new passphrase.
+
 	* src/openpgp-do.c (proc_resetting_code): Support removal.
+	(gpg_do_kdf_check): Fix for the case of resetting PW3.
 
 	* tests/test_004_reset_pw3.py: New.
 
