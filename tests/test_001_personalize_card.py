@@ -32,7 +32,7 @@ def test_setup_pw3_0(card):
     assert r
 
 def test_verify_pw3_0(card):
-    v = card.cmd_verify(3, PW3_TEST0)
+    v = card.verify(3, PW3_TEST0)
     assert v
 
 def test_login_put(card):
@@ -158,11 +158,11 @@ def test_setup_pw1_0(card):
     assert r
 
 def test_verify_pw1_0(card):
-    v = card.cmd_verify(1, PW1_TEST0)
+    v = card.verify(1, PW1_TEST0)
     assert v
 
 def test_verify_pw1_0_2(card):
-    v = card.cmd_verify(2, PW1_TEST0)
+    v = card.verify(2, PW1_TEST0)
     assert v
 
 def test_setup_pw1_1(card):
@@ -170,27 +170,27 @@ def test_setup_pw1_1(card):
     assert r
 
 def test_verify_pw1_1(card):
-    v = card.cmd_verify(1, PW1_TEST1)
+    v = card.verify(1, PW1_TEST1)
     assert v
 
 def test_verify_pw1_1_2(card):
-    v = card.cmd_verify(2, PW1_TEST1)
+    v = card.verify(2, PW1_TEST1)
     assert v
 
 def test_setup_reset_code(card):
-    r = card.cmd_put_data(0x00, 0xd3, RESETCODE_TEST)
+    r = card.setup_reset_code(RESETCODE_TEST)
     assert r
 
 def test_reset_code(card):
-    r = card.cmd_reset_retry_counter(0, 0x81, RESETCODE_TEST + PW1_TEST2)
+    r = card.reset_passwd_by_resetcode(RESETCODE_TEST, PW1_TEST2)
     assert r
 
 def test_verify_pw1_2(card):
-    v = card.cmd_verify(1, PW1_TEST2)
+    v = card.verify(1, PW1_TEST2)
     assert v
 
 def test_verify_pw1_2_2(card):
-    v = card.cmd_verify(2, PW1_TEST2)
+    v = card.verify(2, PW1_TEST2)
     assert v
 
 def test_setup_pw3_1(card):
@@ -198,19 +198,19 @@ def test_setup_pw3_1(card):
     assert r
 
 def test_verify_pw3_1(card):
-    v = card.cmd_verify(3, PW3_TEST1)
+    v = card.verify(3, PW3_TEST1)
     assert v
 
 def test_reset_userpass_admin(card):
-    r = card.cmd_reset_retry_counter(2, 0x81, PW1_TEST3)
+    r = card.reset_passwd_by_admin(PW1_TEST3)
     assert r
 
 def test_verify_pw1_3(card):
-    v = card.cmd_verify(1, PW1_TEST3)
+    v = card.verify(1, PW1_TEST3)
     assert v
 
 def test_verify_pw1_3_2(card):
-    v = card.cmd_verify(2, PW1_TEST3)
+    v = card.verify(2, PW1_TEST3)
     assert v
 
 def test_setup_pw1_4(card):
@@ -218,11 +218,11 @@ def test_setup_pw1_4(card):
     assert r
 
 def test_verify_pw1_4(card):
-    v = card.cmd_verify(1, PW1_TEST4)
+    v = card.verify(1, PW1_TEST4)
     assert v
 
 def test_verify_pw1_4_2(card):
-    v = card.cmd_verify(2, PW1_TEST4)
+    v = card.verify(2, PW1_TEST4)
     assert v
 
 def test_setup_pw3_2(card):
@@ -230,7 +230,7 @@ def test_setup_pw3_2(card):
     assert r
 
 def test_verify_pw3_2(card):
-    v = card.cmd_verify(3, PW3_TEST0)
+    v = card.verify(3, PW3_TEST0)
     assert v
 
 def test_sign_0(card):

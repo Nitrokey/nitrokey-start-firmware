@@ -102,6 +102,37 @@ class OpenPGP_Card(object):
                 passwd_new = b""
             return self.cmd_change_reference_data(who, passwd_old + passwd_new)
 
+    # Higher layer SETUP_RESET_CODE possibly using KDF Data Object
+    def setup_reset_code(self, resetcode):
+        if self.__kdf_iters:
+            salt = self.__kdf_salt_user
+            if self.__kdf_salt_reset:
+                    salt = self.__kdf_salt_user
+            reset_hash = kdf_calc(resetcode, salt, self.__kdf_iters)
+            return self.cmd_put_data(0x00, 0xd3, reset_hash)
+        else:
+            return self.cmd_put_data(0x00, 0xd3, resetcode)
+
+    # Higher layer reset passwd possibly using KDF Data Object
+    def reset_passwd_by_resetcode(self, resetcode, pw1):
+        if self.__kdf_iters:
+            salt = self.__kdf_salt_user
+            if self.__kdf_salt_reset:
+                    salt = self.__kdf_salt_user
+            reset_hash = kdf_calc(resetcode, salt, self.__kdf_iters)
+            pw1_hash = kdf_calc(pw1, self.__kdf_salt_user, self.__kdf_iters)
+            return self.cmd_reset_retry_counter(0, 0x81, reset_hash + pw1_hash)
+        else:
+            return self.cmd_reset_retry_counter(0, 0x81, resetcode + pw1)
+
+    # Higher layer reset passwd possibly using KDF Data Object
+    def reset_passwd_by_admin(self, pw1):
+        if self.__kdf_iters:
+            pw1_hash = kdf_calc(pw1, self.__kdf_salt_user, self.__kdf_iters)
+            return self.cmd_reset_retry_counter(2, 0x81, pw1_hash)
+        else:
+            return self.cmd_reset_retry_counter(2, 0x81, pw1)
+
     def cmd_get_response(self, expected_len):
         result = b""
         while True:

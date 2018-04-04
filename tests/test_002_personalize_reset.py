@@ -57,23 +57,23 @@ def test_pw1_status_put(card):
     assert r
 
 def test_setup_pw3_0(card):
-    r = card.cmd_change_reference_data(3, PW3_TEST0 + FACTORY_PASSPHRASE_PW3)
+    r = card.change_passwd(3, PW3_TEST0, FACTORY_PASSPHRASE_PW3)
     assert r
 
 def test_verify_pw3_0(card):
-    v = card.cmd_verify(3, FACTORY_PASSPHRASE_PW3)
+    v = card.verify(3, FACTORY_PASSPHRASE_PW3)
     assert v
 
 def test_setup_pw1_0(card):
-    r = card.cmd_change_reference_data(1, PW1_TEST4 + FACTORY_PASSPHRASE_PW1)
+    r = card.change_passwd(1, PW1_TEST4, FACTORY_PASSPHRASE_PW1)
     assert r
 
 def test_verify_pw1_0(card):
-    v = card.cmd_verify(1, FACTORY_PASSPHRASE_PW1)
+    v = card.verify(1, FACTORY_PASSPHRASE_PW1)
     assert v
 
 def test_verify_pw1_0_2(card):
-    v = card.cmd_verify(2, FACTORY_PASSPHRASE_PW1)
+    v = card.verify(2, FACTORY_PASSPHRASE_PW1)
     assert v
 
 def test_setup_reset_code(card):
