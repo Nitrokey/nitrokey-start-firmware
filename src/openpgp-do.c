@@ -971,34 +971,45 @@ proc_resetting_code (const uint8_t *data, int len)
 
   DEBUG_INFO ("Resetting Code!\r\n");
 
-  if (gpg_do_kdf_check (len, 1) == 0)
-    return 0;
+  if (len == 0)
+    {				/* Removal of resetting code.  */
+      enum kind_of_key kk0;
 
-  newpw_len = len;
-  newpw = data;
-  new_ks0[0] = newpw_len;
-  random_get_salt (salt);
-  s2k (salt, SALT_SIZE, newpw, newpw_len, new_ks);
-  r = gpg_change_keystring (admin_authorized, old_ks, BY_RESETCODE, new_ks);
-  if (r <= -2)
-    {
-      DEBUG_INFO ("memory error.\r\n");
-      return 0;
-    }
-  else if (r < 0)
-    {
-      DEBUG_INFO ("security error.\r\n");
-      return 0;
-    }
-  else if (r == 0)
-    {
-      DEBUG_INFO ("error (no prvkey).\r\n");
-      return 0;
+      for (kk0 = 0; kk0 <= GPG_KEY_FOR_AUTHENTICATION; kk0++)
+	gpg_do_chks_prvkey (kk0, BY_RESETCODE, NULL, 0, NULL);
+      gpg_do_write_simple (NR_DO_KEYSTRING_RC, NULL, 0);
     }
   else
     {
-      DEBUG_INFO ("done.\r\n");
-      gpg_do_write_simple (NR_DO_KEYSTRING_RC, new_ks0, KS_META_SIZE);
+      if (gpg_do_kdf_check (len, 1) == 0)
+	return 0;
+
+      newpw_len = len;
+      newpw = data;
+      new_ks0[0] = newpw_len;
+      random_get_salt (salt);
+      s2k (salt, SALT_SIZE, newpw, newpw_len, new_ks);
+      r = gpg_change_keystring (admin_authorized, old_ks, BY_RESETCODE, new_ks);
+      if (r <= -2)
+	{
+	  DEBUG_INFO ("memory error.\r\n");
+	  return 0;
+	}
+      else if (r < 0)
+	{
+	  DEBUG_INFO ("security error.\r\n");
+	  return 0;
+	}
+      else if (r == 0)
+	{
+	  DEBUG_INFO ("error (no prvkey).\r\n");
+	  return 0;
+	}
+      else
+	{
+	  DEBUG_INFO ("done.\r\n");
+	  gpg_do_write_simple (NR_DO_KEYSTRING_RC, new_ks0, KS_META_SIZE);
+	}
     }
 
   gpg_pw_reset_err_counter (PW_ERR_RC);
