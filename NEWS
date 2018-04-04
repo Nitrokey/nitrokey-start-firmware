@@ -4,6 +4,11 @@ Gnuk NEWS - User visible changes
 
   Released 2018-03-31, by NIIBE Yutaka
 
+** A test suite fix: Clear PW3
+Until 1.2.8, after running the test suite under "tests", PW3 keystring
+remained, which affects use of admin-less mode.  New test case is
+added to clear PW3.
+
 ** Add "single-salt" support for KDF-DO
 With KDF-DO, "admin-less" mode didn't work well.  With new feature of
 "single-salt" support, we can use "admin-less" mode with KDF-DO.

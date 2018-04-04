@@ -1,3 +1,7 @@
+2018-04-04  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* tests/test_004_reset_pw3.py: New.
+
 2018-04-03  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* src/openpgp-do.c (rw_kdf): Clear all auth state.
