@@ -25,16 +25,7 @@ from re import match, DOTALL
 from util import *
 import rsa_keys
 from card_const import *
-
-PW1_TEST0=b"another user pass phrase"
-PW1_TEST1=b"PASSPHRASE SHOULD BE LONG"
-PW1_TEST2=b"new user pass phrase"
-PW1_TEST3=b"next user pass phrase"
-PW1_TEST4=b"another user pass phrase"
-PW3_TEST0=b"admin pass phrase"
-PW3_TEST1=b"another admin pass phrase"
-
-RESETCODE_TEST=b"example reset code 000"
+from constants_for_test import *
 
 def test_login_put(card):
     r = card.cmd_put_data(0x00, 0x5e, b"")

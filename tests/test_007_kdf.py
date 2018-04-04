@@ -20,3 +20,33 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
+from card_const import *
+from constants_for_test import *
+
+def test_verify_pw3_0(card):
+    v = card.cmd_verify(3, FACTORY_PASSPHRASE_PW3)
+    assert v
+
+def test_kdf_put_full(card):
+    r = card.cmd_put_data(0x00, 0xf9, KDF_FULL)
+    assert r
+
+def test_verify_pw3_1(card):
+    v = card.cmd_verify(3, KDF_FULL_HASH_PW3)
+    assert v
+
+def test_kdf_put_single(card):
+    r = card.cmd_put_data(0x00, 0xf9, KDF_SINGLE)
+    assert r
+
+def test_verify_pw3_2(card):
+    v = card.cmd_verify(3, KDF_SINGLE_HASH_PW3)
+    assert v
+
+def test_kdf_put_none(card):
+    r = card.cmd_put_data(0x00, 0xf9, b"")
+    assert r
+
+def test_verify_pw3_3(card):
+    v = card.cmd_verify(3, FACTORY_PASSPHRASE_PW3)
+    assert v
