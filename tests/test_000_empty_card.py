@@ -24,12 +24,10 @@ from binascii import hexlify
 from re import match, DOTALL
 from struct import pack
 from util import *
+from card_const import *
 import pytest
 
 EMPTY_60=bytes(60)
-
-FACTORY_PASSPHRASE_PW1=b"123456"
-FACTORY_PASSPHRASE_PW3=b"12345678"
 
 def test_login(card):
     login = get_data_object(card, 0x5e)

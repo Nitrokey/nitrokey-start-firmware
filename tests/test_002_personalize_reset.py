@@ -1,5 +1,5 @@
 """
-test_personalize_reset_card.py - test resetting personalization of card
+test_personalize_reset.py - test resetting personalization of card
 
 Copyright (C) 2016  g10 Code GmbH
 Author: NIIBE Yutaka <gniibe@fsij.org>
@@ -24,9 +24,8 @@ from struct import pack
 from re import match, DOTALL
 from util import *
 import rsa_keys
+from card_const import *
 
-FACTORY_PASSPHRASE_PW1=b"123456"
-FACTORY_PASSPHRASE_PW3=b"12345678"
 PW1_TEST0=b"another user pass phrase"
 PW1_TEST1=b"PASSPHRASE SHOULD BE LONG"
 PW1_TEST2=b"new user pass phrase"

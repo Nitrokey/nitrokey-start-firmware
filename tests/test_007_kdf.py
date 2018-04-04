@@ -1,5 +1,5 @@
 """
-test_004_reset_pw3.py - test resetting pw3
+test_007_kdf.py - test KDF data object
 
 Copyright (C) 2018  g10 Code GmbH
 Author: NIIBE Yutaka <gniibe@fsij.org>
@@ -20,22 +20,3 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-from card_const import *
-
-# Gnuk specific feature of clear PW3
-def test_setup_pw3_null(card):
-    r = card.cmd_change_reference_data(3, FACTORY_PASSPHRASE_PW3)
-    assert r
-
-def test_verify_pw3(card):
-    v = card.cmd_verify(3, FACTORY_PASSPHRASE_PW3)
-    assert v
-
-# Check PW1 again to see the possiblity of admin-less mode
-def test_verify_pw1(card):
-    v = card.cmd_verify(1, FACTORY_PASSPHRASE_PW1)
-    assert v
-
-def test_verify_pw1_2(card):
-    v = card.cmd_verify(2, FACTORY_PASSPHRASE_PW1)
-    assert v
