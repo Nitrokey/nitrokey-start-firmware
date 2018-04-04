@@ -1,7 +1,7 @@
 """
 openpgp_card.py - a library for OpenPGP card
 
-Copyright (C) 2011, 2012, 2013, 2015, 2016
+Copyright (C) 2011, 2012, 2013, 2015, 2016, 2018
               Free Software Initiative of Japan
 Author: NIIBE Yutaka <gniibe@fsij.org>
 
@@ -21,7 +21,8 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-from struct import pack
+from struct import pack, unpack
+from kdf_calc import kdf_calc
 
 def iso7816_compose(ins, p1, p2, data, cls=0x00, le=None):
     data_len = len(data)
@@ -54,6 +55,52 @@ class OpenPGP_Card(object):
         """
 
         self.__reader = reader
+        self.__kdf_iters = None
+        self.__kdf_salt_user = None
+        self.__kdf_salt_reset = None
+        self.__kdf_salt_admin = None
+
+    def configure_with_kdf(self):
+        kdf_data = self.cmd_get_data(0x00, 0xf9)
+        if kdf_data != b"":
+            algo, subalgo, iters, salt_user, salt_reset, salt_admin, hash_user, hash_admin = parse_kdf_data(kdf_data)
+            self.__kdf_iters = iters
+            self.__kdf_salt_user = salt_user
+            self.__kdf_salt_reset = salt_reset
+            self.__kdf_salt_admin = salt_admin
+        else:
+            self.__kdf_iters = None
+            self.__kdf_salt_user = None
+            self.__kdf_salt_reset = None
+            self.__kdf_salt_admin = None
+
+    # Higher layer VERIFY possibly using KDF Data Object
+    def verify(self, who, passwd):
+        if self.__kdf_iters:
+            salt = self.__kdf_salt_user
+            if who == 3 and self.__kdf_salt_admin:
+                    salt = self.__kdf_salt_admin
+            pw_hash = kdf_calc(passwd, salt, self.__kdf_iters)
+            return self.cmd_verify(who, pw_hash)
+        else:
+            return self.cmd_verify(who, passwd)
+
+    # Higher layer CHANGE_PASSWD possibly using KDF Data Object
+    def change_passwd(self, who, passwd_old, passwd_new):
+        if self.__kdf_iters:
+            salt = self.__kdf_salt_user
+            if who == 3 and self.__kdf_salt_admin:
+                    salt = self.__kdf_salt_admin
+            hash_old = kdf_calc(passwd_old, salt, self.__kdf_iters)
+            if passwd_new:
+                hash_new = kdf_calc(passwd_new, salt, self.__kdf_iters)
+            else:
+                hash_new = b""
+            return self.cmd_change_reference_data(who, hash_old + hash_new)
+        else:
+            if not passwd_new:
+                passwd_new = b""
+            return self.cmd_change_reference_data(who, passwd_old + passwd_new)
 
     def cmd_get_response(self, expected_len):
         result = b""
@@ -336,3 +383,48 @@ class OpenPGP_Card(object):
             raise ValueError(sw)
         if not (sw[0] == 0x90 and sw[1] == 0x00):
             raise ValueError("%02x%02x" % (sw[0], sw[1]))
+
+def parse_kdf_data(kdf_data):
+    if len(kdf_data) == 90:
+        single_salt = True
+    elif len(kdf_data) == 110:
+        single_salt = False
+    else:
+        raise ValueError("length does not much", kdf_data)
+
+    if kdf_data[0:2] != b'\x81\x01':
+        raise ValueError("data does not much")
+    algo = kdf_data[2]
+    if kdf_data[3:5] != b'\x82\x01':
+        raise ValueError("data does not much")
+    subalgo = kdf_data[5]
+    if kdf_data[6:8] != b'\x83\x04':
+        raise ValueError("data does not much")
+    iters = unpack(">I", kdf_data[8:12])[0]
+    if kdf_data[12:14] != b'\x84\x08':
+        raise ValueError("data does not much")
+    salt = kdf_data[14:22]
+    if single_salt:
+        salt_reset = None
+        salt_admin = None
+        if kdf_data[22:24] != b'\x87\x20':
+            raise ValueError("data does not much")
+        hash_user = kdf_data[24:56]
+        if kdf_data[56:58] != b'\x88\x20':
+            raise ValueError("data does not much")
+        hash_admin = kdf_data[58:90]
+    else:
+        if kdf_data[22:24] != b'\x85\x08':
+            raise ValueError("data does not much")
+        salt_reset = kdf_data[24:32]
+        if kdf_data[32:34] != b'\x86\x08':
+            raise ValueError("data does not much")
+        salt_admin = kdf_data[34:42]
+        if kdf_data[42:44] != b'\x87\x20':
+            raise ValueError("data does not much")
+        hash_user = kdf_data[44:76]
+        if kdf_data[76:78] != b'\x88\x20':
+            raise ValueError("data does not much")
+        hash_admin = kdf_data[78:110]
+    return ( algo, subalgo, iters, salt, salt_reset, salt_admin,
+             hash_user, hash_admin )

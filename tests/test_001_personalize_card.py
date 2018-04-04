@@ -28,7 +28,7 @@ from card_const import *
 from constants_for_test import *
 
 def test_setup_pw3_0(card):
-    r = card.cmd_change_reference_data(3, FACTORY_PASSPHRASE_PW3 + PW3_TEST0)
+    r = card.change_passwd(3, FACTORY_PASSPHRASE_PW3, PW3_TEST0)
     assert r
 
 def test_verify_pw3_0(card):
@@ -154,7 +154,7 @@ def test_public_key_3(card):
     assert rsa_keys.key[2][0] == pk[9:9+256]
 
 def test_setup_pw1_0(card):
-    r = card.cmd_change_reference_data(1, FACTORY_PASSPHRASE_PW1 + PW1_TEST0)
+    r = card.change_passwd(1, FACTORY_PASSPHRASE_PW1, PW1_TEST0)
     assert r
 
 def test_verify_pw1_0(card):
@@ -166,7 +166,7 @@ def test_verify_pw1_0_2(card):
     assert v
 
 def test_setup_pw1_1(card):
-    r = card.cmd_change_reference_data(1, PW1_TEST0 + PW1_TEST1)
+    r = card.change_passwd(1, PW1_TEST0, PW1_TEST1)
     assert r
 
 def test_verify_pw1_1(card):
@@ -194,7 +194,7 @@ def test_verify_pw1_2_2(card):
     assert v
 
 def test_setup_pw3_1(card):
-    r = card.cmd_change_reference_data(3, PW3_TEST0 + PW3_TEST1)
+    r = card.change_passwd(3, PW3_TEST0, PW3_TEST1)
     assert r
 
 def test_verify_pw3_1(card):
@@ -214,7 +214,7 @@ def test_verify_pw1_3_2(card):
     assert v
 
 def test_setup_pw1_4(card):
-    r = card.cmd_change_reference_data(1, PW1_TEST3 + PW1_TEST4)
+    r = card.change_passwd(1, PW1_TEST3, PW1_TEST4)
     assert r
 
 def test_verify_pw1_4(card):
@@ -226,7 +226,7 @@ def test_verify_pw1_4_2(card):
     assert v
 
 def test_setup_pw3_2(card):
-    r = card.cmd_change_reference_data(3, PW3_TEST1 + PW3_TEST0)
+    r = card.change_passwd(3, PW3_TEST1, PW3_TEST0)
     assert r
 
 def test_verify_pw3_2(card):

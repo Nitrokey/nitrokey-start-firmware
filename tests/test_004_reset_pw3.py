@@ -24,7 +24,7 @@ from card_const import *
 
 # Gnuk specific feature of clear PW3
 def test_setup_pw3_null(card):
-    r = card.cmd_change_reference_data(3, FACTORY_PASSPHRASE_PW3)
+    r = card.change_passwd(3, FACTORY_PASSPHRASE_PW3, None)
     assert r
 
 def test_verify_pw3(card):

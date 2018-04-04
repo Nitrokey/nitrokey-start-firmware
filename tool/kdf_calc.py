@@ -37,7 +37,11 @@ def kdf_calc(pw_string, salt_byte, iterations):
     ffi = FFI()
     ffi.cdef(DEF_gcry_kdf_derive)
     libgcrypt = ffi.dlopen("libgcrypt.so")
-    pw=ffi.new("char []", pw_string.encode('UTF-8'))
+    if isinstance(pw_string, str):
+        pw_byte = pw_string.encode('UTF-8')
+    else:
+        pw_byte = pw_string
+    pw=ffi.new("char []", pw_byte)
     salt = ffi.new("char []", salt_byte)
     kb = ffi.new("char []", 32)
     r = libgcrypt.gcry_kdf_derive(pw, len(pw_string), GCRY_KDF_ITERSALTED_S2K,
