@@ -1,7 +1,7 @@
 Gnuk - An Implementation of USB Cryptographic Token for GnuPG
 
 							  Version 1.2.9
-							     2018-03-31
+							     2018-04-05
 							   Niibe Yutaka
 				      Free Software Initiative of Japan
 
@@ -24,10 +24,10 @@ It also supports RSA-4096, but users should know that it takes more
 than 8 seconds to sign/decrypt.  Key generation of RSA-4096 just fails,
 because the device doesn't have enough memory.
 
-It supports new KDF-DO feature.  To use the feature, you need to use
-newer GnuPG (forthcoming 2.2.6 or later).  And you need to manually
-prepare the KDF-DO on your token.  Please note that this is
-experimental.  GnuPG 2.2.6 will include KDF-DO setup.
+It supports new KDF-DO feature.  Please note that this is
+experimental.  To use the feature, you need to use newer GnuPG
+(forthcoming 2.2.6 or later).  You need to prepare the KDF-DO on your
+token by the card-edit/kdf-setup command.
 
 
 What's Gnuk?

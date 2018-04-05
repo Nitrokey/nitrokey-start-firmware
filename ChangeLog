@@ -1,5 +1,7 @@
 2018-04-05  NIIBE Yutaka  <gniibe@fsij.org>
 
+	* VERSION: 1.2.9.
+
 	* tests: Add test cases for admin-less mode.
 
 	* src/openpgp.c (cmd_change_password): Care admin-less mode.

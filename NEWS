@@ -2,12 +2,15 @@ Gnuk NEWS - User visible changes
 
 * Major changes in Gnuk 1.2.9
 
-  Released 2018-03-31, by NIIBE Yutaka
+  Released 2018-04-05, by NIIBE Yutaka
 
 ** A test suite fix: Clear PW3
 Until 1.2.8, after running the test suite under "tests", PW3 keystring
 remained, which affects use of admin-less mode.  New test case is
 added to clear PW3.
+
+** tool/upgrade_by_passwd.py supports KDF-DO auth
+With KDF-DO, firmware upgrade didn't work.  Now, it's supported.
 
 ** Add "single-salt" support for KDF-DO
 With KDF-DO, "admin-less" mode didn't work well.  With new feature of
