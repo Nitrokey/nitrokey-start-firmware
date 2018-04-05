@@ -366,8 +366,24 @@ cmd_change_password (void)
 
       if (ks_pw3 == NULL)
 	{
-	  salt = NULL;
-	  salt_len = 0;
+	  if (admin_authorized == BY_USER)
+	    {
+	      const uint8_t *ks_pw1 = gpg_do_read_simple (NR_DO_KEYSTRING_PW1);
+
+	      if (ks_pw1 == NULL)
+		{
+		  GPG_SECURITY_FAILURE ();
+		  return;
+		}
+
+	      salt = KS_GET_SALT (ks_pw1);
+	      salt_len = SALT_SIZE;
+	    }
+	  else
+	    {
+	      salt = NULL;
+	      salt_len = 0;
+	    }
 	}
       else
 	{
