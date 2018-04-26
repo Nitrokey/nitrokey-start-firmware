@@ -202,8 +202,6 @@ gnuk_setup_endpoints_for_interface (struct usb_dev *dev,
 void
 usb_device_reset (struct usb_dev *dev)
 {
-  int i;
-
   usb_lld_reset (dev, USB_INITIAL_FEATURE);
 
   /* Initialize Endpoint 0 */
