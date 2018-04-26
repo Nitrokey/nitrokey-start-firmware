@@ -1579,10 +1579,6 @@ usb_event_handle (struct usb_dev *dev)
   /* Transfer to endpoint (not control endpoint) */
   if (ep_num != 0)
     {
-      /* Ignore sprious "Correct Transfer" */
-      if (bDeviceState != USB_DEVICE_STATE_CONFIGURED)
-	return 0;
-
       if (USB_EVENT_TXRX (e))
 	usb_tx_done (ep_num, USB_EVENT_LEN (e));
       else

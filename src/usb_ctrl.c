@@ -214,10 +214,6 @@ usb_device_reset (struct usb_dev *dev)
 			  64);
 #endif
 
-  /* Stop the interface */
-  for (i = 0; i < NUM_INTERFACES; i++)
-    gnuk_setup_endpoints_for_interface (dev, i, 1);
-
   bDeviceState = USB_DEVICE_STATE_DEFAULT;
 }
 
