@@ -167,6 +167,8 @@ BOARD_HEADER_FILE=board-$(echo $target | tr '_[:upper:]' '-[:lower:]').h
 echo "Header file is: $BOARD_HEADER_FILE"
 ln -sf "../chopstx/board/$BOARD_HEADER_FILE" board.h
 
+# Frequency
+MHZ=72
 # Flash page size in byte
 FLASH_PAGE_SIZE=1024
 # Flash memory size in KiB
@@ -196,6 +198,9 @@ STBEE)
   if test "$with_dfu" = "default"; then
     with_dfu=yes;
   fi  ;;
+BLUE_PILL_G)
+  MHZ=96
+  ;;
 *)
   ;;
 esac
@@ -208,6 +213,7 @@ if test "$target" = "GNU_LINUX"; then
   mcu="none"
   def_emulation="-DGNU_LINUX_EMULATION"
   def_memory_size="-DMEMORY_SIZE=1024"
+  def_mhz=""
   enable_hexoutput=""
   libs="-lpthread"
 else
@@ -218,6 +224,7 @@ else
   mcu="cortex-m3"
   def_emulation=""
   def_memory_size="-DMEMORY_SIZE=$MEMORY_SIZE"
+  def_mhz="-DMHZ=$MHZ"
   enable_hexoutput=yes
   libs=""
 fi
@@ -442,7 +449,7 @@ fi
  echo "EMULATION=$emulation";
  echo "CROSS=$cross";
  echo "MCU=$mcu";
- echo "DEFS=$use_sys3 $flash_override $def_emulation $def_memory_size";
+ echo "DEFS=$use_sys3 $flash_override $def_emulation $def_memory_size $def_mhz";
  echo "LDSCRIPT=$ldscript";
  echo "LIBS=$libs";
  echo "$DEBUG_MAKE_OPTION";
