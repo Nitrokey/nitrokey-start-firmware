@@ -1,5 +1,7 @@
 2018-05-10  NIIBE Yutaka  <gniibe@fsij.org>
 
+	* VERSION: 1.2.10.
+
 	* src/Makefile (build/gnuk.elf): New target.
 	(build/gnuk-vidpid.elf): Remove.
 
