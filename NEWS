@@ -1,5 +1,17 @@
 Gnuk NEWS - User visible changes
 
+* Major changes in Gnuk 1.2.10
+
+  Released 2018-05-10, by NIIBE Yutaka
+
+** No inclusion of VID:PID in gnuk-no-vidpid.elf
+Now, we have new file named gnuk-no-vidpid.elf with no VID:PID.  The
+file gnuk.elf has the VID:PID, like version 1.2.7 or older.
+
+** Upgrade of Chopstx
+We use Chopstx 1.9, which supports GD32F103.
+
+
 * Major changes in Gnuk 1.2.9
 
   Released 2018-04-05, by NIIBE Yutaka

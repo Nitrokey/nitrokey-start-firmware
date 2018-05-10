@@ -1,5 +1,8 @@
 2018-05-10  NIIBE Yutaka  <gniibe@fsij.org>
 
+	* src/Makefile (build/gnuk.elf): New target.
+	(build/gnuk-vidpid.elf): Remove.
+
 	* chopstx: Update to 1.9.
 
 2018-04-26  NIIBE Yutaka  <gniibe@fsij.org>
