@@ -1,6 +1,6 @@
 # Makefile for reGNUal
 
-PROJECT = regnual
+PROJECT = regnual-no-vidpid
 
 OBJS = regnual.o usb-stm32f103.o reset.o
 
@@ -41,11 +41,15 @@ regnual.hex: regnual.elf
 	$(OBJCOPY) -Obinary regnual.elf regnual.bin
 	$(OBJCOPY) -Oihex regnual.elf regnual.hex
 
+regnual.elf: regnual-no-vidpid.elf
+	cp -p regnual-no-vidpid.elf regnual.elf
+	env FILE="regnual.elf" PATH="../src:$$PATH" bash put-vid-pid-ver.sh
+
 usb-stm32f103.o: ../chopstx/mcu/usb-stm32f103.c
 	$(CC) $(CFLAGS) -c -o usb-stm32f103.o ../chopstx/mcu/usb-stm32f103.c
 
-regnual.elf: $(OBJS) $(LDSCRIPT)
-	$(CC) $(LDFLAGS) -o regnual.elf $(OBJS)
+regnual-no-vidpid.elf: $(OBJS) $(LDSCRIPT)
+	$(CC) $(LDFLAGS) -o regnual-no-vidpid.elf $(OBJS)
 
 clean:
 	-rm -f $(OBJS) regnual.elf regnual.hex regnual.bin *.lst

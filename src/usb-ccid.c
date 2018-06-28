@@ -1513,14 +1513,6 @@ ccid_card_change_signal (int how)
     eventflag_signal (&c->ccid_comm, EV_CARD_CHANGE);
 }
 
-void
-ccid_usb_reset (int full)
-{
-  struct ccid *c = &ccid;
-
-  eventflag_signal (&c->ccid_comm,
-		    full ? EV_USB_DEVICE_RESET : EV_USB_SET_INTERFACE);
-}
 
 #ifdef GNU_LINUX_EMULATION
 static uint8_t endp2_tx_buf[2];
@@ -1555,13 +1547,6 @@ ccid_notify_slot_change (struct ccid *c)
 #define GPG_THREAD_TERMINATED 0xffff
 
 
-#ifdef GNU_LINUX_EMULATION
-#include <signal.h>
-#define INTR_REQ_USB SIGUSR1
-#else
-#define INTR_REQ_USB 20
-#endif
-
 extern uint32_t bDeviceState;
 extern void usb_device_reset (struct usb_dev *dev);
 extern int usb_setup (struct usb_dev *dev);
@@ -1573,7 +1558,16 @@ extern int usb_get_status_interface (struct usb_dev *dev);
 
 extern int usb_get_descriptor (struct usb_dev *dev);
 
-static void
+extern void random_init (void);
+extern void random_fini (void);
+
+
+/*
+ * Return 0 for normal USB event
+ *       -1 for USB reset
+ *        1 for SET_INTERFACE or SET_CONFIGURATION
+ */
+static int
 usb_event_handle (struct usb_dev *dev)
 {
   uint8_t ep_num;
@@ -1582,94 +1576,119 @@ usb_event_handle (struct usb_dev *dev)
   e = usb_lld_event_handler (dev);
   ep_num = USB_EVENT_ENDP (e);
 
+  /* Transfer to endpoint (not control endpoint) */
   if (ep_num != 0)
     {
       if (USB_EVENT_TXRX (e))
 	usb_tx_done (ep_num, USB_EVENT_LEN (e));
       else
 	usb_rx_ready (ep_num, USB_EVENT_LEN (e));
+      return 0;
     }
-  else
-    switch (USB_EVENT_ID (e))
-      {
-      case USB_EVENT_DEVICE_RESET:
-	usb_device_reset (dev);
-	break;
 
-      case USB_EVENT_DEVICE_ADDRESSED:
-	bDeviceState = ADDRESSED;
-	break;
+  /* Control endpoint */
+  switch (USB_EVENT_ID (e))
+    {
+    case USB_EVENT_DEVICE_RESET:
+      usb_device_reset (dev);
+      return -1;
 
-      case USB_EVENT_GET_DESCRIPTOR:
-	if (usb_get_descriptor (dev) < 0)
-	  usb_lld_ctrl_error (dev);
-	break;
+    case USB_EVENT_DEVICE_ADDRESSED:
+      bDeviceState = USB_DEVICE_STATE_ADDRESSED;
+      break;
 
-      case USB_EVENT_SET_CONFIGURATION:
-	if (usb_set_configuration (dev) < 0)
-	  usb_lld_ctrl_error (dev);
-	break;
+    case USB_EVENT_GET_DESCRIPTOR:
+      if (usb_get_descriptor (dev) < 0)
+	usb_lld_ctrl_error (dev);
+      break;
 
-      case USB_EVENT_SET_INTERFACE:
-	if (usb_set_interface (dev) < 0)
-	  usb_lld_ctrl_error (dev);
-	break;
+    case USB_EVENT_SET_CONFIGURATION:
+      if (usb_set_configuration (dev) < 0)
+	usb_lld_ctrl_error (dev);
+      else
+	{
+	  if (bDeviceState == USB_DEVICE_STATE_ADDRESSED)
+	    /* de-Configured */
+	    return -1;
+	  else
+	    /* Configured */
+	    return 1;
+	}
+      break;
 
-      case USB_EVENT_CTRL_REQUEST:
-	/* Device specific device request.  */
-	if (usb_setup (dev) < 0)
-	  usb_lld_ctrl_error (dev);
-	break;
+    case USB_EVENT_SET_INTERFACE:
+      if (usb_set_interface (dev) < 0)
+	usb_lld_ctrl_error (dev);
+      else
+	return 1;
+      break;
 
-      case USB_EVENT_GET_STATUS_INTERFACE:
-	if (usb_get_status_interface (dev) < 0)
-	  usb_lld_ctrl_error (dev);
-	break;
+    case USB_EVENT_CTRL_REQUEST:
+      /* Device specific device request.  */
+      if (usb_setup (dev) < 0)
+	usb_lld_ctrl_error (dev);
+      break;
 
-      case USB_EVENT_GET_INTERFACE:
-	if (usb_get_interface (dev) < 0)
-	  usb_lld_ctrl_error (dev);
-	break;
+    case USB_EVENT_GET_STATUS_INTERFACE:
+      if (usb_get_status_interface (dev) < 0)
+	usb_lld_ctrl_error (dev);
+      break;
 
-      case USB_EVENT_SET_FEATURE_DEVICE:
-      case USB_EVENT_SET_FEATURE_ENDPOINT:
-      case USB_EVENT_CLEAR_FEATURE_DEVICE:
-      case USB_EVENT_CLEAR_FEATURE_ENDPOINT:
-	usb_lld_ctrl_ack (dev);
-	break;
+    case USB_EVENT_GET_INTERFACE:
+      if (usb_get_interface (dev) < 0)
+	usb_lld_ctrl_error (dev);
+      break;
 
-      case USB_EVENT_CTRL_WRITE_FINISH:
-	/* Control WRITE transfer finished.  */
-	usb_ctrl_write_finish (dev);
-	break;
+    case USB_EVENT_SET_FEATURE_DEVICE:
+    case USB_EVENT_SET_FEATURE_ENDPOINT:
+    case USB_EVENT_CLEAR_FEATURE_DEVICE:
+    case USB_EVENT_CLEAR_FEATURE_ENDPOINT:
+      usb_lld_ctrl_ack (dev);
+      break;
 
-      case USB_EVENT_OK:
-      case USB_EVENT_DEVICE_SUSPEND:
-      default:
-	break;
-      }
+    case USB_EVENT_CTRL_WRITE_FINISH:
+      /* Control WRITE transfer finished.  */
+      usb_ctrl_write_finish (dev);
+      break;
+
+    case USB_EVENT_DEVICE_SUSPEND:
+      led_blink (LED_OFF);
+      chopstx_usec_wait (10);	/* Make sure LED off */
+      random_fini ();
+      chopstx_conf_idle (2);
+      bDeviceState |= USB_DEVICE_STATE_SUSPEND;
+      break;
+
+    case USB_EVENT_DEVICE_WAKEUP:
+      chopstx_conf_idle (1);
+      random_init ();
+      bDeviceState &= ~USB_DEVICE_STATE_SUSPEND;
+      break;
+
+    case USB_EVENT_OK:
+    default:
+      break;
+    }
+
+  return 0;
 }
 
-static void
-poll_event_intr (uint32_t *timeout, struct eventflag *ev, chopstx_intr_t *intr)
-{
-  chopstx_poll_cond_t poll_desc;
-  struct chx_poll_head *pd_array[2] = {
-    (struct chx_poll_head *)intr,
-    (struct chx_poll_head *)&poll_desc
-  };
 
-  eventflag_prepare_poll (ev, &poll_desc);
-  chopstx_poll (timeout, 2, pd_array);
-}
+static chopstx_intr_t interrupt;
+static chopstx_poll_cond_t ccid_event_poll_desc;
+static struct chx_poll_head *const ccid_poll[] = {
+  (struct chx_poll_head *const)&interrupt,
+  (struct chx_poll_head *const)&ccid_event_poll_desc
+};
+#define CCID_POLL_NUM (sizeof (ccid_poll)/sizeof (struct chx_poll_head *))
 
 void *
 ccid_thread (void *arg)
 {
-  chopstx_intr_t interrupt;
   uint32_t timeout;
   struct usb_dev dev;
   struct ccid *c = &ccid;
+  uint32_t *timeout_p;
 
   (void)arg;
 
@@ -1680,7 +1699,9 @@ ccid_thread (void *arg)
   chopstx_claim_irq (&interrupt, INTR_REQ_USB);
   usb_event_handle (&dev);	/* For old SYS < 3.0 */
 
- device_reset:
+  eventflag_prepare_poll (&c->ccid_comm, &ccid_event_poll_desc);
+
+ reset:
   {
     struct ep_in *epi = &endpoint_in;
     struct ep_out *epo = &endpoint_out;
@@ -1692,50 +1713,48 @@ ccid_thread (void *arg)
     ccid_init (c, epi, epo, a);
   }
 
-  while (bDeviceState != CONFIGURED)
+  timeout = USB_CCID_TIMEOUT;
+  if (bDeviceState == USB_DEVICE_STATE_CONFIGURED)
     {
-      poll_event_intr (NULL, &c->ccid_comm, &interrupt);
-      if (interrupt.ready)
-	usb_event_handle (&dev);
-
-      eventflag_get (&c->ccid_comm);
-      /* Ignore event while not-configured.  */
+      ccid_prepare_receive (c);
+      ccid_notify_slot_change (c);
     }
 
- interface_reset:
-  timeout = USB_CCID_TIMEOUT;
-  ccid_prepare_receive (c);
-  ccid_notify_slot_change (c);
   while (1)
     {
       eventmask_t m;
 
-      poll_event_intr (&timeout, &c->ccid_comm, &interrupt);
+      if (bDeviceState == USB_DEVICE_STATE_CONFIGURED)
+	timeout_p = &timeout;
+      else
+	timeout_p = NULL;
+
+      chopstx_poll (timeout_p, CCID_POLL_NUM, ccid_poll);
+
       if (interrupt.ready)
 	{
-	  usb_event_handle (&dev);
-	  continue;
-	}
+	  if (usb_event_handle (&dev) == 0)
+	    continue;
 
-      timeout = USB_CCID_TIMEOUT;
-      m = eventflag_get (&c->ccid_comm);
-
-      if (m == EV_USB_DEVICE_RESET)
-	{
+	  /* RESET handling:
+	   * (1) After DEVICE_RESET, it needs to re-start out of the loop.
+	   * (2) After SET_CONFIGURATION or SET_INTERFACE, the
+	   *     endpoint is reset to RX_NAK.  It needs to prepare
+	   *     receive again.
+	   */
 	  if (c->application)
 	    {
 	      chopstx_cancel (c->application);
 	      chopstx_join (c->application, NULL);
 	      c->application = 0;
 	    }
-	  goto device_reset;
+	  goto reset;
 	}
-      else if (m == EV_USB_SET_INTERFACE)
-	/* Upon receival of SET_INTERFACE, the endpoint is reset to RX_NAK.
-	 * Thus, we need to prepare receive again.
-	 */
-	goto interface_reset;
-      else if (m == EV_CARD_CHANGE)
+
+      timeout = USB_CCID_TIMEOUT;
+      m = eventflag_get (&c->ccid_comm);
+
+      if (m == EV_CARD_CHANGE)
 	{
 	  if (c->ccid_state == CCID_STATE_NOCARD)
 	    /* Inserted!  */
@@ -1820,7 +1839,7 @@ ccid_thread (void *arg)
     }
 
   /* Loading reGNUal.  */
-  while (bDeviceState != UNCONNECTED)
+  while (bDeviceState != USB_DEVICE_STATE_UNCONNECTED)
     {
       chopstx_intr_wait (&interrupt);
       usb_event_handle (&dev);

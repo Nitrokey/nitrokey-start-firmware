@@ -4,7 +4,8 @@
 upgrade_by_passwd.py - a tool to install another firmware for Gnuk Token
                        which is just shipped from factory
 
-Copyright (C) 2012, 2013, 2015  Free Software Initiative of Japan
+Copyright (C) 2012, 2013, 2015, 2018
+              Free Software Initiative of Japan
 Author: NIIBE Yutaka <gniibe@fsij.org>
 
 This file is a part of Gnuk, a GnuPG USB Token implementation.
@@ -23,9 +24,13 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-from gnuk_token import *
+from gnuk_token import get_gnuk_device, gnuk_devices_by_vidpid, \
+     gnuk_token, regnual, SHA256_OID_PREFIX, crc32, parse_kdf_data
+from kdf_calc import kdf_calc
+
 import sys, binascii, time, os
 import rsa
+from struct import pack
 
 DEFAULT_PW3 = "12345678"
 BY_ADMIN = 3
@@ -45,7 +50,20 @@ def main(wait_e, keyno, passwd, data_regnual, data_upgrade):
 
     gnuk = get_gnuk_device()
     gnuk.cmd_select_openpgp()
-    gnuk.cmd_verify(BY_ADMIN, passwd.encode('UTF-8'))
+    # Compute passwd data
+    kdf_data = gnuk.cmd_get_data(0x00, 0xf9).tostring()
+    if kdf_data == b"":
+        passwd_data = passwd.encode('UTF-8')
+    else:
+        algo, subalgo, iters, salt_user, salt_reset, salt_admin, \
+            hash_user, hash_admin = parse_kdf_data(kdf_data)
+        if salt_admin:
+            salt = salt_admin
+        else:
+            salt = salt_user
+        passwd_data = kdf_calc(passwd, salt, iters)
+    # And authenticate with the passwd data
+    gnuk.cmd_verify(BY_ADMIN, passwd_data)
     gnuk.cmd_write_binary(1+keyno, rsa_raw_pubkey, False)
 
     gnuk.cmd_select_openpgp()

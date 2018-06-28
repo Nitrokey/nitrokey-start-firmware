@@ -1,3 +1,245 @@
+2018-05-10  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* VERSION: 1.2.10.
+
+	* src/Makefile (build/gnuk.elf): New target.
+	(build/gnuk-vidpid.elf): Remove.
+
+	* chopstx: Update to 1.9.
+
+2018-04-26  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/usb_ctrl.c (usb_device_reset): Don't stop the endpoints.
+
+	* src/configure (MHZ, def_mhz): New.
+
+2018-04-05  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* VERSION: 1.2.9.
+
+	* tests: Add test cases for admin-less mode.
+
+	* src/openpgp.c (cmd_change_password): Care admin-less mode.
+
+2018-04-04  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* tests: Add more tests, key generation and KDF support.
+
+	* src/openpgp.c (cmd_reset_user_password): Check length of
+	new passphrase.
+
+	* src/openpgp-do.c (proc_resetting_code): Support removal.
+	(gpg_do_kdf_check): Fix for the case of resetting PW3.
+
+	* tests/test_004_reset_pw3.py: New.
+
+2018-04-03  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/openpgp-do.c (rw_kdf): Clear all auth state.
+
+	* tool/upgrade_by_passwd.py (main): Fix for byte compare.
+	* tool/gnuk_remove_keys_libusb.py (main): Likewise.
+
+2018-04-02  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* tool/gnuk_token.py (parse_kdf_data): New.
+	* tool/kdf_calc.py: New.
+
+	* tool/gnuk_remove_keys_libusb.py (main): Support KDF auth.
+	* tool/upgrade_by_passwd.py (main): Likewise.
+
+2018-03-30  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/openpgp-do.c (rw_kdf): Support single-salt KDF.
+	(gpg_do_get_initial_pw_setting): Likewise.
+	(gpg_do_kdf_check): Likewise.
+
+2018-03-22  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/openpgp-do.c (rw_kdf): Do format validation earlier.
+
+2018-03-13  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/flash.c [FLASH_UPGRADE_SUPPORT] (flash_terminate): Erase
+	the page for upgrade public keys.
+
+2018-02-12  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/openpgp-do.c (rw_kdf): Return 0 when NULL.
+
+2018-01-23  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* VERSION: 1.2.8.
+
+	* src/Makefile (build/gnuk-vidpid.elf): Supply FILE here.
+	* src/configure (output_vendor_product_serial_strings): For
+	generating put-vid-pid-ver.sh, don't set FILE.
+
+	* regnual/regnual.c (regnual_device_desc): Make this array as a
+	template.
+	* regnual/Makefile (regnual.elf): Substitute VID:PID.
+
+2018-01-22  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/openpgp.c (USER_PASSWD_MINLEN): New.
+	(cmd_change_password): Check passphrase length.
+
+2018-01-22  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/openpgp.c (cmd_change_password): Remove access to private
+	key with BY_ADMIN when it's becoming admin-less mode.
+
+2018-01-19  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/binary-edit.sh: Copied from NeuG 1.0.8.  Exclude FILE.
+	* src/configure (output_vid_pid_version): Generate a shell script.
+	* src/Makefile (build/gnuk-vidpid.elf): New target.
+	* src/usb_desc.c (device_desc): Make this array as a template.
+
+	* chopstx: Update to 1.8.
+
+2018-01-18  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/neug.c: Update from NeuG.
+
+2018-01-09  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* tests/card_reader.py (CardReader.ccid_power_on): Fix for
+	other card readers for Gemalto's.
+
+2017-12-19  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* chopstx: Update to 1.7.
+
+2017-11-26  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/openpgp.c (cmd_change_password): Bug fix for admin-less
+	mode.
+
+2017-11-26  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* VERSION: 1.2.7.
+
+2017-11-24  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* regnual/regnual.c (calc_crc32): Enable CRC module fix.
+
+	* chopstx: Update to 1.6.
+
+2017-11-17  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/stack-def.h (SIZE_0): Decrease.
+
+	* src/main.c (emit_led, display_status_code, main): Use
+	chopstx_poll instead of eventflag_wait_timeout.
+
+2017-11-17  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/stack-def.h (SIZE_0): Increase.
+
+	* src/main.c (emit_led, display_status_code, main): Use
+	eventflag_wait_timeout instead of chopstx_usec_wait.
+
+2017-11-17  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* regnual/regnual.c (calc_crc32): Enable CRC module.
+
+	* src/neug.c (crc32_rv_stop): New.
+	(neug_fini): Call crc32_rv_stop.
+
+	* src/main.c (main): Call chopstx_conf_idle.
+
+	* src/usb-ccid.c (usb_event_handle): Use 2 for call of
+	chopstx_conf_idle on suspend.  Call random_fini on suspend
+	to stop ADC module.  Call random_init on wakeup.
+	Sleep a bit to switch main thread.
+
+2017-11-16  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/gnuk.h (LED_OFF): New.
+
+	* src/usb-ccid.c (usb_event_handle): LED off on sleep.
+	(ccid_thread): Use constant pointer for	chopstx_poll.
+	(poll_event_intr): Remove.
+
+2017-11-15  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/usb-ccid.c (usb_event_handle): Allow sleep on suspend.
+
+	* src/usb_ctrl.c (usb_device_reset): Fix device state.
+
+2017-11-14  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/usb-ccid.c (ccid_usb_reset): Remove
+	(usb_event_handle): Return value change to notify
+	caller about needs for going out of the loop.
+	Support USB suspend/resume.
+	(ccid_thread): Supporting USB suspend, sleep forever with
+	timeout_p = NULL.
+
+	* src/main.c (main): Add USB_DEVICE_STATE_ prefix.
+	* src/usb_ctrl.c: Likewise.
+	(usb_device_reset): Don't call ccid_usb_reset.
+	(usb_set_configuration, usb_set_interface): Likewise.
+
+	* src/usb_desc.c (device_desc): bcdUSB = 2.0, supporting
+	suspend/resume.
+
+2017-11-13  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/usb_ctrl.c: Use new const USB_DEVICE_STATE_*
+	* src/main.c (main): Likewise.
+	* src/usb-ccid.c: Likewise.
+	(INTR_REQ_USB): Remove.  Use the definition
+	in usb-lld.h.
+
+2017-11-08  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/openpgp-do.c (gpg_do_kdf_check): New.
+	(proc_resetting_code): Use gpg_do_kdf_check.
+	* src/openpgp.c (cmd_verify, cmd_change_password)
+	(cmd_reset_user_password): Likewise.
+
+2017-11-07  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/openpgp-do.c (proc_resetting_code): Error when
+	it's not pass-hash.
+
+	* src/openpgp.c (cmd_verify, cmd_change_password)
+	(cmd_reset_user_password): Avoid authentication error
+	by old GnuPG which doesn't support KDF.
+
+2017-11-06  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* tests/test_empty_card.py (test_extended_capabilities): Support
+	KDF-DO.
+	* test/features/802_get_data_static.feature: Likewise.
+	* test/features/402_get_data_static.feature: Likewise.
+	* test/features/002_get_data_static.feature: Likewise.
+
+2017-11-02  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/openpgp-do.c (rw_kdf): Only writable when no keys.
+	(gpg_do_get_initial_pw_setting): New.
+	(gpg_do_write_prvkey): Use gpg_do_get_initial_pw_setting.
+	(gpg_do_keygen): Likewise.
+	(extended_capabilities): Enable KDF-DO available bit.
+
+	* src/openpgp.c (cmd_change_password): Use
+	gpg_do_get_initial_pw_setting.
+	* src/ac.c (verify_user_0, verify_admin_0): Likewise.
+
+2017-11-01  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/openpgp-do.c (GPG_DO_KDF): New.
+	(GPG_DO_FEATURE_MNGMNT): New.
+	(do_tag_to_nr): Support GPG_DO_KDF.
+	(GPG_DO_UIF_SIG, GPG_DO_UIF_DEC, GPG_DO_UIF_AUT): New.
+	(rw_kdf): New.
+	(gpg_do_table): Add an entry for GPG_DO_KDF.
+
+	* src/gnuk.h (NR_DO_KDF): New.
+
 2017-10-31  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* src/openpgp-do.c (gpg_do_keygen): Bug fix for memory alignment.

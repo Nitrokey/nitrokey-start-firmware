@@ -1,7 +1,7 @@
 """
 test_empty_card.py - test empty card
 
-Copyright (C) 2016  g10 Code GmbH
+Copyright (C) 2016, 2018  g10 Code GmbH
 Author: NIIBE Yutaka <gniibe@fsij.org>
 
 This file is a part of Gnuk, a GnuPG USB Token implementation.
@@ -24,12 +24,10 @@ from binascii import hexlify
 from re import match, DOTALL
 from struct import pack
 from util import *
+from card_const import *
 import pytest
 
 EMPTY_60=bytes(60)
-
-FACTORY_PASSPHRASE_PW1=b"123456"
-FACTORY_PASSPHRASE_PW3=b"12345678"
 
 def test_login(card):
     login = get_data_object(card, 0x5e)
@@ -146,7 +144,7 @@ def test_historical_bytes(card):
 
 def test_extended_capabilities(card):
     a = get_data_object(card, 0xc0)
-    assert a == None or match(b'[\x70\x74]\x00\x00\x20[\x00\x08]\x00\x00\xff\x01\x00', a)
+    assert a == None or match(b'[\x70\x74\x75]\x00\x00\x20[\x00\x08]\x00\x00\xff\x01\x00', a)
 
 def test_algorithm_attributes_1(card):
     a = get_data_object(card, 0xc1)

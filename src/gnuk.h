@@ -22,15 +22,12 @@ extern struct apdu apdu;
 #define CARD_CHANGE_REMOVE 1
 #define CARD_CHANGE_TOGGLE 2
 void ccid_card_change_signal (int how);
-void ccid_usb_reset (int);
 
 /* CCID thread */
 #define EV_RX_DATA_READY   1 /* USB Rx data available  */
 #define EV_EXEC_FINISHED   2 /* OpenPGP Execution finished */
 #define EV_TX_FINISHED     4 /* CCID Tx finished  */
-#define EV_CARD_CHANGE         8
-#define EV_USB_SET_INTERFACE  16
-#define EV_USB_DEVICE_RESET   32
+#define EV_CARD_CHANGE     8
 
 /* OpenPGPcard thread */
 #define EV_PINPAD_INPUT_DONE      1
@@ -296,6 +293,9 @@ int ecdh_decrypt_curve25519 (const uint8_t *input, uint8_t *output,
 const uint8_t *gpg_do_read_simple (uint8_t);
 void gpg_do_write_simple (uint8_t, const uint8_t *, int);
 void gpg_increment_digital_signature_counter (void);
+void gpg_do_get_initial_pw_setting (int is_pw3, int *r_len,
+				    const uint8_t **r_p);
+int gpg_do_kdf_check (int len, int how_many);
 
 
 void fatal (uint8_t code) __attribute__ ((noreturn));
@@ -334,7 +334,8 @@ extern uint8_t admin_authorized;
 #define NR_DO_KEYSTRING_PW1	0x11
 #define NR_DO_KEYSTRING_RC	0x12
 #define NR_DO_KEYSTRING_PW3	0x13
-#define NR_DO__LAST__		20   /* == 0x14 */
+#define NR_DO_KDF		0x14
+#define NR_DO__LAST__		21   /* == 0x15 */
 /* 14-bit counter for DS: Recorded in flash memory by 1-halfword (2-byte).  */
 /*
  * Representation of 14-bit counter:
@@ -433,6 +434,7 @@ extern const uint8_t gnuk_string_serial[];
 #define LED_GNUK_EXEC		 32
 #define LED_START_COMMAND	 64
 #define LED_FINISH_COMMAND	128
+#define LED_OFF	 LED_FINISH_COMMAND
 void led_blink (int spec);
 
 #if defined(PINPAD_SUPPORT)

@@ -1,7 +1,7 @@
 """
-test_personalize_reset_card.py - test resetting personalization of card
+test_personalize_reset.py - test resetting personalization of card
 
-Copyright (C) 2016  g10 Code GmbH
+Copyright (C) 2016, 2018  g10 Code GmbH
 Author: NIIBE Yutaka <gniibe@fsij.org>
 
 This file is a part of Gnuk, a GnuPG USB Token implementation.
@@ -24,18 +24,8 @@ from struct import pack
 from re import match, DOTALL
 from util import *
 import rsa_keys
-
-FACTORY_PASSPHRASE_PW1=b"123456"
-FACTORY_PASSPHRASE_PW3=b"12345678"
-PW1_TEST0=b"another user pass phrase"
-PW1_TEST1=b"PASSPHRASE SHOULD BE LONG"
-PW1_TEST2=b"new user pass phrase"
-PW1_TEST3=b"next user pass phrase"
-PW1_TEST4=b"another user pass phrase"
-PW3_TEST0=b"admin pass phrase"
-PW3_TEST1=b"another admin pass phrase"
-
-RESETCODE_TEST=b"example reset code 000"
+from card_const import *
+from constants_for_test import *
 
 def test_login_put(card):
     r = card.cmd_put_data(0x00, 0x5e, b"")
@@ -67,25 +57,25 @@ def test_pw1_status_put(card):
     assert r
 
 def test_setup_pw3_0(card):
-    r = card.cmd_change_reference_data(3, PW3_TEST0 + FACTORY_PASSPHRASE_PW3)
+    r = card.change_passwd(3, PW3_TEST0, FACTORY_PASSPHRASE_PW3)
     assert r
 
 def test_verify_pw3_0(card):
-    v = card.cmd_verify(3, FACTORY_PASSPHRASE_PW3)
+    v = card.verify(3, FACTORY_PASSPHRASE_PW3)
     assert v
 
 def test_setup_pw1_0(card):
-    r = card.cmd_change_reference_data(1, PW1_TEST4 + FACTORY_PASSPHRASE_PW1)
+    r = card.change_passwd(1, PW1_TEST4, FACTORY_PASSPHRASE_PW1)
     assert r
 
 def test_verify_pw1_0(card):
-    v = card.cmd_verify(1, FACTORY_PASSPHRASE_PW1)
+    v = card.verify(1, FACTORY_PASSPHRASE_PW1)
     assert v
 
 def test_verify_pw1_0_2(card):
-    v = card.cmd_verify(2, FACTORY_PASSPHRASE_PW1)
+    v = card.verify(2, FACTORY_PASSPHRASE_PW1)
     assert v
 
-def test_setup_reset_code(card):
+def test_delete_reset_code(card):
     r = card.cmd_put_data(0x00, 0xd3, b"")
     assert r

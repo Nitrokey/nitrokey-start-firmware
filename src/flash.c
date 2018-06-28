@@ -1,7 +1,7 @@
 /*
  * flash.c -- Data Objects (DO) and GPG Key handling on Flash ROM
  *
- * Copyright (C) 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+ * Copyright (C) 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
  *               Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
@@ -157,6 +157,12 @@ flash_terminate (void)
 {
   int i;
 
+#ifdef FLASH_UPGRADE_SUPPORT
+  const uint8_t *p;
+
+  p = gpg_get_firmware_update_key (0);
+  flash_erase_page ((uintptr_t)p);
+#endif
   for (i = 0; i < 3; i++)
     flash_erase_page ((uintptr_t)flash_key_getpage (i));
   flash_erase_page ((uintptr_t)FLASH_ADDR_DATA_STORAGE_START);

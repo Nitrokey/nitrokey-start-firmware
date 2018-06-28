@@ -40,14 +40,14 @@ cir_ext_disable (void)
   int rcvd = (EXTI->PR & EXTI_PR) != 0;
 
   EXTI->IMR &= ~EXTI_IMR;
-  EXTI->PR = EXTI_PR;
+  EXTI->PR |= EXTI_PR;
   return rcvd;
 }
 
 static void
 cir_ext_enable (void)
 {
-  EXTI->PR = EXTI_PR;
+  EXTI->PR |= EXTI_PR;
   EXTI->IMR |= EXTI_IMR;
 }
 
@@ -1033,8 +1033,8 @@ cir_init (void)
 
   /* EXTIx <= Py */
   AFIO->EXTICR[AFIO_EXTICR_INDEX] = AFIO_EXTICR1_EXTIx_Py;
-  EXTI->IMR = 0;
-  EXTI->FTSR = EXTI_FTSR_TR;
+  EXTI->IMR &= ~EXTI_IMR;
+  EXTI->FTSR |= EXTI_FTSR_TR;
 
   /* TIM */
 #ifdef ENABLE_RCC_APB1

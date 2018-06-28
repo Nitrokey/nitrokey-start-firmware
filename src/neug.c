@@ -1,7 +1,7 @@
 /*
  * neug.c - true random number generation
  *
- * Copyright (C) 2011, 2012, 2013, 2016, 2017
+ * Copyright (C) 2011, 2012, 2013, 2016, 2017, 2018
  *               Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
@@ -115,6 +115,11 @@ rbit (uint32_t v)
   v = ( v >> 16             ) | ( v               << 16);
   return v;
 }
+
+void
+crc32_rv_stop (void)
+{
+}
 #else
 void
 crc32_rv_reset (void)
@@ -142,6 +147,12 @@ rbit (uint32_t v)
 
   asm ("rbit	%0, %1" : "=r" (r) : "r" (v));
   return r;
+}
+
+void
+crc32_rv_stop (void)
+{
+  RCC->AHBENR &= ~RCC_AHBENR_CRCEN;
 }
 #endif
 
@@ -894,6 +905,7 @@ neug_fini (void)
   rng_should_terminate = 1;
   neug_get (1);
   chopstx_join (rng_thread, NULL);
+  crc32_rv_stop ();
 }
 
 void
