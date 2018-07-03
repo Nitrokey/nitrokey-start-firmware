@@ -6,7 +6,7 @@ Gnuk Token is supported as well.
 
 You need to install:
 
-   $ sudo apt install python3-pytest python3-usb python3-cffi
+   $ sudo apt install python3-pytest python3-usb python3-cffi libgcrypt20-dev
 
 Please run test by typing:
 
