@@ -9,10 +9,7 @@
 
 set -x
 
-tags="RTM.2 RTM.3"
-#tag="RTM.3"
 gtag=$1
-#upgrade_from_rtm1= green or red
 upgrade_from_rtm1=$2
 
 tag="${gtag}_${upgrade_from_rtm1}"
@@ -26,13 +23,11 @@ if [ ${upgrade_from_rtm1} == "green" ] ; then
 fi
 popd
 
-pushd $tag/src
-./configure --enable-factory-reset --enable-certdo --target=NITROKEY_START --vidpid=20a0:4211
-make -j2
+
+pushd docker
+sudo env GNUK_CONFIG="--target=NITROKEY_START --vidpid=20a0:4211 --enable-factory-reset --enable-certdo" make
 popd
-pushd $tag/regnual
-make -j2
-popd
+
 
 dirname=build/$gtag
 if [ ${upgrade_from_rtm1} == "green" ] ; then
