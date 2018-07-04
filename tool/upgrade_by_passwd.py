@@ -92,7 +92,7 @@ def main(wait_e, keyno, passwd, data_regnual, data_upgrade):
     reg = None
     print("Waiting for device to appear:")
     while reg == None:
-        print("  Wait %d seconds..." % wait_e)
+        print("  Wait {} second{}...".format(wait_e, 's' if wait_e > 1 else ''))
         time.sleep(wait_e)
         for dev in gnuk_devices_by_vidpid():
             try:
