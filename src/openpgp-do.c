@@ -1,7 +1,7 @@
 /*
  * openpgp-do.c -- OpenPGP card Data Objects (DO) handling
  *
- * Copyright (C) 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+ * Copyright (C) 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
  *               Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
@@ -112,13 +112,15 @@ const uint8_t historical_bytes[] __attribute__ ((aligned (1))) = {
 /* Extended Capabilities */
 static const uint8_t extended_capabilities[] __attribute__ ((aligned (1))) = {
   10,
-  0x74,				/*
+  0x75,				/*
 				 * No Secure Messaging supported
 				 * GET CHALLENGE supported
 				 * Key import supported
 				 * PW status byte can be put
 				 * No private_use_DO
 				 * Algorithm attrs are changable
+				 * No DEC with AES
+				 * KDF-DO available
 				 */
   0,		  /* Secure Messaging Algorithm: N/A (TDES=0, AES=1) */
   0x00, CHALLENGE_LEN, 		/* Max size of GET CHALLENGE */
@@ -452,12 +454,17 @@ static const struct do_table_entry *get_do_entry (uint16_t tag);
 #define GPG_DO_KGTIME_DEC	0x00cf
 #define GPG_DO_KGTIME_AUT	0x00d0
 #define GPG_DO_RESETTING_CODE	0x00d3
+#define GPG_DO_UIF_SIG		0x00d6
+#define GPG_DO_UIF_DEC		0x00d7
+#define GPG_DO_UIF_AUT		0x00d8
+#define GPG_DO_KDF		0x00f9
 #define GPG_DO_KEY_IMPORT	0x3fff
 #define GPG_DO_LANGUAGE		0x5f2d
 #define GPG_DO_SEX		0x5f35
 #define GPG_DO_URL		0x5f50
 #define GPG_DO_HIST_BYTES	0x5f52
 #define GPG_DO_CH_CERTIFICATE	0x7f21
+#define GPG_DO_FEATURE_MNGMNT	0x7f74
 
 static const uint8_t *do_ptr[NR_DO__LAST__];
 
@@ -494,6 +501,8 @@ do_tag_to_nr (uint16_t tag)
       return NR_DO_NAME;
     case GPG_DO_LANGUAGE:
       return NR_DO_LANGUAGE;
+    case GPG_DO_KDF:
+      return NR_DO_KDF;
     default:
       return -1;
     }
@@ -798,6 +807,157 @@ rw_algorithm_attr (uint16_t tag, int with_tag,
     }
 }
 
+#define SIZE_OF_KDF_DO_MIN              90
+#define SIZE_OF_KDF_DO_MAX             110
+#define OPENPGP_KDF_ITERSALTED_S2K 3
+#define OPENPGP_SHA256             8
+
+static int
+rw_kdf (uint16_t tag, int with_tag, const uint8_t *data, int len, int is_write)
+{
+  if (tag != GPG_DO_KDF)
+    return 0;		/* Failure */
+
+  if (is_write)
+    {
+      const uint8_t **do_data_p = (const uint8_t **)&do_ptr[NR_DO_KDF];
+
+      /* KDF DO can be changed only when no keys are registered.  */
+      if (do_ptr[NR_DO_PRVKEY_SIG] || do_ptr[NR_DO_PRVKEY_DEC]
+	  || do_ptr[NR_DO_PRVKEY_AUT])
+	return 0;
+
+      /* The valid data format is:
+	 Deleting:
+           nothing
+	 Minimum (for admin-less):
+	   81 01 03 = KDF_ITERSALTED_S2K
+	   82 01 08 = SHA256
+	   83 04 4-byte... = count
+	   84 08 8-byte... = salt
+	   87 20 32-byte user hash
+	   88 20 32-byte admin hash
+	 Full:
+	   81 01 03 = KDF_ITERSALTED_S2K
+	   82 01 08 = SHA256
+	   83 04 4-byte... = count
+	   84 08 8-byte... = salt user
+	   85 08 8-byte... = salt reset-code
+	   86 08 8-byte... = salt admin
+	   87 20 32-byte user hash
+	   88 20 32-byte admin hash
+      */
+      if (!(len == 0
+	    || (len == SIZE_OF_KDF_DO_MIN &&
+		(data[0] == 0x81 && data[3] == 0x82 && data[6] == 0x83
+		 && data[12] == 0x84 && data[22] == 0x87 && data[56] == 0x88))
+	    || (len == SIZE_OF_KDF_DO_MAX &&
+		(data[0] == 0x81 && data[3] == 0x82 && data[6] == 0x83
+		 && data[12] == 0x84 && data[22] == 0x85 && data[32] == 0x86
+		 && data[42] == 0x87 && data[76] == 0x88))))
+	return 0;
+
+      if (*do_data_p)
+	flash_do_release (*do_data_p);
+
+      /* Clear all keystrings and auth states */
+      gpg_do_write_simple (NR_DO_KEYSTRING_PW1, NULL, 0);
+      gpg_do_write_simple (NR_DO_KEYSTRING_RC, NULL, 0);
+      gpg_do_write_simple (NR_DO_KEYSTRING_PW3, NULL, 0);
+      ac_reset_admin ();
+      ac_reset_pso_cds ();
+      ac_reset_other ();
+
+      if (len == 0)
+	{
+	  *do_data_p = NULL;
+	  return 1;
+	}
+      else
+	{
+	  *do_data_p = flash_do_write (NR_DO_KDF, data, len);
+	  if (*do_data_p)
+	    return 1;
+	  else
+	    return 0;
+	}
+    }
+  else
+    {
+      if (do_ptr[NR_DO_KDF])
+	copy_do_1 (tag, do_ptr[NR_DO_KDF], with_tag);
+      else
+	return 0;
+
+      return 1;
+    }
+}
+
+int
+gpg_do_kdf_check (int len, int how_many)
+{
+  const uint8_t *kdf_do = do_ptr[NR_DO_KDF];
+
+  if (kdf_do)
+    {
+      const uint8_t *kdf_spec = kdf_do+1;
+      int kdf_do_len = kdf_do[0];
+      int hash_len;
+
+      if (kdf_do_len == SIZE_OF_KDF_DO_MIN)
+	hash_len = kdf_spec[23];
+      else
+	hash_len = kdf_spec[43];
+
+      if ((hash_len * how_many) != len && hash_len != len)
+	return 0;
+    }
+
+  return 1;
+}
+
+void
+gpg_do_get_initial_pw_setting (int is_pw3, int *r_len, const uint8_t **r_p)
+{
+  const uint8_t *kdf_do = do_ptr[NR_DO_KDF];
+
+  if (kdf_do)
+    {
+      int len = kdf_do[0];
+      const uint8_t *kdf_spec = kdf_do+1;
+
+      *r_len = 32;
+
+      if (len == SIZE_OF_KDF_DO_MIN)
+	{
+	  if (is_pw3)
+	    *r_p = kdf_spec + 58;
+	  else
+	    *r_p = kdf_spec + 24;
+	}
+      else
+	{
+	  if (is_pw3)
+	    *r_p = kdf_spec + 78;
+	  else
+	    *r_p = kdf_spec + 44;
+	}
+    }
+  else
+    {
+      if (is_pw3)
+	{
+	  *r_len = strlen (OPENPGP_CARD_INITIAL_PW3);
+	  *r_p = (const uint8_t *)OPENPGP_CARD_INITIAL_PW3;
+	}
+      else
+	{
+	  *r_len = strlen (OPENPGP_CARD_INITIAL_PW1);
+	  *r_p = (const uint8_t *)OPENPGP_CARD_INITIAL_PW1;
+	}
+    }
+}
+
 static int
 proc_resetting_code (const uint8_t *data, int len)
 {
@@ -811,31 +971,45 @@ proc_resetting_code (const uint8_t *data, int len)
 
   DEBUG_INFO ("Resetting Code!\r\n");
 
-  newpw_len = len;
-  newpw = data;
-  new_ks0[0] = newpw_len;
-  random_get_salt (salt);
-  s2k (salt, SALT_SIZE, newpw, newpw_len, new_ks);
-  r = gpg_change_keystring (admin_authorized, old_ks, BY_RESETCODE, new_ks);
-  if (r <= -2)
-    {
-      DEBUG_INFO ("memory error.\r\n");
-      return 0;
-    }
-  else if (r < 0)
-    {
-      DEBUG_INFO ("security error.\r\n");
-      return 0;
-    }
-  else if (r == 0)
-    {
-      DEBUG_INFO ("error (no prvkey).\r\n");
-      return 0;
+  if (len == 0)
+    {				/* Removal of resetting code.  */
+      enum kind_of_key kk0;
+
+      for (kk0 = 0; kk0 <= GPG_KEY_FOR_AUTHENTICATION; kk0++)
+	gpg_do_chks_prvkey (kk0, BY_RESETCODE, NULL, 0, NULL);
+      gpg_do_write_simple (NR_DO_KEYSTRING_RC, NULL, 0);
     }
   else
     {
-      DEBUG_INFO ("done.\r\n");
-      gpg_do_write_simple (NR_DO_KEYSTRING_RC, new_ks0, KS_META_SIZE);
+      if (gpg_do_kdf_check (len, 1) == 0)
+	return 0;
+
+      newpw_len = len;
+      newpw = data;
+      new_ks0[0] = newpw_len;
+      random_get_salt (salt);
+      s2k (salt, SALT_SIZE, newpw, newpw_len, new_ks);
+      r = gpg_change_keystring (admin_authorized, old_ks, BY_RESETCODE, new_ks);
+      if (r <= -2)
+	{
+	  DEBUG_INFO ("memory error.\r\n");
+	  return 0;
+	}
+      else if (r < 0)
+	{
+	  DEBUG_INFO ("security error.\r\n");
+	  return 0;
+	}
+      else if (r == 0)
+	{
+	  DEBUG_INFO ("error (no prvkey).\r\n");
+	  return 0;
+	}
+      else
+	{
+	  DEBUG_INFO ("done.\r\n");
+	  gpg_do_write_simple (NR_DO_KEYSTRING_RC, new_ks0, KS_META_SIZE);
+	}
     }
 
   gpg_pw_reset_err_counter (PW_ERR_RC);
@@ -1090,6 +1264,8 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data,
   int pubkey_len;
   uint8_t ks[KEYSTRING_MD_SIZE];
   enum kind_of_key kk0;
+  int pw_len;
+  const uint8_t *initial_pw;
 
   DEBUG_INFO ("Key import\r\n");
   DEBUG_SHORT (prvkey_len);
@@ -1147,8 +1323,8 @@ gpg_do_write_prvkey (enum kind_of_key kk, const uint8_t *key_data,
   memcpy (pd->dek_encrypted_2, dek, DATA_ENCRYPTION_KEY_SIZE);
   memcpy (pd->dek_encrypted_3, dek, DATA_ENCRYPTION_KEY_SIZE);
 
-  s2k (NULL, 0, (const uint8_t *)OPENPGP_CARD_INITIAL_PW1,
-       strlen (OPENPGP_CARD_INITIAL_PW1), ks);
+  gpg_do_get_initial_pw_setting (0, &pw_len, &initial_pw);
+  s2k (NULL, 0, initial_pw, pw_len, ks);
 
   /* Handle existing keys and keystring DOs.  */
   gpg_do_write_simple (NR_DO_KEYSTRING_PW1, NULL, 0);
@@ -1488,6 +1664,8 @@ gpg_do_table[] = {
     rw_algorithm_attr },
   { GPG_DO_ALG_AUT, DO_PROC_READWRITE, AC_ALWAYS, AC_ADMIN_AUTHORIZED,
     rw_algorithm_attr },
+  { GPG_DO_KDF, DO_PROC_READWRITE, AC_ALWAYS, AC_ADMIN_AUTHORIZED,
+    rw_kdf },
   /* Fixed data */
   { GPG_DO_HIST_BYTES, DO_FIXED, AC_ALWAYS, AC_NEVER, historical_bytes },
   { GPG_DO_EXTCAP, DO_FIXED, AC_ALWAYS, AC_NEVER, extended_capabilities },
@@ -2173,14 +2351,16 @@ gpg_do_keygen (uint8_t *buf)
 
   if (kk == GPG_KEY_FOR_SIGNING)
     {
-      const uint8_t *pw = (const uint8_t *)OPENPGP_CARD_INITIAL_PW1;
+      int pw_len;
+      const uint8_t *initial_pw;
       uint8_t keystring[KEYSTRING_MD_SIZE];
 
       /* GnuPG expects it's ready for signing. */
       /* Don't call ac_reset_pso_cds here, but load the private key */
 
       gpg_reset_digital_signature_counter ();
-      s2k (NULL, 0, pw, strlen (OPENPGP_CARD_INITIAL_PW1), keystring);
+      gpg_do_get_initial_pw_setting (0, &pw_len, &initial_pw);
+      s2k (NULL, 0, initial_pw, pw_len, keystring);
       gpg_do_load_prvkey (GPG_KEY_FOR_SIGNING, BY_USER, keystring);
     }
   else

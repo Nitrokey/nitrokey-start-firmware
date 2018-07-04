@@ -40,11 +40,11 @@ We are using "-O3 -Os" for compiler option.
 Building Gnuk
 -------------
 
-Change directory to ``src``:
+Change directory to ``src``: ::
 
   $ cd gnuk-VERSION/src
 
-Then, run ``configure``:
+Then, run ``configure``: ::
 
   $ ./configure --vidpid=<VID:PID>
 
@@ -52,8 +52,14 @@ Here, you need to specify USB vendor ID and product ID.  For FSIJ's,
 it's: --vidpid=234b:0000 .  Please read the section 'USB vendor ID and
 product ID' in README.
 
-Type:
+Type: ::
 
   $ make
 
 Then, we will have "gnuk.elf" under src/build directory.
+
+If you are not the authorized vendor, please never distribute this
+file of "gnuk.elf", which includes VID:PID in the image.  If you would
+like to distribute the image (for example, to check if it's
+reproducible or not), the file "gnuk-no-vidpid.elf" is the one with no
+VID:PID.

@@ -1,7 +1,7 @@
 /*
  * regnual.c -- Firmware installation for STM32F103 Flash ROM
  *
- * Copyright (C) 2012, 2013, 2015, 2016, 2017
+ * Copyright (C) 2012, 2013, 2015, 2016, 2017, 2018
  *               Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
@@ -57,7 +57,9 @@ static const uint8_t regnual_device_desc[] = {
   0x00,   /* bDeviceSubClass */
   0x00,   /* bDeviceProtocol */
   0x40,   /* bMaxPacketSize0 */
-#include "../src/usb-vid-pid-ver.c.inc"
+  0x00, 0x00,		/* idVendor  (will be replaced)     */
+  0x00, 0x00,		/* idProduct (will be replaced)     */
+  0x00, 0x00,		/* bcdDevice (will be replaced)     */
   1, /* Index of string descriptor describing manufacturer */
   2, /* Index of string descriptor describing product */
   3, /* Index of string descriptor describing the device's serial number */
@@ -147,19 +149,33 @@ static uint32_t fetch (int i)
 }
 
 struct CRC {
-  __IO uint32_t DR;
-  __IO uint8_t  IDR;
+  volatile uint32_t DR;
+  volatile uint8_t  IDR;
   uint8_t   RESERVED0;
   uint16_t  RESERVED1;
-  __IO uint32_t CR;
+  volatile uint32_t CR;
 };
+static struct CRC *const CRC = (struct CRC *)0x40023000;
+
+struct RCC {
+  volatile uint32_t CR;
+  volatile uint32_t CFGR;
+  volatile uint32_t CIR;
+  volatile uint32_t APB2RSTR;
+  volatile uint32_t APB1RSTR;
+  volatile uint32_t AHBENR;
+  /* ... */
+};
+static struct RCC *const RCC = (struct RCC *)0x40021000;
+#define RCC_AHBENR_CRCEN        0x00000040
+
 
 #define  CRC_CR_RESET 0x01
 static uint32_t calc_crc32 (void)
 {
-  struct CRC *CRC = (struct CRC *)0x40023000;
   int i;
 
+  RCC->AHBENR |= RCC_AHBENR_CRCEN;
   CRC->CR = CRC_CR_RESET;
 
   for (i = 0; i < 256/4; i++)

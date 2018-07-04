@@ -90,6 +90,10 @@ device_initialize_once (void)
 
 static volatile uint8_t fatal_code;
 static struct eventflag led_event;
+static chopstx_poll_cond_t led_event_poll_desc;
+static struct chx_poll_head *const led_event_poll[] = {
+  (struct chx_poll_head *)&led_event_poll_desc
+};
 
 static void display_fatal_code (void)
 {
@@ -130,17 +134,20 @@ static void display_fatal_code (void)
 
 static uint8_t led_inverted;
 
-static void emit_led (int on_time, int off_time)
+static void
+emit_led (uint32_t on_time, uint32_t off_time)
 {
   set_led (!led_inverted);
-  chopstx_usec_wait (on_time);
+  chopstx_poll (&on_time, 1, led_event_poll);
   set_led (led_inverted);
-  chopstx_usec_wait (off_time);
+  chopstx_poll (&off_time, 1, led_event_poll);
 }
 
-static void display_status_code (void)
+static void
+display_status_code (void)
 {
   enum ccid_state ccid_state = *ccid_state_p;
+  uint32_t usec;
 
   if (ccid_state == CCID_STATE_START)
     emit_led (LED_TIMEOUT_ONE, LED_TIMEOUT_STOP);
@@ -155,10 +162,14 @@ static void display_status_code (void)
 		LED_TIMEOUT_ONE : LED_TIMEOUT_ZERO, LED_TIMEOUT_INTERVAL);
 
       if (ccid_state == CCID_STATE_WAIT)
-	chopstx_usec_wait (LED_TIMEOUT_STOP * 2);
+	{
+	  usec = LED_TIMEOUT_STOP * 2;
+	  chopstx_poll (&usec, 1, led_event_poll);
+	}
       else
 	{
-	  chopstx_usec_wait (LED_TIMEOUT_INTERVAL);
+	  usec = LED_TIMEOUT_INTERVAL;
+	  chopstx_poll (&usec, 1, led_event_poll);
 	  emit_led (ccid_state == CCID_STATE_RECEIVE?
 		    LED_TIMEOUT_ONE : LED_TIMEOUT_ZERO, LED_TIMEOUT_STOP);
 	}
@@ -227,6 +238,8 @@ main (int argc, const char *argv[])
   uintptr_t entry;
 #endif
   chopstx_t ccid_thd;
+
+  chopstx_conf_idle (1);
 
   gnuk_malloc_init ();
 
@@ -329,11 +342,13 @@ main (int argc, const char *argv[])
 
   while (1)
     {
-      if (bDeviceState != UNCONNECTED)
+      if (bDeviceState != USB_DEVICE_STATE_UNCONNECTED)
 	break;
 
       chopstx_usec_wait (250*1000);
     }
+
+  eventflag_prepare_poll (&led_event, &led_event_poll_desc);
 
   while (1)
     {

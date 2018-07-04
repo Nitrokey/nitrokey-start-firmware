@@ -87,7 +87,7 @@ vcom_port_data_setup (struct usb_dev *dev)
 #include "usb-msc.h"
 #endif
 
-uint32_t bDeviceState = UNCONNECTED; /* USB device status */
+uint32_t bDeviceState = USB_DEVICE_STATE_UNCONNECTED;
 
 #define USB_HID_REQ_GET_REPORT   1
 #define USB_HID_REQ_GET_IDLE     2
@@ -202,8 +202,6 @@ gnuk_setup_endpoints_for_interface (struct usb_dev *dev,
 void
 usb_device_reset (struct usb_dev *dev)
 {
-  int i;
-
   usb_lld_reset (dev, USB_INITIAL_FEATURE);
 
   /* Initialize Endpoint 0 */
@@ -214,12 +212,7 @@ usb_device_reset (struct usb_dev *dev)
 			  64);
 #endif
 
-  /* Stop the interface */
-  for (i = 0; i < NUM_INTERFACES; i++)
-    gnuk_setup_endpoints_for_interface (dev, i, 1);
-
-  bDeviceState = ATTACHED;
-  ccid_usb_reset (1);
+  bDeviceState = USB_DEVICE_STATE_DEFAULT;
 }
 
 #define USB_CCID_REQ_ABORT			0x01
@@ -414,7 +407,7 @@ usb_ctrl_write_finish (struct usb_dev *dev)
 	  if (*ccid_state_p != CCID_STATE_EXITED)
 	    return;
 
-	  bDeviceState = UNCONNECTED;
+	  bDeviceState = USB_DEVICE_STATE_UNCONNECTED;
 	  usb_lld_prepare_shutdown (); /* No further USB communication */
 	  led_blink (LED_GNUK_EXEC);	/* Notify the main.  */
 	}
@@ -476,7 +469,7 @@ usb_set_configuration (struct usb_dev *dev)
       usb_lld_set_configuration (dev, 1);
       for (i = 0; i < NUM_INTERFACES; i++)
 	gnuk_setup_endpoints_for_interface (dev, i, 0);
-      bDeviceState = CONFIGURED;
+      bDeviceState = USB_DEVICE_STATE_CONFIGURED;
     }
   else if (current_conf != dev->dev_req.value)
     {
@@ -486,8 +479,7 @@ usb_set_configuration (struct usb_dev *dev)
       usb_lld_set_configuration (dev, 0);
       for (i = 0; i < NUM_INTERFACES; i++)
 	gnuk_setup_endpoints_for_interface (dev, i, 1);
-      bDeviceState = ADDRESSED;
-      ccid_usb_reset (1);
+      bDeviceState = USB_DEVICE_STATE_ADDRESSED;
     }
 
   /* Do nothing when current_conf == value */
@@ -509,7 +501,6 @@ usb_set_interface (struct usb_dev *dev)
   else
     {
       gnuk_setup_endpoints_for_interface (dev, interface, 0);
-      ccid_usb_reset (0);
       return usb_lld_ctrl_ack (dev);
     }
 }

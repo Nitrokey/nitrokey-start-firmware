@@ -179,8 +179,8 @@ class CardReader(object):
             # TPDU reader configuration
             self.ns = 0
             self.nr = 0
-            # For Gemalto USB GemPC Pinpad SmartCard Reader
-            if self.__dev.idVendor == 0x08E6 and self.__dev.idProduct == 0x3478:
+            # For Gemalto's SmartCard Reader(s)
+            if self.__dev.idVendor == 0x08E6:
                 # Set PPS
                 pps = b"\xFF\x11\x18\xF6"
                 status, chain, ret_pps = self.ccid_send_data_block(pps)

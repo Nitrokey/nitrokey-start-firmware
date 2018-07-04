@@ -1,7 +1,7 @@
 /*
  * openpgp.c -- OpenPGP card protocol support
  *
- * Copyright (C) 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+ * Copyright (C) 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
  *               Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
@@ -37,6 +37,7 @@
 
 static struct eventflag *openpgp_comm;
 
+#define USER_PASSWD_MINLEN 6
 #define ADMIN_PASSWD_MINLEN 8
 
 #define CLS(a) a.cmd_apdu_head[0]
@@ -170,7 +171,8 @@ cmd_verify (void)
 	    r = ac_check_status (AC_ADMIN_AUTHORIZED);
 
 	  if (r)
-	    GPG_SUCCESS ();	/* If authentication done already, return success.  */
+	    /* If authentication done already, return success.  */
+	    GPG_SUCCESS ();
 	  else
 	    {		 /* If not, return retry counter, encoded.  */
 	      r = gpg_pw_get_retry_counter (p2);
@@ -189,6 +191,12 @@ cmd_verify (void)
 	}
       else
 	GPG_BAD_P1_P2 ();
+      return;
+    }
+
+  if (gpg_do_kdf_check (len, 1) == 0)
+    {
+      GPG_CONDITION_NOT_SATISFIED ();
       return;
     }
 
@@ -299,6 +307,12 @@ cmd_change_password (void)
       return;
     }
 
+  if (gpg_do_kdf_check (len, 2) == 0)
+    {
+      GPG_CONDITION_NOT_SATISFIED ();
+      return;
+    }
+
   if (who == BY_USER)			/* PW1 */
     {
       const uint8_t *ks_pw1 = gpg_do_read_simple (NR_DO_KEYSTRING_PW1);
@@ -335,8 +349,9 @@ cmd_change_password (void)
 	  newpw_len = len - pw_len;
 	  ks_pw3 = gpg_do_read_simple (NR_DO_KEYSTRING_PW3);
 
-	  /* Check length of password for admin-less mode.  */
-	  if (ks_pw3 == NULL && newpw_len < ADMIN_PASSWD_MINLEN)
+	  /* Check length of password */
+	  if ((ks_pw3 == NULL && newpw_len < ADMIN_PASSWD_MINLEN)
+	      || newpw_len < USER_PASSWD_MINLEN)
 	    {
 	      DEBUG_INFO ("new password length is too short.");
 	      GPG_CONDITION_NOT_SATISFIED ();
@@ -351,8 +366,24 @@ cmd_change_password (void)
 
       if (ks_pw3 == NULL)
 	{
-	  salt = NULL;
-	  salt_len = 0;
+	  if (admin_authorized == BY_USER)
+	    {
+	      const uint8_t *ks_pw1 = gpg_do_read_simple (NR_DO_KEYSTRING_PW1);
+
+	      if (ks_pw1 == NULL)
+		{
+		  GPG_SECURITY_FAILURE ();
+		  return;
+		}
+
+	      salt = KS_GET_SALT (ks_pw1);
+	      salt_len = SALT_SIZE;
+	    }
+	  else
+	    {
+	      salt = NULL;
+	      salt_len = 0;
+	    }
 	}
       else
 	{
@@ -376,12 +407,21 @@ cmd_change_password (void)
 	{
 	  newpw = pw + pw_len;
 	  newpw_len = len - pw_len;
+
 	  if (newpw_len == 0 && admin_authorized == BY_ADMIN)
 	    {
-	      newpw_len = strlen (OPENPGP_CARD_INITIAL_PW3);
-	      memcpy (newpw, OPENPGP_CARD_INITIAL_PW3, newpw_len);
+	      const uint8_t *initial_pw;
+
+	      gpg_do_get_initial_pw_setting (1, &newpw_len, &initial_pw);
+	      memcpy (newpw, initial_pw, newpw_len);
 	      newsalt_len = 0;
 	      pw3_null = 1;
+	    }
+	  else if (newpw_len < ADMIN_PASSWD_MINLEN)
+	    {
+	      DEBUG_INFO ("new password length is too short.");
+	      GPG_CONDITION_NOT_SATISFIED ();
+	      return;
 	    }
 
 	  who_old = admin_authorized;
@@ -412,11 +452,26 @@ cmd_change_password (void)
     }
   else if (r > 0 && who == BY_USER)
     {
+      /* When it was already admin-less mode, admin_authorized is
+       * BY_USER.  If no PW3 keystring, it's becoming admin-less mode,
+       * now.  For these two cases, we need to reset admin
+       * authorization status.  */
+      if (admin_authorized == BY_USER)
+	ac_reset_admin ();
+      else if (ks_pw3 == NULL)
+	{
+	  enum kind_of_key kk0;
+
+	  /* Remove keystrings for BY_ADMIN.  */
+	  for (kk0 = 0; kk0 <= GPG_KEY_FOR_AUTHENTICATION; kk0++)
+	    gpg_do_chks_prvkey (kk0, BY_ADMIN, NULL, 0, NULL);
+
+	  ac_reset_admin ();
+	}
+
       gpg_do_write_simple (NR_DO_KEYSTRING_PW1, new_ks0, KS_META_SIZE);
       ac_reset_pso_cds ();
       ac_reset_other ();
-      if (admin_authorized == BY_USER)
-	ac_reset_admin ();
       DEBUG_INFO ("Changed length of DO_KEYSTRING_PW1.\r\n");
       GPG_SUCCESS ();
     }
@@ -516,6 +571,13 @@ cmd_reset_user_password (void)
     {
       const uint8_t *ks_rc = gpg_do_read_simple (NR_DO_KEYSTRING_RC);
       uint8_t old_ks[KEYSTRING_MD_SIZE];
+      const uint8_t *ks_pw3 = gpg_do_read_simple (NR_DO_KEYSTRING_PW3);
+
+      if (gpg_do_kdf_check (len, 2) == 0)
+	{
+	  GPG_CONDITION_NOT_SATISFIED ();
+	  return;
+	}
 
       if (gpg_pw_locked (PW_ERR_RC))
 	{
@@ -536,6 +598,16 @@ cmd_reset_user_password (void)
       salt_len = SALT_SIZE;
       newpw = pw + pw_len;
       newpw_len = len - pw_len;
+
+      /* Check length of new password */
+      if ((ks_pw3 == NULL && newpw_len < ADMIN_PASSWD_MINLEN)
+	  || newpw_len < USER_PASSWD_MINLEN)
+	{
+	  DEBUG_INFO ("new password length is too short.");
+	  GPG_CONDITION_NOT_SATISFIED ();
+	  return;
+	}
+
       random_get_salt (new_salt);
       s2k (salt, salt_len, pw, pw_len, old_ks);
       s2k (new_salt, SALT_SIZE, newpw, newpw_len, new_ks);
@@ -578,6 +650,12 @@ cmd_reset_user_password (void)
 	{
 	  DEBUG_INFO ("permission denied.\r\n");
 	  GPG_SECURITY_FAILURE ();
+	  return;
+	}
+
+      if (gpg_do_kdf_check (len, 1) == 0)
+	{
+	  GPG_CONDITION_NOT_SATISFIED ();
 	  return;
 	}
 
