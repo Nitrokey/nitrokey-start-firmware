@@ -23,6 +23,7 @@ License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
+from subprocess import check_output
 
 from gnuk_token import get_gnuk_device, gnuk_devices_by_vidpid, \
      gnuk_token, regnual, SHA256_OID_PREFIX, crc32, parse_kdf_data
@@ -167,8 +168,28 @@ if __name__ == '__main__':
     print('Currently connected device strings:')
     print_device(dev_strings[0])
 
-    # First 4096-byte in data_upgrade is SYS, so, skip it.
-    main(wait_e, keyno, passwd, data_regnual, data_upgrade[4096:])
+    update_done = False
+    for attempt_counter in range(3):
+        try:
+            # First 4096-byte in data_upgrade is SYS, so, skip it.
+            main(wait_e, keyno, passwd, data_regnual, data_upgrade[4096:])
+            update_done = True
+            break
+        except ValueError as e:
+            if 'No ICC present' in str(e):
+                print('*** Could not connect to the device. Attempting to close scdaemon.')
+                result = check_output(["gpg-connect-agent",
+                                       "SCD KILLSCD", "SCD BYE", "/bye"])
+                time.sleep(1)
+                print('*** Retrying...')
+        except:
+            # unknown error, bail
+            break
+
+    if not update_done:
+        print('*** Could not proceed with the update. Please close other applications, that possibly use it (e.g. scdaemon, pcscd) and try again.')
+        exit(1)
+
 
     dev_strings_upgraded = None
     print('Currently connected device strings (after upgrade):')
