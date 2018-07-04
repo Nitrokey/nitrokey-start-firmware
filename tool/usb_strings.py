@@ -1,4 +1,4 @@
-#! /usr/bin/python
+#! /usr/bin/python3
 
 """
 usb_strings.py - a tool to dump USB string
@@ -25,19 +25,41 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 from gnuk_token import *
 import usb, sys
 
-field = ['', 'Vendor', 'Product', 'Serial', 'Revision', 'Config', 'Sys', 'Board']
+field = ['Vendor', 'Product', 'Serial', 'Revision', 'Config', 'Sys', 'Board']
 
-def main(n):
-    for dev in gnuk_devices_by_vidpid():
-        handle = dev.open()
-        print("Device: %s" % dev.filename)
+
+def get_dict_for_device(dev: usb.Device) -> dict:
+    res = {}
+    handle = dev.open()
+    res['name'] = dev.filename
+    for i,f in enumerate(field):
         try:
-            for i in range(1,n):
-                s = handle.getString(i, 512)
-                print("%10s: %s" % (field[i], s.decode('UTF-8')))
+            s = handle.getString(i+1, 512)
+            res[f] = s.decode('UTF-8')
         except:
-            pass
-        del dev
+            res[f] = None
+    return res
+
+
+def get_devices() -> list:
+    res = []
+    for dev in gnuk_devices_by_vidpid():
+        res.append(get_dict_for_device(dev=dev))
+    return res
+
+
+def print_device(dev: usb.Device, n:int=8) -> None:
+    print("Device: %s" % dev['name'])
+    for i, f in enumerate(field):
+        if i > n: break
+        if not dev[f]: continue
+        print("%10s: %s" % (f, dev[f]))
+
+
+def main(n: int) -> None:
+    for dev in get_devices():
+        print_device(dev, n)
+
 
 if __name__ == '__main__':
     if len(sys.argv) > 1:

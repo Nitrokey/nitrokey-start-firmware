@@ -1,4 +1,4 @@
-#! /usr/bin/python
+#! /usr/bin/python3
 
 """
 upgrade_by_passwd.py - a tool to install another firmware for Gnuk Token
@@ -23,6 +23,7 @@ License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
+from subprocess import check_output
 
 from gnuk_token import get_gnuk_device, gnuk_devices_by_vidpid, \
      gnuk_token, regnual, SHA256_OID_PREFIX, crc32, parse_kdf_data
@@ -51,7 +52,10 @@ def main(wait_e, keyno, passwd, data_regnual, data_upgrade):
     gnuk = get_gnuk_device()
     gnuk.cmd_select_openpgp()
     # Compute passwd data
-    kdf_data = gnuk.cmd_get_data(0x00, 0xf9).tostring()
+    try:
+        kdf_data = gnuk.cmd_get_data(0x00, 0xf9).tostring()
+    except:
+        kdf_data = b""
     if kdf_data == b"":
         passwd_data = passwd.encode('UTF-8')
     else:
@@ -89,7 +93,7 @@ def main(wait_e, keyno, passwd, data_regnual, data_upgrade):
     reg = None
     print("Waiting for device to appear:")
     while reg == None:
-        print("  Wait %d seconds..." % wait_e)
+        print("  Wait {} second{}...".format(wait_e, 's' if wait_e > 1 else ''))
         time.sleep(wait_e)
         for dev in gnuk_devices_by_vidpid():
             try:
@@ -117,41 +121,106 @@ from getpass import getpass
 # This should be event driven, not guessing some period, or polling.
 DEFAULT_WAIT_FOR_REENUMERATION=1
 
+def validate_binary_file(path: str):
+    import os.path
+    if not os.path.exists(path):
+        raise argparse.ArgumentTypeError('Path does not exist: "{}"'.format(path))
+    if not path.endswith('.bin'):
+        raise argparse.ArgumentTypeError('Supplied file "{}" does not have ".bin" extension. Make sure you are sending correct file to the device.'.format(os.path.basename(path)))
+    return path
+
+def validate_name(path: str, name: str):
+    if name not in path:
+        raise argparse.ArgumentTypeError('Supplied file "{}" does not have "{}" in name. Make sure you have not swapped the arguments.'.format(os.path.basename(path), name))
+    return path
+
+def validate_gnuk(path: str):
+    validate_binary_file(path)
+    validate_name(path, 'gnuk')
+    return path
+
+def validate_regnual(path: str):
+    validate_binary_file(path)
+    validate_name(path, 'regnual')
+    return path
+
+
 if __name__ == '__main__':
     if os.getcwd() != os.path.dirname(os.path.abspath(__file__)):
         print("Please change working directory to: %s" % os.path.dirname(os.path.abspath(__file__)))
         exit(1)
 
-    keyno = 0
+    import argparse
+    parser = argparse.ArgumentParser(description='Update tool for GNUK')
+    parser.add_argument('regnual', type=validate_regnual, help='path to regnual binary')
+    parser.add_argument('gnuk', type=validate_gnuk, help='path to gnuk binary')
+    parser.add_argument('-f', dest='default_password', action='store_true',
+                        default=False, help='use default Admin password: {}'.format(DEFAULT_PW3))
+    parser.add_argument('-e', dest='wait_e', default=DEFAULT_WAIT_FOR_REENUMERATION, type=int, help='time to wait for device to enumerate, after regnual was executed on device')
+    parser.add_argument('-k', dest='keyno', default=0, type=int, help='selected key index')
+    args = parser.parse_args()
+
+    keyno = args.keyno
     passwd = None
-    wait_e = DEFAULT_WAIT_FOR_REENUMERATION
-    while len(sys.argv) > 3:
-        option = sys.argv[1]
-        sys.argv.pop(1)
-        if option == '-f':      # F for Factory setting
-            passwd = DEFAULT_PW3
-        elif option == '-e':    # E for Enumeration
-            wait_e = int(sys.argv[1])
-            sys.argv.pop(1)
-        elif option == '-k':    # K for Key number
-            keyno = int(sys.argv[1])
-            sys.argv.pop(1)
-        else:
-            raise ValueError("unknown option", option)
+    wait_e = args.wait_e
+
+    if args.default_password:  # F for Factory setting
+        passwd = DEFAULT_PW3
     if not passwd:
-        passwd = getpass("Admin password: ")
-    filename_regnual = sys.argv[1]
-    filename_upgrade = sys.argv[2]
-    if not filename_regnual.endswith('bin') or not filename_upgrade.endswith('bin'):
-        print("Both input files must be in binary format (*.bin)!")
-        exit(1)
-    f = open(filename_regnual,"rb")
+        try:
+            passwd = getpass("Admin password: ")
+        except:
+            print('Quitting')
+            exit(2)
+
+
+    f = open(args.regnual,"rb")
     data_regnual = f.read()
     f.close()
-    print("%s: %d" % (filename_regnual, len(data_regnual)))
-    f = open(filename_upgrade,"rb")
+    print("{}: {}".format(args.regnual, len(data_regnual)))
+    f = open(args.gnuk,"rb")
     data_upgrade = f.read()
     f.close()
-    print("%s: %d" % (filename_upgrade, len(data_upgrade)))
-    # First 4096-byte in data_upgrade is SYS, so, skip it.
-    main(wait_e, keyno, passwd, data_regnual, data_upgrade[4096:])
+    print("{}: {}".format(args.gnuk, len(data_upgrade)))
+
+    from usb_strings import get_devices, print_device
+
+    dev_strings = get_devices()
+    if len(dev_strings) > 1:
+        print('Only one device should be connected. Please remove other devices and retry.')
+        exit(1)
+
+    print('Currently connected device strings:')
+    print_device(dev_strings[0])
+
+    update_done = False
+    for attempt_counter in range(3):
+        try:
+            # First 4096-byte in data_upgrade is SYS, so, skip it.
+            main(wait_e, keyno, passwd, data_regnual, data_upgrade[4096:])
+            update_done = True
+            break
+        except ValueError as e:
+            if 'No ICC present' in str(e):
+                print('*** Could not connect to the device. Attempting to close scdaemon.')
+                result = check_output(["gpg-connect-agent",
+                                       "SCD KILLSCD", "SCD BYE", "/bye"])
+                time.sleep(1)
+                print('*** Retrying...')
+        except:
+            # unknown error, bail
+            break
+
+    if not update_done:
+        print('*** Could not proceed with the update. Please close other applications, that possibly use it (e.g. scdaemon, pcscd) and try again.')
+        exit(1)
+
+
+    dev_strings_upgraded = None
+    print('Currently connected device strings (after upgrade):')
+    for i in range(10):
+        time.sleep(1)
+        dev_strings_upgraded = get_devices()
+        if len(dev_strings_upgraded) > 0: break
+        print('.')
+    print_device(dev_strings_upgraded[0])
