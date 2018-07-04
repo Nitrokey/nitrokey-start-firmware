@@ -1,4 +1,4 @@
-#! /usr/bin/python
+#! /usr/bin/python3
 
 """
 upgrade_by_passwd.py - a tool to install another firmware for Gnuk Token
@@ -156,5 +156,25 @@ if __name__ == '__main__':
     data_upgrade = f.read()
     f.close()
     print("%s: %d" % (filename_upgrade, len(data_upgrade)))
+
+    from usb_strings import get_devices, print_device
+
+    dev_strings = get_devices()
+    if len(dev_strings) > 1:
+        print('Only one device should be connected. Please remove other devices and retry.')
+        exit(1)
+
+    print('Currently connected device strings:')
+    print_device(dev_strings[0])
+
     # First 4096-byte in data_upgrade is SYS, so, skip it.
     main(wait_e, keyno, passwd, data_regnual, data_upgrade[4096:])
+
+    dev_strings_upgraded = None
+    print('Currently connected device strings (after upgrade):')
+    for i in range(10):
+        time.sleep(1)
+        dev_strings_upgraded = get_devices()
+        if len(dev_strings_upgraded) > 0: break
+        print('.')
+    print_device(dev_strings_upgraded[0])
