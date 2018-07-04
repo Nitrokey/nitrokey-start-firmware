@@ -51,7 +51,10 @@ def main(wait_e, keyno, passwd, data_regnual, data_upgrade):
     gnuk = get_gnuk_device()
     gnuk.cmd_select_openpgp()
     # Compute passwd data
-    kdf_data = gnuk.cmd_get_data(0x00, 0xf9).tostring()
+    try:
+        kdf_data = gnuk.cmd_get_data(0x00, 0xf9).tostring()
+    except:
+        kdf_data = b""
     if kdf_data == b"":
         passwd_data = passwd.encode('UTF-8')
     else:
