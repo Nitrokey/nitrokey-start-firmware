@@ -121,42 +121,67 @@ from getpass import getpass
 # This should be event driven, not guessing some period, or polling.
 DEFAULT_WAIT_FOR_REENUMERATION=1
 
+def validate_binary_file(path: str):
+    import os.path
+    if not os.path.exists(path):
+        raise argparse.ArgumentTypeError('Path does not exist: "{}"'.format(path))
+    if not path.endswith('.bin'):
+        raise argparse.ArgumentTypeError('Supplied file "{}" does not have ".bin" extension. Make sure you are sending correct file to the device.'.format(os.path.basename(path)))
+    return path
+
+def validate_name(path: str, name: str):
+    if name not in path:
+        raise argparse.ArgumentTypeError('Supplied file "{}" does not have "{}" in name. Make sure you have not swapped the arguments.'.format(os.path.basename(path), name))
+    return path
+
+def validate_gnuk(path: str):
+    validate_binary_file(path)
+    validate_name(path, 'gnuk')
+    return path
+
+def validate_regnual(path: str):
+    validate_binary_file(path)
+    validate_name(path, 'regnual')
+    return path
+
+
 if __name__ == '__main__':
     if os.getcwd() != os.path.dirname(os.path.abspath(__file__)):
         print("Please change working directory to: %s" % os.path.dirname(os.path.abspath(__file__)))
         exit(1)
 
-    keyno = 0
+    import argparse
+    parser = argparse.ArgumentParser(description='Update tool for GNUK')
+    parser.add_argument('regnual', type=validate_regnual, help='path to regnual binary')
+    parser.add_argument('gnuk', type=validate_gnuk, help='path to gnuk binary')
+    parser.add_argument('-f', dest='default_password', action='store_true',
+                        default=False, help='use default Admin password: {}'.format(DEFAULT_PW3))
+    parser.add_argument('-e', dest='wait_e', default=DEFAULT_WAIT_FOR_REENUMERATION, type=int, help='time to wait for device to enumerate, after regnual was executed on device')
+    parser.add_argument('-k', dest='keyno', default=0, type=int, help='selected key index')
+    args = parser.parse_args()
+
+    keyno = args.keyno
     passwd = None
-    wait_e = DEFAULT_WAIT_FOR_REENUMERATION
-    while len(sys.argv) > 3:
-        option = sys.argv[1]
-        sys.argv.pop(1)
-        if option == '-f':      # F for Factory setting
-            passwd = DEFAULT_PW3
-        elif option == '-e':    # E for Enumeration
-            wait_e = int(sys.argv[1])
-            sys.argv.pop(1)
-        elif option == '-k':    # K for Key number
-            keyno = int(sys.argv[1])
-            sys.argv.pop(1)
-        else:
-            raise ValueError("unknown option", option)
+    wait_e = args.wait_e
+
+    if args.default_password:  # F for Factory setting
+        passwd = DEFAULT_PW3
     if not passwd:
-        passwd = getpass("Admin password: ")
-    filename_regnual = sys.argv[1]
-    filename_upgrade = sys.argv[2]
-    if not filename_regnual.endswith('bin') or not filename_upgrade.endswith('bin'):
-        print("Both input files must be in binary format (*.bin)!")
-        exit(1)
-    f = open(filename_regnual,"rb")
+        try:
+            passwd = getpass("Admin password: ")
+        except:
+            print('Quitting')
+            exit(2)
+
+
+    f = open(args.regnual,"rb")
     data_regnual = f.read()
     f.close()
-    print("%s: %d" % (filename_regnual, len(data_regnual)))
-    f = open(filename_upgrade,"rb")
+    print("{}: {}".format(args.regnual, len(data_regnual)))
+    f = open(args.gnuk,"rb")
     data_upgrade = f.read()
     f.close()
-    print("%s: %d" % (filename_upgrade, len(data_upgrade)))
+    print("{}: {}".format(args.gnuk, len(data_upgrade)))
 
     from usb_strings import get_devices, print_device
 
