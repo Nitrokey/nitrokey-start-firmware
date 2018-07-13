@@ -1,3 +1,9 @@
+2018-07-04  Szczepan Zalega <szczepan@nitrokey.com>
+
+	* tool/upgrade_by_passwd.py: Catch exception, when no KDF data is
+	found.
+	Output 'second' for 1 second.
+
 2018-05-10  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* VERSION: 1.2.10.
