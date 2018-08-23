@@ -419,11 +419,11 @@ Olimex STM32-H103 board
 -----------------------
 
 If you are using Olimex JTAG-Tiny, type following to invoke OpenOCD
-and write "gnuk-vidpid.elf" to Flash ROM:
+and write "gnuk.elf" to Flash ROM:
 
   $ openocd -f interface/ftdi/olimex-jtag-tiny.cfg \
             -f board/olimex_stm32_h103.cfg \
-            -c "program build/gnuk-vidpid.elf verify reset exit"
+            -c "program build/gnuk.elf verify reset exit"
 
 Command invocation is assumed in src/ directory.
 
@@ -436,7 +436,7 @@ If you are using Flying Stone Tiny 01, you need a SWD writer.
 OpenOCD 0.9.0 now supports ST-Link/V2.  We can use it like:
 
   $ openocd -f interface/stlink-v2.cfg -f target/stm32f1x.cfg \
-            -c "program build/gnuk-vidpid.elf verify reset exit"
+            -c "program build/gnuk.elf verify reset exit"
 
 
 
@@ -447,7 +447,7 @@ Reset the board with "USER" switch pushed.  Type following to write
 to flash:
 
   # cd ../tool
-  # ./dfuse.py ../src/build/gnuk-vidpid.hex
+  # ./dfuse.py ../src/build/gnuk.hex
 
 Then, reset the board.
 
