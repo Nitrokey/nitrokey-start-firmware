@@ -51,6 +51,7 @@ endif
 
 ifeq ($(CHIP),stm32f103)
 CSRC += mcu-stm32f103.c 
+CSRC += ack-button.c
 endif
 
 ###################################

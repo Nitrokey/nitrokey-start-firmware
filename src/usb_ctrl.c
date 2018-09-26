@@ -1,7 +1,7 @@
 /*
  * usb_ctrl.c - USB control pipe device specific code for Gnuk
  *
- * Copyright (C) 2010, 2011, 2012, 2013, 2015, 2016, 2017
+ * Copyright (C) 2010, 2011, 2012, 2013, 2015, 2016, 2017, 2018
  *               Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *

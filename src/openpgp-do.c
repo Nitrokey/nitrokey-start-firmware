@@ -135,6 +135,12 @@ static const uint8_t extended_capabilities[] __attribute__ ((aligned (1))) = {
   0x01, 0x00,
 };
 
+/* General Feature Management */
+static const uint8_t feature_mngmnt[] __attribute__ ((aligned (1))) = {
+  3,
+  0x81, 0x01, 0x20,
+};
+
 /* Algorithm Attributes */
 #define OPENPGP_ALGO_RSA   0x01
 #define OPENPGP_ALGO_ECDH  0x12
@@ -1614,18 +1620,20 @@ static const uint16_t cmp_ch_data[] = {
 };
 
 static const uint16_t cmp_app_data[] = {
-  3,
+  4,
   GPG_DO_AID,
   GPG_DO_HIST_BYTES,
   GPG_DO_DISCRETIONARY,
+  GPG_DO_FEATURE_MNGMNT,
 };
 
 static const uint16_t cmp_discretionary[] = {
-  8,
+  11,
   GPG_DO_EXTCAP,
   GPG_DO_ALG_SIG, GPG_DO_ALG_DEC, GPG_DO_ALG_AUT,
   GPG_DO_PW_STATUS,
-  GPG_DO_FP_ALL, GPG_DO_CAFP_ALL, GPG_DO_KGTIME_ALL
+  GPG_DO_FP_ALL, GPG_DO_CAFP_ALL, GPG_DO_KGTIME_ALL,
+  GPG_DO_UIF_SIG, GPG_DO_UIF_DEC, GPG_DO_UIF_AUT
 };
 
 static const uint16_t cmp_ss_temp[] = { 1, GPG_DO_DS_COUNT };
@@ -1664,11 +1672,15 @@ gpg_do_table[] = {
     rw_algorithm_attr },
   { GPG_DO_ALG_AUT, DO_PROC_READWRITE, AC_ALWAYS, AC_ADMIN_AUTHORIZED,
     rw_algorithm_attr },
+  { GPG_DO_UIF_SIG, DO_PROC_READWRITE, AC_ALWAYS, AC_ADMIN_AUTHORIZED, rw_uif },
+  { GPG_DO_UIF_DEC, DO_PROC_READWRITE, AC_ALWAYS, AC_ADMIN_AUTHORIZED, rw_uif },
+  { GPG_DO_UIF_AUT, DO_PROC_READWRITE, AC_ALWAYS, AC_ADMIN_AUTHORIZED, rw_uif },
   { GPG_DO_KDF, DO_PROC_READWRITE, AC_ALWAYS, AC_ADMIN_AUTHORIZED,
     rw_kdf },
   /* Fixed data */
   { GPG_DO_HIST_BYTES, DO_FIXED, AC_ALWAYS, AC_NEVER, historical_bytes },
   { GPG_DO_EXTCAP, DO_FIXED, AC_ALWAYS, AC_NEVER, extended_capabilities },
+  { GPG_DO_FEATURE_MNGMNT, DO_FIXED, AC_ALWAYS, AC_NEVER, feature_mngmnt },
   /* Compound data: Read access only */
   { GPG_DO_CH_DATA, DO_CMP_READ, AC_ALWAYS, AC_NEVER, cmp_ch_data },
   { GPG_DO_APP_DATA, DO_CMP_READ, AC_ALWAYS, AC_NEVER, cmp_app_data },

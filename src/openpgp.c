@@ -1501,7 +1501,7 @@ const struct command cmds[] = {
 };
 #define NUM_CMDS ((int)(sizeof (cmds) / sizeof (struct command)))
 
-static void
+static int
 process_command_apdu (void)
 {
   int i;
@@ -1536,6 +1536,8 @@ process_command_apdu (void)
       DEBUG_BYTE (cmd);
       GPG_NO_INS ();
     }
+
+  return (cmd == INS_PSO) | (cmd == INS_INTERNAL_AUTHENTICATE);
 }
 
 void *
@@ -1553,6 +1555,7 @@ openpgp_card_thread (void *arg)
       int len, pw_len, newpw_len;
 #endif
       eventmask_t m = eventflag_wait (openpgp_comm);
+      int r = 0;
 
       DEBUG_INFO ("GPG!: ");
 
@@ -1640,10 +1643,11 @@ openpgp_card_thread (void *arg)
 	break;
 
       led_blink (LED_START_COMMAND);
-      process_command_apdu ();
-      led_blink (LED_FINISH_COMMAND);
+      r = process_command_apdu ();
+      if (!r)
+	led_blink (LED_FINISH_COMMAND);
     done:
-      eventflag_signal (ccid_comm, EV_EXEC_FINISHED);
+      eventflag_signal (ccid_comm, r? EV_EXEC_FINISHED_ACK : EV_EXEC_FINISHED);
     }
 
   gpg_fini ();

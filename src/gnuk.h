@@ -24,10 +24,11 @@ extern struct apdu apdu;
 void ccid_card_change_signal (int how);
 
 /* CCID thread */
-#define EV_RX_DATA_READY   1 /* USB Rx data available  */
-#define EV_EXEC_FINISHED   2 /* OpenPGP Execution finished */
-#define EV_TX_FINISHED     4 /* CCID Tx finished  */
-#define EV_CARD_CHANGE     8
+#define EV_RX_DATA_READY      1 /* USB Rx data available  */
+#define EV_EXEC_FINISHED      2 /* OpenPGP Execution finished */
+#define EV_EXEC_FINISHED_ACK  4 /* OpenPGP Execution finished, requires ACK */
+#define EV_TX_FINISHED        8 /* CCID Tx finished  */
+#define EV_CARD_CHANGE       16
 
 /* OpenPGPcard thread */
 #define EV_PINPAD_INPUT_DONE      1
@@ -53,12 +54,12 @@ enum ccid_state {
   CCID_STATE_NOCARD,		/* No card available */
   CCID_STATE_START,		/* Initial */
   CCID_STATE_WAIT,		/* Waiting APDU */
-				/* Busy1, Busy2, Busy3, Busy5 */
-  CCID_STATE_EXECUTE,		/* Busy4 */
+  CCID_STATE_EXECUTE,		/* Executing command */
+  CCID_STATE_CONFIRM_ACK,	/* Execution finished, waiting user's ACK */
   CCID_STATE_RECEIVE,		/* APDU Received Partially */
   CCID_STATE_SEND,		/* APDU Sent Partially */
 
-  CCID_STATE_EXITED,		/* ICC Thread Terminated */
+  CCID_STATE_EXITED,		/* CCID Thread Terminated */
   CCID_STATE_EXEC_REQUESTED,	/* Exec requested */
 };
 
@@ -378,7 +379,17 @@ extern uint8_t admin_authorized;
 #define NR_KEY_ALGO_ATTR_DEC	0xf2
 #define NR_KEY_ALGO_ATTR_AUT	0xf3
 /*
- * NR_UINT_SOMETHING could be here...  Use 0xf[456789abcd]
+ * Representation of User Interaction Flag:
+ *  0 (UIF disabled):            No record in flash memory
+ *  1 (UIF enabled):             0xf?ff
+ *  2 (UIF permanently enabled): 0xf?00
+ *
+ */
+#define NR_DO_UIF_SIG		0xf6
+#define NR_DO_UIF_DEC		0xf7
+#define NR_DO_UIF_AUT		0xf8
+/*
+ * NR_UINT_SOMETHING could be here...  Use 0xf[459abcd]
  */
 /* 123-counters: Recorded in flash memory by 2-halfword (4-byte).  */
 /*
@@ -460,6 +471,12 @@ extern uint8_t pin_input_len;
 int pinpad_getline (int msg_code, uint32_t timeout_usec);
 
 #endif
+
+struct chx_intr;
+void ackbtn_init (struct chx_intr *intr);
+void ackbtn_enable (void);
+void ackbtn_disable (void);
+
 
 extern uint8_t _regnual_start, __heap_end__[];
 

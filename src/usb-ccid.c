@@ -1,7 +1,7 @@
 /*
  * usb-ccid.c -- USB CCID protocol handling
  *
- * Copyright (C) 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017
+ * Copyright (C) 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
  *               Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
@@ -1076,7 +1076,9 @@ ccid_send_data_block (struct ccid *c)
 static void
 ccid_send_data_block_time_extension (struct ccid *c)
 {
-  ccid_send_data_block_internal (c, CCID_CMD_STATUS_TIMEEXT, 1);
+  ccid_send_data_block_internal (c, CCID_CMD_STATUS_TIMEEXT,
+				 (c->ccid_state == CCID_STATE_CONFIRM_ACK?
+				  0xff : 1));
 }
 
 static void
@@ -1461,6 +1463,7 @@ ccid_handle_data (struct ccid *c)
 	}
       break;
     case CCID_STATE_EXECUTE:
+    case CCID_STATE_CONFIRM_ACK:
       if (c->ccid_header.msg_type == CCID_POWER_OFF)
 	next_state = ccid_power_off (c);
       else if (c->ccid_header.msg_type == CCID_SLOT_STATUS)
@@ -1489,6 +1492,7 @@ ccid_handle_timeout (struct ccid *c)
   switch (c->ccid_state)
     {
     case CCID_STATE_EXECUTE:
+    case CCID_STATE_CONFIRM_ACK:
       ccid_send_data_block_time_extension (c);
       break;
     default:
@@ -1561,7 +1565,8 @@ extern int usb_get_descriptor (struct usb_dev *dev);
 extern void random_init (void);
 extern void random_fini (void);
 
-static chopstx_intr_t interrupt;
+static chopstx_intr_t ack_intr;
+static chopstx_intr_t usb_intr;
 
 /*
  * Return 0 for normal USB event
@@ -1576,7 +1581,7 @@ usb_event_handle (struct usb_dev *dev)
 
   e = usb_lld_event_handler (dev);
   ep_num = USB_EVENT_ENDP (e);
-  chopstx_intr_done (&interrupt);
+  chopstx_intr_done (&usb_intr);
 
   /* Transfer to endpoint (not control endpoint) */
   if (ep_num != 0)
@@ -1678,7 +1683,8 @@ usb_event_handle (struct usb_dev *dev)
 
 static chopstx_poll_cond_t ccid_event_poll_desc;
 static struct chx_poll_head *const ccid_poll[] = {
-  (struct chx_poll_head *const)&interrupt,
+  (struct chx_poll_head *const)&ack_intr,
+  (struct chx_poll_head *const)&usb_intr,
   (struct chx_poll_head *const)&ccid_event_poll_desc
 };
 #define CCID_POLL_NUM (sizeof (ccid_poll)/sizeof (struct chx_poll_head *))
@@ -1697,9 +1703,10 @@ ccid_thread (void *arg)
   eventflag_init (&ccid.openpgp_comm);
 
   usb_lld_init (&dev, USB_INITIAL_FEATURE);
-  chopstx_claim_irq (&interrupt, INTR_REQ_USB);
+  chopstx_claim_irq (&usb_intr, INTR_REQ_USB);
   usb_event_handle (&dev);	/* For old SYS < 3.0 */
 
+  ackbtn_init (&ack_intr);
   eventflag_prepare_poll (&c->ccid_comm, &ccid_event_poll_desc);
 
  reset:
@@ -1732,7 +1739,7 @@ ccid_thread (void *arg)
 
       chopstx_poll (timeout_p, CCID_POLL_NUM, ccid_poll);
 
-      if (interrupt.ready)
+      if (usb_intr.ready)
 	{
 	  if (usb_event_handle (&dev) == 0)
 	    continue;
@@ -1750,6 +1757,15 @@ ccid_thread (void *arg)
 	      c->application = 0;
 	    }
 	  goto reset;
+	}
+
+      if (ack_intr.ready)
+	{
+	  ackbtn_disable ();
+	  chopstx_intr_done (&ack_intr);
+	  led_blink (LED_FINISH_COMMAND);
+	  if (c->ccid_state == CCID_STATE_CONFIRM_ACK)
+	    goto exec_done;
 	}
 
       timeout = USB_CCID_TIMEOUT;
@@ -1779,6 +1795,7 @@ ccid_thread (void *arg)
       else if (m == EV_EXEC_FINISHED)
 	if (c->ccid_state == CCID_STATE_EXECUTE)
 	  {
+	  exec_done:
 	    if (c->a->sw == GPG_THREAD_TERMINATED)
 	      {
 		c->sw1sw2[0] = 0x90;
@@ -1810,7 +1827,17 @@ ccid_thread (void *arg)
 	  }
 	else
 	  {
-	    DEBUG_INFO ("ERR07\r\n");
+	    DEBUG_INFO ("ERR05\r\n");
+	  }
+      else if (m == EV_EXEC_FINISHED_ACK)
+	if (c->ccid_state == CCID_STATE_EXECUTE)
+	  {
+	    ackbtn_enable ();
+	    c->ccid_state = CCID_STATE_CONFIRM_ACK;
+	  }
+	else
+	  {
+	    DEBUG_INFO ("ERR06\r\n");
 	  }
       else if (m == EV_TX_FINISHED)
 	{
@@ -1842,7 +1869,7 @@ ccid_thread (void *arg)
   /* Loading reGNUal.  */
   while (bDeviceState != USB_DEVICE_STATE_UNCONNECTED)
     {
-      chopstx_intr_wait (&interrupt);
+      chopstx_intr_wait (&usb_intr);
       usb_event_handle (&dev);
     }
 
