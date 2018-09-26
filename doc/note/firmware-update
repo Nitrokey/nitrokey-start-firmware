@@ -16,7 +16,7 @@ In addition to settings of Gnuk, I create a file
 
    # For updating firmware, permission settings are needed.
    
-   SUBSYSTEMS=="usb", ATTRS{idVendor}=="234b", ATTRS{idProduct}=="0000", \
+   SUBSYSTEMS=="usb", ATTR{idVendor}=="234b", ATTR{idProduct}=="0000", \
        ENV{ID_USB_INTERFACES}=="*:ff0000:*", GROUP="pcscd"
 
 
