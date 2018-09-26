@@ -198,7 +198,7 @@ STBEE)
   if test "$with_dfu" = "default"; then
     with_dfu=yes;
   fi  ;;
-BLUE_PILL_G)
+FST_01SZ|BLUE_PILL_G)
   MHZ=96
   ;;
 *)

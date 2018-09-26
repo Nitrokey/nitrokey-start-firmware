@@ -1,3 +1,11 @@
+2018-09-26  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* chopstx: Update.
+	* src/usb-ccid.c (usb_event_handle): Fix for chopstx_intr_done.
+	* src/pin-cir.c (tim_main, ext_main): Likewise.
+
+	* src/configure (FST_01SZ): Set MHZ=96.
+
 2018-07-04  Szczepan Zalega <szczepan@nitrokey.com>
 
 	* tool/upgrade_by_passwd.py: Catch exception, when no KDF data is
