@@ -1506,6 +1506,9 @@ process_command_apdu (void)
 {
   int i;
   uint8_t cmd = INS (apdu);
+#ifdef ACKBTN_SUPPORT
+  uint8_t was_signing = (P1 (apdu) == 0x9e && P2 (apdu) == 0x9a);
+#endif
 
   for (i = 0; i < NUM_CMDS; i++)
     if (cmds[i].command == cmd)
@@ -1537,7 +1540,21 @@ process_command_apdu (void)
       GPG_NO_INS ();
     }
 
-  return (cmd == INS_PSO) | (cmd == INS_INTERNAL_AUTHENTICATE);
+#ifdef ACKBTN_SUPPORT
+  if (cmd == INS_PSO)
+    {
+      if (was_signing)
+	return gpg_do_get_uif (GPG_KEY_FOR_SIGNING);
+      else
+	return gpg_do_get_uif (GPG_KEY_FOR_DECRYPTION);
+    }
+  else if (cmd == INS_INTERNAL_AUTHENTICATE)
+    return gpg_do_get_uif (GPG_KEY_FOR_AUTHENTICATION);
+  else
+    return 0;
+#else
+  return 0;
+#endif
 }
 
 void *

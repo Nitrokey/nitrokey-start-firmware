@@ -1,5 +1,19 @@
 2018-09-27  NIIBE Yutaka  <gniibe@fsij.org>
 
+	* src/gnuk.h (NR_DO_UIF_SIG, NR_DO_UIF_DEC, NR_DO_UIF_AUT): New.
+	* src/openpgp-do.c (rw_uif) [ACKBTN_SUPPORT]: New.
+	(GPG_DO_UIF_SIG, GPG_DO_UIF_DEC, GPG_DO_UIF_AUT): New.
+	(feature_mngmnt) [ACKBTN_SUPPORT]: New.
+	(cmp_app_data, cmp_discretionary): Add ACKBTN_SUPPORT.
+	(gpg_do_table): Add for GPG_DO_UIF_SIG, GPG_DO_UIF_DEC,
+	GPG_DO_UIF_AUT, and GPG_DO_FEATURE_MNGMNT.
+	(gpg_do_get_uif) [ACKBTN_SUPPORT]: New.
+	(gpg_data_scan): Handle uif_flags.
+	* src/openpgp.c (process_command_apdu) [ACKBTN_SUPPORT]: Add user
+	interaction handling.
+
+2018-09-27  NIIBE Yutaka  <gniibe@fsij.org>
+
 	* src/gnuk.h (LED_WAIT_FOR_BUTTON): New.
 	* src/main.c (main): Blink rapidly when asking ACK.
 	* src/usb-ccid.c (ccid_thread): Use LED_WAIT_FOR_BUTTON.

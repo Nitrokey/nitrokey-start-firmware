@@ -135,11 +135,13 @@ static const uint8_t extended_capabilities[] __attribute__ ((aligned (1))) = {
   0x01, 0x00,
 };
 
+#ifdef ACKBTN_SUPPORT
 /* General Feature Management */
 static const uint8_t feature_mngmnt[] __attribute__ ((aligned (1))) = {
   3,
   0x81, 0x01, 0x20,
 };
+#endif
 
 /* Algorithm Attributes */
 #define OPENPGP_ALGO_RSA   0x01
@@ -812,6 +814,64 @@ rw_algorithm_attr (uint16_t tag, int with_tag,
       return 1;
     }
 }
+
+
+static uint8_t uif_flags;	/* Six bits of flags */
+
+#ifdef ACKBTN_SUPPORT
+int
+gpg_do_get_uif (enum kind_of_key kk)
+{
+  return ((uif_flags >> (kk * 2)) & 3) != 0;
+}
+
+static int
+rw_uif (uint16_t tag, int with_tag, const uint8_t *data, int len, int is_write)
+{
+  uint8_t nr;
+  int v;
+
+  if (tag != GPG_DO_UIF_SIG || tag != GPG_DO_UIF_DEC || tag != GPG_DO_UIF_AUT)
+    return 0;		/* Failure */
+
+  nr = (tag - GPG_DO_UIF_SIG) + NR_DO_UIF_SIG;
+  v = (uif_flags >> ((tag - GPG_DO_UIF_SIG) * 2)) & 3;
+  if (is_write)
+    {
+      const uint8_t *p;
+
+      if (len != 2 || data[1] != 0x20)
+	return 0;
+
+      if (v == 2)
+	return 0;
+
+      if (data[0] != 0x00 || data[0] != 0x01 || data[0] != 0x02)
+	return 0;
+
+      p = flash_enum_write (nr, data[0]);
+      if (p == NULL)
+	return 0;
+
+      uif_flags &= ~(3 << ((nr - NR_DO_UIF_SIG) * 2));
+      uif_flags |= (data[0] & 3) << ((nr - NR_DO_UIF_SIG) * 2);
+      return 1;
+    }
+  else
+    {
+      if (with_tag)
+	{
+	  copy_tag (tag);
+	  *res_p++ = 2;
+	}
+
+      *res_p++ = v;
+      *res_p++ = 0x20;
+      return 1;
+    }
+}
+#endif
+
 
 #define SIZE_OF_KDF_DO_MIN              90
 #define SIZE_OF_KDF_DO_MAX             110
@@ -1620,20 +1680,32 @@ static const uint16_t cmp_ch_data[] = {
 };
 
 static const uint16_t cmp_app_data[] = {
+#ifdef ACKBTN_SUPPORT
   4,
+#else
+  3,
+#endif
   GPG_DO_AID,
   GPG_DO_HIST_BYTES,
   GPG_DO_DISCRETIONARY,
+#ifdef ACKBTN_SUPPORT
   GPG_DO_FEATURE_MNGMNT,
+#endif
 };
 
 static const uint16_t cmp_discretionary[] = {
+#ifdef ACKBTN_SUPPORT
   11,
+#else
+  8,
+#endif
   GPG_DO_EXTCAP,
   GPG_DO_ALG_SIG, GPG_DO_ALG_DEC, GPG_DO_ALG_AUT,
   GPG_DO_PW_STATUS,
   GPG_DO_FP_ALL, GPG_DO_CAFP_ALL, GPG_DO_KGTIME_ALL,
+#ifdef ACKBTN_SUPPORT
   GPG_DO_UIF_SIG, GPG_DO_UIF_DEC, GPG_DO_UIF_AUT
+#endif
 };
 
 static const uint16_t cmp_ss_temp[] = { 1, GPG_DO_DS_COUNT };
@@ -1672,15 +1744,19 @@ gpg_do_table[] = {
     rw_algorithm_attr },
   { GPG_DO_ALG_AUT, DO_PROC_READWRITE, AC_ALWAYS, AC_ADMIN_AUTHORIZED,
     rw_algorithm_attr },
+#ifdef ACKBTN_SUPPORT
   { GPG_DO_UIF_SIG, DO_PROC_READWRITE, AC_ALWAYS, AC_ADMIN_AUTHORIZED, rw_uif },
   { GPG_DO_UIF_DEC, DO_PROC_READWRITE, AC_ALWAYS, AC_ADMIN_AUTHORIZED, rw_uif },
   { GPG_DO_UIF_AUT, DO_PROC_READWRITE, AC_ALWAYS, AC_ADMIN_AUTHORIZED, rw_uif },
+#endif
   { GPG_DO_KDF, DO_PROC_READWRITE, AC_ALWAYS, AC_ADMIN_AUTHORIZED,
     rw_kdf },
   /* Fixed data */
   { GPG_DO_HIST_BYTES, DO_FIXED, AC_ALWAYS, AC_NEVER, historical_bytes },
   { GPG_DO_EXTCAP, DO_FIXED, AC_ALWAYS, AC_NEVER, extended_capabilities },
+#ifdef ACKBTN_SUPPORT
   { GPG_DO_FEATURE_MNGMNT, DO_FIXED, AC_ALWAYS, AC_NEVER, feature_mngmnt },
+#endif
   /* Compound data: Read access only */
   { GPG_DO_CH_DATA, DO_CMP_READ, AC_ALWAYS, AC_NEVER, cmp_ch_data },
   { GPG_DO_APP_DATA, DO_CMP_READ, AC_ALWAYS, AC_NEVER, cmp_app_data },
@@ -1719,6 +1795,7 @@ gpg_data_scan (const uint8_t *do_start, const uint8_t *do_end)
   pw_err_counter_p[PW_ERR_PW3] = NULL;
   algo_attr_sig_p = algo_attr_dec_p = algo_attr_aut_p = NULL;
   digital_signature_counter = 0;
+  uif_flags = 0;
 
   /* When the card is terminated no data objects are valid.  */
   if (do_start == NULL)
@@ -1776,6 +1853,12 @@ gpg_data_scan (const uint8_t *do_start, const uint8_t *do_end)
 	      case NR_KEY_ALGO_ATTR_AUT:
 		algo_attr_aut_p = p - 1;
 		p++;
+		break;
+	      case NR_DO_UIF_SIG:
+	      case NR_DO_UIF_DEC:
+	      case NR_DO_UIF_AUT:
+		uif_flags &= ~(3 << ((nr - NR_DO_UIF_SIG) * 2));
+		uif_flags |= (second_byte & 3) << ((nr - NR_DO_UIF_SIG) * 2);
 		break;
 	      case NR_COUNTER_123:
 		p++;

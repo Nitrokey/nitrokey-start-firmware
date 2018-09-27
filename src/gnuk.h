@@ -124,8 +124,8 @@ const uint8_t *gpg_get_firmware_update_key (uint8_t keyno);
 
 enum kind_of_key {
   GPG_KEY_FOR_SIGNING = 0,
-  GPG_KEY_FOR_DECRYPTION,
-  GPG_KEY_FOR_AUTHENTICATION,
+  GPG_KEY_FOR_DECRYPTION = 1,
+  GPG_KEY_FOR_AUTHENTICATION = 2,
 };
 
 enum size_of_key {
@@ -297,6 +297,7 @@ void gpg_increment_digital_signature_counter (void);
 void gpg_do_get_initial_pw_setting (int is_pw3, int *r_len,
 				    const uint8_t **r_p);
 int gpg_do_kdf_check (int len, int how_many);
+int gpg_do_get_uif (enum kind_of_key kk);
 
 
 void fatal (uint8_t code) __attribute__ ((noreturn));
@@ -380,9 +381,9 @@ extern uint8_t admin_authorized;
 #define NR_KEY_ALGO_ATTR_AUT	0xf3
 /*
  * Representation of User Interaction Flag:
- *  0 (UIF disabled):            No record in flash memory
- *  1 (UIF enabled):             0xf?ff
- *  2 (UIF permanently enabled): 0xf?00
+ *  0 (UIF disabled):            0xf?00 or No record in flash memory
+ *  1 (UIF enabled):             0xf?01
+ *  2 (UIF permanently enabled): 0xf?02
  *
  */
 #define NR_DO_UIF_SIG		0xf6
