@@ -1565,7 +1565,9 @@ extern int usb_get_descriptor (struct usb_dev *dev);
 extern void random_init (void);
 extern void random_fini (void);
 
+#ifdef ACKBTN_SUPPORT
 static chopstx_intr_t ack_intr;
+#endif
 static chopstx_intr_t usb_intr;
 
 /*
@@ -1683,7 +1685,9 @@ usb_event_handle (struct usb_dev *dev)
 
 static chopstx_poll_cond_t ccid_event_poll_desc;
 static struct chx_poll_head *const ccid_poll[] = {
+#ifdef ACKBTN_SUPPORT
   (struct chx_poll_head *const)&ack_intr,
+#endif
   (struct chx_poll_head *const)&usb_intr,
   (struct chx_poll_head *const)&ccid_event_poll_desc
 };
@@ -1706,7 +1710,9 @@ ccid_thread (void *arg)
   chopstx_claim_irq (&usb_intr, INTR_REQ_USB);
   usb_event_handle (&dev);	/* For old SYS < 3.0 */
 
+#ifdef ACKBTN_SUPPORT
   ackbtn_init (&ack_intr);
+#endif
   eventflag_prepare_poll (&c->ccid_comm, &ccid_event_poll_desc);
 
  reset:
@@ -1759,6 +1765,7 @@ ccid_thread (void *arg)
 	  goto reset;
 	}
 
+#ifdef ACKBTN_SUPPORT
       if (ack_intr.ready)
 	{
 	  ackbtn_disable ();
@@ -1767,6 +1774,7 @@ ccid_thread (void *arg)
 	  if (c->ccid_state == CCID_STATE_CONFIRM_ACK)
 	    goto exec_done;
 	}
+#endif
 
       timeout = USB_CCID_TIMEOUT;
       m = eventflag_get (&c->ccid_comm);
@@ -1795,7 +1803,9 @@ ccid_thread (void *arg)
       else if (m == EV_EXEC_FINISHED)
 	if (c->ccid_state == CCID_STATE_EXECUTE)
 	  {
+#ifdef ACKBTN_SUPPORT
 	  exec_done:
+#endif
 	    if (c->a->sw == GPG_THREAD_TERMINATED)
 	      {
 		c->sw1sw2[0] = 0x90;
@@ -1829,6 +1839,7 @@ ccid_thread (void *arg)
 	  {
 	    DEBUG_INFO ("ERR05\r\n");
 	  }
+#ifdef ACKBTN_SUPPORT
       else if (m == EV_EXEC_FINISHED_ACK)
 	if (c->ccid_state == CCID_STATE_EXECUTE)
 	  {
@@ -1839,6 +1850,7 @@ ccid_thread (void *arg)
 	  {
 	    DEBUG_INFO ("ERR06\r\n");
 	  }
+#endif
       else if (m == EV_TX_FINISHED)
 	{
 	  if (c->state == APDU_STATE_RESULT)

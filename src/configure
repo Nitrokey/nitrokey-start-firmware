@@ -44,6 +44,7 @@ pinpad=no
 certdo=no
 hid_card_change=no
 factory_reset=no
+ackbtn_support=no
 flash_override=""
 # For emulation
 prefix=/usr/local
@@ -135,6 +136,7 @@ Configuration:
 			supported targets are:
 			   FST_01
 			   FST_01G
+			   FST_01SZ
 			   OLIMEX_STM32_H103
 			   MAPLE_MINI
 			   ST_DONGLE
@@ -198,8 +200,12 @@ STBEE)
   if test "$with_dfu" = "default"; then
     with_dfu=yes;
   fi  ;;
-FST_01SZ|BLUE_PILL_G)
+BLUE_PILL_G)
   MHZ=96
+  ;;
+FST_01SZ)
+  MHZ=96
+  ackbtn_support=yes
   ;;
 *)
   ;;
@@ -311,6 +317,15 @@ if test "$factory_reset" = "yes"; then
 else
   LIFE_CYCLE_MANAGEMENT_DEFINE="#undef LIFE_CYCLE_MANAGEMENT_SUPPORT"
   echo "Life cycle management is NOT supported"
+fi
+
+# Acknowledge button support
+if test "$ackbtn_support" = "yes"; then
+  ACKBTN_DEFINE="#define ACKBTN_SUPPORT 1"
+  echo "Acknowledge button is supported"
+else
+  ACKBTN_DEFINE="#undef ACKBTN_SUPPORT"
+  echo "Acknowledge button is not supported"
 fi
 
 ### !!! Replace following string of "FSIJ" to yours !!! ####
@@ -456,6 +471,9 @@ fi
  echo "$PINPAD_MAKE_OPTION";
  echo "ENABLE_FRAUCHEKY=$enable_fraucheky";
  echo "ENABLE_OUTPUT_HEX=$enable_hexoutput"
+ if test "$ackbtn_support" = "yes"; then
+   echo "USE_ACKBTN=yes"
+ fi
  if test "$emulation" = "yes"; then
    echo "prefix=$prefix"
    echo "exec_prefix=$exec_prefix"
@@ -483,6 +501,7 @@ sed -e "s/@DEBUG_DEFINE@/$DEBUG_DEFINE/" \
     -e "s/@CERTDO_DEFINE@/$CERTDO_DEFINE/" \
     -e "s/@HID_CARD_CHANGE_DEFINE@/$HID_CARD_CHANGE_DEFINE/" \
     -e "s/@LIFE_CYCLE_MANAGEMENT_DEFINE@/$LIFE_CYCLE_MANAGEMENT_DEFINE/" \
+    -e "s/@ACKBTN_DEFINE@/$ACKBTN_DEFINE/" \
     -e "s/@SERIALNO_STR_LEN_DEFINE@/$SERIALNO_STR_LEN_DEFINE/" \
 	< config.h.in > config.h
 exit 0
