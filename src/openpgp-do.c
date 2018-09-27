@@ -1797,6 +1797,10 @@ gpg_data_scan (const uint8_t *do_start, const uint8_t *do_end)
   digital_signature_counter = 0;
   uif_flags = 0;
 
+  /* Clear all data objects.  */
+  for (i = 0; i < NR_DO__LAST__; i++)
+    do_ptr[i] = NULL;
+
   /* When the card is terminated no data objects are valid.  */
   if (do_start == NULL)
     return;
@@ -1859,6 +1863,7 @@ gpg_data_scan (const uint8_t *do_start, const uint8_t *do_end)
 	      case NR_DO_UIF_AUT:
 		uif_flags &= ~(3 << ((nr - NR_DO_UIF_SIG) * 2));
 		uif_flags |= (second_byte & 3) << ((nr - NR_DO_UIF_SIG) * 2);
+		p++;
 		break;
 	      case NR_COUNTER_123:
 		p++;
@@ -1957,6 +1962,13 @@ gpg_data_copy (const uint8_t *p_start)
 	flash_cnt123_write_internal (p, i, v);
 	pw_err_counter_p[i] = p + 2;
 	p += 4;
+      }
+
+  for (i = 0; i < 3; i++)
+    if ((v = (uif_flags & (3 << (i * 2)))))
+      {
+	flash_enum_write_internal (p, NR_DO_UIF_SIG + 1, v);
+	p += 2;
       }
 
   data_objects_number_of_bytes = 0;
