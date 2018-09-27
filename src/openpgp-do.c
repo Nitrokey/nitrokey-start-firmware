@@ -831,7 +831,7 @@ rw_uif (uint16_t tag, int with_tag, const uint8_t *data, int len, int is_write)
   uint8_t nr;
   int v;
 
-  if (tag != GPG_DO_UIF_SIG || tag != GPG_DO_UIF_DEC || tag != GPG_DO_UIF_AUT)
+  if (tag != GPG_DO_UIF_SIG && tag != GPG_DO_UIF_DEC && tag != GPG_DO_UIF_AUT)
     return 0;		/* Failure */
 
   nr = (tag - GPG_DO_UIF_SIG) + NR_DO_UIF_SIG;
@@ -846,7 +846,7 @@ rw_uif (uint16_t tag, int with_tag, const uint8_t *data, int len, int is_write)
       if (v == 2)
 	return 0;
 
-      if (data[0] != 0x00 || data[0] != 0x01 || data[0] != 0x02)
+      if (data[0] != 0x00 && data[0] != 0x01 && data[0] != 0x02)
 	return 0;
 
       p = flash_enum_write (nr, data[0]);
