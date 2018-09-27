@@ -29,6 +29,10 @@
 
 #include "config.h"
 
+#ifdef ACKBTN_SUPPORT
+#include <contrib/ackbtn.h>
+#endif
+
 #ifdef DEBUG
 #include "usb-cdc.h"
 #include "debug.h"
@@ -1844,6 +1848,7 @@ ccid_thread (void *arg)
 	if (c->ccid_state == CCID_STATE_EXECUTE)
 	  {
 	    ackbtn_enable ();
+	    led_blink (LED_WAIT_FOR_BUTTON);
 	    c->ccid_state = CCID_STATE_CONFIRM_ACK;
 	  }
 	else

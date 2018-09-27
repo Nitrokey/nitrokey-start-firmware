@@ -445,6 +445,7 @@ extern const uint8_t gnuk_string_serial[];
 #define LED_GNUK_EXEC		 32
 #define LED_START_COMMAND	 64
 #define LED_FINISH_COMMAND	128
+#define LED_WAIT_FOR_BUTTON	256
 #define LED_OFF	 LED_FINISH_COMMAND
 void led_blink (int spec);
 

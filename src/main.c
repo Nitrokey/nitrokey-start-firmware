@@ -238,6 +238,7 @@ main (int argc, const char *argv[])
   uintptr_t entry;
 #endif
   chopstx_t ccid_thd;
+  int wait_for_ack = 0;
 
   chopstx_conf_idle (1);
 
@@ -354,7 +355,11 @@ main (int argc, const char *argv[])
     {
       eventmask_t m;
 
-      m = eventflag_wait (&led_event);
+      if (wait_for_ack)
+	m = eventflag_wait_timeout (&led_event, LED_TIMEOUT_INTERVAL);
+      else
+	m = eventflag_wait (&led_event);
+
       switch (m)
 	{
 	case LED_ONESHOT:
@@ -371,12 +376,16 @@ main (int argc, const char *argv[])
 	  display_fatal_code ();
 	  break;
 	case LED_SYNC:
+	  wait_for_ack = 0;
 	  set_led (led_inverted);
 	  break;
 	case LED_GNUK_EXEC:
 	  goto exec;
+	case LED_WAIT_FOR_BUTTON:
+	  wait_for_ack = 1;
+	  /* fall through */
 	default:
-	  emit_led (LED_TIMEOUT_ZERO, LED_TIMEOUT_STOP);
+	  emit_led (LED_TIMEOUT_ONE, LED_TIMEOUT_ZERO);
 	  break;
 	}
     }

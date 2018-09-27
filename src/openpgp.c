@@ -1644,8 +1644,7 @@ openpgp_card_thread (void *arg)
 
       led_blink (LED_START_COMMAND);
       r = process_command_apdu ();
-      if (!r)
-	led_blink (LED_FINISH_COMMAND);
+      led_blink (LED_FINISH_COMMAND);
     done:
       eventflag_signal (ccid_comm, r? EV_EXEC_FINISHED_ACK : EV_EXEC_FINISHED);
     }

@@ -1,3 +1,24 @@
+2018-09-27  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/gnuk.h (LED_WAIT_FOR_BUTTON): New.
+	* src/main.c (main): Blink rapidly when asking ACK.
+	* src/usb-ccid.c (ccid_thread): Use LED_WAIT_FOR_BUTTON.
+
+2018-09-27  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/config.h.in: Add @ACKBTN_DEFINE@.
+	* src/configure: Add ACKBTN_SUPPORT.
+	* src/gnuk.h (EV_EXEC_FINISHED_ACK): New.
+	(CCID_STATE_CONFIRM_ACK): New.
+	* src/openpgp.c (process_command_apdu): Change for cmd_pso, and
+	cmd_internal_authenticate.
+	* src/usb-ccid.c (ccid_send_data_block_time_extension): Report
+	time extension differently when waiting ack button.
+	(ccid_handle_data): Support case of CCID_STATE_CONFIRM_ACK.
+	(ccid_handle_timeout): Likewise.
+	(ack_intr) [ACKBTN_SUPPORT]: New.
+	(ccid_thread) [ACKBTN_SUPPORT]: Add ack button handling.
+
 2018-09-26  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* chopstx: Update.
