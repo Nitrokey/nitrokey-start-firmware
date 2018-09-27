@@ -472,11 +472,6 @@ int pinpad_getline (int msg_code, uint32_t timeout_usec);
 
 #endif
 
-struct chx_intr;
-void ackbtn_init (struct chx_intr *intr);
-void ackbtn_enable (void);
-void ackbtn_disable (void);
-
 
 extern uint8_t _regnual_start, __heap_end__[];
 
