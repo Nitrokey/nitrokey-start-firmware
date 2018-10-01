@@ -1775,7 +1775,7 @@ ccid_thread (void *arg)
 	{
 	  ackbtn_disable ();
 	  chopstx_intr_done (&ack_intr);
-	  led_blink (LED_FINISH_COMMAND);
+	  led_blink (LED_WAIT_FOR_BUTTON);
 	  if (c->ccid_state == CCID_STATE_ACK_REQUIRED_1)
 	    goto exec_done;
 

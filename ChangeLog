@@ -12,6 +12,8 @@
 	change of state.
 	(ccid_handle_data, ccid_handle_timeout): Likewise.
 	(ccid_thread): Handle EV_EXEC_ACK_REQUIRED.
+	Change for LED blink.
+	* src/main.c (main): LED blink during waiting ACK.
 
 2018-09-27  NIIBE Yutaka  <gniibe@fsij.org>
 

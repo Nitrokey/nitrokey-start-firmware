@@ -376,16 +376,15 @@ main (int argc, const char *argv[])
 	  display_fatal_code ();
 	  break;
 	case LED_SYNC:
-	  wait_for_ack = 0;
 	  set_led (led_inverted);
 	  break;
 	case LED_GNUK_EXEC:
 	  goto exec;
 	case LED_WAIT_FOR_BUTTON:
-	  wait_for_ack = 1;
+	  wait_for_ack ^= 1;
 	  /* fall through */
 	default:
-	  emit_led (LED_TIMEOUT_ONE, LED_TIMEOUT_ZERO);
+	  emit_led (LED_TIMEOUT_ZERO, LED_TIMEOUT_ZERO);
 	  break;
 	}
     }
