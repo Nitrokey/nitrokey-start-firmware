@@ -1081,8 +1081,7 @@ static void
 ccid_send_data_block_time_extension (struct ccid *c)
 {
   ccid_send_data_block_internal (c, CCID_CMD_STATUS_TIMEEXT,
-				 (c->ccid_state == CCID_STATE_CONFIRM_ACK?
-				  0xff : 1));
+				 c->ccid_state == CCID_STATE_EXECUTE? 1: 0xff);
 }
 
 static void
@@ -1467,7 +1466,8 @@ ccid_handle_data (struct ccid *c)
 	}
       break;
     case CCID_STATE_EXECUTE:
-    case CCID_STATE_CONFIRM_ACK:
+    case CCID_STATE_ACK_REQUIRED_0:
+    case CCID_STATE_ACK_REQUIRED_1:
       if (c->ccid_header.msg_type == CCID_POWER_OFF)
 	next_state = ccid_power_off (c);
       else if (c->ccid_header.msg_type == CCID_SLOT_STATUS)
@@ -1496,7 +1496,8 @@ ccid_handle_timeout (struct ccid *c)
   switch (c->ccid_state)
     {
     case CCID_STATE_EXECUTE:
-    case CCID_STATE_CONFIRM_ACK:
+    case CCID_STATE_ACK_REQUIRED_0:
+    case CCID_STATE_ACK_REQUIRED_1:
       ccid_send_data_block_time_extension (c);
       break;
     default:
@@ -1775,8 +1776,11 @@ ccid_thread (void *arg)
 	  ackbtn_disable ();
 	  chopstx_intr_done (&ack_intr);
 	  led_blink (LED_FINISH_COMMAND);
-	  if (c->ccid_state == CCID_STATE_CONFIRM_ACK)
+	  if (c->ccid_state == CCID_STATE_ACK_REQUIRED_1)
 	    goto exec_done;
+
+	  c->ccid_state = CCID_STATE_EXECUTE;
+	  continue;
 	}
 #endif
 
@@ -1839,17 +1843,21 @@ ccid_thread (void *arg)
 		c->ccid_state = CCID_STATE_WAIT;
 	      }
 	  }
+#ifdef ACKBTN_SUPPORT
+	else if (c->ccid_state == CCID_STATE_ACK_REQUIRED_0)
+	  c->ccid_state = CCID_STATE_ACK_REQUIRED_1;
+#endif
 	else
 	  {
 	    DEBUG_INFO ("ERR05\r\n");
 	  }
 #ifdef ACKBTN_SUPPORT
-      else if (m == EV_EXEC_FINISHED_ACK)
+      else if (m == EV_EXEC_ACK_REQUIRED)
 	if (c->ccid_state == CCID_STATE_EXECUTE)
 	  {
 	    ackbtn_enable ();
 	    led_blink (LED_WAIT_FOR_BUTTON);
-	    c->ccid_state = CCID_STATE_CONFIRM_ACK;
+	    c->ccid_state = CCID_STATE_ACK_REQUIRED_0;
 	  }
 	else
 	  {

@@ -25,8 +25,8 @@ void ccid_card_change_signal (int how);
 
 /* CCID thread */
 #define EV_RX_DATA_READY      1 /* USB Rx data available  */
-#define EV_EXEC_FINISHED      2 /* OpenPGP Execution finished */
-#define EV_EXEC_FINISHED_ACK  4 /* OpenPGP Execution finished, requires ACK */
+#define EV_EXEC_ACK_REQUIRED  2 /* OpenPGPcard Execution ACK required*/
+#define EV_EXEC_FINISHED      4 /* OpenPGPcard Execution finished */
 #define EV_TX_FINISHED        8 /* CCID Tx finished  */
 #define EV_CARD_CHANGE       16
 
@@ -55,7 +55,8 @@ enum ccid_state {
   CCID_STATE_START,		/* Initial */
   CCID_STATE_WAIT,		/* Waiting APDU */
   CCID_STATE_EXECUTE,		/* Executing command */
-  CCID_STATE_CONFIRM_ACK,	/* Execution finished, waiting user's ACK */
+  CCID_STATE_ACK_REQUIRED_0,	/* Ack required (executing)*/
+  CCID_STATE_ACK_REQUIRED_1,	/* Waiting user's ACK (execution finished) */
   CCID_STATE_RECEIVE,		/* APDU Received Partially */
   CCID_STATE_SEND,		/* APDU Sent Partially */
 
