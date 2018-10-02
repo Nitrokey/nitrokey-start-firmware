@@ -30,9 +30,9 @@ command.
 
 Or, you can use ``gpgconf`` command.  Type::
 
-	$ gpgconf --reload scdameon
+	$ gpgconf --reload scdaemon
 
-will do the samething.
+will do the same thing.
 
 
 Let GPG-AGENT/SCDAEMON learn
