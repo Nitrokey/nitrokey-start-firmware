@@ -864,6 +864,7 @@ Gnuk Token could run with GPG4WIN on MS Windows.  GPG4WIN runs with
 
 ** This is initial release.  Only it supports digital signing.
 
-Local Variables:
-mode: outline
-End:
+
+# Local Variables:
+# mode: outline
+# End:

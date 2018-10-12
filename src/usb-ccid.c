@@ -1858,6 +1858,7 @@ ccid_thread (void *arg)
 	    ackbtn_enable ();
 	    led_blink (LED_WAIT_FOR_BUTTON);
 	    c->ccid_state = CCID_STATE_ACK_REQUIRED_0;
+	    ccid_send_data_block_time_extension (c);
 	  }
 	else
 	  {
