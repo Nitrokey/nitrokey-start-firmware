@@ -219,7 +219,6 @@ script prepending 'bash' before './configure'.
 
 Some tools are written in Python.  If your Python is not installed as
 /usr/bin/python, please prepend 'python' for your command invocation.
-Python 2.7 and PyUSB 0.4.3 is assumed.
 
 
 Source code
