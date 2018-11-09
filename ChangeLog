@@ -1,5 +1,8 @@
 2018-11-09  NIIBE Yutaka  <gniibe@fsij.org>
 
+	* src/openpgp.c (cmd_pso, cmd_internal_authenticate): Use
+	ccid_comm.
+
 	* src/usb-ccid.c (wait_for_tx_finish): New.
 	(ccid_error, ccid_power_on, ccid_send_status, ccid_power_off)
 	(ccid_send_data_block_internal, ccid_send_data_block_0x9000)

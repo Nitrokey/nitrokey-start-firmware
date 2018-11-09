@@ -1043,6 +1043,8 @@ cmd_pso (struct eventflag *ccid_comm)
 #ifdef ACKBTN_SUPPORT
       if (gpg_do_get_uif (GPG_KEY_FOR_DECRYPTION))
 	eventflag_signal (ccid_comm, EV_EXEC_ACK_REQUIRED);
+#else
+      (void)ccid_comm;
 #endif
 
       if (attr == ALGO_RSA2K || attr == ALGO_RSA4K)
@@ -1154,6 +1156,8 @@ cmd_internal_authenticate (struct eventflag *ccid_comm)
 #ifdef ACKBTN_SUPPORT
   if (gpg_do_get_uif (GPG_KEY_FOR_AUTHENTICATION))
     eventflag_signal (ccid_comm, EV_EXEC_ACK_REQUIRED);
+#else
+  (void)ccid_comm;
 #endif
 
   if (attr == ALGO_RSA2K || attr == ALGO_RSA4K)
