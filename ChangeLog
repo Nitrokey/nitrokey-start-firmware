@@ -3,14 +3,17 @@
 	* src/openpgp.c (cmd_pso, cmd_internal_authenticate): Use
 	ccid_comm.
 
-	* src/usb-ccid.c (wait_for_tx_finish): New.
+	* src/usb-ccid.c (struct ccid): New field tx_busy.
 	(ccid_error, ccid_power_on, ccid_send_status, ccid_power_off)
 	(ccid_send_data_block_internal, ccid_send_data_block_0x9000)
-	(ccid_send_data_block_gr, ccid_send_params): Add call of
-	wait_for_tx_finish.
-	(ccid_handle_data): Move c->state change before
-	ccid_send_datablock_gr, because of wait_for_tx_finish.
-	(ccid_thread): Don't handle EV_TX_FINISHED.
+	(ccid_send_data_block_gr, ccid_send_params): Set c->tx_busy.
+	(ccid_state_p): Remove.
+	(ccid_get_ccid_state): New.
+	(ccid_thread): Only handle EV_TX_FINISHED event when c->tx_busy.
+
+	* src/usb_ctrl.c (usb_setup, usb_ctrl_write_finish): Use
+	ccid_get_ccid_state.
+	* src/main.c (display_status_code): Likewise.
 
 2018-11-09  NIIBE Yutaka  <gniibe@fsij.org>
 

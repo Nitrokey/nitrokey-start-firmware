@@ -146,7 +146,7 @@ emit_led (uint32_t on_time, uint32_t off_time)
 static void
 display_status_code (void)
 {
-  enum ccid_state ccid_state = *ccid_state_p;
+  enum ccid_state ccid_state = ccid_get_ccid_state ();
   uint32_t usec;
 
   if (ccid_state == CCID_STATE_START)

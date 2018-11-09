@@ -186,9 +186,10 @@ struct ccid_header {
 
 /* Data structure handled by CCID layer */
 struct ccid {
-  enum ccid_state ccid_state;
-  uint8_t state;
-  uint8_t err;
+  uint32_t ccid_state : 4;
+  uint32_t state      : 4;
+  uint32_t err        : 1;
+  uint32_t tx_busy    : 1;
 
   uint8_t *p;
   size_t len;
@@ -245,6 +246,7 @@ struct ccid {
 static void ccid_reset (struct ccid *c)
 {
   c->err = 0;
+  c->tx_busy = 0;
   c->state = APDU_STATE_WAIT_COMMAND;
   c->p = c->a->cmd_apdu_data;
   c->len = MAX_CMD_APDU_DATA_SIZE;
@@ -256,10 +258,11 @@ static void ccid_init (struct ccid *c, struct ep_in *epi, struct ep_out *epo,
 		       struct apdu *a)
 {
   c->ccid_state = CCID_STATE_START;
+  c->err = 0;
+  c->tx_busy = 0;
   c->state = APDU_STATE_WAIT_COMMAND;
   c->p = a->cmd_apdu_data;
   c->len = MAX_CMD_APDU_DATA_SIZE;
-  c->err = 0;
   memset (&c->ccid_header, 0, sizeof (struct ccid_header));
   c->sw1sw2[0] = 0x90;
   c->sw1sw2[1] = 0x00;
@@ -769,18 +772,6 @@ usb_tx_done (uint8_t ep_num, uint16_t len)
 #endif
 }
 
-static void wait_for_tx_finish (struct ccid *c)
-{
-  eventflag_wait_all (&c->ccid_comm, EV_TX_FINISHED);
-
-  if (c->state == APDU_STATE_RESULT)
-    ccid_reset (c);
-
-  if (c->state == APDU_STATE_WAIT_COMMAND
-      || c->state == APDU_STATE_COMMAND_CHAINING
-      || c->state == APDU_STATE_RESULT_GET_RESPONSE)
-    ccid_prepare_receive (c);
-}
 
 /*
  * ATR (Answer To Reset) string
@@ -837,7 +828,7 @@ static void ccid_error (struct ccid *c, int offset)
 #else
   usb_lld_write (c->epi->ep_num, ccid_reply, CCID_MSG_HEADER_SIZE);
 #endif
-  wait_for_tx_finish (c);
+  c->tx_busy = 1;
 }
 
 extern void *openpgp_card_thread (void *arg);
@@ -911,8 +902,7 @@ ccid_power_on (struct ccid *c)
   usb_lld_tx_enable (c->epi->ep_num, CCID_MSG_HEADER_SIZE + size_atr);
 #endif
   DEBUG_INFO ("ON\r\n");
-  wait_for_tx_finish (c);
-
+  c->tx_busy = 1;
   return CCID_STATE_WAIT;
 }
 
@@ -953,7 +943,7 @@ ccid_send_status (struct ccid *c)
 #ifdef DEBUG_MORE
   DEBUG_INFO ("St\r\n");
 #endif
-  wait_for_tx_finish (c);
+  c->tx_busy = 1;
 }
 
 static enum ccid_state
@@ -969,7 +959,7 @@ ccid_power_off (struct ccid *c)
   c->ccid_state = CCID_STATE_START; /* This status change should be here */
   ccid_send_status (c);
   DEBUG_INFO ("OFF\r\n");
-  wait_for_tx_finish (c);
+  c->tx_busy = 1;
   return CCID_STATE_START;
 }
 
@@ -1012,7 +1002,7 @@ ccid_send_data_block_internal (struct ccid *c, uint8_t status, uint8_t error)
 #else
       usb_lld_tx_enable (c->epi->ep_num, CCID_MSG_HEADER_SIZE);
 #endif
-      wait_for_tx_finish (c);
+      c->tx_busy = 1;
       return;
     }
 
@@ -1090,7 +1080,7 @@ ccid_send_data_block_internal (struct ccid *c, uint8_t status, uint8_t error)
 #ifdef DEBUG_MORE
   DEBUG_INFO ("DATA\r\n");
 #endif
-  wait_for_tx_finish (c);
+  c->tx_busy = 1;
 }
 
 static void
@@ -1142,7 +1132,7 @@ ccid_send_data_block_0x9000 (struct ccid *c)
 #ifdef DEBUG_MORE
   DEBUG_INFO ("DATA\r\n");
 #endif
-  wait_for_tx_finish (c);
+  c->tx_busy = 1;
 }
 
 /*
@@ -1239,7 +1229,7 @@ ccid_send_data_block_gr (struct ccid *c, size_t chunk_len)
 #ifdef DEBUG_MORE
   DEBUG_INFO ("DATA\r\n");
 #endif
-  wait_for_tx_finish (c);
+  c->tx_busy = 1;
 }
 
 
@@ -1288,7 +1278,7 @@ ccid_send_params (struct ccid *c)
 #ifdef DEBUG_MORE
   DEBUG_INFO ("PARAMS\r\n");
 #endif
-  wait_for_tx_finish (c);
+  c->tx_busy = 1;
 }
 
 
@@ -1369,9 +1359,9 @@ ccid_handle_data (struct ccid *c)
 		      if (c->len <= c->a->expected_res_size)
 			len = c->len;
 
+		      ccid_send_data_block_gr (c, len);
 		      if (c->len == 0)
 			c->state = APDU_STATE_RESULT;
-		      ccid_send_data_block_gr (c, len);
 		      c->ccid_state = CCID_STATE_WAIT;
 		      DEBUG_INFO ("GET Response.\r\n");
 		    }
@@ -1536,7 +1526,13 @@ ccid_handle_timeout (struct ccid *c)
 }
 
 static struct ccid ccid;
-enum ccid_state *const ccid_state_p = &ccid.ccid_state;
+
+enum ccid_state
+ccid_get_ccid_state (void)
+{
+  return ccid.ccid_state;
+}
+
 
 void
 ccid_card_change_signal (int how)
@@ -1717,11 +1713,11 @@ usb_event_handle (struct usb_dev *dev)
 
 static chopstx_poll_cond_t ccid_event_poll_desc;
 static struct chx_poll_head *const ccid_poll[] = {
+  (struct chx_poll_head *const)&usb_intr,
+  (struct chx_poll_head *const)&ccid_event_poll_desc
 #ifdef ACKBTN_SUPPORT
   (struct chx_poll_head *const)&ack_intr,
 #endif
-  (struct chx_poll_head *const)&usb_intr,
-  (struct chx_poll_head *const)&ccid_event_poll_desc
 };
 #define CCID_POLL_NUM (sizeof (ccid_poll)/sizeof (struct chx_poll_head *))
 
@@ -1775,7 +1771,13 @@ ccid_thread (void *arg)
       else
 	timeout_p = NULL;
 
+      eventflag_set_mask (&c->ccid_comm, c->tx_busy ? EV_TX_FINISHED : ~0);
+
+#ifdef ACKBTN_SUPPORT
+      chopstx_poll (timeout_p, CCID_POLL_NUM - c->tx_busy, ccid_poll);
+#else
       chopstx_poll (timeout_p, CCID_POLL_NUM, ccid_poll);
+#endif
 
       if (usb_intr.ready)
 	{
@@ -1892,6 +1894,18 @@ ccid_thread (void *arg)
 	    DEBUG_INFO ("ERR06\r\n");
 	  }
 #endif
+      else if (m == EV_TX_FINISHED)
+	{
+	  if (c->state == APDU_STATE_RESULT)
+	    ccid_reset (c);
+	  else
+	    c->tx_busy = 0;
+
+	  if (c->state == APDU_STATE_WAIT_COMMAND
+	      || c->state == APDU_STATE_COMMAND_CHAINING
+	      || c->state == APDU_STATE_RESULT_GET_RESPONSE)
+	    ccid_prepare_receive (c);
+	}
       else			/* Timeout */
 	c->ccid_state = ccid_handle_timeout (c);
     }

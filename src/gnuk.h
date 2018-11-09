@@ -64,7 +64,7 @@ enum ccid_state {
 };
 
 
-extern enum ccid_state *const ccid_state_p;
+enum ccid_state ccid_get_ccid_state (void);
 
 extern volatile uint8_t auth_status;
 #define AC_NONE_AUTHORIZED	0x00

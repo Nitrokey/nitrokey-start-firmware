@@ -281,7 +281,7 @@ usb_setup (struct usb_dev *dev)
 	  if (arg->request == USB_FSIJ_GNUK_DOWNLOAD)
 	    {
 #ifdef FLASH_UPGRADE_SUPPORT
-	      if (*ccid_state_p != CCID_STATE_EXITED)
+	      if (ccid_get_ccid_state () != CCID_STATE_EXITED)
 		return -1;
 
 	      if (addr < &_regnual_start || addr + arg->len > __heap_end__)
@@ -299,7 +299,7 @@ usb_setup (struct usb_dev *dev)
 	  else if (arg->request == USB_FSIJ_GNUK_EXEC && arg->len == 0)
 	    {
 #ifdef FLASH_UPGRADE_SUPPORT
-	      if (*ccid_state_p != CCID_STATE_EXITED)
+	      if (ccid_get_ccid_state () != CCID_STATE_EXITED)
 		return -1;
 
 	      if (((uintptr_t)addr & 0x03))
@@ -404,7 +404,7 @@ usb_ctrl_write_finish (struct usb_dev *dev)
     {
       if (USB_SETUP_SET (arg->type) && arg->request == USB_FSIJ_GNUK_EXEC)
 	{
-	  if (*ccid_state_p != CCID_STATE_EXITED)
+	  if (ccid_get_ccid_state () != CCID_STATE_EXITED)
 	    return;
 
 	  bDeviceState = USB_DEVICE_STATE_UNCONNECTED;
