@@ -769,6 +769,19 @@ usb_tx_done (uint8_t ep_num, uint16_t len)
 #endif
 }
 
+static void wait_for_tx_finish (struct ccid *c)
+{
+  eventflag_wait_all (&c->ccid_comm, EV_TX_FINISHED);
+
+  if (c->state == APDU_STATE_RESULT)
+    ccid_reset (c);
+
+  if (c->state == APDU_STATE_WAIT_COMMAND
+      || c->state == APDU_STATE_COMMAND_CHAINING
+      || c->state == APDU_STATE_RESULT_GET_RESPONSE)
+    ccid_prepare_receive (c);
+}
+
 /*
  * ATR (Answer To Reset) string
  *
@@ -824,6 +837,7 @@ static void ccid_error (struct ccid *c, int offset)
 #else
   usb_lld_write (c->epi->ep_num, ccid_reply, CCID_MSG_HEADER_SIZE);
 #endif
+  wait_for_tx_finish (c);
 }
 
 extern void *openpgp_card_thread (void *arg);
@@ -897,6 +911,7 @@ ccid_power_on (struct ccid *c)
   usb_lld_tx_enable (c->epi->ep_num, CCID_MSG_HEADER_SIZE + size_atr);
 #endif
   DEBUG_INFO ("ON\r\n");
+  wait_for_tx_finish (c);
 
   return CCID_STATE_WAIT;
 }
@@ -938,6 +953,7 @@ ccid_send_status (struct ccid *c)
 #ifdef DEBUG_MORE
   DEBUG_INFO ("St\r\n");
 #endif
+  wait_for_tx_finish (c);
 }
 
 static enum ccid_state
@@ -953,6 +969,7 @@ ccid_power_off (struct ccid *c)
   c->ccid_state = CCID_STATE_START; /* This status change should be here */
   ccid_send_status (c);
   DEBUG_INFO ("OFF\r\n");
+  wait_for_tx_finish (c);
   return CCID_STATE_START;
 }
 
@@ -995,6 +1012,7 @@ ccid_send_data_block_internal (struct ccid *c, uint8_t status, uint8_t error)
 #else
       usb_lld_tx_enable (c->epi->ep_num, CCID_MSG_HEADER_SIZE);
 #endif
+      wait_for_tx_finish (c);
       return;
     }
 
@@ -1072,6 +1090,7 @@ ccid_send_data_block_internal (struct ccid *c, uint8_t status, uint8_t error)
 #ifdef DEBUG_MORE
   DEBUG_INFO ("DATA\r\n");
 #endif
+  wait_for_tx_finish (c);
 }
 
 static void
@@ -1123,6 +1142,7 @@ ccid_send_data_block_0x9000 (struct ccid *c)
 #ifdef DEBUG_MORE
   DEBUG_INFO ("DATA\r\n");
 #endif
+  wait_for_tx_finish (c);
 }
 
 /*
@@ -1219,6 +1239,7 @@ ccid_send_data_block_gr (struct ccid *c, size_t chunk_len)
 #ifdef DEBUG_MORE
   DEBUG_INFO ("DATA\r\n");
 #endif
+  wait_for_tx_finish (c);
 }
 
 
@@ -1267,6 +1288,7 @@ ccid_send_params (struct ccid *c)
 #ifdef DEBUG_MORE
   DEBUG_INFO ("PARAMS\r\n");
 #endif
+  wait_for_tx_finish (c);
 }
 
 
@@ -1347,9 +1369,9 @@ ccid_handle_data (struct ccid *c)
 		      if (c->len <= c->a->expected_res_size)
 			len = c->len;
 
-		      ccid_send_data_block_gr (c, len);
 		      if (c->len == 0)
 			c->state = APDU_STATE_RESULT;
+		      ccid_send_data_block_gr (c, len);
 		      c->ccid_state = CCID_STATE_WAIT;
 		      DEBUG_INFO ("GET Response.\r\n");
 		    }
@@ -1870,23 +1892,6 @@ ccid_thread (void *arg)
 	    DEBUG_INFO ("ERR06\r\n");
 	  }
 #endif
-      else if (m == EV_TX_FINISHED)
-	{
-	  if (c->state == APDU_STATE_RESULT)
-	    {
-	      c->state = APDU_STATE_WAIT_COMMAND;
-	      c->p = c->a->cmd_apdu_data;
-	      c->len = MAX_CMD_APDU_DATA_SIZE;
-	      c->err = 0;
-	      c->a->cmd_apdu_data_len = 0;
-	      c->a->expected_res_size = 0;
-	    }
-
-	  if (c->state == APDU_STATE_WAIT_COMMAND
-	      || c->state == APDU_STATE_COMMAND_CHAINING
-	      || c->state == APDU_STATE_RESULT_GET_RESPONSE)
-	    ccid_prepare_receive (c);
-	}
       else			/* Timeout */
 	c->ccid_state = ccid_handle_timeout (c);
     }

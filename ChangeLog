@@ -1,5 +1,16 @@
 2018-11-09  NIIBE Yutaka  <gniibe@fsij.org>
 
+	* src/usb-ccid.c (wait_for_tx_finish): New.
+	(ccid_error, ccid_power_on, ccid_send_status, ccid_power_off)
+	(ccid_send_data_block_internal, ccid_send_data_block_0x9000)
+	(ccid_send_data_block_gr, ccid_send_params): Add call of
+	wait_for_tx_finish.
+	(ccid_handle_data): Move c->state change before
+	ccid_send_datablock_gr, because of wait_for_tx_finish.
+	(ccid_thread): Don't handle EV_TX_FINISHED.
+
+2018-11-09  NIIBE Yutaka  <gniibe@fsij.org>
+
 	* src/usb-ccid.c (ccid_handle_data): Set c->state for pinpad input.
 	(ccid_send_data_block_internal): Fix the case of len == 0.
 
