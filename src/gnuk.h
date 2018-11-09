@@ -54,11 +54,10 @@ enum ccid_state {
   CCID_STATE_NOCARD,		/* No card available */
   CCID_STATE_START,		/* Initial */
   CCID_STATE_WAIT,		/* Waiting APDU */
+
   CCID_STATE_EXECUTE,		/* Executing command */
   CCID_STATE_ACK_REQUIRED_0,	/* Ack required (executing)*/
   CCID_STATE_ACK_REQUIRED_1,	/* Waiting user's ACK (execution finished) */
-  CCID_STATE_RECEIVE,		/* APDU Received Partially */
-  CCID_STATE_SEND,		/* APDU Sent Partially */
 
   CCID_STATE_EXITED,		/* CCID Thread Terminated */
   CCID_STATE_EXEC_REQUESTED,	/* Exec requested */

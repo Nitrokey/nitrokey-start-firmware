@@ -170,8 +170,7 @@ display_status_code (void)
 	{
 	  usec = LED_TIMEOUT_INTERVAL;
 	  chopstx_poll (&usec, 1, led_event_poll);
-	  emit_led (ccid_state == CCID_STATE_RECEIVE?
-		    LED_TIMEOUT_ONE : LED_TIMEOUT_ZERO, LED_TIMEOUT_STOP);
+	  emit_led (LED_TIMEOUT_ZERO, LED_TIMEOUT_STOP);
 	}
     }
 }
