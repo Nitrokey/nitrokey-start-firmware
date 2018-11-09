@@ -1,5 +1,8 @@
 2018-11-09  NIIBE Yutaka  <gniibe@fsij.org>
 
+	* src/usb-ccid.c (ccid_handle_data): Set c->state for pinpad input.
+	(ccid_send_data_block_internal): Fix the case of len == 0.
+
 	* src/main.c (display_status_code): There is
 	no case where ccid_state == CCID_STATE_RECEIVE.
 	* src/gnuk.h (CCID_STATE_RECEIVE): Remove.

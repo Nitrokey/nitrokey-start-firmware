@@ -986,6 +986,9 @@ ccid_send_data_block_internal (struct ccid *c, uint8_t status, uint8_t error)
 #endif
   if (len == 0)
     {
+      c->epi->buf = NULL;
+      c->epi->tx_done = 1;
+
 #ifdef GNU_LINUX_EMULATION
       usb_lld_tx_enable_buf (c->epi->ep_num, endp1_tx_buf,
 			     CCID_MSG_HEADER_SIZE);
@@ -1418,6 +1421,7 @@ ccid_handle_data (struct ccid *c)
 	      c->a->res_apdu_data_len = 0;
 	      c->a->res_apdu_data = &c->p[5];
 
+	      c->state = APDU_STATE_COMMAND_RECEIVED;
 	      eventflag_signal (&c->openpgp_comm, EV_VERIFY_CMD_AVAILABLE);
 	      next_state = CCID_STATE_EXECUTE;
 	    }
@@ -1452,6 +1456,7 @@ ccid_handle_data (struct ccid *c)
 	      c->a->res_apdu_data_len = 0;
 	      c->a->res_apdu_data = &ccid_buffer[5];
 
+	      c->state = APDU_STATE_COMMAND_RECEIVED;
 	      eventflag_signal (&c->openpgp_comm, EV_MODIFY_CMD_AVAILABLE);
 	      next_state = CCID_STATE_EXECUTE;
 	    }
