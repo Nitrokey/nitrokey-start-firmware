@@ -1,6 +1,21 @@
 Gnuk NEWS - User visible changes
 
 
+* Major changes in Gnuk 1.2.11
+
+  Released 2018-11-12, by NIIBE Yutaka
+
+** Experimental ACK button support with FST-01SZ
+While OpenPGP card specification verison 3 has description for the
+"user interaction" button and data objects, there were no
+implementation.  To evaluate the feature, experimental support is
+added.
+
+** Upgrade of Chopstx
+We use Chopstx 1.12, which comes with ACK button driver and supports
+FST-01SZ.
+
+
 * Major changes in Gnuk 1.2.10
 
   Released 2018-05-10, by NIIBE Yutaka

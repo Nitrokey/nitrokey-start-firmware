@@ -1,5 +1,8 @@
 2018-11-12  NIIBE Yutaka  <gniibe@fsij.org>
 
+	* VERSION: 1.2.11.
+
+	* chopstx: Update to 1.12.
 	* src/configure (ackbtn_support): Always yes.
 	* src/usb-ccid.c: Fix comma separator.
 
