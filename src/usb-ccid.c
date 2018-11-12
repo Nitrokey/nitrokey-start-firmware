@@ -1714,9 +1714,9 @@ usb_event_handle (struct usb_dev *dev)
 static chopstx_poll_cond_t ccid_event_poll_desc;
 static struct chx_poll_head *const ccid_poll[] = {
   (struct chx_poll_head *const)&usb_intr,
-  (struct chx_poll_head *const)&ccid_event_poll_desc
+  (struct chx_poll_head *const)&ccid_event_poll_desc,
 #ifdef ACKBTN_SUPPORT
-  (struct chx_poll_head *const)&ack_intr,
+  (struct chx_poll_head *const)&ack_intr
 #endif
 };
 #define CCID_POLL_NUM (sizeof (ccid_poll)/sizeof (struct chx_poll_head *))

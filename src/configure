@@ -44,7 +44,7 @@ pinpad=no
 certdo=no
 hid_card_change=no
 factory_reset=no
-ackbtn_support=no
+ackbtn_support=yes
 flash_override=""
 # For emulation
 prefix=/usr/local
@@ -205,7 +205,6 @@ BLUE_PILL_G)
   ;;
 FST_01SZ)
   MHZ=96
-  ackbtn_support=yes
   ;;
 *)
   ;;

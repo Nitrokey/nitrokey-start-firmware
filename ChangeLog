@@ -1,3 +1,8 @@
+2018-11-12  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/configure (ackbtn_support): Always yes.
+	* src/usb-ccid.c: Fix comma separator.
+
 2018-11-09  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* tool/kdf_calc.py (kdf_calc): Use libgcrypt.so.20.
