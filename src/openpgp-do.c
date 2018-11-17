@@ -657,7 +657,7 @@ do_openpgpcard_aid (uint16_t tag, int with_tag)
 
   if (vid == 0xffff || vid == 0x0000)
     {
-      const uint8_t *u = unique_device_id () + 8;
+      const uint8_t *u = unique_device_id () + (MHZ < 96 ? 8: 0);
 
       memcpy (res_p, openpgpcard_aid, 8);
       res_p += 8;

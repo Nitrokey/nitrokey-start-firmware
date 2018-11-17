@@ -1,3 +1,8 @@
+2018-11-17  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/main.c (device_initialize_once): Depends on MHZ.
+	* src/openpgp-do.c (do_openpgpcard_aid): Ditto.
+
 2018-11-12  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* VERSION: 1.2.11.

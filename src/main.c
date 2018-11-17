@@ -68,7 +68,7 @@ device_initialize_once (void)
        * This is the first time invocation.
        * Setup serial number by unique device ID.
        */
-      const uint8_t *u = unique_device_id () + 8;
+      const uint8_t *u = unique_device_id () + (MHZ < 96 ? 8: 0);
       int i;
 
       for (i = 0; i < 4; i++)
