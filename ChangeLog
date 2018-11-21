@@ -1,6 +1,13 @@
+2018-11-21  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/usb-ccid.c (ccid_thread): Fix a race condition sending
+	result APDU by ack button, time out, sending time extension block
+	again while tx_busy=1.
+
 2018-11-17  NIIBE Yutaka  <gniibe@fsij.org>
 
-	* src/main.c (device_initialize_once): Depends on MHZ.
+	* src/main.c (device_initialize_once): Depends on MHZ to
+	distinguish GD32F103.
 	* src/openpgp-do.c (do_openpgpcard_aid): Ditto.
 
 2018-11-12  NIIBE Yutaka  <gniibe@fsij.org>

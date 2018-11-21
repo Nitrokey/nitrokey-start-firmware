@@ -1766,7 +1766,7 @@ ccid_thread (void *arg)
     {
       eventmask_t m;
 
-      if (bDeviceState == USB_DEVICE_STATE_CONFIGURED)
+      if (!c->tx_busy && bDeviceState == USB_DEVICE_STATE_CONFIGURED)
 	timeout_p = &timeout;
       else
 	timeout_p = NULL;
