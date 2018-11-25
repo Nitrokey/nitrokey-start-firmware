@@ -1,6 +1,14 @@
 Gnuk NEWS - User visible changes
 
 
+* Major changes in Gnuk 1.2.12
+
+  Released 2018-11-25, by NIIBE Yutaka
+
+** FST-01SZ fixes
+Fixes for Ack button support and serial number.
+
+
 * Major changes in Gnuk 1.2.11
 
   Released 2018-11-12, by NIIBE Yutaka
