@@ -1800,7 +1800,7 @@ ccid_thread (void *arg)
 	}
 
 #ifdef ACKBTN_SUPPORT
-      if (ack_intr.ready)
+      if (c->tx_busy && ack_intr.ready)
 	{
 	  ackbtn_disable ();
 	  chopstx_intr_done (&ack_intr);
