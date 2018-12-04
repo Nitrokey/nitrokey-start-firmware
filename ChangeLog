@@ -1,3 +1,7 @@
+2018-12-04  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/openpgp-do.c (gpg_data_copy): Fix for NR_DO_UIF_SIG.
+
 2018-11-30  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* src/usb-ccid.c (ccid_thread): Fix another race condition.

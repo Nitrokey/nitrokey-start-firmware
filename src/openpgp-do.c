@@ -1965,9 +1965,9 @@ gpg_data_copy (const uint8_t *p_start)
       }
 
   for (i = 0; i < 3; i++)
-    if ((v = (uif_flags & (3 << (i * 2)))))
+    if ((v = (uif_flags >> (i * 2)) & 3))
       {
-	flash_enum_write_internal (p, NR_DO_UIF_SIG + 1, v);
+	flash_enum_write_internal (p, NR_DO_UIF_SIG + i, v);
 	p += 2;
       }
 
