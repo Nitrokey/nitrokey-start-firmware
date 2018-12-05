@@ -1388,6 +1388,13 @@ cmd_external_authenticate (struct eventflag *ccid_comm)
       return;
     }
 
+#ifdef ACKBTN_SUPPORT
+  if (gpg_do_get_uif (GPG_KEY_FOR_SIGNING)
+      || gpg_do_get_uif (GPG_KEY_FOR_DECRYPTION)
+      || gpg_do_get_uif (GPG_KEY_FOR_AUTHENTICATION))
+    eventflag_signal (ccid_comm, EV_EXEC_ACK_REQUIRED);
+#endif
+
   r = rsa_verify (pubkey, FIRMWARE_UPDATE_KEY_CONTENT_LEN,
 		  challenge, signature);
   random_bytes_free (challenge);
