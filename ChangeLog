@@ -1,3 +1,9 @@
+2018-12-06  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/usb-ccid.c (ccid_thread): Priority of handling
+	EV_TX_FINISHED is most important.  Don't handle
+	Ack button event when c->tx_busy = 1.
+
 2018-12-05  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* src/openpgp.c (cmd_external_authenticate): Support
@@ -6,10 +12,6 @@
 2018-12-04  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* src/openpgp-do.c (gpg_data_copy): Fix for NR_DO_UIF_SIG.
-
-2018-11-30  NIIBE Yutaka  <gniibe@fsij.org>
-
-	* src/usb-ccid.c (ccid_thread): Fix another race condition.
 
 2018-11-25  NIIBE Yutaka  <gniibe@fsij.org>
 
