@@ -25,8 +25,8 @@ void ccid_card_change_signal (int how);
 
 /* CCID thread */
 #define EV_RX_DATA_READY      1 /* USB Rx data available  */
-#define EV_EXEC_ACK_REQUIRED  2 /* OpenPGPcard Execution ACK required*/
-#define EV_EXEC_FINISHED      4 /* OpenPGPcard Execution finished */
+#define EV_EXEC_FINISHED      2 /* OpenPGPcard Execution finished */
+#define EV_EXEC_ACK_REQUIRED  4 /* OpenPGPcard Execution ACK required */
 #define EV_TX_FINISHED        8 /* CCID Tx finished  */
 #define EV_CARD_CHANGE       16
 

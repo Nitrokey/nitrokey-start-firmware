@@ -1,3 +1,8 @@
+2018-12-07  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/gnuk.h (EV_EXEC_ACK_REQUIRED): Have precedence
+	than EV_EXEC_FINISHED.
+
 2018-12-06  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* src/usb-ccid.c (ccid_thread): Priority of handling
