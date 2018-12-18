@@ -51,6 +51,28 @@
 #define LED_TIMEOUT_ONE		(100*1000)
 #define LED_TIMEOUT_STOP	(200*1000)
 
+#ifdef DFU_SUPPORT
+static int
+flash_write_any (uintptr_t dst_addr, const uint8_t *src, size_t len)
+{
+  int status;
+
+  while (len)
+    {
+      uint16_t hw = *src++;
+
+      hw |= (*src++ << 8);
+      status = flash_program_halfword (dst_addr, hw);
+      if (status != 0)
+        return 0;              /* error return */
+
+      dst_addr += 2;
+      len -= 2;
+    }
+
+  return 1;
+}
+#endif
 
 #ifdef GNU_LINUX_EMULATION
 uint8_t *flash_addr_key_storage_start;
@@ -83,6 +105,51 @@ device_initialize_once (void)
 	  nibble += (nibble >= 10 ? ('A' - 10) : '0');
 	  flash_put_data_internal (&p[i*4+2], nibble);
 	}
+
+#ifdef DFU_SUPPORT
+#define CHIP_ID_REG ((uint32_t *)0xE0042000)
+      /*
+       * Overwrite DFU bootloader with a copy of SYS linked to ORIGIN_REAL.
+       * Then protect flash from readout.
+       */
+      {
+        extern uint8_t _binary_build_stdaln_sys_bin_start;
+        extern uint8_t _binary_build_stdaln_sys_bin_size;
+        size_t stdaln_sys_size = (size_t) &_binary_build_stdaln_sys_bin_size;
+        extern const uint32_t FT0[256], FT1[256], FT2[256];
+        uintptr_t addr;
+        uint32_t flash_page_size = 1024; /* 1KiB default */
+
+        if (((*CHIP_ID_REG)&0x07) == 0x04) /* High density device.  */
+          flash_page_size = 2048; /* It's 2KiB. */
+
+        /* Kill DFU */
+        for (addr = ORIGIN_REAL; addr < ORIGIN;
+             addr += flash_page_size)
+          flash_erase_page (addr);
+
+        /* Copy SYS */
+        addr = ORIGIN_REAL;
+        flash_write_any(addr, &_binary_build_stdaln_sys_bin_start,
+                        stdaln_sys_size);
+        addr += stdaln_sys_size;
+        flash_write_any(addr, (const uint8_t *) &FT0, sizeof(FT0));
+        addr += sizeof(FT0);
+        flash_write_any(addr, (const uint8_t *) &FT1, sizeof(FT1));
+        addr += sizeof(FT1);
+        flash_write_any(addr, (const uint8_t *) &FT2, sizeof(FT2));
+
+        addr = ORIGIN_REAL + 0x1000;
+        if (addr < ORIGIN) {
+          /* Need to patch reset vector there */
+          handler *new_vector = (handler *) addr;
+          flash_write((uintptr_t) &new_vector[1], (const uint8_t *)
+                      &vector[1], sizeof(handler));
+        }
+
+        flash_protect();
+      }
+#endif
     }
 }
 #endif
@@ -402,26 +469,10 @@ main (int argc, const char *argv[])
   SCB->VTOR = (uintptr_t)&_regnual_start;
   entry = calculate_regnual_entry_address (&_regnual_start);
 #ifdef DFU_SUPPORT
-#define FLASH_SYS_START_ADDR 0x08000000
-#define FLASH_SYS_END_ADDR (0x08000000+0x1000)
-#define CHIP_ID_REG ((uint32_t *)0xE0042000)
   {
-    extern uint8_t _sys;
-    uintptr_t addr;
-    handler *new_vector = (handler *)FLASH_SYS_START_ADDR;
-    void (*func) (void (*)(void)) = (void (*)(void (*)(void)))new_vector[9];
-    uint32_t flash_page_size = 1024; /* 1KiB default */
-
-   if ((*CHIP_ID_REG)&0x07 == 0x04) /* High dencity device.  */
-     flash_page_size = 2048; /* It's 2KiB. */
-
-    /* Kill DFU */
-    for (addr = FLASH_SYS_START_ADDR; addr < FLASH_SYS_END_ADDR;
-	 addr += flash_page_size)
-      flash_erase_page (addr);
-
-    /* copy system service routines */
-    flash_write (FLASH_SYS_START_ADDR, &_sys, 0x1000);
+    /* Use SYS at ORIGIN_REAL instead of the one at ORIGIN */
+    handler *new_vector = (handler *)ORIGIN_REAL;
+    void (*func) (void (*)(void)) = (void (*)(void (*)(void))) new_vector[9];
 
     /* Leave Gnuk to exec reGNUal */
     (*func) ((void (*)(void))entry);
