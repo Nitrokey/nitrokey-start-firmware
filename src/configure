@@ -260,6 +260,8 @@ else
   echo "Debug option disabled"
 fi
 
+ORIGIN_REAL=0x08000000
+ORIGIN_REAL_DEFINE="#define ORIGIN_REAL $ORIGIN_REAL"
 # --with-dfu option
 if test "$with_dfu" = "yes"; then
   if test "$target" = "FST_01" -o "$target" = "FST_01G" \
@@ -281,9 +283,10 @@ if test "$with_dfu" = "yes"; then
 else
   with_dfu=no
   echo "Configured for bare system (no-DFU)"
-  ORIGIN=0x08000000
+  ORIGIN=${ORIGIN_REAL}
   DFU_DEFINE="#undef DFU_SUPPORT"
 fi
+ORIGIN_DEFINE="#define ORIGIN $ORIGIN"
 
 # --enable-pinpad option
 if test "$pinpad" = "no"; then
@@ -480,6 +483,9 @@ fi
  if test "$ackbtn_support" = "yes"; then
    echo "USE_ACKBTN=yes"
  fi
+ if test "$with_dfu" = "yes"; then
+   echo "USE_DFU=yes"
+ fi
  if test "$emulation" = "yes"; then
    echo "prefix=$prefix"
    echo "exec_prefix=$exec_prefix"
@@ -502,6 +508,8 @@ else
 fi
 sed -e "s/@DEBUG_DEFINE@/$DEBUG_DEFINE/" \
     -e "s/@DFU_DEFINE@/$DFU_DEFINE/" \
+    -e "s/@ORIGIN_DEFINE@/$ORIGIN_DEFINE/" \
+    -e "s/@ORIGIN_REAL_DEFINE@/$ORIGIN_REAL_DEFINE/" \
     -e "s/@PINPAD_DEFINE@/$PINPAD_DEFINE/" \
     -e "s/@PINPAD_MORE_DEFINE@/$PINPAD_MORE_DEFINE/" \
     -e "s/@CERTDO_DEFINE@/$CERTDO_DEFINE/" \
