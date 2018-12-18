@@ -268,8 +268,15 @@ if test "$with_dfu" = "yes"; then
       exit 1
   fi
   echo "Configured for DFU"
-  ORIGIN=0x08003000
-  FLASH_SIZE=$((FLASH_SIZE - 12))
+  if test "$target" = "MAPLE_MINI"; then
+    # Note that the default bootloader is too large, need for instance
+    # STM32duino for DFU on Maple Mini
+    ORIGIN=0x08002000
+    FLASH_SIZE=$((FLASH_SIZE - 8))
+  else
+    ORIGIN=0x08003000
+    FLASH_SIZE=$((FLASH_SIZE - 12))
+  fi
   DFU_DEFINE="#define DFU_SUPPORT 1"
 else
   with_dfu=no
