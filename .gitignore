@@ -6,6 +6,7 @@ src/.dep
 src/config.mk
 src/config.h
 src/gnuk.ld
+src/stdaln-sys.ld
 src/board.h
 src/build/*
 src/*.inc

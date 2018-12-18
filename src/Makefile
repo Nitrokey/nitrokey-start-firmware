@@ -53,6 +53,10 @@ ifeq ($(CHIP),stm32f103)
 CSRC += mcu-stm32f103.c 
 endif
 
+ifneq ($(USE_DFU),)
+OBJS_ADD += build/stdaln-sys-bin.o
+endif
+
 ###################################
 CC   = $(CROSS)gcc
 LD   = $(CROSS)gcc
@@ -72,8 +76,18 @@ sys.c: board.h
 
 build/bignum.o: OPT = -O3 -g
 
+build/stdaln-sys.elf: build/sys-$(CHIP).o stdaln-sys.ld
+	@echo
+	$(LD) -v $< $(MCFLAGS) -nostartfiles -Tstdaln-sys.ld -Wl,--no-warn-mismatch,--gc-sections $(LLIBDIR) -o $@
+
+build/stdaln-sys-bin.o: build/stdaln-sys.elf
+	@echo
+	$(OBJCOPY) -O binary -j .sys $< build/stdaln-sys.bin
+	$(OBJCOPY) -I binary -O default --rename-section .data=.rodata \
+		build/stdaln-sys.bin $@
+
 distclean: clean
-	-rm -f gnuk.ld config.h board.h config.mk \
+	-rm -f gnuk.ld stdaln-sys.ld config.h board.h config.mk \
 	       usb-strings.c.inc usb-vid-pid-ver.c.inc
 
 ifeq ($(EMULATION),)

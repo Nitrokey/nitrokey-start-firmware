@@ -506,6 +506,8 @@ else
       -e "s/@FLASH_PAGE_SIZE@/$FLASH_PAGE_SIZE/" \
 	< gnuk.ld.in > gnuk.ld
 fi
+sed -e "s/@ORIGIN_REAL@/$ORIGIN_REAL/" -e "s/@MEMORY_SIZE@/$MEMORY_SIZE/" \
+	< stdaln-sys.ld.in > stdaln-sys.ld
 sed -e "s/@DEBUG_DEFINE@/$DEBUG_DEFINE/" \
     -e "s/@DFU_DEFINE@/$DFU_DEFINE/" \
     -e "s/@ORIGIN_DEFINE@/$ORIGIN_DEFINE/" \

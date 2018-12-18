@@ -1,0 +1,39 @@
+/*
+ * ST32F103 memory setup.
+ */
+MEMORY
+{
+    flash0 : org = @ORIGIN_REAL@, len = 4k
+    ram : org = 0x20000000, len = @MEMORY_SIZE@k
+}
+
+__ram_start__           = ORIGIN(ram);
+__ram_size__            = LENGTH(ram);
+__ram_end__             = __ram_start__ + __ram_size__;
+
+SECTIONS
+{
+    . = 0;
+
+    .sys : ALIGN(4) SUBALIGN(4)
+    {
+	_sys = .;
+	KEEP(*(.vectors))
+	. = ALIGN(16);
+	KEEP(*(.sys.version))
+	KEEP(*(.sys.board_id))
+	KEEP(*(.sys.board_name))
+	build/sys-*.o(.text)
+	build/sys-*.o(.text.*)
+	build/sys-*.o(.rodata)
+	build/sys-*.o(.rodata.*)
+	. = ALIGN(1024);
+    } > flash0
+
+    .aesft : ALIGN(4) SUBALIGN(4)
+    {
+	*(.sys.0)
+	*(.sys.1)
+	*(.sys.2)
+    } > flash0
+}
