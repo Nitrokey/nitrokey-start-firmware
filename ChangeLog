@@ -1,3 +1,7 @@
+2018-12-20  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* chopstx: Update to 1.13.
+
 2018-12-07  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* src/gnuk.h (EV_EXEC_ACK_REQUIRED): Have precedence

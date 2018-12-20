@@ -1,6 +1,19 @@
 Gnuk NEWS - User visible changes
 
 
+* Major changes in Gnuk 1.2.13
+
+  Released 2018-12-2X, by NIIBE Yutaka
+
+** Fix for UIF Data Object
+When flash ROM is full and coping to new page, UIF DO was not properly
+copied.  This bug resulted losing the flag for user interaction.  Now,
+it's properly copied, keeping the setting of the feature.
+
+** Upgrade of Chopstx
+We use Chopstx 1.13.
+
+
 * Major changes in Gnuk 1.2.12
 
   Released 2018-11-25, by NIIBE Yutaka
