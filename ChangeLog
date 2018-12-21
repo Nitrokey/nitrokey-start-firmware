@@ -1,3 +1,21 @@
+2018-12-21  Peter Lebbing <peter@digitalbrains.com>
+
+	* src/main.c [DFU_SUPPORT] (flash_write_any): New.
+	(device_initialize_once): Overwrite DFU bootloader by SYS.
+	(main): Use SYS at ORIGIN_REAL.
+
+	* src/stdaln-sys.ld.in: New.
+
+	* src/Makefile [USE_DFU] (OBJS_ADD): Add standalone SYS object.
+	Add rules for stdaln-sys-bin.o and src/stdaln-sys.ld.
+
+	* src/configure: Generate stdaln-sys.ld.
+	[MAPLE_MINI]: Tweak ORIGIN and FLASH_SIZE.
+	(ORIGIN_DEFINE, ORIGIN_REAL_DEFINE): New macros.
+	(USE_DFU): New make variable.
+
+	* src/config.h.in (ORIGIN_DEFINE, ORIGIN_REAL_DEFINE): New.
+
 2018-12-20  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* chopstx: Update to 1.13.
