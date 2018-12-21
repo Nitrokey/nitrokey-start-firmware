@@ -117,6 +117,7 @@ device_initialize_once (void)
         extern uint8_t _binary_build_stdaln_sys_bin_size;
         size_t stdaln_sys_size = (size_t) &_binary_build_stdaln_sys_bin_size;
         extern const uint32_t FT0[256], FT1[256], FT2[256];
+        extern handler vector_table[];
         uintptr_t addr;
         uint32_t flash_page_size = 1024; /* 1KiB default */
 
@@ -141,13 +142,16 @@ device_initialize_once (void)
 
         addr = ORIGIN_REAL + 0x1000;
         if (addr < ORIGIN) {
-          /* Need to patch reset vector there */
+          /* Need to patch top of stack and reset vector there */
           handler *new_vector = (handler *) addr;
+          flash_write((uintptr_t) &new_vector[0], (const uint8_t *)
+                      &vector_table[0], sizeof(handler));
           flash_write((uintptr_t) &new_vector[1], (const uint8_t *)
                       &vector[1], sizeof(handler));
         }
 
         flash_protect();
+        nvic_system_reset();
       }
 #endif
     }
