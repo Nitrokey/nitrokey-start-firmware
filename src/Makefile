@@ -88,7 +88,7 @@ build/stdaln-sys-bin.o: build/stdaln-sys.elf
 
 distclean: clean
 	-rm -f gnuk.ld stdaln-sys.ld config.h board.h config.mk \
-	       usb-strings.c.inc usb-vid-pid-ver.c.inc
+	       usb-strings.c.inc put-vid-pid-ver.sh
 
 ifeq ($(EMULATION),)
 build/gnuk.elf: build/gnuk-no-vidpid.elf binary-edit.sh put-vid-pid-ver.sh
