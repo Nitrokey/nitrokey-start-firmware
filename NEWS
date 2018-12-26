@@ -3,7 +3,15 @@ Gnuk NEWS - User visible changes
 
 * Major changes in Gnuk 1.2.13
 
-  Released 2018-12-2X, by NIIBE Yutaka
+  Released 2018-12-26, by NIIBE Yutaka
+
+** DFU support and its firmware upgrade fix
+DFU support was not well maintained, and firmware upgrade was not
+possible for boards with DFU.  Now, at least for Maple Mini, it is
+tested.  Note that using Gnuk with DFU on a board is only for an
+experiment, because DFU can access the content of flash ROM.  DFU
+should be killed by upgrading to normal Gnuk, so that you can have
+your private keys.
 
 ** Fix for UIF Data Object
 When flash ROM is full and coping to new page, UIF DO was not properly

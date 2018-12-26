@@ -1,3 +1,7 @@
+2018-12-26  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* VERSION: 1.2.13.
+
 2018-12-22  Peter Lebbing <peter@digitalbrains.com>
 
 	* src/main.c (device_initialize_once): Fill the stack address and

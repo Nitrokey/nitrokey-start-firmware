@@ -65,3 +65,12 @@ NIIBE Yutaka:
 	src/usb_lld.h
 	*
 	and others.
+
+Peter Lebbing:
+    Modified:
+	src/config.h.in
+	src/configure
+	src/main.c
+	src/Makefile
+    Wrote:
+	src/stdaln-sys.ld.in
