@@ -1,3 +1,9 @@
+2018-12-22  Peter Lebbing <peter@digitalbrains.com>
+
+	* src/main.c (device_initialize_once): Fill the stack address and
+	reset vector of Gnuk application (was the one of old SYS).
+	Reset the board after updating the first five pages of flash.
+
 2018-12-21  Peter Lebbing <peter@digitalbrains.com>
 
 	* src/main.c [DFU_SUPPORT] (flash_write_any): New.
