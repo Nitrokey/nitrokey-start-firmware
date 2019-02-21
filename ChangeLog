@@ -1,3 +1,7 @@
+2019-02-21  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* GNUK_USB_DEVICE_ID: Add 1209:2440.
+
 2018-12-26  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* VERSION: 1.2.13.
