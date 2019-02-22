@@ -24,18 +24,18 @@ extern struct apdu apdu;
 void ccid_card_change_signal (int how);
 
 /* CCID thread */
-#define EV_RX_DATA_READY      1 /* USB Rx data available  */
-#define EV_EXEC_FINISHED      2 /* OpenPGPcard Execution finished */
+#define EV_CARD_CHANGE        1
+#define EV_TX_FINISHED        2 /* CCID Tx finished  */
 #define EV_EXEC_ACK_REQUIRED  4 /* OpenPGPcard Execution ACK required */
-#define EV_TX_FINISHED        8 /* CCID Tx finished  */
-#define EV_CARD_CHANGE       16
+#define EV_EXEC_FINISHED      8 /* OpenPGPcard Execution finished */
+#define EV_RX_DATA_READY     16 /* USB Rx data available  */
 
 /* OpenPGPcard thread */
-#define EV_PINPAD_INPUT_DONE      1
-#define EV_EXIT                   2
+#define EV_MODIFY_CMD_AVAILABLE   1
+#define EV_VERIFY_CMD_AVAILABLE   2
 #define EV_CMD_AVAILABLE          4
-#define EV_VERIFY_CMD_AVAILABLE   8
-#define EV_MODIFY_CMD_AVAILABLE  16
+#define EV_EXIT                   8
+#define EV_PINPAD_INPUT_DONE     16
 
 /* Maximum cmd apdu data is key import 24+4+256+256 (proc_key_import) */
 #define MAX_CMD_APDU_DATA_SIZE (24+4+256+256) /* without header */

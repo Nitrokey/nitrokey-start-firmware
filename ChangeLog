@@ -1,5 +1,7 @@
 2019-02-22  NIIBE Yutaka  <gniibe@fsij.org>
 
+	* src/gnuk.h (EV_*): Change the values.
+
 	* src/usb-ccid.c (GPG_ACK_TIMEOUT): New.
 	(ccid_thread): Implement timout for the user interaction.
 
