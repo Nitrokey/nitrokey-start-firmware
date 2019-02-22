@@ -1,7 +1,8 @@
 /*
  * usb-ccid.c -- USB CCID protocol handling
  *
- * Copyright (C) 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+ * Copyright (C) 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018,
+ *               2019
  *               Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
@@ -190,6 +191,7 @@ struct ccid {
   uint32_t state      : 4;
   uint32_t err        : 1;
   uint32_t tx_busy    : 1;
+  uint32_t timeout_cnt: 3;
 
   uint8_t *p;
   size_t len;
@@ -1577,7 +1579,7 @@ ccid_notify_slot_change (struct ccid *c)
 #define USB_CCID_TIMEOUT (1950*1000)
 
 #define GPG_THREAD_TERMINATED 0xffff
-
+#define GPG_ACK_TIMEOUT 0x6600
 
 extern uint32_t bDeviceState;
 extern void usb_device_reset (struct usb_dev *dev);
@@ -1813,7 +1815,11 @@ ccid_thread (void *arg)
 	}
 #endif
 
-      timeout = USB_CCID_TIMEOUT;
+      if (timeout == 0)
+	{
+	  timeout = USB_CCID_TIMEOUT;
+	  c->timeout_cnt++;
+	}
       m = eventflag_get (&c->ccid_comm);
 
       if (m == EV_CARD_CHANGE)
@@ -1836,7 +1842,10 @@ ccid_thread (void *arg)
 	  ccid_notify_slot_change (c);
 	}
       else if (m == EV_RX_DATA_READY)
-	c->ccid_state = ccid_handle_data (c);
+	{
+	  c->ccid_state = ccid_handle_data (c);
+	  c->timeout_cnt = 0;
+	}
       else if (m == EV_EXEC_FINISHED)
 	if (c->ccid_state == CCID_STATE_EXECUTE)
 	  {
@@ -1907,7 +1916,19 @@ ccid_thread (void *arg)
 	    ccid_prepare_receive (c);
 	}
       else			/* Timeout */
-	c->ccid_state = ccid_handle_timeout (c);
+	{
+	  if (c->timeout_cnt == 7
+	      && c->ccid_state == CCID_STATE_ACK_REQUIRED_1)
+	    {
+	      ackbtn_disable ();
+	      led_blink (LED_WAIT_FOR_BUTTON);
+	      c->a->sw = GPG_ACK_TIMEOUT;
+	      c->a->res_apdu_data_len = 0;
+	      goto exec_done;
+	    }
+	  else
+	    c->ccid_state = ccid_handle_timeout (c);
+	}
     }
 
   if (c->application)

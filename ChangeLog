@@ -1,3 +1,8 @@
+2019-02-22  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/usb-ccid.c (GPG_ACK_TIMEOUT): New.
+	(ccid_thread): Implement timout for the user interaction.
+
 2019-02-21  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* GNUK_USB_DEVICE_ID: Add 1209:2440.
