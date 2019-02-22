@@ -1,5 +1,11 @@
 2019-02-22  NIIBE Yutaka  <gniibe@fsij.org>
 
+	* tool/gnuk_get_random.py: New.
+
+	* src/openpgp.c (cmd_external_authenticate): move
+	ACKBTN_SUPPORT to...
+	(cmd_get_challenge): ... here.
+
 	* src/gnuk.h (EV_*): Change the values.
 
 	* src/usb-ccid.c (GPG_ACK_TIMEOUT): New.

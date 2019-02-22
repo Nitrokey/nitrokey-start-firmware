@@ -2,6 +2,7 @@
  * openpgp.c -- OpenPGP card protocol support
  *
  * Copyright (C) 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+ *               2019
  *               Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
@@ -1388,13 +1389,6 @@ cmd_external_authenticate (struct eventflag *ccid_comm)
       return;
     }
 
-#ifdef ACKBTN_SUPPORT
-  if (gpg_do_get_uif (GPG_KEY_FOR_SIGNING)
-      || gpg_do_get_uif (GPG_KEY_FOR_DECRYPTION)
-      || gpg_do_get_uif (GPG_KEY_FOR_AUTHENTICATION))
-    eventflag_signal (ccid_comm, EV_EXEC_ACK_REQUIRED);
-#endif
-
   r = rsa_verify (pubkey, FIRMWARE_UPDATE_KEY_CONTENT_LEN,
 		  challenge, signature);
   random_bytes_free (challenge);
@@ -1431,6 +1425,13 @@ cmd_get_challenge (struct eventflag *ccid_comm)
 
   if (challenge)
     random_bytes_free (challenge);
+
+#ifdef ACKBTN_SUPPORT
+  if (gpg_do_get_uif (GPG_KEY_FOR_SIGNING)
+      || gpg_do_get_uif (GPG_KEY_FOR_DECRYPTION)
+      || gpg_do_get_uif (GPG_KEY_FOR_AUTHENTICATION))
+    eventflag_signal (ccid_comm, EV_EXEC_ACK_REQUIRED);
+#endif
 
   challenge = random_bytes_get ();
   memcpy (res_APDU, challenge, len);
