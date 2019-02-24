@@ -1854,6 +1854,7 @@ ccid_thread (void *arg)
       else if (m == EV_RX_DATA_READY)
 	{
 	  c->ccid_state = ccid_handle_data (c);
+	  timeout = 0;
 	  c->timeout_cnt = 0;
 	}
       else if (m == EV_EXEC_FINISHED)
