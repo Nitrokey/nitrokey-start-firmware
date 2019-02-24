@@ -74,6 +74,7 @@ class gnuk_token(object):
             raise ValueError("Wrong interface sub class")
         self.__devhandle = device.open()
         self.__devhandle.claimInterface(interface)
+        self.__devhandle.setAltInterface(interface)
 
         self.__intf = interface.interfaceNumber
         self.__alt = interface.alternateSetting

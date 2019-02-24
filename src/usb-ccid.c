@@ -1730,6 +1730,7 @@ ccid_thread (void *arg)
   struct usb_dev dev;
   struct ccid *c = &ccid;
   uint32_t *timeout_p;
+  int ackbtn_active = 0;
 
   (void)arg;
 
@@ -1750,6 +1751,13 @@ ccid_thread (void *arg)
     struct ep_in *epi = &endpoint_in;
     struct ep_out *epo = &endpoint_out;
     struct apdu *a = &apdu;
+
+    if (ackbtn_active)
+      {
+	ackbtn_active = 0;
+	ackbtn_disable ();
+	led_blink (LED_WAIT_FOR_BUTTON);
+      }
 
     epi_init (epi, ENDP1, c);
     epo_init (epo, ENDP1, c);
@@ -1776,7 +1784,8 @@ ccid_thread (void *arg)
       eventflag_set_mask (&c->ccid_comm, c->tx_busy ? EV_TX_FINISHED : ~0);
 
 #ifdef ACKBTN_SUPPORT
-      chopstx_poll (timeout_p, CCID_POLL_NUM - c->tx_busy, ccid_poll);
+      chopstx_poll (timeout_p, CCID_POLL_NUM - (c->tx_busy || !ackbtn_active),
+		    ccid_poll);
 #else
       chopstx_poll (timeout_p, CCID_POLL_NUM, ccid_poll);
 #endif
@@ -1804,9 +1813,10 @@ ccid_thread (void *arg)
 #ifdef ACKBTN_SUPPORT
       if (!c->tx_busy && ack_intr.ready)
 	{
+	  ackbtn_active = 0;
 	  ackbtn_disable ();
-	  chopstx_intr_done (&ack_intr);
 	  led_blink (LED_WAIT_FOR_BUTTON);
+	  chopstx_intr_done (&ack_intr);
 	  if (c->ccid_state == CCID_STATE_ACK_REQUIRED_1)
 	    goto exec_done;
 
@@ -1894,6 +1904,7 @@ ccid_thread (void *arg)
 	if (c->ccid_state == CCID_STATE_EXECUTE)
 	  {
 	    ackbtn_enable ();
+	    ackbtn_active = 1;
 	    led_blink (LED_WAIT_FOR_BUTTON);
 	    c->ccid_state = CCID_STATE_ACK_REQUIRED_0;
 	    ccid_send_data_block_time_extension (c);
@@ -1920,6 +1931,7 @@ ccid_thread (void *arg)
 	  if (c->timeout_cnt == 7
 	      && c->ccid_state == CCID_STATE_ACK_REQUIRED_1)
 	    {
+	      ackbtn_active = 0;
 	      ackbtn_disable ();
 	      led_blink (LED_WAIT_FOR_BUTTON);
 	      c->a->sw = GPG_ACK_TIMEOUT;
