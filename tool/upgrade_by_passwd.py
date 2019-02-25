@@ -66,8 +66,20 @@ def main(wait_e, keyno, passwd, data_regnual, data_upgrade):
         else:
             salt = salt_user
         passwd_data = kdf_calc(passwd, salt, iters)
+
     # And authenticate with the passwd data
-    gnuk.cmd_verify(BY_ADMIN, passwd_data)
+    try:
+        gnuk.cmd_verify(BY_ADMIN, passwd_data)
+    except ValueError as e:
+        print("Authentication failed (SW:", e,"). Wrong admin PIN?")
+        # get Admin PIN retry counter
+        try:
+            tries = gnuk.cmd_get_data(0x00, 0xc4)[6]
+        except ValueError as f:
+            tries = "UNKNOWN"
+        print(tries, "tries left.\n")
+        exit(1)
+
     gnuk.cmd_write_binary(1+keyno, rsa_raw_pubkey, False)
 
     gnuk.cmd_select_openpgp()
