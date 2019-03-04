@@ -17,3 +17,4 @@ regnual/regnual.elf
 doc/_build
 tests/.cache
 tests/__pycache__
+tests/.pytest_cache

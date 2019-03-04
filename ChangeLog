@@ -1,3 +1,11 @@
+2019-03-04  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* VERSION: 1.2.14.
+
+	* chopstx: Update to 1.14.
+
+	* tool/gnuk_token.py: Add 1209:2440.
+
 2019-02-24  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* src/usb-ccid.c (ccid_thread): Clean up the ack button state

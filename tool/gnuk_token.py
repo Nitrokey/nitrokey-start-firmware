@@ -30,6 +30,7 @@ from array import array
 USB_PRODUCT_LIST=[
     { 'vendor' : 0x234b, 'product' : 0x0000 }, # FSIJ Gnuk Token
     { 'vendor' : 0x20a0, 'product' : 0x4211 }, # Nitrokey Start
+    { 'vendor' : 0x1209, 'product' : 0x2440 }, # GnuPG e.V.
 ]
 
 # USB class, subclass, protocol

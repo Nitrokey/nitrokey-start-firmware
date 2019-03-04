@@ -1,6 +1,18 @@
 Gnuk NEWS - User visible changes
 
 
+* Major changes in Gnuk 1.2.14
+
+  Released 2019-03-05, by NIIBE Yutaka
+
+** Timeout for ACK button support
+When a user doesn't acknowledge (> 15 seconds), the operation
+timeouts, and authentication state is cleared.
+
+** Upgrade of Chopstx
+We use Chopstx 1.14.
+
+
 * Major changes in Gnuk 1.2.13
 
   Released 2018-12-26, by NIIBE Yutaka

@@ -1,14 +1,14 @@
 Gnuk - An Implementation of USB Cryptographic Token for GnuPG
 
-							 Version 1.2.13
-							     2018-12-26
+							 Version 1.2.14
+							     2019-03-05
 							   Niibe Yutaka
 				      Free Software Initiative of Japan
 
 Release Notes
 =============
 
-This is the release of Gnuk, version 1.2.13, which has major
+This is the release of Gnuk, version 1.2.14, which has major
 incompatible changes to Gnuk 1.0.x.  Specifically, it now supports
 overriding key import, but importing keys (or generating keys) results
 password reset.  Also, you need to import private keys before changing
@@ -249,7 +249,7 @@ External source code
 
 Gnuk is distributed with external source code.
 
-* chopstx/  -- Chopstx 1.13
+* chopstx/  -- Chopstx 1.14
 
   We use Chopstx as the kernel for Gnuk.
 
@@ -372,9 +372,9 @@ On Debian we can install the packages of gcc-arm-none-eabi,
 gdb-arm-none-eabi and its friends.  I'm using:
 
 	binutils-arm-none-eabi	2.31.1-2+10
-	gcc-arm-none-eabi 	15:7-2018-q2-4
-	gdb-arm-none-eabi 	7.12-6+9+b2
-	libnewlib-arm-none-eabi	3.0.0.20180802-2
+	gcc-arm-none-eabi 	15:7-2018-q2-6
+	gdb-multiarch 		8.2.1-1
+	libnewlib-arm-none-eabi	3.1.0.20181231-1
 
 Or else, see https://launchpad.net/gcc-arm-embedded for preparation of
 GNU Toolchain for 'arm-none-eabi' target.
