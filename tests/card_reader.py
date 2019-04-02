@@ -1,7 +1,7 @@
 """
 card_reader.py - a library for smartcard reader
 
-Copyright (C) 2016, 2017  Free Software Initiative of Japan
+Copyright (C) 2016, 2017, 2019  Free Software Initiative of Japan
 Author: NIIBE Yutaka <gniibe@fsij.org>
 
 This file is a part of Gnuk, a GnuPG USB Token implementation.
@@ -168,7 +168,7 @@ class CardReader(object):
         return status
 
     def ccid_power_on(self):
-        msg = ccid_compose(0x62, self.__seq, rsv=1) # Vcc=5V
+        msg = ccid_compose(0x62, self.__seq, rsv=2) # Vcc=3.3V
         self.__dev.write(self.__bulkout, msg, self.__timeout)
         self.increment_seq()
         status, chain, data = self.ccid_get_result()
