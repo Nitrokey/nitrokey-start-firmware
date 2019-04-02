@@ -50,12 +50,16 @@ def test_sex(card):
 def test_name_lang_sex(card):
     name = b""
     lang = b""
+    lang_de = b"de"
     sex = b"9"
     expected = b'\x5b' + pack('B', len(name)) + name \
                +  b'\x5f\x2d' + pack('B', len(lang)) + lang \
                + b'\x5f\x35' + pack('B', len(sex)) + sex
+    expected_de = b'\x5b' + pack('B', len(name)) + name \
+               +  b'\x5f\x2d' + pack('B', len(lang_de)) + lang_de \
+               + b'\x5f\x35' + pack('B', len(sex)) + sex
     name_lang_sex = get_data_object(card, 0x65)
-    assert name_lang_sex == b'' or name_lang_sex == expected
+    assert name_lang_sex == b'' or name_lang_sex == expected or name_lang_sex == expected_de
 
 def test_app_data(card):
     app_data = get_data_object(card, 0x6e)
@@ -140,7 +144,8 @@ def test_historical_bytes(card):
     h = get_data_object(card, 0x5f52)
     assert h == b'\x001\xc5s\xc0\x01@\x05\x90\x00' or \
            h == b'\x00\x31\x84\x73\x80\x01\x80\x00\x90\x00' or \
-           h == b'\x00\x31\x84\x73\x80\x01\x80\x05\x90\x00'
+           h == b'\x00\x31\x84\x73\x80\x01\x80\x05\x90\x00' or \
+           h == b'\x00\x31\xf5\x73\xc0\x01\x60\x05\x90\x00'
 
 def test_extended_capabilities(card):
     a = get_data_object(card, 0xc0)
