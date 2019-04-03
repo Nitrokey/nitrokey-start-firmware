@@ -56,7 +56,7 @@ class Test_Card_Keygen(object):
     def test_signature_sigkey(self, card):
         msg = b"Sign me please"
         pk = card.cmd_get_public_key(1)
-        pk_info = (pk[9:9+256], pk[9+256+2:9+256+2+3])
+        pk_info = (pk[9:9+256], pk[9+256+2:])
         digest = rsa_keys.compute_digestinfo(msg)
         sig = int(hexlify(card.cmd_pso(0x9e, 0x9a, digest)),16)
         r = rsa_keys.verify_signature(pk_info, digest, sig)
@@ -69,7 +69,7 @@ class Test_Card_Keygen(object):
     def test_decryption(self, card):
         msg = b"encrypt me please"
         pk = card.cmd_get_public_key(2)
-        pk_info = (pk[9:9+256], pk[9+256+2:9+256+2+3])
+        pk_info = (pk[9:9+256], pk[9+256+2:])
         ciphertext = rsa_keys.encrypt_with_pubkey(pk_info, msg)
         r = card.cmd_pso(0x80, 0x86, ciphertext)
         assert r == msg
@@ -77,7 +77,7 @@ class Test_Card_Keygen(object):
     def test_signature_authkey(self, card):
         msg = b"Sign me please to authenticate"
         pk = card.cmd_get_public_key(3)
-        pk_info = (pk[9:9+256], pk[9+256+2:9+256+2+3])
+        pk_info = (pk[9:9+256], pk[9+256+2:])
         digest = rsa_keys.compute_digestinfo(msg)
         sig = int(hexlify(card.cmd_internal_authenticate(digest)),16)
         r = rsa_keys.verify_signature(pk_info, digest, sig)
