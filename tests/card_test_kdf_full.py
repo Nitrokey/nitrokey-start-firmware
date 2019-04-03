@@ -1,5 +1,5 @@
 """
-test_007_kdf_full.py - test KDF data object
+card_test_kdf_full.py - test KDF data object
 
 Copyright (C) 2018, 2019  g10 Code GmbH
 Author: NIIBE Yutaka <gniibe@fsij.org>
@@ -20,8 +20,17 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-from card_test_kdf_full import *
-from card_test_personalize_card import *
-from card_test_personalize_reset import *
-from card_test_remove_keys import *
-from card_test_reset_pw3 import *
+from card_const import *
+from constants_for_test import *
+
+class Test_Card_KDF_full(object):
+
+    def test_verify_pw3(self, card):
+        v = card.verify(3, FACTORY_PASSPHRASE_PW3)
+        assert v
+
+    def test_kdf_put_full(self, card):
+        r = card.cmd_put_data(0x00, 0xf9, KDF_FULL)
+        if r:
+            card.configure_with_kdf()
+        assert r

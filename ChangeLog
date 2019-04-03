@@ -1,3 +1,7 @@
+2019-04-03  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* tests: Factor out tests into classes.
+
 2019-03-04  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* VERSION: 1.2.14.
