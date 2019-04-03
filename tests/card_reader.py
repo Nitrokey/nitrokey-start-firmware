@@ -25,6 +25,7 @@ from struct import pack
 from usb.util import find_descriptor, claim_interface, get_string, \
     endpoint_type, endpoint_direction, \
     ENDPOINT_TYPE_BULK, ENDPOINT_OUT, ENDPOINT_IN
+from binascii import hexlify
 
 # USB class, subclass, protocol
 CCID_CLASS = 0x0B
@@ -240,8 +241,11 @@ class CardReader(object):
         if info:
             data = compose_i_block(self.ns, info, more)
         elif response_time_ext:
-            # compose S-block
-            data = b"\x00\xE3\x00\xE3"
+            # compose S-block response
+            pcb = 0xe3
+            bwi_byte = pack('>B', response_time_ext)
+            edc = compute_edc(pcb, bwi_byte)
+            data = bytes([0, pcb, 1]) + bwi_byte + bytes([edc])
         elif edc_error:
             data = compose_r_block(self.nr, edc_error=1)
         elif no_error:
@@ -277,7 +281,7 @@ class CardReader(object):
         res = b""
         while True:
             if is_s_block_time_ext(blk):
-                self.send_tpdu(response_time_ext=1)
+                self.send_tpdu(response_time_ext=blk[3])
             elif is_i_block_last(blk):
                 self.nr = self.nr ^ 1
                 if is_edc_error(blk):
