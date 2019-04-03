@@ -1,7 +1,7 @@
 """
 openpgp_card.py - a library for OpenPGP card
 
-Copyright (C) 2011, 2012, 2013, 2015, 2016, 2018
+Copyright (C) 2011, 2012, 2013, 2015, 2016, 2018, 2019
               Free Software Initiative of Japan
 Author: NIIBE Yutaka <gniibe@fsij.org>
 
@@ -59,6 +59,7 @@ class OpenPGP_Card(object):
         self.__kdf_salt_user = None
         self.__kdf_salt_reset = None
         self.__kdf_salt_admin = None
+        self.is_gnuk = (reader.get_string(2) == "Gnuk Token")
 
     def configure_with_kdf(self):
         kdf_data = self.cmd_get_data(0x00, 0xf9)

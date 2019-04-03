@@ -1,7 +1,7 @@
 """
 test_004_reset_pw3.py - test resetting pw3
 
-Copyright (C) 2018  g10 Code GmbH
+Copyright (C) 2018, 2019  g10 Code GmbH
 Author: NIIBE Yutaka <gniibe@fsij.org>
 
 This file is a part of Gnuk, a GnuPG USB Token implementation.
@@ -21,11 +21,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 from card_const import *
+import pytest
 
 # Gnuk specific feature of clear PW3
 def test_setup_pw3_null(card):
-    r = card.change_passwd(3, FACTORY_PASSPHRASE_PW3, None)
-    assert r
+    if card.is_gnuk:
+        r = card.change_passwd(3, FACTORY_PASSPHRASE_PW3, None)
+        assert r
+    else:
+        pytest.skip("Gnuk only feature of clearing PW3")
 
 def test_verify_pw3(card):
     v = card.verify(3, FACTORY_PASSPHRASE_PW3)
