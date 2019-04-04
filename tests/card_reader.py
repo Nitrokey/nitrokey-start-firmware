@@ -238,19 +238,21 @@ class CardReader(object):
 
     def send_tpdu(self, info=None, more=0, response_time_ext=0,
                   edc_error=0, no_error=0):
+        rsv = 0
         if info:
             data = compose_i_block(self.ns, info, more)
         elif response_time_ext:
             # compose S-block response
             pcb = 0xe3
-            bwi_byte = pack('>B', response_time_ext)
+            bwi_byte = bytes([response_time_ext])
             edc = compute_edc(pcb, bwi_byte)
             data = bytes([0, pcb, 1]) + bwi_byte + bytes([edc])
+            rsv = response_time_ext
         elif edc_error:
             data = compose_r_block(self.nr, edc_error=1)
         elif no_error:
             data = compose_r_block(self.nr)
-        msg = ccid_compose(0x6f, self.__seq, data=data)
+        msg = ccid_compose(0x6f, self.__seq, rsv=rsv, data=data)
         self.__dev.write(self.__bulkout, msg, self.__timeout)
         self.increment_seq()
 
