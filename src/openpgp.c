@@ -2,6 +2,7 @@
  * openpgp.c -- OpenPGP card protocol support
  *
  * Copyright (C) 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+ *               2019
  *               Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
@@ -145,7 +146,7 @@ get_pinpad_input (int msg_code)
 #endif
 
 static void
-cmd_verify (void)
+cmd_verify (struct eventflag *ccid_comm)
 {
   int len;
   uint8_t p1 = P1 (apdu);
@@ -153,6 +154,7 @@ cmd_verify (void)
   int r;
   const uint8_t *pw;
 
+  (void)ccid_comm;
   DEBUG_INFO (" - VERIFY\r\n");
   DEBUG_BYTE (p2);
 
@@ -275,7 +277,7 @@ gpg_change_keystring (int who_old, const uint8_t *old_ks,
 }
 
 static void
-cmd_change_password (void)
+cmd_change_password (struct eventflag *ccid_comm)
 {
   uint8_t old_ks[KEYSTRING_MD_SIZE];
   uint8_t new_ks0[KEYSTRING_SIZE];
@@ -295,6 +297,7 @@ cmd_change_password (void)
   int salt_len;
   const uint8_t *ks_pw3;
 
+  (void)ccid_comm;
   DEBUG_INFO ("Change PW\r\n");
   DEBUG_BYTE (who);
 
@@ -547,7 +550,7 @@ s2k (const unsigned char *salt, size_t slen,
 
 
 static void
-cmd_reset_user_password (void)
+cmd_reset_user_password (struct eventflag *ccid_comm)
 {
   uint8_t p1 = P1 (apdu);
   int len;
@@ -561,6 +564,7 @@ cmd_reset_user_password (void)
   const uint8_t *salt;
   int salt_len;
 
+  (void)ccid_comm;
   DEBUG_INFO ("Reset PW1\r\n");
   DEBUG_BYTE (p1);
 
@@ -695,12 +699,13 @@ cmd_reset_user_password (void)
 }
 
 static void
-cmd_put_data (void)
+cmd_put_data (struct eventflag *ccid_comm)
 {
   uint8_t *data;
   uint16_t tag;
   int len;
 
+  (void)ccid_comm;
   DEBUG_INFO (" - PUT DATA\r\n");
 
   tag = ((P1 (apdu)<<8) | P2 (apdu));
@@ -710,8 +715,9 @@ cmd_put_data (void)
 }
 
 static void
-cmd_pgp_gakp (void)
+cmd_pgp_gakp (struct eventflag *ccid_comm)
 {
+  (void)ccid_comm;
   DEBUG_INFO (" - Generate Asymmetric Key Pair\r\n");
   DEBUG_BYTE (P1 (apdu));
 
@@ -745,12 +751,13 @@ gpg_get_firmware_update_key (uint8_t keyno)
 #endif
 
 static void
-cmd_read_binary (void)
+cmd_read_binary (struct eventflag *ccid_comm)
 {
   int is_short_EF = (P1 (apdu) & 0x80) != 0;
   uint8_t file_id;
   uint16_t offset;
 
+  (void)ccid_comm;
   DEBUG_INFO (" - Read binary\r\n");
 
   if (is_short_EF)
@@ -821,8 +828,9 @@ cmd_read_binary (void)
 }
 
 static void
-cmd_select_file (void)
+cmd_select_file (struct eventflag *ccid_comm)
 {
+  (void)ccid_comm;
   if (P1 (apdu) == 4)	/* Selection by DF name */
     {
       DEBUG_INFO (" - select DF by name\r\n");
@@ -891,10 +899,11 @@ cmd_select_file (void)
 }
 
 static void
-cmd_get_data (void)
+cmd_get_data (struct eventflag *ccid_comm)
 {
   uint16_t tag = ((P1 (apdu)<<8) | P2 (apdu));
 
+  (void)ccid_comm;
   DEBUG_INFO (" - Get Data\r\n");
 
   gpg_do_get_data (tag, 0);
@@ -909,7 +918,7 @@ cmd_get_data (void)
 #define ECC_CIPHER_DO_HEADER_SIZE 7
 
 static void
-cmd_pso (void)
+cmd_pso (struct eventflag *ccid_comm)
 {
   int len = apdu.cmd_apdu_data_len;
   int r = -1;
@@ -935,6 +944,11 @@ cmd_pso (void)
 	  GPG_SECURITY_FAILURE ();
 	  return;
 	}
+
+#ifdef ACKBTN_SUPPORT
+      if (gpg_do_get_uif (GPG_KEY_FOR_SIGNING))
+	eventflag_signal (ccid_comm, EV_EXEC_ACK_REQUIRED);
+#endif
 
       if (attr == ALGO_RSA2K || attr == ALGO_RSA4K)
 	{
@@ -1027,6 +1041,13 @@ cmd_pso (void)
 	  return;
 	}
 
+#ifdef ACKBTN_SUPPORT
+      if (gpg_do_get_uif (GPG_KEY_FOR_DECRYPTION))
+	eventflag_signal (ccid_comm, EV_EXEC_ACK_REQUIRED);
+#else
+      (void)ccid_comm;
+#endif
+
       if (attr == ALGO_RSA2K || attr == ALGO_RSA4K)
 	{
 	  /* Skip padding 0x00 */
@@ -1103,7 +1124,7 @@ cmd_pso (void)
 
 #define MAX_RSA_DIGEST_INFO_LEN 102 /* 40% */
 static void
-cmd_internal_authenticate (void)
+cmd_internal_authenticate (struct eventflag *ccid_comm)
 {
   int attr = gpg_get_algo_attr (GPG_KEY_FOR_AUTHENTICATION);
   int pubkey_len = gpg_get_algo_attr_key_size (GPG_KEY_FOR_AUTHENTICATION,
@@ -1132,6 +1153,13 @@ cmd_internal_authenticate (void)
       GPG_SECURITY_FAILURE ();
       return;
     }
+
+#ifdef ACKBTN_SUPPORT
+  if (gpg_do_get_uif (GPG_KEY_FOR_AUTHENTICATION))
+    eventflag_signal (ccid_comm, EV_EXEC_ACK_REQUIRED);
+#else
+  (void)ccid_comm;
+#endif
 
   if (attr == ALGO_RSA2K || attr == ALGO_RSA4K)
     {
@@ -1309,10 +1337,11 @@ modify_binary (uint8_t op, uint8_t p1, uint8_t p2, int len)
 
 #if defined(CERTDO_SUPPORT)
 static void
-cmd_update_binary (void)
+cmd_update_binary (struct eventflag *ccid_comm)
 {
   int len = apdu.cmd_apdu_data_len;
 
+  (void)ccid_comm;
   DEBUG_INFO (" - UPDATE BINARY\r\n");
   modify_binary (MBD_OPRATION_UPDATE, P1 (apdu), P2 (apdu), len);
   DEBUG_INFO ("UPDATE BINARY done.\r\n");
@@ -1321,10 +1350,11 @@ cmd_update_binary (void)
 
 
 static void
-cmd_write_binary (void)
+cmd_write_binary (struct eventflag *ccid_comm)
 {
   int len = apdu.cmd_apdu_data_len;
 
+  (void)ccid_comm;
   DEBUG_INFO (" - WRITE BINARY\r\n");
   modify_binary (MBD_OPRATION_WRITE, P1 (apdu), P2 (apdu), len);
   DEBUG_INFO ("WRITE BINARY done.\r\n");
@@ -1333,7 +1363,7 @@ cmd_write_binary (void)
 
 #ifdef FLASH_UPGRADE_SUPPORT
 static void
-cmd_external_authenticate (void)
+cmd_external_authenticate (struct eventflag *ccid_comm)
 {
   const uint8_t *pubkey;
   const uint8_t *signature = apdu.cmd_apdu_data;
@@ -1341,6 +1371,7 @@ cmd_external_authenticate (void)
   uint8_t keyno = P2 (apdu);
   int r;
 
+  (void)ccid_comm;
   DEBUG_INFO (" - EXTERNAL AUTHENTICATE\r\n");
 
   if (keyno >= 4)
@@ -1376,10 +1407,11 @@ cmd_external_authenticate (void)
 #endif
 
 static void
-cmd_get_challenge (void)
+cmd_get_challenge (struct eventflag *ccid_comm)
 {
   int len = apdu.expected_res_size;
 
+  (void)ccid_comm;
   DEBUG_INFO (" - GET CHALLENGE\r\n");
 
   if (len > CHALLENGE_LEN)
@@ -1394,6 +1426,13 @@ cmd_get_challenge (void)
   if (challenge)
     random_bytes_free (challenge);
 
+#ifdef ACKBTN_SUPPORT
+  if (gpg_do_get_uif (GPG_KEY_FOR_SIGNING)
+      || gpg_do_get_uif (GPG_KEY_FOR_DECRYPTION)
+      || gpg_do_get_uif (GPG_KEY_FOR_AUTHENTICATION))
+    eventflag_signal (ccid_comm, EV_EXEC_ACK_REQUIRED);
+#endif
+
   challenge = random_bytes_get ();
   memcpy (res_APDU, challenge, len);
   res_APDU_size = len;
@@ -1404,8 +1443,9 @@ cmd_get_challenge (void)
 
 #ifdef LIFE_CYCLE_MANAGEMENT_SUPPORT
 static void
-cmd_activate_file (void)
+cmd_activate_file (struct eventflag *ccid_comm)
 {
+  (void)ccid_comm;
   if (file_selection != FILE_CARD_TERMINATED)
     {
       GPG_NO_RECORD ();
@@ -1418,13 +1458,13 @@ cmd_activate_file (void)
 }
 
 static void
-cmd_terminate_df (void)
+cmd_terminate_df (struct eventflag *ccid_comm)
 {
   const uint8_t *ks_pw3;
-
   uint8_t p1 = P1 (apdu);
   uint8_t p2 = P2 (apdu);
 
+  (void)ccid_comm;
   if (file_selection != FILE_DF_OPENPGP)
     {
       GPG_NO_RECORD ();
@@ -1468,7 +1508,7 @@ cmd_terminate_df (void)
 struct command
 {
   uint8_t command;
-  void (*cmd_handler) (void);
+  void (*cmd_handler) (struct eventflag *ccid_comm);
 };
 
 const struct command cmds[] = {
@@ -1502,7 +1542,7 @@ const struct command cmds[] = {
 #define NUM_CMDS ((int)(sizeof (cmds) / sizeof (struct command)))
 
 static void
-process_command_apdu (void)
+process_command_apdu (struct eventflag *ccid_comm)
 {
   int i;
   uint8_t cmd = INS (apdu);
@@ -1526,7 +1566,7 @@ process_command_apdu (void)
       else
 	{
 	  chopstx_setcancelstate (1);
-	  cmds[i].cmd_handler ();
+	  cmds[i].cmd_handler (ccid_comm);
 	  chopstx_setcancelstate (0);
 	}
     }
@@ -1640,7 +1680,7 @@ openpgp_card_thread (void *arg)
 	break;
 
       led_blink (LED_START_COMMAND);
-      process_command_apdu ();
+      process_command_apdu (ccid_comm);
       led_blink (LED_FINISH_COMMAND);
       led_blink (LED_ONESHOT); //blink after finishing each command
     done:

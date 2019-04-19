@@ -4,6 +4,7 @@
 # whether it is an upgrade from RTM.1 or RTM.2
 # it might be run with the parallel tool:
 # parallel bash build_all.sh ::: RTM.2 RTM.3 ::: green red
+# sudo date ; parallel --delay 2s -u bash build_all.sh ::: RTM.7 ::: green red
 # synopsis: bash build_all.sh <firmware tag> [green|red]
 # where green means upgrade from RTM.1 and red - upgrade from RTM.2
 
@@ -14,8 +15,8 @@ upgrade_from_rtm1=$2
 
 tag="${gtag}_${upgrade_from_rtm1}"
 
-rm -rf ./$tag
-git clone -b $gtag git@github.com:Nitrokey/nitrokey-start-firmware.git --recursive $tag
+sudo rm -rf ./$tag
+git clone -b $gtag git@github.com:Nitrokey/nitrokey-start-firmware.git --recursive --depth 1 --shallow-submodules $tag
 
 pushd $tag/chopstx
 if [ ${upgrade_from_rtm1} == "green" ] ; then
@@ -47,3 +48,6 @@ gzip -k $dirname/gnuk.hex
 pushd build
 flock sha.lock -c "sha512sum */* > sums.sha512"
 popd
+
+echo "Results are in ${dirname} directory"
+ls -la ${dirname}

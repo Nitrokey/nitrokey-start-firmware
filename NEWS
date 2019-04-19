@@ -1,6 +1,62 @@
 Gnuk NEWS - User visible changes
 
 
+* Major changes in Gnuk 1.2.14
+
+  Released 2019-03-05, by NIIBE Yutaka
+
+** Timeout for ACK button support
+When a user doesn't acknowledge (> 15 seconds), the operation
+timeouts, and authentication state is cleared.
+
+** Upgrade of Chopstx
+We use Chopstx 1.14.
+
+
+* Major changes in Gnuk 1.2.13
+
+  Released 2018-12-26, by NIIBE Yutaka
+
+** DFU support and its firmware upgrade fix
+DFU support was not well maintained, and firmware upgrade was not
+possible for boards with DFU.  Now, at least for Maple Mini, it is
+tested.  Note that using Gnuk with DFU on a board is only for an
+experiment, because DFU can access the content of flash ROM.  DFU
+should be killed by upgrading to normal Gnuk, so that you can have
+your private keys.
+
+** Fix for UIF Data Object
+When flash ROM is full and coping to new page, UIF DO was not properly
+copied.  This bug resulted losing the flag for user interaction.  Now,
+it's properly copied, keeping the setting of the feature.
+
+** Upgrade of Chopstx
+We use Chopstx 1.13.
+
+
+* Major changes in Gnuk 1.2.12
+
+  Released 2018-11-25, by NIIBE Yutaka
+
+** FST-01SZ fixes
+Fixes for Ack button support and serial number.
+
+
+* Major changes in Gnuk 1.2.11
+
+  Released 2018-11-12, by NIIBE Yutaka
+
+** Experimental ACK button support with FST-01SZ
+While OpenPGP card specification verison 3 has description for the
+"user interaction" button and data objects, there were no
+implementation.  To evaluate the feature, experimental support is
+added.
+
+** Upgrade of Chopstx
+We use Chopstx 1.12, which comes with ACK button driver and supports
+FST-01SZ.
+
+
 * Major changes in Gnuk 1.2.10
 
   Released 2018-05-10, by NIIBE Yutaka
@@ -864,6 +920,7 @@ Gnuk Token could run with GPG4WIN on MS Windows.  GPG4WIN runs with
 
 ** This is initial release.  Only it supports digital signing.
 
-Local Variables:
-mode: outline
-End:
+
+# Local Variables:
+# mode: outline
+# End:

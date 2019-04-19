@@ -37,7 +37,7 @@ When we only install "gnupg2" package for 2.0 (with no "gnupg" package),
 there will be no udev rules (there is a bug report #543217 for this issue).
 In this case, we need something like this in /etc/udev/rules.d/60-gnuk.rules::
 
-    SUBSYSTEMS=="usb", ATTRS{idVendor}=="234b", ATTRS{idProduct}=="0000",   \
+    SUBSYSTEMS=="usb", ATTR{idVendor}=="234b", ATTR{idProduct}=="0000",   \
     ENV{ID_SMARTCARD_READER}="1", ENV{ID_SMARTCARD_READER_DRIVER}="gnupg"
 
 Usually, udev daemon automatically handles for the changes of configuration

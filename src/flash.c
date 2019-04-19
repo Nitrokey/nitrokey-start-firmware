@@ -71,7 +71,7 @@ static const uint8_t *data_pool;
 static uint8_t *last_p;
 
 /* The first halfword is generation for the data page (little endian) */
-const uint8_t const flash_data[4] __attribute__ ((section (".gnuk_data"))) = {
+const uint8_t flash_data[4] __attribute__ ((section (".gnuk_data"))) = {
   0x00, 0x00, 0xff, 0xff
 };
 

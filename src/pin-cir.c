@@ -986,6 +986,7 @@ tim_main (void *arg)
     {
       chopstx_intr_wait (&interrupt);
       cir_timer_interrupt ();
+      chopstx_intr_done (&interrupt);
     }
 
   return NULL;
@@ -1006,6 +1007,7 @@ ext_main (void *arg)
     {
       chopstx_intr_wait (&interrupt);
       cir_ext_interrupt ();
+      chopstx_intr_done (&interrupt);
     }
 
   return NULL;
