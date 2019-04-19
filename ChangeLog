@@ -1,3 +1,219 @@
+2019-03-04  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* VERSION: 1.2.14.
+
+	* chopstx: Update to 1.14.
+
+	* tool/gnuk_token.py: Add 1209:2440.
+
+2019-02-24  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/usb-ccid.c (ccid_thread): Clean up the ack button state
+	at reset (by SET_INTERFACE).
+
+	* tool/gnuk_token.py (gnuk_token.__init__): Add back
+	setAltInterface to issue SET_INTERFACE control transfer.
+
+2019-02-22  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* tool/gnuk_get_random.py: New.
+
+	* src/openpgp.c (cmd_external_authenticate): move
+	ACKBTN_SUPPORT to...
+	(cmd_get_challenge): ... here.
+
+	* src/gnuk.h (EV_*): Change the values.
+
+	* src/usb-ccid.c (GPG_ACK_TIMEOUT): New.
+	(ccid_thread): Implement timout for the user interaction.
+
+2019-02-21  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* GNUK_USB_DEVICE_ID: Add 1209:2440.
+
+2018-12-26  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* VERSION: 1.2.13.
+
+2018-12-22  Peter Lebbing <peter@digitalbrains.com>
+
+	* src/main.c (device_initialize_once): Fill the stack address and
+	reset vector of Gnuk application (was the one of old SYS).
+	Reset the board after updating the first five pages of flash.
+
+2018-12-21  Peter Lebbing <peter@digitalbrains.com>
+
+	* src/main.c [DFU_SUPPORT] (flash_write_any): New.
+	(device_initialize_once): Overwrite DFU bootloader by SYS.
+	(main): Use SYS at ORIGIN_REAL.
+
+	* src/stdaln-sys.ld.in: New.
+
+	* src/Makefile [USE_DFU] (OBJS_ADD): Add standalone SYS object.
+	Add rules for stdaln-sys-bin.o and src/stdaln-sys.ld.
+
+	* src/configure: Generate stdaln-sys.ld.
+	[MAPLE_MINI]: Tweak ORIGIN and FLASH_SIZE.
+	(ORIGIN_DEFINE, ORIGIN_REAL_DEFINE): New macros.
+	(USE_DFU): New make variable.
+
+	* src/config.h.in (ORIGIN_DEFINE, ORIGIN_REAL_DEFINE): New.
+
+2018-12-20  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* chopstx: Update to 1.13.
+
+2018-12-07  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/gnuk.h (EV_EXEC_ACK_REQUIRED): Have precedence
+	than EV_EXEC_FINISHED.
+
+2018-12-06  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/usb-ccid.c (ccid_thread): Priority of handling
+	EV_TX_FINISHED is most important.  Don't handle
+	Ack button event when c->tx_busy = 1.
+
+2018-12-05  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/openpgp.c (cmd_external_authenticate): Support
+	ACK button for firmware update.
+
+2018-12-04  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/openpgp-do.c (gpg_data_copy): Fix for NR_DO_UIF_SIG.
+
+2018-11-25  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* VERSION: 1.2.12.
+
+2018-11-21  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/usb-ccid.c (ccid_thread): Fix a race condition sending
+	result APDU by ack button, time out, sending time extension block
+	again while tx_busy=1.
+
+2018-11-17  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/main.c (device_initialize_once): Depends on MHZ to
+	distinguish GD32F103.
+	* src/openpgp-do.c (do_openpgpcard_aid): Ditto.
+
+2018-11-12  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* VERSION: 1.2.11.
+
+	* chopstx: Update to 1.12.
+	* src/configure (ackbtn_support): Always yes.
+	* src/usb-ccid.c: Fix comma separator.
+
+2018-11-09  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* tool/kdf_calc.py (kdf_calc): Use libgcrypt.so.20.
+
+2018-11-09  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/openpgp.c (cmd_pso, cmd_internal_authenticate): Use
+	ccid_comm.
+
+	* src/usb-ccid.c (struct ccid): New field tx_busy.
+	(ccid_error, ccid_power_on, ccid_send_status, ccid_power_off)
+	(ccid_send_data_block_internal, ccid_send_data_block_0x9000)
+	(ccid_send_data_block_gr, ccid_send_params): Set c->tx_busy.
+	(ccid_state_p): Remove.
+	(ccid_get_ccid_state): New.
+	(ccid_thread): Only handle EV_TX_FINISHED event when c->tx_busy.
+
+	* src/usb_ctrl.c (usb_setup, usb_ctrl_write_finish): Use
+	ccid_get_ccid_state.
+	* src/main.c (display_status_code): Likewise.
+
+2018-11-09  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/usb-ccid.c (ccid_handle_data): Set c->state for pinpad input.
+	(ccid_send_data_block_internal): Fix the case of len == 0.
+
+	* src/main.c (display_status_code): There is
+	no case where ccid_state == CCID_STATE_RECEIVE.
+	* src/gnuk.h (CCID_STATE_RECEIVE): Remove.
+	(CCID_STATE_SEND): Remove.
+
+2018-10-12  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/usb-ccid.c (ccid_thread): Notify host about ack button.
+
+2018-10-02  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/stack-def.h (SIZE_0): Increase.
+
+	* chopstx: Update to 1.11.
+
+2018-10-01  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/gnuk.h (EV_EXEC_ACK_REQUIRED): New.
+	(EV_EXEC_FINISHED_ACK): Remove.
+	(CCID_STATE_CONFIRM_ACK): Remove.
+	(CCID_STATE_ACK_REQUIRED_0, CCID_STATE_ACK_REQUIRED_1): New.
+	* src/openpgp.c (cmd_pso): Send EV_EXEC_ACK_REQUIRED, if needed.
+	(cmd_internal_authenticate): Likewise.
+	(process_command_apdu): No return value.
+	(openpgp_card_thread): Always send EV_EXEC_FINISHED.
+	* src/usb-ccid.c (ccid_send_data_block_time_extension): Follow the
+	change of state.
+	(ccid_handle_data, ccid_handle_timeout): Likewise.
+	(ccid_thread): Handle EV_EXEC_ACK_REQUIRED.
+	Change for LED blink.
+	* src/main.c (main): LED blink during waiting ACK.
+
+2018-09-27  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/gnuk.h (NR_DO_UIF_SIG, NR_DO_UIF_DEC, NR_DO_UIF_AUT): New.
+	* src/openpgp-do.c (rw_uif) [ACKBTN_SUPPORT]: New.
+	(GPG_DO_UIF_SIG, GPG_DO_UIF_DEC, GPG_DO_UIF_AUT): New.
+	(feature_mngmnt) [ACKBTN_SUPPORT]: New.
+	(cmp_app_data, cmp_discretionary): Add ACKBTN_SUPPORT.
+	(gpg_do_table): Add for GPG_DO_UIF_SIG, GPG_DO_UIF_DEC,
+	GPG_DO_UIF_AUT, and GPG_DO_FEATURE_MNGMNT.
+	(gpg_do_get_uif) [ACKBTN_SUPPORT]: New.
+	(gpg_data_scan): Handle uif_flags.
+	* src/openpgp.c (process_command_apdu) [ACKBTN_SUPPORT]: Add user
+	interaction handling.
+
+2018-09-27  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/gnuk.h (LED_WAIT_FOR_BUTTON): New.
+	* src/main.c (main): Blink rapidly when asking ACK.
+	* src/usb-ccid.c (ccid_thread): Use LED_WAIT_FOR_BUTTON.
+
+2018-09-27  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/config.h.in: Add @ACKBTN_DEFINE@.
+	* src/configure: Add ACKBTN_SUPPORT.
+	* src/gnuk.h (EV_EXEC_FINISHED_ACK): New.
+	(CCID_STATE_CONFIRM_ACK): New.
+	* src/openpgp.c (process_command_apdu): Change for cmd_pso, and
+	cmd_internal_authenticate.
+	* src/usb-ccid.c (ccid_send_data_block_time_extension): Report
+	time extension differently when waiting ack button.
+	(ccid_handle_data): Support case of CCID_STATE_CONFIRM_ACK.
+	(ccid_handle_timeout): Likewise.
+	(ack_intr) [ACKBTN_SUPPORT]: New.
+	(ccid_thread) [ACKBTN_SUPPORT]: Add ack button handling.
+
+2018-09-26  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* chopstx: Update.
+	* src/usb-ccid.c (usb_event_handle): Fix for chopstx_intr_done.
+	* src/pin-cir.c (tim_main, ext_main): Likewise.
+
+	* src/configure (FST_01SZ): Set MHZ=96.
+
+2018-07-04  Szczepan Zalega <szczepan@nitrokey.com>
+
+	* tool/upgrade_by_passwd.py: Catch exception, when no KDF data is
+	found.
+	Output 'second' for 1 second.
+
 2018-05-10  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* VERSION: 1.2.10.

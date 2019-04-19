@@ -54,7 +54,7 @@ setting).  It should have lines something like: ::
   # Gnuk Token by FSIJ
 
   SUBSYSTEMS=="usb", ACTION=="add", \
-    ATTRS{idVendor}=="234b", ATTRS{idProduct}=="0000", \
+    ATTR{idVendor}=="234b", ATTR{idProduct}=="0000", \
     ENV{ID_SMARTCARD_READER}="1", ENV{ID_SMARTCARD_READER_DRIVER}="gnupg"
 
 I have those lines in /etc/udev/rules.d/69-gnuk.rules.

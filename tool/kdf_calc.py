@@ -36,7 +36,7 @@ GCRY_MD_SHA256  = 8
 def kdf_calc(pw_string, salt_byte, iterations):
     ffi = FFI()
     ffi.cdef(DEF_gcry_kdf_derive)
-    libgcrypt = ffi.dlopen("libgcrypt.so")
+    libgcrypt = ffi.dlopen("libgcrypt.so.20")
     if isinstance(pw_string, str):
         pw_byte = pw_string.encode('UTF-8')
     else:

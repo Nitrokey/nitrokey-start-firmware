@@ -44,6 +44,7 @@ pinpad=no
 certdo=no
 hid_card_change=no
 factory_reset=no
+ackbtn_support=yes
 flash_override=""
 # For emulation
 prefix=/usr/local
@@ -135,6 +136,7 @@ Configuration:
 			supported targets are:
 			   FST_01
 			   FST_01G
+			   FST_01SZ
 			   OLIMEX_STM32_H103
 			   MAPLE_MINI
 			   ST_DONGLE
@@ -201,6 +203,9 @@ STBEE)
 BLUE_PILL_G)
   MHZ=96
   ;;
+FST_01SZ)
+  MHZ=96
+  ;;
 *)
   ;;
 esac
@@ -255,6 +260,8 @@ else
   echo "Debug option disabled"
 fi
 
+ORIGIN_REAL=0x08000000
+ORIGIN_REAL_DEFINE="#define ORIGIN_REAL $ORIGIN_REAL"
 # --with-dfu option
 if test "$with_dfu" = "yes"; then
   if test "$target" = "FST_01" -o "$target" = "FST_01G" \
@@ -263,15 +270,23 @@ if test "$with_dfu" = "yes"; then
       exit 1
   fi
   echo "Configured for DFU"
-  ORIGIN=0x08003000
-  FLASH_SIZE=$((FLASH_SIZE - 12))
+  if test "$target" = "MAPLE_MINI"; then
+    # Note that the default bootloader is too large, need for instance
+    # STM32duino for DFU on Maple Mini
+    ORIGIN=0x08002000
+    FLASH_SIZE=$((FLASH_SIZE - 8))
+  else
+    ORIGIN=0x08003000
+    FLASH_SIZE=$((FLASH_SIZE - 12))
+  fi
   DFU_DEFINE="#define DFU_SUPPORT 1"
 else
   with_dfu=no
   echo "Configured for bare system (no-DFU)"
-  ORIGIN=0x08000000
+  ORIGIN=${ORIGIN_REAL}
   DFU_DEFINE="#undef DFU_SUPPORT"
 fi
+ORIGIN_DEFINE="#define ORIGIN $ORIGIN"
 
 # --enable-pinpad option
 if test "$pinpad" = "no"; then
@@ -311,6 +326,15 @@ if test "$factory_reset" = "yes"; then
 else
   LIFE_CYCLE_MANAGEMENT_DEFINE="#undef LIFE_CYCLE_MANAGEMENT_SUPPORT"
   echo "Life cycle management is NOT supported"
+fi
+
+# Acknowledge button support
+if test "$ackbtn_support" = "yes"; then
+  ACKBTN_DEFINE="#define ACKBTN_SUPPORT 1"
+  echo "Acknowledge button is supported"
+else
+  ACKBTN_DEFINE="#undef ACKBTN_SUPPORT"
+  echo "Acknowledge button is not supported"
 fi
 
 ### !!! Replace following string of "FSIJ" to yours !!! ####
@@ -456,6 +480,12 @@ fi
  echo "$PINPAD_MAKE_OPTION";
  echo "ENABLE_FRAUCHEKY=$enable_fraucheky";
  echo "ENABLE_OUTPUT_HEX=$enable_hexoutput"
+ if test "$ackbtn_support" = "yes"; then
+   echo "USE_ACKBTN=yes"
+ fi
+ if test "$with_dfu" = "yes"; then
+   echo "USE_DFU=yes"
+ fi
  if test "$emulation" = "yes"; then
    echo "prefix=$prefix"
    echo "exec_prefix=$exec_prefix"
@@ -476,13 +506,18 @@ else
       -e "s/@FLASH_PAGE_SIZE@/$FLASH_PAGE_SIZE/" \
 	< gnuk.ld.in > gnuk.ld
 fi
+sed -e "s/@ORIGIN_REAL@/$ORIGIN_REAL/" -e "s/@MEMORY_SIZE@/$MEMORY_SIZE/" \
+	< stdaln-sys.ld.in > stdaln-sys.ld
 sed -e "s/@DEBUG_DEFINE@/$DEBUG_DEFINE/" \
     -e "s/@DFU_DEFINE@/$DFU_DEFINE/" \
+    -e "s/@ORIGIN_DEFINE@/$ORIGIN_DEFINE/" \
+    -e "s/@ORIGIN_REAL_DEFINE@/$ORIGIN_REAL_DEFINE/" \
     -e "s/@PINPAD_DEFINE@/$PINPAD_DEFINE/" \
     -e "s/@PINPAD_MORE_DEFINE@/$PINPAD_MORE_DEFINE/" \
     -e "s/@CERTDO_DEFINE@/$CERTDO_DEFINE/" \
     -e "s/@HID_CARD_CHANGE_DEFINE@/$HID_CARD_CHANGE_DEFINE/" \
     -e "s/@LIFE_CYCLE_MANAGEMENT_DEFINE@/$LIFE_CYCLE_MANAGEMENT_DEFINE/" \
+    -e "s/@ACKBTN_DEFINE@/$ACKBTN_DEFINE/" \
     -e "s/@SERIALNO_STR_LEN_DEFINE@/$SERIALNO_STR_LEN_DEFINE/" \
 	< config.h.in > config.h
 exit 0

@@ -24,17 +24,18 @@ extern struct apdu apdu;
 void ccid_card_change_signal (int how);
 
 /* CCID thread */
-#define EV_RX_DATA_READY   1 /* USB Rx data available  */
-#define EV_EXEC_FINISHED   2 /* OpenPGP Execution finished */
-#define EV_TX_FINISHED     4 /* CCID Tx finished  */
-#define EV_CARD_CHANGE     8
+#define EV_CARD_CHANGE        1
+#define EV_TX_FINISHED        2 /* CCID Tx finished  */
+#define EV_EXEC_ACK_REQUIRED  4 /* OpenPGPcard Execution ACK required */
+#define EV_EXEC_FINISHED      8 /* OpenPGPcard Execution finished */
+#define EV_RX_DATA_READY     16 /* USB Rx data available  */
 
 /* OpenPGPcard thread */
-#define EV_PINPAD_INPUT_DONE      1
-#define EV_EXIT                   2
+#define EV_MODIFY_CMD_AVAILABLE   1
+#define EV_VERIFY_CMD_AVAILABLE   2
 #define EV_CMD_AVAILABLE          4
-#define EV_VERIFY_CMD_AVAILABLE   8
-#define EV_MODIFY_CMD_AVAILABLE  16
+#define EV_EXIT                   8
+#define EV_PINPAD_INPUT_DONE     16
 
 /* Maximum cmd apdu data is key import 24+4+256+256 (proc_key_import) */
 #define MAX_CMD_APDU_DATA_SIZE (24+4+256+256) /* without header */
@@ -53,17 +54,17 @@ enum ccid_state {
   CCID_STATE_NOCARD,		/* No card available */
   CCID_STATE_START,		/* Initial */
   CCID_STATE_WAIT,		/* Waiting APDU */
-				/* Busy1, Busy2, Busy3, Busy5 */
-  CCID_STATE_EXECUTE,		/* Busy4 */
-  CCID_STATE_RECEIVE,		/* APDU Received Partially */
-  CCID_STATE_SEND,		/* APDU Sent Partially */
 
-  CCID_STATE_EXITED,		/* ICC Thread Terminated */
+  CCID_STATE_EXECUTE,		/* Executing command */
+  CCID_STATE_ACK_REQUIRED_0,	/* Ack required (executing)*/
+  CCID_STATE_ACK_REQUIRED_1,	/* Waiting user's ACK (execution finished) */
+
+  CCID_STATE_EXITED,		/* CCID Thread Terminated */
   CCID_STATE_EXEC_REQUESTED,	/* Exec requested */
 };
 
 
-extern enum ccid_state *const ccid_state_p;
+enum ccid_state ccid_get_ccid_state (void);
 
 extern volatile uint8_t auth_status;
 #define AC_NONE_AUTHORIZED	0x00
@@ -123,8 +124,8 @@ const uint8_t *gpg_get_firmware_update_key (uint8_t keyno);
 
 enum kind_of_key {
   GPG_KEY_FOR_SIGNING = 0,
-  GPG_KEY_FOR_DECRYPTION,
-  GPG_KEY_FOR_AUTHENTICATION,
+  GPG_KEY_FOR_DECRYPTION = 1,
+  GPG_KEY_FOR_AUTHENTICATION = 2,
 };
 
 enum size_of_key {
@@ -296,6 +297,7 @@ void gpg_increment_digital_signature_counter (void);
 void gpg_do_get_initial_pw_setting (int is_pw3, int *r_len,
 				    const uint8_t **r_p);
 int gpg_do_kdf_check (int len, int how_many);
+int gpg_do_get_uif (enum kind_of_key kk);
 
 
 void fatal (uint8_t code) __attribute__ ((noreturn));
@@ -378,7 +380,17 @@ extern uint8_t admin_authorized;
 #define NR_KEY_ALGO_ATTR_DEC	0xf2
 #define NR_KEY_ALGO_ATTR_AUT	0xf3
 /*
- * NR_UINT_SOMETHING could be here...  Use 0xf[456789abcd]
+ * Representation of User Interaction Flag:
+ *  0 (UIF disabled):            0xf?00 or No record in flash memory
+ *  1 (UIF enabled):             0xf?01
+ *  2 (UIF permanently enabled): 0xf?02
+ *
+ */
+#define NR_DO_UIF_SIG		0xf6
+#define NR_DO_UIF_DEC		0xf7
+#define NR_DO_UIF_AUT		0xf8
+/*
+ * NR_UINT_SOMETHING could be here...  Use 0xf[459abcd]
  */
 /* 123-counters: Recorded in flash memory by 2-halfword (4-byte).  */
 /*
@@ -434,6 +446,7 @@ extern const uint8_t gnuk_string_serial[];
 #define LED_GNUK_EXEC		 32
 #define LED_START_COMMAND	 64
 #define LED_FINISH_COMMAND	128
+#define LED_WAIT_FOR_BUTTON	256
 #define LED_OFF	 LED_FINISH_COMMAND
 void led_blink (int spec);
 
@@ -460,6 +473,7 @@ extern uint8_t pin_input_len;
 int pinpad_getline (int msg_code, uint32_t timeout_usec);
 
 #endif
+
 
 extern uint8_t _regnual_start, __heap_end__[];
 

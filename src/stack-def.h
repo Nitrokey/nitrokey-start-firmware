@@ -3,7 +3,7 @@
 #define SIZE_2 4096
 #define SIZE_3 (5 * 4096)
 #else
-#define SIZE_0 0x0150 /* Main         */
+#define SIZE_0 0x0160 /* Main         */
 #define SIZE_1 0x01a0 /* CCID         */
 #define SIZE_2 0x0180 /* RNG          */
 #if MEMORY_SIZE >= 32

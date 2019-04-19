@@ -52,6 +52,7 @@ regnual-no-vidpid.elf: $(OBJS) $(LDSCRIPT)
 	$(CC) $(LDFLAGS) -o regnual-no-vidpid.elf $(OBJS)
 
 clean:
-	-rm -f $(OBJS) regnual.elf regnual.hex regnual.bin *.lst
+	-rm -f $(OBJS) regnual-no-vidpid.elf regnual.elf regnual.hex regnual.bin \
+		*.lst
 
 distclean: clean
