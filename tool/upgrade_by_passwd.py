@@ -23,20 +23,28 @@ License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-from subprocess import check_output
 
+
+import argparse
+import binascii
+import os
+import rsa
+import sys
+import time
+
+from getpass import getpass
 from gnuk_token import get_gnuk_device, gnuk_devices_by_vidpid, \
      gnuk_token, regnual, SHA256_OID_PREFIX, crc32, parse_kdf_data
 from kdf_calc import kdf_calc
-
-import sys, binascii, time, os
-import rsa
 from struct import pack
+from subprocess import check_output
+from usb_strings import get_devices, print_device
+
 
 DEFAULT_PW3 = "12345678"
 BY_ADMIN = 3
-
 KEYNO_FOR_AUTH=2 
+
 
 def main(wait_e, keyno, passwd, data_regnual, data_upgrade):
     l = len(data_regnual)
@@ -53,7 +61,7 @@ def main(wait_e, keyno, passwd, data_regnual, data_upgrade):
     gnuk.cmd_select_openpgp()
     # Compute passwd data
     try:
-        kdf_data = gnuk.cmd_get_data(0x00, 0xf9).tostring()
+        kdf_data = gnuk.cmd_get_data(0x00, 0xf9).tobytes()
     except:
         kdf_data = b""
     if kdf_data == b"":
@@ -128,13 +136,10 @@ def main(wait_e, keyno, passwd, data_regnual, data_upgrade):
     print("Update procedure finished")
     return 0
 
-from getpass import getpass
-
 # This should be event driven, not guessing some period, or polling.
 DEFAULT_WAIT_FOR_REENUMERATION=1
 
 def validate_binary_file(path: str):
-    import os.path
     if not os.path.exists(path):
         raise argparse.ArgumentTypeError('Path does not exist: "{}"'.format(path))
     if not path.endswith('.bin'):
@@ -162,7 +167,6 @@ if __name__ == '__main__':
         print("Please change working directory to: %s" % os.path.dirname(os.path.abspath(__file__)))
         exit(1)
 
-    import argparse
     parser = argparse.ArgumentParser(description='Update tool for GNUK')
     parser.add_argument('regnual', type=validate_regnual, help='path to regnual binary')
     parser.add_argument('gnuk', type=validate_gnuk, help='path to gnuk binary')
@@ -195,7 +199,6 @@ if __name__ == '__main__':
     f.close()
     print("{}: {}".format(args.gnuk, len(data_upgrade)))
 
-    from usb_strings import get_devices, print_device
 
     dev_strings = get_devices()
     if len(dev_strings) > 1:
