@@ -52,38 +52,13 @@ def main(wait_e, keyno, passwd, data_regnual, data_upgrade):
     rsa_key = rsa.read_key_from_file('rsa_example.key')
     rsa_raw_pubkey = rsa.get_raw_pubkey(rsa_key)
 
+    # get devices and select
     gnuk = get_gnuk_device()
     gnuk.cmd_select_openpgp()
 
-    # Compute passwd data
-    try:
-        kdf_data = gnuk.cmd_get_data(0x00, 0xf9).tobytes()
-    except:
-        kdf_data = b""
-    if kdf_data == b"":
-        passwd_data = passwd.encode('UTF-8')
-    else:
-        algo, subalgo, iters, salt_user, salt_reset, salt_admin, \
-            hash_user, hash_admin = parse_kdf_data(kdf_data)
-        if salt_admin:
-            salt = salt_admin
-        else:
-            salt = salt_user
-        passwd_data = kdf_calc(passwd, salt, iters)
-
-    # And authenticate with the passwd data
-    try:
-        # id 3 is admin
-        gnuk.cmd_verify(3, passwd_data)
-    except ValueError as e:
-        print("Authentication failed (SW:", e,"). Wrong admin PIN?")
-        # get Admin PIN retry counter
-        try:
-            tries = gnuk.cmd_get_data(0x00, 0xc4)[6]
-        except ValueError as f:
-            tries = "UNKNOWN"
-        print(tries, "tries left.\n")
-        exit(1)
+    # authenticate
+    passwd_data = compute_passwd_data(gnuk)
+    authenticate_admin(gnuk, passwd_data)
 
     gnuk.cmd_write_binary(1+keyno, rsa_raw_pubkey, False)
 
@@ -159,6 +134,39 @@ def validate_regnual(path: str):
     validate_binary_file(path)
     validate_name(path, 'regnual')
     return path
+
+
+def authenticate_admin(gnuk, passwd_data):
+    try:
+        # id 3 is admin
+        gnuk.cmd_verify(3, passwd_data)
+    except ValueError as e:
+        print("Authentication failed (SW:", e,"). Wrong admin PIN?")
+        # get Admin PIN retry counter
+        try:
+            tries = gnuk.cmd_get_data(0x00, 0xc4)[6]
+        except ValueError as f:
+            tries = "UNKNOWN"
+        print(tries, "tries left.\n")
+        exit(1)
+
+
+def compute_passwd_data(gnuk):
+    try:
+        kdf_data = gnuk.cmd_get_data(0x00, 0xf9).tobytes()
+    except:
+        kdf_data = b""
+    if kdf_data == b"":
+        passwd_data = passwd.encode('UTF-8')
+    else:
+        algo, subalgo, iters, salt_user, salt_reset, salt_admin, \
+            hash_user, hash_admin = parse_kdf_data(kdf_data)
+        if salt_admin:
+            salt = salt_admin
+        else:
+            salt = salt_user
+        passwd_data = kdf_calc(passwd, salt, iters)
+
 
 
 if __name__ == '__main__':
