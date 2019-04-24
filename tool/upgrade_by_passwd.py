@@ -41,11 +41,6 @@ from subprocess import check_output
 from usb_strings import get_devices, print_device
 
 
-DEFAULT_PW3 = "12345678"
-BY_ADMIN = 3
-KEYNO_FOR_AUTH=2 
-
-
 def main(wait_e, keyno, passwd, data_regnual, data_upgrade):
     l = len(data_regnual)
     if (l & 0x03) != 0:
@@ -59,6 +54,7 @@ def main(wait_e, keyno, passwd, data_regnual, data_upgrade):
 
     gnuk = get_gnuk_device()
     gnuk.cmd_select_openpgp()
+
     # Compute passwd data
     try:
         kdf_data = gnuk.cmd_get_data(0x00, 0xf9).tobytes()
@@ -77,7 +73,8 @@ def main(wait_e, keyno, passwd, data_regnual, data_upgrade):
 
     # And authenticate with the passwd data
     try:
-        gnuk.cmd_verify(BY_ADMIN, passwd_data)
+        # id 3 is admin
+        gnuk.cmd_verify(3, passwd_data)
     except ValueError as e:
         print("Authentication failed (SW:", e,"). Wrong admin PIN?")
         # get Admin PIN retry counter
@@ -122,6 +119,7 @@ def main(wait_e, keyno, passwd, data_regnual, data_upgrade):
                 break
             except:
                 pass
+
     # Then, send upgrade program...
     mem_info = reg.mem_info()
     print("%08x:%08x" % mem_info)
@@ -136,8 +134,6 @@ def main(wait_e, keyno, passwd, data_regnual, data_upgrade):
     print("Update procedure finished")
     return 0
 
-# This should be event driven, not guessing some period, or polling.
-DEFAULT_WAIT_FOR_REENUMERATION=1
 
 def validate_binary_file(path: str):
     if not os.path.exists(path):
@@ -146,15 +142,18 @@ def validate_binary_file(path: str):
         raise argparse.ArgumentTypeError('Supplied file "{}" does not have ".bin" extension. Make sure you are sending correct file to the device.'.format(os.path.basename(path)))
     return path
 
+
 def validate_name(path: str, name: str):
     if name not in path:
         raise argparse.ArgumentTypeError('Supplied file "{}" does not have "{}" in name. Make sure you have not swapped the arguments.'.format(os.path.basename(path), name))
     return path
 
+
 def validate_gnuk(path: str):
     validate_binary_file(path)
     validate_name(path, 'gnuk')
     return path
+
 
 def validate_regnual(path: str):
     validate_binary_file(path)
@@ -171,22 +170,23 @@ if __name__ == '__main__':
     parser.add_argument('regnual', type=validate_regnual, help='path to regnual binary')
     parser.add_argument('gnuk', type=validate_gnuk, help='path to gnuk binary')
     parser.add_argument('-f', dest='default_password', action='store_true',
-                        default=False, help='use default Admin password: {}'.format(DEFAULT_PW3))
-    parser.add_argument('-e', dest='wait_e', default=DEFAULT_WAIT_FOR_REENUMERATION, type=int, help='time to wait for device to enumerate, after regnual was executed on device')
+                        default=False, help='use default Admin password: 12345678')
+    parser.add_argument('-e', dest='wait_e', default=1, type=int, help='time to wait for device to enumerate, after regnual was executed on device')
     parser.add_argument('-k', dest='keyno', default=0, type=int, help='selected key index')
     args = parser.parse_args()
 
     keyno = args.keyno
     passwd = None
+    # This should be event driven, not guessing some period, or polling.
     wait_e = args.wait_e
 
     if args.default_password:  # F for Factory setting
-        passwd = DEFAULT_PW3
+        passwd = "12345678"
     if not passwd:
         try:
             passwd = getpass("Admin password: ")
         except:
-            print('Quitting')
+            print('Failed getting admin password...')
             exit(2)
 
 
