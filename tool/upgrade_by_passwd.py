@@ -23,20 +23,23 @@ License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-from subprocess import check_output
 
+
+import argparse
+import binascii
+import os
+import rsa
+import sys
+import time
+
+from getpass import getpass
 from gnuk_token import get_gnuk_device, gnuk_devices_by_vidpid, \
      gnuk_token, regnual, SHA256_OID_PREFIX, crc32, parse_kdf_data
 from kdf_calc import kdf_calc
-
-import sys, binascii, time, os
-import rsa
 from struct import pack
+from subprocess import check_output
+from usb_strings import get_devices, print_device
 
-DEFAULT_PW3 = "12345678"
-BY_ADMIN = 3
-
-KEYNO_FOR_AUTH=2 
 
 def main(wait_e, keyno, passwd, data_regnual, data_upgrade):
     l = len(data_regnual)
@@ -49,25 +52,14 @@ def main(wait_e, keyno, passwd, data_regnual, data_upgrade):
     rsa_key = rsa.read_key_from_file('rsa_example.key')
     rsa_raw_pubkey = rsa.get_raw_pubkey(rsa_key)
 
+    # get devices and select
     gnuk = get_gnuk_device()
     gnuk.cmd_select_openpgp()
-    # Compute passwd data
-    try:
-        kdf_data = gnuk.cmd_get_data(0x00, 0xf9).tostring()
-    except:
-        kdf_data = b""
-    if kdf_data == b"":
-        passwd_data = passwd.encode('UTF-8')
-    else:
-        algo, subalgo, iters, salt_user, salt_reset, salt_admin, \
-            hash_user, hash_admin = parse_kdf_data(kdf_data)
-        if salt_admin:
-            salt = salt_admin
-        else:
-            salt = salt_user
-        passwd_data = kdf_calc(passwd, salt, iters)
-    # And authenticate with the passwd data
-    gnuk.cmd_verify(BY_ADMIN, passwd_data)
+
+    # authenticate
+    passwd_data = compute_passwd_data(gnuk)
+    authenticate_admin(gnuk, passwd_data)
+
     gnuk.cmd_write_binary(1+keyno, rsa_raw_pubkey, False)
 
     gnuk.cmd_select_openpgp()
@@ -102,6 +94,7 @@ def main(wait_e, keyno, passwd, data_regnual, data_upgrade):
                 break
             except:
                 pass
+
     # Then, send upgrade program...
     mem_info = reg.mem_info()
     print("%08x:%08x" % mem_info)
@@ -116,28 +109,26 @@ def main(wait_e, keyno, passwd, data_regnual, data_upgrade):
     print("Update procedure finished")
     return 0
 
-from getpass import getpass
-
-# This should be event driven, not guessing some period, or polling.
-DEFAULT_WAIT_FOR_REENUMERATION=1
 
 def validate_binary_file(path: str):
-    import os.path
     if not os.path.exists(path):
         raise argparse.ArgumentTypeError('Path does not exist: "{}"'.format(path))
     if not path.endswith('.bin'):
         raise argparse.ArgumentTypeError('Supplied file "{}" does not have ".bin" extension. Make sure you are sending correct file to the device.'.format(os.path.basename(path)))
     return path
 
+
 def validate_name(path: str, name: str):
     if name not in path:
         raise argparse.ArgumentTypeError('Supplied file "{}" does not have "{}" in name. Make sure you have not swapped the arguments.'.format(os.path.basename(path), name))
     return path
 
+
 def validate_gnuk(path: str):
     validate_binary_file(path)
     validate_name(path, 'gnuk')
     return path
+
 
 def validate_regnual(path: str):
     validate_binary_file(path)
@@ -145,32 +136,65 @@ def validate_regnual(path: str):
     return path
 
 
+def authenticate_admin(gnuk, passwd_data):
+    try:
+        # id 3 is admin
+        gnuk.cmd_verify(3, passwd_data)
+    except ValueError as e:
+        print("Authentication failed (SW:", e,"). Wrong admin PIN?")
+        # get Admin PIN retry counter
+        try:
+            tries = gnuk.cmd_get_data(0x00, 0xc4)[6]
+        except ValueError as f:
+            tries = "UNKNOWN"
+        print(tries, "tries left.\n")
+        exit(1)
+
+
+def compute_passwd_data(gnuk):
+    try:
+        kdf_data = gnuk.cmd_get_data(0x00, 0xf9).tobytes()
+    except:
+        kdf_data = b""
+    if kdf_data == b"":
+        passwd_data = passwd.encode('UTF-8')
+    else:
+        algo, subalgo, iters, salt_user, salt_reset, salt_admin, \
+            hash_user, hash_admin = parse_kdf_data(kdf_data)
+        if salt_admin:
+            salt = salt_admin
+        else:
+            salt = salt_user
+        passwd_data = kdf_calc(passwd, salt, iters)
+
+
+
 if __name__ == '__main__':
     if os.getcwd() != os.path.dirname(os.path.abspath(__file__)):
         print("Please change working directory to: %s" % os.path.dirname(os.path.abspath(__file__)))
         exit(1)
 
-    import argparse
     parser = argparse.ArgumentParser(description='Update tool for GNUK')
     parser.add_argument('regnual', type=validate_regnual, help='path to regnual binary')
     parser.add_argument('gnuk', type=validate_gnuk, help='path to gnuk binary')
     parser.add_argument('-f', dest='default_password', action='store_true',
-                        default=False, help='use default Admin password: {}'.format(DEFAULT_PW3))
-    parser.add_argument('-e', dest='wait_e', default=DEFAULT_WAIT_FOR_REENUMERATION, type=int, help='time to wait for device to enumerate, after regnual was executed on device')
+                        default=False, help='use default Admin password: 12345678')
+    parser.add_argument('-e', dest='wait_e', default=1, type=int, help='time to wait for device to enumerate, after regnual was executed on device')
     parser.add_argument('-k', dest='keyno', default=0, type=int, help='selected key index')
     args = parser.parse_args()
 
     keyno = args.keyno
     passwd = None
+    # This should be event driven, not guessing some period, or polling.
     wait_e = args.wait_e
 
     if args.default_password:  # F for Factory setting
-        passwd = DEFAULT_PW3
+        passwd = "12345678"
     if not passwd:
         try:
             passwd = getpass("Admin password: ")
         except:
-            print('Quitting')
+            print('Failed getting admin password...')
             exit(2)
 
 
@@ -183,7 +207,6 @@ if __name__ == '__main__':
     f.close()
     print("{}: {}".format(args.gnuk, len(data_upgrade)))
 
-    from usb_strings import get_devices, print_device
 
     dev_strings = get_devices()
     if len(dev_strings) > 1:
