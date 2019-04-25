@@ -194,7 +194,7 @@ if __name__ == '__main__':
     print_device(dev_strings[0])
 
     update_done = False
-    for attempt_counter in range(3):
+    for attempt_counter in range(1):
         try:
             # First 4096-byte in data_upgrade is SYS, so, skip it.
             main(wait_e, keyno, passwd, data_regnual, data_upgrade[4096:])
@@ -203,10 +203,16 @@ if __name__ == '__main__':
         except ValueError as e:
             if 'No ICC present' in str(e):
                 print('*** Could not connect to the device. Attempting to close scdaemon.')
+                print('*** Running: gpg-connect-agent "SCD KILLSCD" "SCD BYE" /bye')
                 result = check_output(["gpg-connect-agent",
                                        "SCD KILLSCD", "SCD BYE", "/bye"])
                 time.sleep(1)
-                print('*** Retrying...')
+                print('*** Please try again...')
+            else:
+                print('*** Could not proceed with the update. '
+                      'Please try again, and make sure the entered password is correct.')
+                break
+
         except:
             # unknown error, bail
             break
