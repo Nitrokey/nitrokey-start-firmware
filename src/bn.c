@@ -1,7 +1,8 @@
 /*
  * bn.c -- 256-bit (and 512-bit) bignum calculation
  *
- * Copyright (C) 2011, 2013, 2014 Free Software Initiative of Japan
+ * Copyright (C) 2011, 2013, 2014, 2019
+ *               Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
  * This file is a part of Gnuk, a GnuPG USB Token implementation.
@@ -412,17 +413,15 @@ bn256_cmp (const bn256 *A, const bn256 *B)
 void
 bn256_random (bn256 *X)
 {
-  const uint8_t *rand = random_bytes_get ();
+  int i, j;
+  const uint8_t *rand;
 
-  X->word[7] = ((uint32_t *)rand)[7];
-  X->word[6] = ((uint32_t *)rand)[6];
-  X->word[5] = ((uint32_t *)rand)[5];
-  X->word[4] = ((uint32_t *)rand)[4];
-  X->word[3] = ((uint32_t *)rand)[3];
-  X->word[2] = ((uint32_t *)rand)[2];
-  X->word[1] = ((uint32_t *)rand)[1];
-  X->word[0] = ((uint32_t *)rand)[0];
-
-  random_bytes_free (rand);
+  for (i = 0; i < 256/256; i++)
+    {
+      rand = random_bytes_get ();
+      for (j = 0; j < BN256_WORDS; j++)
+	X->word[i*BN256_WORDS+j] = ((uint32_t *)rand)[j];
+      random_bytes_free (rand);
+    }
 }
 #endif

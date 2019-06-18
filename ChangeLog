@@ -1,3 +1,7 @@
+2019-06-18  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/bn.c (bn256_random): More portable.
+
 2019-04-03  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* tests: Factor out tests into classes.
