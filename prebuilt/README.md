@@ -29,7 +29,7 @@ To set up such a virtual python environment following steps are needed (`python`
 ```
 virtualenv env3 --python python3
 . env3/bin/activate
-pip3 install pytest 
+pip3 install pytest  # development only - tests execution
 pip3 install pyusb
 ```
 You should set up this virtual environment in the `nitrokey-start-firmware` folder (see below).
@@ -60,6 +60,8 @@ diff before.status after.status
 ```
 
 ### Testing the device
+
+**Warning:** please do not use production devices (as in populated with user data, which should not be lost) to run the tests. The tests might remove or replace all data on the tested device.
 
 It is possible to test the device after flashing. Please make sure python 3 and python-pytest are installed (see requirements above). Now please run 
 ```
