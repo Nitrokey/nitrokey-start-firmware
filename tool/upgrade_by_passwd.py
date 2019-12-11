@@ -211,10 +211,12 @@ if __name__ == '__main__':
             else:
                 print('*** Could not proceed with the update. '
                       'Please try again, and make sure the entered password is correct.')
+                print('*** Found error: {}'.format(str(e)))
                 break
 
-        except:
+        except Exception as e:
             # unknown error, bail
+            print('*** Found error: {}'.format(str(e)))
             break
 
     if not update_done:
