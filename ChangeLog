@@ -1,3 +1,7 @@
+2019-12-30  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* chopstx: Update to 1.18.
+
 2019-06-18  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* src/bn.c (bn256_random): More portable.
