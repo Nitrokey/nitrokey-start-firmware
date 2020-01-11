@@ -20,7 +20,7 @@ def get_gpg_public_key(keygrip):
     pos_last = key.index(")(1:e3:")
     key = key[pos:pos_last]
     if len(key) != 256:
-        raise ValueError, binascii.hexlify(key)
+        raise ValueError(binascii.hexlify(key))
     return key
 
 if __name__ == '__main__':

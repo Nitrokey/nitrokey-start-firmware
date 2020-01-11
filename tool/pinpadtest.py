@@ -82,7 +82,7 @@ class Card(object):
             elif code == FEATURE_MODIFY_PIN_DIRECT:
                 self.modify_ioctl = ioctl
         if self.verify_ioctl == -1:
-            raise ValueError, "Not supported"
+            raise ValueError("Not supported")
 
     def cmd_select_openpgp(self):
         apdu = [0x00, 0xa4, 0x04, 0x00, 6, 0xd2, 0x76, 0x00, 0x01, 0x24, 0x01 ]
@@ -90,7 +90,7 @@ class Card(object):
         if sw1 == 0x61:         # More data
             response, sw1, sw2 = self.connection.transmit([0x00, 0xc0, 0, 0, sw2])
         elif not (sw1 == 0x90 and sw2 == 0x00):
-            raise ValueError, ("cmd_select_openpgp %02x %02x" % (sw1, sw2))
+            raise ValueError("cmd_select_openpgp %02x %02x" % (sw1, sw2))
 
     def possibly_add_dummy_byte(self):
         if self.another_byte:
@@ -135,11 +135,11 @@ class Card(object):
         sw1 = data[0]
         sw2 = data[1]
         if not (sw1 == 0x90 and sw2 == 0x00):
-            raise ValueError, ("cmd_verify_pinpad %02x %02x" % (sw1, sw2))
+            raise ValueError("cmd_verify_pinpad %02x %02x" % (sw1, sw2))
 
     def send_modify_pinpad(self, apdu, single_step, command):
         if self.modify_ioctl == -1:
-            raise ValueError, "Not supported"
+            raise ValueError("Not supported")
         pin_modify = [ 0x00, # bTimerOut
                        0x00, # bTimerOut2
                        0x82, # bmFormatString: Byte, pos=0, left, ASCII.
@@ -171,7 +171,7 @@ class Card(object):
         sw1 = data[0]
         sw2 = data[1]
         if not (sw1 == 0x90 and sw2 == 0x00):
-            raise ValueError, ("%s %02x %02x" % (command, sw1, sw2))
+            raise ValueError("%s %02x %02x" % (command, sw1, sw2))
 
     def cmd_reset_retry_counter(self, who, data):
         if who == BY_ADMIN:
@@ -180,7 +180,7 @@ class Card(object):
             apdu = [0x00, 0x2c, 0x00, 0x81, len(data) ] + data # BY_USER with resetcode
         response, sw1, sw2 = self.connection.transmit(apdu)
         if not (sw1 == 0x90 and sw2 == 0x00):
-            raise ValueError, ("cmd_reset_retry_counter %02x %02x" % (sw1, sw2))
+            raise ValueError("cmd_reset_retry_counter %02x %02x" % (sw1, sw2))
 
     # Note: CCID specification doesn't permit this (only 0x20 and 0x24)
     def cmd_reset_retry_counter_pinpad(self, who):
@@ -195,7 +195,7 @@ class Card(object):
         apdu = [0x00, 0xda, 0x00, 0xd3, len(data) ] + data # BY_ADMIN
         response, sw1, sw2 = self.connection.transmit(apdu)
         if not (sw1 == 0x90 and sw2 == 0x00):
-            raise ValueError, ("cmd_put_resetcode %02x %02x" % (sw1, sw2))
+            raise ValueError("cmd_put_resetcode %02x %02x" % (sw1, sw2))
 
     # Note: CCID specification doesn't permit this (only 0x20 and 0x24)
     def cmd_put_resetcode_pinpad(self):
@@ -225,8 +225,8 @@ def main(who, method, add_a_byte, pinmin, pinmax, change_by_two_steps, fixed):
     card.connection.connect()
 
     ident = card.connection.getReader()
-    print "Reader/Token:", ident
-    print "ATR:", toHexString( card.connection.getATR() )
+    print("Reader/Token:", ident)
+    print("ATR:", toHexString( card.connection.getATR() ))
 
     if ident == COVADIS_VEGA_ALPHA:
         card.cmd_vega_alpha_disable_empty_verify()
@@ -236,29 +236,29 @@ def main(who, method, add_a_byte, pinmin, pinmax, change_by_two_steps, fixed):
     card.cmd_select_openpgp()
     if method == "verify":
         if who == BY_USER:
-            print "Please input User's PIN"
+            print("Please input User's PIN")
         else:
-            print "Please input Admin's PIN"
+            print("Please input Admin's PIN")
         card.cmd_verify_pinpad(who)
     elif method == "change":
         if change_by_two_steps:
             if who == BY_USER:
-                print "Please input User's PIN"
+                print("Please input User's PIN")
             else:
-                print "Please input Admin's PIN"
+                print("Please input Admin's PIN")
             card.cmd_verify_pinpad(who)
             if who == BY_USER:
-                print "Please input New User's PIN twice"
+                print("Please input New User's PIN twice")
             else:
-                print "Please input New Admin's PIN twice"
+                print("Please input New Admin's PIN twice")
             card.cmd_change_reference_data_pinpad(who, True)
         else:
             if who == BY_USER:
-                print "Please input User's PIN"
-                print "and New User's PIN twice"
+                print("Please input User's PIN")
+                print("and New User's PIN twice")
             else:
-                print "Please input Admin's PIN"
-                print "and New Admin's PIN twice"
+                print("Please input Admin's PIN")
+                print("and New Admin's PIN twice")
             card.cmd_change_reference_data_pinpad(who, False)
     elif method == "unblock":
         if change_by_two_steps:
@@ -268,66 +268,66 @@ def main(who, method, add_a_byte, pinmin, pinmax, change_by_two_steps, fixed):
                 newpin=s2l(getpass("Please input New User's PIN from keyboard: "))
                 card.cmd_reset_retry_counter(who,resetcode+newpin)
             else:
-                print "Please input Admin's PIN"
+                print("Please input Admin's PIN")
                 card.cmd_verify_pinpad(BY_ADMIN)
                 newpin=s2l(getpass("Please input New User's PIN from keyboard: "))
                 card.cmd_reset_retry_counter(who,newpin)
         else:
             if who == BY_USER:
-                print "Please input reset code"
-                print "and New User's PIN twice"
+                print("Please input reset code")
+                print("and New User's PIN twice")
             else:
-                print "Please input Admin's PIN"
+                print("Please input Admin's PIN")
                 card.cmd_verify_pinpad(BY_ADMIN)
-                print "Please input New User's PIN twice"
+                print("Please input New User's PIN twice")
             card.cmd_reset_retry_counter_pinpad(who)
     elif method == "put":
         if change_by_two_steps:
             # It means using keyboard for new PIN
-            print "Please input Admin's PIN"
+            print("Please input Admin's PIN")
             card.cmd_verify_pinpad(BY_ADMIN)
             resetcode=s2l(getpass("Please input New Reset Code from keyboard: "))
             card.cmd_put_resetcode(resetcode)
         else:
-            print "Please input Admin's PIN"
+            print("Please input Admin's PIN")
             card.cmd_verify_pinpad(BY_ADMIN)
-            print "Please input New Reset Code twice"
+            print("Please input New Reset Code twice")
             card.cmd_put_resetcode_pinpad()
     else:
-        raise ValueError, method
+        raise ValueError(method)
     card.connection.disconnect()
 
-    print "OK."
+    print("OK.")
     return 0
 
 def print_usage():
-    print "pinpad-test: testing pinentry of PC/SC card reader"
-    print "    help:"
-    print "\t--help:\t\tthis message"
-    print "    method:\t\t\t\t\t\t\t[verify]"
-    print "\t--verify:\tverify PIN"
-    print "\t--change:\tchange PIN (old PIN, new PIN twice)"
-    print "\t--change2:\tchange PIN by two steps (old PIN, new PIN twice)"
-    print "\t--unblock:\tunblock PIN (admin PIN/resetcode, new PIN twice)"
-    print "\t--unblock2:\tunblock PIN (admin PIN:pinpad, new PIN:kbd)"
-    print "\t--put:\t\tsetup resetcode (admin PIN, new PIN twice)"
-    print "\t--put2::\t\tsetup resetcode (admin PIN:pinpad, new PIN:kbd)"
-    print "    options:"
-    print "\t--fixed N:\tUse fixed length input"
-    print "\t--admin:\tby administrator\t\t\t[False]"
-    print "\t--add:\t\tadd a dummy byte at the end of APDU\t[False]"
-    print "\t--pinmin:\tspecify minimum length of PIN\t\t[6]"
-    print "\t--pinmax:\tspecify maximum length of PIN\t\t[15]"
-    print "EXAMPLES:"
-    print "   $ pinpad-test                   # verify user's PIN "
-    print "   $ pinpad-test --admin           # verify admin's PIN "
-    print "   $ pinpad-test --change          # change user's PIN "
-    print "   $ pinpad-test --change --admin  # change admin's PIN "
-    print "   $ pinpad-test --change2         # change user's PIN by two steps"
-    print "   $ pinpad-test --change2 --admin # change admin's PIN by two steps"
-    print "   $ pinpad-test --unblock         # change user's PIN by reset code"
-    print "   $ pinpad-test --unblock --admin # change user's PIN by admin's PIN"
-    print "   $ pinpad-test --put             # setup resetcode "
+    print("pinpad-test: testing pinentry of PC/SC card reader")
+    print("    help:")
+    print("\t--help:\t\tthis message")
+    print("    method:\t\t\t\t\t\t\t[verify]")
+    print("\t--verify:\tverify PIN")
+    print("\t--change:\tchange PIN (old PIN, new PIN twice)")
+    print("\t--change2:\tchange PIN by two steps (old PIN, new PIN twice)")
+    print("\t--unblock:\tunblock PIN (admin PIN/resetcode, new PIN twice)")
+    print("\t--unblock2:\tunblock PIN (admin PIN:pinpad, new PIN:kbd)")
+    print("\t--put:\t\tsetup resetcode (admin PIN, new PIN twice)")
+    print("\t--put2::\t\tsetup resetcode (admin PIN:pinpad, new PIN:kbd)")
+    print("    options:")
+    print("\t--fixed N:\tUse fixed length input")
+    print("\t--admin:\tby administrator\t\t\t[False]")
+    print("\t--add:\t\tadd a dummy byte at the end of APDU\t[False]")
+    print("\t--pinmin:\tspecify minimum length of PIN\t\t[6]")
+    print("\t--pinmax:\tspecify maximum length of PIN\t\t[15]")
+    print("EXAMPLES:")
+    print("   $ pinpad-test                   # verify user's PIN ")
+    print("   $ pinpad-test --admin           # verify admin's PIN ")
+    print("   $ pinpad-test --change          # change user's PIN ")
+    print("   $ pinpad-test --change --admin  # change admin's PIN ")
+    print("   $ pinpad-test --change2         # change user's PIN by two steps")
+    print("   $ pinpad-test --change2 --admin # change admin's PIN by two steps")
+    print("   $ pinpad-test --unblock         # change user's PIN by reset code")
+    print("   $ pinpad-test --unblock --admin # change user's PIN by admin's PIN")
+    print("   $ pinpad-test --put             # setup resetcode ")
 
 if __name__ == '__main__':
     who = BY_USER
@@ -374,7 +374,7 @@ if __name__ == '__main__':
             print_usage()
             exit(0)
         else:
-            raise ValueError, option
+            raise ValueError(option)
     main(who, method, add_a_byte, pinmin, pinmax, change_by_two_steps, fixed)
 
 # Failure

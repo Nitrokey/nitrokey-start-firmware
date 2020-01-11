@@ -109,15 +109,15 @@ def build_rsakey_from_ssh_key_under_gpg_agent(g, timestamp=None):
     # The information is in SEXP format, extract N and E
     s = sexp(pubkey_info_str)
     if s[0] != 'public-key':
-        print s
+        print(s)
         exit(1)
     rsa = s[1]
     if rsa[0] != 'rsa':
-        print rsa
+        print(rsa)
         exit(1)
     n_x = rsa[1]
     if n_x[0] != 'n':
-        print n_x
+        print(n_x)
         exit(1)
     n_byte_str = n_x[1]
     while n_byte_str[0] == '\x00':
@@ -125,7 +125,7 @@ def build_rsakey_from_ssh_key_under_gpg_agent(g, timestamp=None):
     n = n_byte_str
     e_x = rsa[2]
     if e_x[0] != 'e':
-        print e_x
+        print(e_x)
         exit(1)
     e = e_x[1]
     if not timestamp:
