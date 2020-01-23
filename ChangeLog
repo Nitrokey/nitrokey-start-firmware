@@ -1,3 +1,12 @@
+2020-01-11  Bertrand Jacquin <bertrand@jacquin.bzh>
+
+	* tool/add_openpgp_authkey_from_gpgssh.py: Switch to Python3.
+	* tool/calc_precompute_table_ecc.py: Likewise.
+	* tool/dfuse.py: Likewise.
+	* tool/dump_mem.py: Likewise.
+	* tool/get_raw_public_key.py: Likewise.
+	* tool/pageant_proxy_to_gpg.py: Likewise.
+
 2019-12-30  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* chopstx: Update to 1.18.
