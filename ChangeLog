@@ -1,3 +1,7 @@
+2020-01-24  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* VERSION: 1.2.15.
+
 2020-01-11  Bertrand Jacquin <bertrand@jacquin.bzh>
 
 	* tool/add_openpgp_authkey_from_gpgssh.py: Switch to Python3.
