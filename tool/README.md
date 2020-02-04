@@ -4,27 +4,28 @@ Before using tools located here please install missing dependencies, as presente
 
 Detailed instructions below.
 
-#### Solution one:
-```
-apt install python3-cffi python3-usb
+#### Solution one (the fastest):
+```bash
+sudo apt install python3-cffi python3-usb
 ```
 
-#### Solution two, using `pipenv`:
+#### Solution two, using `pipenv` (for develoment):
 While being in the `nitrokey-start-firmware/tool` directory:
-```
+```bash
 git pull # to update the repository
 # in case Pip is not installed
 # sudo apt install python3-pip 
-pip3 install pipenv
+pip3 install pipenv --user
 pipenv install --three
 ```
 
-#### Solution three, using `pip`:
+#### Solution three, using `pip` (alternative for development):
 While being in the `nitrokey-start-firmware/tool` directory:
-```
+
+```bash
 git pull # to update the repository
 # in case Pip is not installed
 # sudo apt install python3-pip 
-pip3 install -r requirements.txt
+pip3 install -r requirements.txt --user
 ```
 
