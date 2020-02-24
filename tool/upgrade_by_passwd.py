@@ -38,58 +38,62 @@ BY_ADMIN = 3
 
 KEYNO_FOR_AUTH=2 
 
-def main(wait_e, keyno, passwd, data_regnual, data_upgrade):
-    l = len(data_regnual)
-    if (l & 0x03) != 0:
-        data_regnual = data_regnual.ljust(l + 4 - (l & 0x03), chr(0))
-    crc32code = crc32(data_regnual)
-    print("CRC32: %04x\n" % crc32code)
-    data_regnual += pack('<I', crc32code)
+def main(wait_e, keyno, passwd, data_regnual, data_upgrade, bootloader):
 
-    rsa_key = rsa.read_key_from_file('rsa_example.key')
-    rsa_raw_pubkey = rsa.get_raw_pubkey(rsa_key)
+    if not bootloader:
+        l = len(data_regnual)
+        if (l & 0x03) != 0:
+            data_regnual = data_regnual.ljust(l + 4 - (l & 0x03), chr(0))
+        crc32code = crc32(data_regnual)
+        print("CRC32: %04x\n" % crc32code)
+        data_regnual += pack('<I', crc32code)
 
-    gnuk = get_gnuk_device()
-    gnuk.cmd_select_openpgp()
-    # Compute passwd data
-    try:
-        kdf_data = gnuk.cmd_get_data(0x00, 0xf9).tostring()
-    except:
-        kdf_data = b""
-    if kdf_data == b"":
-        passwd_data = passwd.encode('UTF-8')
-    else:
-        algo, subalgo, iters, salt_user, salt_reset, salt_admin, \
-            hash_user, hash_admin = parse_kdf_data(kdf_data)
-        if salt_admin:
-            salt = salt_admin
+        rsa_key = rsa.read_key_from_file('rsa_example.key')
+        rsa_raw_pubkey = rsa.get_raw_pubkey(rsa_key)
+
+        gnuk = get_gnuk_device()
+        gnuk.cmd_select_openpgp()
+        # Compute passwd data
+        try:
+            kdf_data = gnuk.cmd_get_data(0x00, 0xf9).tostring()
+        except:
+            kdf_data = b""
+        if kdf_data == b"":
+            passwd_data = passwd.encode('UTF-8')
         else:
-            salt = salt_user
-        passwd_data = kdf_calc(passwd, salt, iters)
-    # And authenticate with the passwd data
-    gnuk.cmd_verify(BY_ADMIN, passwd_data)
-    gnuk.cmd_write_binary(1+keyno, rsa_raw_pubkey, False)
+            algo, subalgo, iters, salt_user, salt_reset, salt_admin, \
+                hash_user, hash_admin = parse_kdf_data(kdf_data)
+            if salt_admin:
+                salt = salt_admin
+            else:
+                salt = salt_user
+            passwd_data = kdf_calc(passwd, salt, iters)
+        # And authenticate with the passwd data
+        gnuk.cmd_verify(BY_ADMIN, passwd_data)
+        gnuk.cmd_write_binary(1+keyno, rsa_raw_pubkey, False)
 
-    gnuk.cmd_select_openpgp()
-    challenge = gnuk.cmd_get_challenge().tostring()
-    digestinfo = binascii.unhexlify(SHA256_OID_PREFIX) + challenge
-    signed = rsa.compute_signature(rsa_key, digestinfo)
-    signed_bytes = rsa.integer_to_bytes_256(signed)
-    gnuk.cmd_external_authenticate(keyno, signed_bytes)
-    gnuk.stop_gnuk()
-    mem_info = gnuk.mem_info()
-    print("%08x:%08x" % mem_info)
+        gnuk.cmd_select_openpgp()
+        challenge = gnuk.cmd_get_challenge().tostring()
+        digestinfo = binascii.unhexlify(SHA256_OID_PREFIX) + challenge
+        signed = rsa.compute_signature(rsa_key, digestinfo)
+        signed_bytes = rsa.integer_to_bytes_256(signed)
+        gnuk.cmd_external_authenticate(keyno, signed_bytes)
+        gnuk.stop_gnuk()
+        mem_info = gnuk.mem_info()
+        print("%08x:%08x" % mem_info)
 
-    print("Downloading flash upgrade program...")
-    gnuk.download(mem_info[0], data_regnual)
-    print("Run flash upgrade program...")
-    gnuk.execute(mem_info[0] + len(data_regnual) - 4)
-    #
-    time.sleep(3)
-    gnuk.reset_device()
-    del gnuk
-    gnuk = None
-    #
+        print('*** Running update. Do NOT remove the device from the USB slot, until further notice.')
+
+        print("Downloading flash upgrade program...")
+        gnuk.download(mem_info[0], data_regnual)
+        print("Run flash upgrade program...")
+        gnuk.execute(mem_info[0] + len(data_regnual) - 4)
+        #
+        time.sleep(3)
+        gnuk.reset_device()
+        del gnuk
+        gnuk = None
+
     reg = None
     print("Waiting for device to appear:")
     while reg == None:
@@ -113,7 +117,7 @@ def main(wait_e, keyno, passwd, data_regnual, data_upgrade):
     reg.finish()
     print("Resetting device")
     reg.reset_device()
-    print("Update procedure finished")
+    print("Update procedure finished. Device could be removed from USB slot.")
     return 0
 
 from getpass import getpass
@@ -158,6 +162,7 @@ if __name__ == '__main__':
                         default=False, help='use default Admin password: {}'.format(DEFAULT_PW3))
     parser.add_argument('-e', dest='wait_e', default=DEFAULT_WAIT_FOR_REENUMERATION, type=int, help='time to wait for device to enumerate, after regnual was executed on device')
     parser.add_argument('-k', dest='keyno', default=0, type=int, help='selected key index')
+    parser.add_argument('-b', dest='bootloader', default=False, action='store_true', help='Skip bootloader upload (e.g. when done so already)')
     args = parser.parse_args()
 
     keyno = args.keyno
@@ -197,7 +202,7 @@ if __name__ == '__main__':
     for attempt_counter in range(1):
         try:
             # First 4096-byte in data_upgrade is SYS, so, skip it.
-            main(wait_e, keyno, passwd, data_regnual, data_upgrade[4096:])
+            main(wait_e, keyno, passwd, data_regnual, data_upgrade[4096:], args.bootloader)
             update_done = True
             break
         except ValueError as e:
@@ -223,12 +228,16 @@ if __name__ == '__main__':
         print('*** Could not proceed with the update. Please close other applications, that possibly use it (e.g. scdaemon, pcscd) and try again.')
         exit(1)
 
-
     dev_strings_upgraded = None
     print('Currently connected device strings (after upgrade):')
     for i in range(10):
         time.sleep(1)
         dev_strings_upgraded = get_devices()
-        if len(dev_strings_upgraded) > 0: break
-        print('.')
-    print_device(dev_strings_upgraded[0])
+        if len(dev_strings_upgraded) > 0:
+            print_device(dev_strings_upgraded[0])
+            break
+        print('.', end='', flush=True)
+
+    if not dev_strings_upgraded:
+        print('Could not connect, device should be working fine though after power cycle. Please reinsert device to USB slot and test it.')
+        print('Device could be removed from the USB slot.')
