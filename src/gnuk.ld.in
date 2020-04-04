@@ -127,6 +127,8 @@ SECTIONS
         ch_certificate_start = .;
         LONG(0xffffffff);
         . += 1920;
+        . += 1920;
+        . += 1920;
         . = ALIGN (@FLASH_PAGE_SIZE@);
     } > flash =0xffffffff
 @CERTDO_SUPPORT_END@
@@ -135,19 +137,43 @@ SECTIONS
     {
         . = ALIGN (@FLASH_PAGE_SIZE@);
         _keystore_pool = .;
+
         . += 1024;
         . = ALIGN(@FLASH_PAGE_SIZE@);
         . += 1024;
         . = ALIGN(@FLASH_PAGE_SIZE@);
         . += 1024;
         . = ALIGN(@FLASH_PAGE_SIZE@);
+
+        . += 1024;
+        . = ALIGN(@FLASH_PAGE_SIZE@);
+        . += 1024;
+        . = ALIGN(@FLASH_PAGE_SIZE@);
+        . += 1024;
+        . = ALIGN(@FLASH_PAGE_SIZE@);
+
+        . += 1024;
+        . = ALIGN(@FLASH_PAGE_SIZE@);
+        . += 1024;
+        . = ALIGN(@FLASH_PAGE_SIZE@);
+        . += 1024;
+        . = ALIGN(@FLASH_PAGE_SIZE@);
+
         _updatekey_store = .;
         . += 1024;
         . = ALIGN(@FLASH_PAGE_SIZE@);
+
         _data_pool = .;
         KEEP(*(.gnuk_data))
         . = ALIGN(@FLASH_PAGE_SIZE@);
         . += @FLASH_PAGE_SIZE@;
+        . = ALIGN(@FLASH_PAGE_SIZE@);
+        . += @FLASH_PAGE_SIZE@;
+        . = ALIGN(@FLASH_PAGE_SIZE@);
+        . += @FLASH_PAGE_SIZE@;
+        . = ALIGN(@FLASH_PAGE_SIZE@);
+        LONG(0x42424242);
+
     } > flash =0xffffffff
 }
 
