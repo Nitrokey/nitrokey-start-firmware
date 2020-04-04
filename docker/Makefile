@@ -1,22 +1,25 @@
 ifndef GNUK_CONFIG
-$(warning configuration flags not set in GNUK_CONFIG)
+$(warning configuration flags not set in GNUK_CONFIG, setting Nitrokey Start defaults)
+GNUK_CONFIG=--target=NITROKEY_START --vidpid=20a0:4211 --enable-factory-reset --enable-certdo
 endif
 
+DOCKER=env GNUK_CONFIG="$(GNUK_CONFIG)" docker run
+
 all: ../chopstx docker-build-release
-	docker run --user=`id -u` --env GNUK_CONFIG --rm -v `pwd`/..:/gnuk/ -t gnuk:latest
+	$(DOCKER) --user=`id -u` --env GNUK_CONFIG --rm -v `pwd`/..:/gnuk/ -t gnuk:latest
 
 clean: docker-build-release
-	docker run --user=`id -u` --env GNUK_CONFIG --rm -v `pwd`/..:/gnuk/ -w /gnuk/src -t gnuk:latest make clean
+	$(DOCKER) --user=`id -u` --env GNUK_CONFIG --rm -v `pwd`/..:/gnuk/ -w /gnuk/src -t gnuk:latest make clean
 
 gdb: docker-build-debug
-	docker run --net host  --rm -i -v `pwd`/..:/gnuk/ -t gnuk:latest-debug arm-none-eabi-gdb /gnuk/src/build/gnuk.elf
+	$(DOCKER) --net host  --rm -i -v `pwd`/..:/gnuk/ -t gnuk:latest-debug arm-none-eabi-gdb /gnuk/src/build/gnuk.elf
 
 shellcheck: docker-build-check
-	docker run --rm -v `pwd`/..:/gnuk/ -t gnuk:latest-check shellcheck /gnuk/src/configure
+	$(DOCKER) --rm -v `pwd`/..:/gnuk/ -t gnuk:latest-check shellcheck /gnuk/src/configure
 
 CHECKERS=security optin nullability core deadcode alpha.core alpha.security
 scan-build: clean docker-build-check
-	docker run --user=`id -u` --rm -v `pwd`/..:/gnuk/ -w /gnuk/src -t gnuk:latest-check scan-build -o scan-build \
+	$(DOCKER) --user=`id -u` --rm -v `pwd`/..:/gnuk/ -w /gnuk/src -t gnuk:latest-check scan-build -o scan-build \
 		-analyze-headers -stats $(addprefix -enable-checker ,$(CHECKERS)) -k \
 		--use-cc=arm-none-eabi-gcc \
 		make
