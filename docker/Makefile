@@ -5,8 +5,9 @@ endif
 
 DOCKER=env GNUK_CONFIG="$(GNUK_CONFIG)" docker run
 
-all: ../chopstx docker-build-release
+all: | ../chopstx docker-build-release
 	$(DOCKER) --user=`id -u` --env GNUK_CONFIG --rm -v `pwd`/..:/gnuk/ -t gnuk:latest
+	@echo "Built with config: '$(GNUK_CONFIG)'"
 
 clean: docker-build-release
 	$(DOCKER) --user=`id -u` --env GNUK_CONFIG --rm -v `pwd`/..:/gnuk/ -w /gnuk/src -t gnuk:latest make clean
