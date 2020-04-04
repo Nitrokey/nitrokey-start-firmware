@@ -96,6 +96,7 @@ build/gnuk.elf: build/gnuk-no-vidpid.elf binary-edit.sh put-vid-pid-ver.sh
 	env FILE="build/gnuk.elf" bash put-vid-pid-ver.sh
 	$(OBJCOPY) -O ihex build/gnuk.elf build/gnuk.hex
 	$(OBJCOPY) -O binary build/gnuk.elf build/gnuk.bin
+	arm-none-eabi-size -A build/gnuk.elf
 else
 # By specifying DESTDIR on invocation of "make", you can install
 # program to different ROOT.
