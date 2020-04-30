@@ -213,9 +213,9 @@ if __name__ == '__main__':
     parser.add_argument('regnual', type=validate_regnual, help='path to regnual binary')
     parser.add_argument('gnuk', type=validate_gnuk, help='path to gnuk binary')
     parser.add_argument('-f', dest='default_password', action='store_true',
-                        default=False, help='use default Admin password: {}'.format(DEFAULT_PW3))
+                        default=False, help='use default Admin PIN: {}'.format(DEFAULT_PW3))
     parser.add_argument('-p', dest='password',
-                        help='use provided password')
+                        help='use provided Admin PIN')
     parser.add_argument('-e', dest='wait_e', default=DEFAULT_WAIT_FOR_REENUMERATION, type=int,
                         help='time to wait for device to enumerate, after regnual was executed on device')
     parser.add_argument('-k', dest='keyno', default=0, type=int, help='selected key index')
