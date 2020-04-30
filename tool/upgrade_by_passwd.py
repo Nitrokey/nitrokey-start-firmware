@@ -26,17 +26,18 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 from subprocess import check_output
 
 from gnuk_token import get_gnuk_device, gnuk_devices_by_vidpid, \
-     gnuk_token, regnual, SHA256_OID_PREFIX, crc32, parse_kdf_data
+    gnuk_token, regnual, SHA256_OID_PREFIX, crc32, parse_kdf_data
 from kdf_calc import kdf_calc
 
 import sys, binascii, time, os
 import rsa
 from struct import pack
 
+# DEFAULT_PW3 = "12345678"
 DEFAULT_PW3 = "1234567890abcd"
 BY_ADMIN = 3
 
-KEYNO_FOR_AUTH=2 
+KEYNO_FOR_AUTH = 2
 
 
 def progress_func(x):
@@ -68,14 +69,14 @@ def main(wait_e, keyno, passwd, data_regnual, data_upgrade, bootloader):
         gnuk.cmd_select_openpgp()
         # Compute passwd data
         try:
-            kdf_data = gnuk.cmd_get_data(0x00, 0xf9).tostring()
+            kdf_data = gnuk.cmd_get_data(0x00, 0xf9).tobytes()
         except:
             kdf_data = b""
         if kdf_data == b"":
             passwd_data = passwd.encode('UTF-8')
         else:
             algo, subalgo, iters, salt_user, salt_reset, salt_admin, \
-                hash_user, hash_admin = parse_kdf_data(kdf_data)
+            hash_user, hash_admin = parse_kdf_data(kdf_data)
             if salt_admin:
                 salt = salt_admin
             else:
@@ -83,10 +84,10 @@ def main(wait_e, keyno, passwd, data_regnual, data_upgrade, bootloader):
             passwd_data = kdf_calc(passwd, salt, iters)
         # And authenticate with the passwd data
         gnuk.cmd_verify(BY_ADMIN, passwd_data)
-        gnuk.cmd_write_binary(1+keyno, rsa_raw_pubkey, False)
+        gnuk.cmd_write_binary(1 + keyno, rsa_raw_pubkey, False)
 
         gnuk.cmd_select_openpgp()
-        challenge = gnuk.cmd_get_challenge().tostring()
+        challenge = gnuk.cmd_get_challenge().tobytes()
         digestinfo = binascii.unhexlify(SHA256_OID_PREFIX) + challenge
         signed = rsa.compute_signature(rsa_key, digestinfo)
         signed_bytes = rsa.integer_to_bytes_256(signed)
@@ -145,6 +146,7 @@ def main(wait_e, keyno, passwd, data_regnual, data_upgrade, bootloader):
     print('')
     return 0
 
+
 from getpass import getpass
 
 # This should be event driven, not guessing some period, or polling.
@@ -156,18 +158,25 @@ def validate_binary_file(path: str):
     if not os.path.exists(path):
         raise argparse.ArgumentTypeError('Path does not exist: "{}"'.format(path))
     if not path.endswith('.bin'):
-        raise argparse.ArgumentTypeError('Supplied file "{}" does not have ".bin" extension. Make sure you are sending correct file to the device.'.format(os.path.basename(path)))
+        raise argparse.ArgumentTypeError(
+            'Supplied file "{}" does not have ".bin" extension. Make sure you are sending correct file to the device.'.format(
+                os.path.basename(path)))
     return path
+
 
 def validate_name(path: str, name: str):
     if name not in path:
-        raise argparse.ArgumentTypeError('Supplied file "{}" does not have "{}" in name. Make sure you have not swapped the arguments.'.format(os.path.basename(path), name))
+        raise argparse.ArgumentTypeError(
+            'Supplied file "{}" does not have "{}" in name. Make sure you have not swapped the arguments.'.format(
+                os.path.basename(path), name))
     return path
+
 
 def validate_gnuk(path: str):
     validate_binary_file(path)
     validate_name(path, 'gnuk')
     return path
+
 
 def validate_regnual(path: str):
     validate_binary_file(path)
@@ -181,6 +190,7 @@ if __name__ == '__main__':
         exit(1)
 
     import argparse
+
     parser = argparse.ArgumentParser(description='Update tool for GNUK')
     parser.add_argument('regnual', type=validate_regnual, help='path to regnual binary')
     parser.add_argument('gnuk', type=validate_gnuk, help='path to gnuk binary')
@@ -191,7 +201,8 @@ if __name__ == '__main__':
     parser.add_argument('-e', dest='wait_e', default=DEFAULT_WAIT_FOR_REENUMERATION, type=int,
                         help='time to wait for device to enumerate, after regnual was executed on device')
     parser.add_argument('-k', dest='keyno', default=0, type=int, help='selected key index')
-    parser.add_argument('-b', dest='bootloader', default=False, action='store_true', help='Skip bootloader upload (e.g. when done so already)')
+    parser.add_argument('-b', dest='bootloader', default=False, action='store_true',
+                        help='Skip bootloader upload (e.g. when done so already)')
     args = parser.parse_args()
 
     keyno = args.keyno
@@ -209,12 +220,11 @@ if __name__ == '__main__':
             print('Quitting')
             exit(2)
 
-
-    f = open(args.regnual,"rb")
+    f = open(args.regnual, "rb")
     data_regnual = f.read()
     f.close()
     print("{}: {}".format(args.regnual, len(data_regnual)))
-    f = open(args.gnuk,"rb")
+    f = open(args.gnuk, "rb")
     data_upgrade = f.read()
     f.close()
     print("{}: {}".format(args.gnuk, len(data_upgrade)))
@@ -256,7 +266,8 @@ if __name__ == '__main__':
             break
 
     if not update_done:
-        print('*** Could not proceed with the update. Please close other applications, that possibly use it (e.g. scdaemon, pcscd) and try again.')
+        print(
+            '*** Could not proceed with the update. Please close other applications, that possibly use it (e.g. scdaemon, pcscd) and try again.')
         exit(1)
 
     dev_strings_upgraded = None
@@ -270,5 +281,7 @@ if __name__ == '__main__':
         print('.', end='', flush=True)
 
     if not dev_strings_upgraded:
-        print('Could not connect, device should be working fine though after power cycle. Please reinsert device to USB slot and test it.')
+        print()
+        print(
+            'Could not connect, device should be working fine though after power cycle. Please reinsert device to USB slot and test it.')
         print('Device could be removed from the USB slot.')
