@@ -66,6 +66,7 @@ def main(wait_e, keyno, passwd, data_regnual, data_upgrade, bootloader):
 
         gnuk = get_gnuk_device()
         gnuk.cmd_select_openpgp()
+        print('*** Connected to the device')
         # Compute passwd data
         try:
             kdf_data = gnuk.cmd_get_data(0x00, 0xf9).tobytes()
@@ -235,11 +236,14 @@ if __name__ == '__main__':
         print('Only one device should be connected. Please remove other devices and retry.')
         exit(1)
 
-    print('Currently connected device strings:')
-    print_device(dev_strings[0])
+    if dev_strings:
+        print('Currently connected device strings:')
+        print_device(dev_strings[0])
+    else:
+        print('Cannot identify device')
 
     update_done = False
-    for attempt_counter in range(1):
+    for attempt_counter in range(2):
         try:
             # First 4096-byte in data_upgrade is SYS, so, skip it.
             main(wait_e, keyno, passwd, data_regnual, data_upgrade[4096:], args.bootloader)
@@ -252,35 +256,51 @@ if __name__ == '__main__':
                 result = check_output(["gpg-connect-agent",
                                        "SCD KILLSCD", "SCD BYE", "/bye"])
                 time.sleep(3)
-                print('*** Please try again...')
+                # print('*** Please run update tool again.')
             else:
-                print('*** Could not proceed with the update. '
-                      'Please try again, and make sure the entered password is correct.')
+                print('*** Could not proceed with the update.')
                 print('*** Found error: {}'.format(str(e)))
+                if str(e) == '6983':
+                    print('*** Device returns "Attempt counter empty" error for Admin PIN. Please "factory-reset" '
+                          'your device to '
+                          'continue - this will delete all user data from the device.')
+                if str(e) == '6982':
+                    print('*** Device returns "Invalid PIN" error. If you do not remember you PIN, '
+                          'please factory-reset your device (this will remove all user data from the device) '
+                          'and try with "12345678".')
                 break
 
         except Exception as e:
             # unknown error, bail
-            print('*** Found error: {}'.format(str(e)))
+            print('*** Found unexpected error: {}'.format(str(e)))
             break
 
     if not update_done:
-        print(
-            '*** Could not proceed with the update. Please close other applications, that possibly use it (e.g. scdaemon, pcscd) and try again.')
+        print()
+        print('*** Could not proceed with the update. Please execute one or all of the following and try again:\n'
+              '- reinsert device to the USB slot;\n'
+              '- run factory-reset on the device (if you have backup of the keys);\n'
+              '- close other applications, that possibly could use it (e.g. scdaemon, pcscd).\n')
         exit(1)
 
     dev_strings_upgraded = None
+    takes_long_time = False
     print('Currently connected device strings (after upgrade):')
-    for i in range(10):
+    for i in range(30):
+        if i > 5:
+            if not takes_long_time:
+                print('\n*** Please reinsert device to the USB slot')
+                takes_long_time = True
         time.sleep(1)
         dev_strings_upgraded = get_devices()
         if len(dev_strings_upgraded) > 0:
+            print()
             print_device(dev_strings_upgraded[0])
             break
         print('.', end='', flush=True)
 
     if not dev_strings_upgraded:
         print()
-        print(
-            'Could not connect, device should be working fine though after power cycle. Please reinsert device to USB slot and test it.')
+        print('Could not connect, device should be working fine though after power cycle - please reinsert device to '
+              'USB slot and test it.')
         print('Device could be removed from the USB slot.')
