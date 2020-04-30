@@ -16,6 +16,9 @@ Binaries based on GNUK 1.2.3 are available under RTM.3/ and RTM.1_to_RTM.3_upgra
 Similarly for later releases:
 - RTM.4 is based on GNUK 1.2.4.
 - RTM.5 is based on GNUK 1.2.6 with not yet released (2017-10-31) fix for key generation.
+- RTM.6 is based on GNUK 1.2.10.
+- RTM.7 is based on GNUK 1.2.14.
+- RTM.8 is based on GNUK 1.2.15.
 
 Firmware upgrade instructions
 -------
@@ -45,8 +48,9 @@ cd nitrokey-start-firmware/tool
 To make sure firmware is changed on device you can save current version to file: `gpg2 --card-status > before.status`. Since gpg2 claims the device please reinsert it to make it free to use by GNUK.
 
 Depending on you current firmware you have to choose the right prebuilts:
-- If your LED flashes green on operation please type `RTM=RTM.1_to_RTM.5` in your console
-- If your LED flashes red then please type `RTM=RTM.5` in your console
+- Please look at releases page to select the latest firmware version (https://github.com/Nitrokey/nitrokey-start-firmware/releases). Assuming below the latest one is `RTM.8`.
+- If your LED flashes green on operation please type `RTM=RTM.1_to_RTM.8` in your console
+- If your LED flashes red then please type `RTM=RTM.8` in your console
 
 Now we can proceed with the actual upgrade:
 ```
