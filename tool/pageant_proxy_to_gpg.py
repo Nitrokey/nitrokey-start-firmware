@@ -28,7 +28,7 @@ from sexp import sexp
 # Assume it's only OPENPGP.3 key and it's 2048-bit
 
 def debug(string):
-    print "DEBUG: %s" % string
+    print("DEBUG: %s" % string)
     sys.stdout.flush()
 
 def get_keygrip_list(keyinfo_result):

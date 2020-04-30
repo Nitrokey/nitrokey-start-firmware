@@ -16,3 +16,4 @@ def card():
     card.cmd_select_openpgp()
     yield card
     del card
+    reader.ccid_power_off()

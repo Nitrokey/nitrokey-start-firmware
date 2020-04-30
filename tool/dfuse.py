@@ -104,9 +104,9 @@ class DFU_STM32(object):
         interface: usb.Interface object representing the interface and altenate setting.
         """
         if interface.interfaceClass != DFU_CLASS:
-            raise ValueError, "Wrong interface class"
+            raise ValueError("Wrong interface class")
         if interface.interfaceSubClass != DFU_SUBCLASS:
-            raise ValueError, "Wrong interface sub class"
+            raise ValueError("Wrong interface sub class")
         self.__protocol = interface.interfaceProtocol
         self.__devhandle = device.open()
         self.__devhandle.setConfiguration(configuration)
@@ -170,7 +170,7 @@ class DFU_STM32(object):
             while s[4] == STATE_DFU_DOWNLOAD_BUSY:
                 time.sleep(0.1)
                 s = self.ll_get_status()
-            raise ValueError, "Read memory failed (%d)" % s[0]
+            raise ValueError("Read memory failed (%d)" % s[0])
 
     def dfuse_set_address_pointer(self, address):
         bytes = get_four_bytes (address)
@@ -181,7 +181,7 @@ class DFU_STM32(object):
             time.sleep(0.1)
             s = self.ll_get_status()
         if s[4] != STATE_DFU_DOWNLOAD_IDLE:
-            raise ValueError, "Set Address Pointer failed"
+            raise ValueError("Set Address Pointer failed")
 
     def dfuse_erase(self, address):
         bytes = get_four_bytes (address)
@@ -191,7 +191,7 @@ class DFU_STM32(object):
             time.sleep(0.1)
             s = self.ll_get_status()
         if s[4] != STATE_DFU_DOWNLOAD_IDLE:
-            raise ValueError, "Erase failed"
+            raise ValueError("Erase failed")
 
     def dfuse_write_memory(self, block):
         blocknum = self.__blocknum
@@ -202,7 +202,7 @@ class DFU_STM32(object):
             time.sleep(0.1)
             s = self.ll_get_status()
         if s[4] != STATE_DFU_DOWNLOAD_IDLE:
-            raise ValueError, "Write memory failed"
+            raise ValueError("Write memory failed")
 
     def download(self, ih):
         # First, erase pages
@@ -280,7 +280,7 @@ class DFU_STM32(object):
             elif s[4] == STATE_DFU_MANIFEST_WAIT_RESET:
                 self.__devhandle.reset()
             elif s[4] != STATE_DFU_IDLE:
-                raise ValueError, "write failed (%d)." % s[4]
+                raise ValueError("write failed (%d)." % s[4])
         else:
             self.ll_clear_status()
             self.ll_clear_status()
@@ -315,7 +315,7 @@ class DFU_STM32(object):
                 j = 0
                 for c in data[0:(addr + 1024 - start_addr)]:
                     if (ord(c)&0xff) != block[j + start_addr - addr]:
-                        raise ValueError, "verify failed at %08x" % (addr + i*1024+j)
+                        raise ValueError("verify failed at %08x" % (addr + i*1024+j))
                     j += 1
                 data = data[(addr + 1024 - start_addr):]
                 addr += 1024
@@ -330,7 +330,7 @@ class DFU_STM32(object):
                 j = 0
                 for c in data[i*1024:(i+1)*1024]:
                     if (ord(c)&0xff) != block[j]:
-                        raise ValueError, "verify failed at %08x" % (addr + i*1024+j)
+                        raise ValueError("verify failed at %08x" % (addr + i*1024+j))
                     j += 1
                 if i & 0x03 == 0x03:
                     sys.stdout.write("#")
@@ -367,25 +367,25 @@ def get_device():
                                 (alt.interfaceProtocol == DFU_STM32PROTOCOL_0 or \
                                      alt.interfaceProtocol == DFU_STM32PROTOCOL_2):
                             return dev, config, alt
-    raise ValueError, "Device not found"
+    raise ValueError("Device not found")
 
 def main(filename):
     dev, config, intf = get_device()
-    print "Device:", dev.filename
-    print "Configuration", config.value
-    print "Interface", intf.interfaceNumber
+    print("Device:", dev.filename)
+    print("Configuration", config.value)
+    print("Interface", intf.interfaceNumber)
     dfu = DFU_STM32(dev, config, intf)
-    print dfu.ll_get_string(intf.iInterface)
+    print(dfu.ll_get_string(intf.iInterface))
     s = dfu.ll_get_status()
     if s[4] == STATE_DFU_ERROR:
         dfu.ll_clear_status()
     s = dfu.ll_get_status()
-    print s
+    print(s)
     if s[4] == STATE_DFU_IDLE:
         exit
     transfer_size = 1024
     if s[0] != DFU_STATUS_OK:
-        print s
+        print(s)
         exit
     ih = intel_hex(filename)
     dfu.download(ih)
