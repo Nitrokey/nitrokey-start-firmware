@@ -260,6 +260,15 @@ if __name__ == '__main__':
     else:
         print('Cannot identify device')
 
+    print('Please note:')
+    print('- All data will be removed from the device')
+    print('- Do not interrupt the update process, or the device will not run properly')
+    print('- Whole process should not take more than 1 minute')
+    answer = input('Do you want to continue? [yes/no]: ')
+    if answer != 'yes':
+        print('Device is not modified. Exiting.')
+        exit(1)
+
     update_done = False
     for attempt_counter in range(2):
         try:
