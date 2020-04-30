@@ -38,8 +38,21 @@ BY_ADMIN = 3
 
 KEYNO_FOR_AUTH=2 
 
-def main(wait_e, keyno, passwd, data_regnual, data_upgrade, bootloader):
 
+def progress_func(x):
+    x = x * 100
+    if x == 0:
+        progress_func.last = 0
+
+    if progress_func.last * 10 <= x < 100:
+        progress_func.last += 1
+        print(f'Progress: {round(x, 2)}%\r', end='', flush=True)
+
+
+progress_func.last = 0
+
+
+def main(wait_e, keyno, passwd, data_regnual, data_upgrade, bootloader):
     if not bootloader:
         l = len(data_regnual)
         if (l & 0x03) != 0:
@@ -85,7 +98,7 @@ def main(wait_e, keyno, passwd, data_regnual, data_upgrade, bootloader):
         print('*** Running update. Do NOT remove the device from the USB slot, until further notice.')
 
         print("Downloading flash upgrade program...")
-        gnuk.download(mem_info[0], data_regnual)
+        gnuk.download(mem_info[0], data_regnual, progress_func=progress_func)
         print("Run flash upgrade program...")
         gnuk.execute(mem_info[0] + len(data_regnual) - 4)
         #
@@ -96,21 +109,32 @@ def main(wait_e, keyno, passwd, data_regnual, data_upgrade, bootloader):
 
     reg = None
     print("Waiting for device to appear:")
-    while reg == None:
-        print("  Wait {} second{}...".format(wait_e, 's' if wait_e > 1 else ''))
-        time.sleep(wait_e)
+    # while reg == None:
+    print("  Wait {} second{}...".format(wait_e, 's' if wait_e > 1 else ''), end='')
+    for i in range(wait_e):
+        if reg is not None:
+            break
+        print('.', end='', flush=True)
+        time.sleep(1)
         for dev in gnuk_devices_by_vidpid():
             try:
                 reg = regnual(dev)
-                print("Device: %s" % dev.filename)
+                if dev.filename:
+                    print("Device: %s" % dev.filename)
                 break
             except:
                 pass
+    print('')
+    print('')
+    if reg is None:
+        print('Device not found. Exiting.')
+        raise RuntimeWarning('Device not found. Exiting.')
+
     # Then, send upgrade program...
     mem_info = reg.mem_info()
     print("%08x:%08x" % mem_info)
     print("Downloading the program")
-    reg.download(mem_info[0], data_upgrade)
+    reg.download(mem_info[0], data_upgrade, progress_func=progress_func)
     print("Protecting device")
     reg.protect()
     print("Finish flashing")
@@ -118,12 +142,14 @@ def main(wait_e, keyno, passwd, data_regnual, data_upgrade, bootloader):
     print("Resetting device")
     reg.reset_device()
     print("Update procedure finished. Device could be removed from USB slot.")
+    print('')
     return 0
 
 from getpass import getpass
 
 # This should be event driven, not guessing some period, or polling.
-DEFAULT_WAIT_FOR_REENUMERATION=1
+DEFAULT_WAIT_FOR_REENUMERATION = 20
+
 
 def validate_binary_file(path: str):
     import os.path
@@ -160,7 +186,10 @@ if __name__ == '__main__':
     parser.add_argument('gnuk', type=validate_gnuk, help='path to gnuk binary')
     parser.add_argument('-f', dest='default_password', action='store_true',
                         default=False, help='use default Admin password: {}'.format(DEFAULT_PW3))
-    parser.add_argument('-e', dest='wait_e', default=DEFAULT_WAIT_FOR_REENUMERATION, type=int, help='time to wait for device to enumerate, after regnual was executed on device')
+    parser.add_argument('-p', dest='password',
+                        help='use provided password')
+    parser.add_argument('-e', dest='wait_e', default=DEFAULT_WAIT_FOR_REENUMERATION, type=int,
+                        help='time to wait for device to enumerate, after regnual was executed on device')
     parser.add_argument('-k', dest='keyno', default=0, type=int, help='selected key index')
     parser.add_argument('-b', dest='bootloader', default=False, action='store_true', help='Skip bootloader upload (e.g. when done so already)')
     args = parser.parse_args()
@@ -169,7 +198,9 @@ if __name__ == '__main__':
     passwd = None
     wait_e = args.wait_e
 
-    if args.default_password:  # F for Factory setting
+    if args.password:
+        passwd = args.password
+    elif args.default_password:  # F for Factory setting
         passwd = DEFAULT_PW3
     if not passwd:
         try:
@@ -211,7 +242,7 @@ if __name__ == '__main__':
                 print('*** Running: gpg-connect-agent "SCD KILLSCD" "SCD BYE" /bye')
                 result = check_output(["gpg-connect-agent",
                                        "SCD KILLSCD", "SCD BYE", "/bye"])
-                time.sleep(1)
+                time.sleep(3)
                 print('*** Please try again...')
             else:
                 print('*** Could not proceed with the update. '

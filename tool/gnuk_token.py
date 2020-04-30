@@ -125,14 +125,18 @@ class gnuk_token(object):
         end = ((mem[7]*256 + mem[6])*256 + mem[5])*256 + mem[4]
         return (start, end)
 
-    def download(self, start, data, verbose=False):
+    def download(self, start, data, verbose=False, progress_func=None):
         addr = start
         addr_end = (start + len(data)) & 0xffffff00
         i = int((addr - 0x20000000) / 0x100)
         j = 0
         print("start %08x" % addr)
         print("end   %08x" % addr_end)
+        if progress_func:
+            progress_func(0)
         while addr < addr_end:
+            if progress_func:
+                progress_func((addr-start)/(addr_end-start))
             if verbose:
                 print("# %08x: %d : %d" % (addr, i, 256))
             self.__devhandle.controlMsg(requestType = 0x40, request = 1,
@@ -495,14 +499,18 @@ class regnual(object):
         end = ((mem[7]*256 + mem[6])*256 + mem[5])*256 + mem[4]
         return (start, end)
 
-    def download(self, start, data, verbose=False):
+    def download(self, start, data, verbose=False, progress_func = None):
         addr = start
         addr_end = (start + len(data)) & 0xffffff00
         i = int((addr - 0x08000000) / 0x100)
         j = 0
         print("start %08x" % addr)
         print("end   %08x" % addr_end)
+        if progress_func:
+            progress_func(0)
         while addr < addr_end:
+            if progress_func:
+                progress_func((addr-start)/(addr_end-start))
             if verbose:
                 print("# %08x: %d: %d : %d" % (addr, i, j, 256))
             self.__devhandle.controlMsg(requestType = 0x40, request = 1,
