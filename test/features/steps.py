@@ -15,25 +15,13 @@ def ini(sc):
         glc.token = gnuk.get_gnuk_device()
         glc.token.cmd_select_openpgp()
 
-LONG_PIN = '1234567890abcd'
-
 @Given("cmd_verify with (.*) and \"(.*)\"")
 def cmd_verify(who_str,pass_str):
-    if pass_str in ['12345678', '123456']:
-        print('Replacing {} with {}'.format(pass_str, LONG_PIN))
-        pass_str = LONG_PIN
     who = int(who_str)
     scc.result = glc.token.cmd_verify(who, pass_str)
 
 @Given("cmd_change_reference_data with (.*) and \"(.*)\"")
 def cmd_change_reference_data(who_str,pass_str):
-    pass_str_old = pass_str
-    if '12345678' in pass_str:
-        pass_str = pass_str.replace('12345678', LONG_PIN)
-        print('Replacing {} with {}'.format(pass_str_old, pass_str))
-    elif '123456' in pass_str:
-        pass_str = pass_str.replace('123456', LONG_PIN)
-        print('Replacing {} with {}'.format(pass_str_old, pass_str))
     who = int(who_str)
     scc.result = glc.token.cmd_change_reference_data(who, pass_str)
 

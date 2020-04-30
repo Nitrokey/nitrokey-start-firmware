@@ -29,7 +29,7 @@ from kdf_calc import kdf_calc
 
 # Assume only single CCID device is attached to computer and it's Gnuk Token
 
-DEFAULT_PW3 = "1234567890abcd"
+DEFAULT_PW3 = "12345678"
 BY_ADMIN = 3
 
 def main(passwd):
