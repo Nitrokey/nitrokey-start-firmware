@@ -23,6 +23,7 @@ License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
+from collections import defaultdict
 from subprocess import check_output
 
 from gnuk_token import get_gnuk_device, gnuk_devices_by_vidpid, \
@@ -52,7 +53,7 @@ def progress_func(x):
 progress_func.last = 0
 
 
-def main(wait_e, keyno, passwd, data_regnual, data_upgrade, bootloader):
+def main(wait_e, keyno, passwd, data_regnual, data_upgrade, skip_bootloader):
     reg = None
     for i in range(3):
         if reg is not None:
@@ -66,9 +67,10 @@ def main(wait_e, keyno, passwd, data_regnual, data_upgrade, bootloader):
                     print("Device: %s" % dev.filename)
                 break
             except Exception as e:
-                print(e)
+                if str(e) != 'Wrong interface class':
+                    print(e)
 
-    if reg is None or not bootloader:
+    if reg is None and not skip_bootloader:
         print('\n*** Starting bootloader upload procedure')
         l = len(data_regnual)
         if (l & 0x03) != 0:
@@ -170,6 +172,16 @@ from getpass import getpass
 DEFAULT_WAIT_FOR_REENUMERATION = 20
 
 
+def get_latest_release_data():
+    try:
+        import requests
+        r = requests.get('https://api.github.com/repos/Nitrokey/nitrokey-start-firmware/releases')
+        latest_tag = r.json()[0]
+    except:
+        latest_tag = defaultdict(lambda: 'unknown')
+    return latest_tag
+
+
 def validate_binary_file(path: str):
     import os.path
     if not os.path.exists(path):
@@ -212,13 +224,13 @@ if __name__ == '__main__':
     parser.add_argument('regnual', type=validate_regnual, help='path to regnual binary')
     parser.add_argument('gnuk', type=validate_gnuk, help='path to gnuk binary')
     parser.add_argument('-f', dest='default_password', action='store_true',
-                        default=False, help='use default Admin password: {}'.format(DEFAULT_PW3))
+                        default=False, help='use default Admin PIN: {}'.format(DEFAULT_PW3))
     parser.add_argument('-p', dest='password',
-                        help='use provided password')
+                        help='use provided Admin PIN')
     parser.add_argument('-e', dest='wait_e', default=DEFAULT_WAIT_FOR_REENUMERATION, type=int,
                         help='time to wait for device to enumerate, after regnual was executed on device')
     parser.add_argument('-k', dest='keyno', default=0, type=int, help='selected key index')
-    parser.add_argument('-b', dest='bootloader', default=False, action='store_true',
+    parser.add_argument('-b', dest='skip_bootloader', default=False, action='store_true',
                         help='Skip bootloader upload (e.g. when done so already)')
     args = parser.parse_args()
 
@@ -237,14 +249,15 @@ if __name__ == '__main__':
             print('Quitting')
             exit(2)
 
+    print('Provided firmware files:')
     f = open(args.regnual, "rb")
     data_regnual = f.read()
     f.close()
-    print("{}: {}".format(args.regnual, len(data_regnual)))
+    print("- {}: {}".format(args.regnual, len(data_regnual)))
     f = open(args.gnuk, "rb")
     data_upgrade = f.read()
     f.close()
-    print("{}: {}".format(args.gnuk, len(data_upgrade)))
+    print("- {}: {}".format(args.gnuk, len(data_upgrade)))
 
     from usb_strings import get_devices, print_device
 
@@ -259,11 +272,24 @@ if __name__ == '__main__':
     else:
         print('Cannot identify device')
 
+    latest_tag = get_latest_release_data()
+
+    print('Please note:')
+    print('- Latest firmware available is: {} (published: {}),\n provided firmware: {}'.format(latest_tag['tag_name'],
+                                                                         latest_tag['published_at'], args.gnuk))
+    print('- All data will be removed from the device')
+    print('- Do not interrupt the update process, or the device will not run properly')
+    print('- Whole process should not take more than 1 minute')
+    answer = input('Do you want to continue? [yes/no]: ')
+    if answer != 'yes':
+        print('Device is not modified. Exiting.')
+        exit(1)
+
     update_done = False
     for attempt_counter in range(2):
         try:
             # First 4096-byte in data_upgrade is SYS, so, skip it.
-            main(wait_e, keyno, passwd, data_regnual, data_upgrade[4096:], args.bootloader)
+            main(wait_e, keyno, passwd, data_regnual, data_upgrade[4096:], args.skip_bootloader)
             update_done = True
             break
         except ValueError as e:
