@@ -33,7 +33,7 @@ import sys, binascii, time, os
 import rsa
 from struct import pack
 
-DEFAULT_PW3 = "12345678"
+DEFAULT_PW3 = "1234567890abcd"
 BY_ADMIN = 3
 
 KEYNO_FOR_AUTH=2 
