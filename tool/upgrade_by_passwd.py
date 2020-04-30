@@ -66,7 +66,8 @@ def main(wait_e, keyno, passwd, data_regnual, data_upgrade, skip_bootloader):
                     print("Device: %s" % dev.filename)
                 break
             except Exception as e:
-                print(e)
+                if str(e) != 'Wrong interface class':
+                    print(e)
 
     if reg is None and not skip_bootloader:
         print('\n*** Starting bootloader upload procedure')
