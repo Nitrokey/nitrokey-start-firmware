@@ -53,7 +53,23 @@ progress_func.last = 0
 
 
 def main(wait_e, keyno, passwd, data_regnual, data_upgrade, bootloader):
-    if not bootloader:
+    reg = None
+    for i in range(3):
+        if reg is not None:
+            break
+        print('.', end='', flush=True)
+        time.sleep(1)
+        for dev in gnuk_devices_by_vidpid():
+            try:
+                reg = regnual(dev)
+                if dev.filename:
+                    print("Device: %s" % dev.filename)
+                break
+            except Exception as e:
+                print(e)
+
+    if reg is None or not bootloader:
+        print('\n*** Starting bootloader upload procedure')
         l = len(data_regnual)
         if (l & 0x03) != 0:
             data_regnual = data_regnual.ljust(l + 4 - (l & 0x03), chr(0))
@@ -108,28 +124,29 @@ def main(wait_e, keyno, passwd, data_regnual, data_upgrade, bootloader):
         del gnuk
         gnuk = None
 
-    reg = None
-    print("Waiting for device to appear:")
-    # while reg == None:
-    print("  Wait {} second{}...".format(wait_e, 's' if wait_e > 1 else ''), end='')
-    for i in range(wait_e):
-        if reg is not None:
-            break
-        print('.', end='', flush=True)
-        time.sleep(1)
-        for dev in gnuk_devices_by_vidpid():
-            try:
-                reg = regnual(dev)
-                if dev.filename:
-                    print("Device: %s" % dev.filename)
-                break
-            except:
-                pass
-    print('')
-    print('')
     if reg is None:
-        print('Device not found. Exiting.')
-        raise RuntimeWarning('Device not found. Exiting.')
+        print("Waiting for device to appear:")
+        # while reg == None:
+        print("  Wait {} second{}...".format(wait_e, 's' if wait_e > 1 else ''), end='')
+        for i in range(wait_e):
+            if reg is not None:
+                break
+            print('.', end='', flush=True)
+            time.sleep(1)
+            for dev in gnuk_devices_by_vidpid():
+                try:
+                    reg = regnual(dev)
+                    if dev.filename:
+                        print("Device: %s" % dev.filename)
+                    break
+                except Exception as e:
+                    print(e)
+                    pass
+        print('')
+        print('')
+        if reg is None:
+            print('Device not found. Exiting.')
+            raise RuntimeWarning('Device not found. Exiting.')
 
     # Then, send upgrade program...
     mem_info = reg.mem_info()
