@@ -23,6 +23,7 @@ License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
+from collections import defaultdict
 from subprocess import check_output
 
 from gnuk_token import get_gnuk_device, gnuk_devices_by_vidpid, \
@@ -171,6 +172,16 @@ from getpass import getpass
 DEFAULT_WAIT_FOR_REENUMERATION = 20
 
 
+def get_latest_release_data():
+    try:
+        import requests
+        r = requests.get('https://api.github.com/repos/Nitrokey/nitrokey-start-firmware/releases')
+        latest_tag = r.json()[0]
+    except:
+        latest_tag = defaultdict(lambda: 'unknown')
+    return latest_tag
+
+
 def validate_binary_file(path: str):
     import os.path
     if not os.path.exists(path):
@@ -238,14 +249,15 @@ if __name__ == '__main__':
             print('Quitting')
             exit(2)
 
+    print('Provided firmware files:')
     f = open(args.regnual, "rb")
     data_regnual = f.read()
     f.close()
-    print("{}: {}".format(args.regnual, len(data_regnual)))
+    print("- {}: {}".format(args.regnual, len(data_regnual)))
     f = open(args.gnuk, "rb")
     data_upgrade = f.read()
     f.close()
-    print("{}: {}".format(args.gnuk, len(data_upgrade)))
+    print("- {}: {}".format(args.gnuk, len(data_upgrade)))
 
     from usb_strings import get_devices, print_device
 
@@ -260,7 +272,11 @@ if __name__ == '__main__':
     else:
         print('Cannot identify device')
 
+    latest_tag = get_latest_release_data()
+
     print('Please note:')
+    print('- Latest firmware available is: {} (published: {}),\n provided firmware: {}'.format(latest_tag['tag_name'],
+                                                                         latest_tag['published_at'], args.gnuk))
     print('- All data will be removed from the device')
     print('- Do not interrupt the update process, or the device will not run properly')
     print('- Whole process should not take more than 1 minute')
