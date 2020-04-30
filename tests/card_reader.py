@@ -1,7 +1,7 @@
 """
 card_reader.py - a library for smartcard reader
 
-Copyright (C) 2016, 2017  Free Software Initiative of Japan
+Copyright (C) 2016, 2017, 2019  Free Software Initiative of Japan
 Author: NIIBE Yutaka <gniibe@fsij.org>
 
 This file is a part of Gnuk, a GnuPG USB Token implementation.
@@ -25,6 +25,7 @@ from struct import pack
 from usb.util import find_descriptor, claim_interface, get_string, \
     endpoint_type, endpoint_direction, \
     ENDPOINT_TYPE_BULK, ENDPOINT_OUT, ENDPOINT_IN
+from binascii import hexlify
 
 # USB class, subclass, protocol
 CCID_CLASS = 0x0B
@@ -168,7 +169,7 @@ class CardReader(object):
         return status
 
     def ccid_power_on(self):
-        msg = ccid_compose(0x62, self.__seq, rsv=1) # Vcc=5V
+        msg = ccid_compose(0x62, self.__seq, rsv=2) # Vcc=3.3V
         self.__dev.write(self.__bulkout, msg, self.__timeout)
         self.increment_seq()
         status, chain, data = self.ccid_get_result()
@@ -237,16 +238,21 @@ class CardReader(object):
 
     def send_tpdu(self, info=None, more=0, response_time_ext=0,
                   edc_error=0, no_error=0):
+        rsv = 0
         if info:
             data = compose_i_block(self.ns, info, more)
         elif response_time_ext:
-            # compose S-block
-            data = b"\x00\xE3\x00\xE3"
+            # compose S-block response
+            pcb = 0xe3
+            bwi_byte = bytes([response_time_ext])
+            edc = compute_edc(pcb, bwi_byte)
+            data = bytes([0, pcb, 1]) + bwi_byte + bytes([edc])
+            rsv = response_time_ext
         elif edc_error:
             data = compose_r_block(self.nr, edc_error=1)
         elif no_error:
             data = compose_r_block(self.nr)
-        msg = ccid_compose(0x6f, self.__seq, data=data)
+        msg = ccid_compose(0x6f, self.__seq, rsv=rsv, data=data)
         self.__dev.write(self.__bulkout, msg, self.__timeout)
         self.increment_seq()
 
@@ -277,7 +283,7 @@ class CardReader(object):
         res = b""
         while True:
             if is_s_block_time_ext(blk):
-                self.send_tpdu(response_time_ext=1)
+                self.send_tpdu(response_time_ext=blk[3])
             elif is_i_block_last(blk):
                 self.nr = self.nr ^ 1
                 if is_edc_error(blk):

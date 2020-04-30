@@ -1,6 +1,21 @@
 Gnuk NEWS - User visible changes
 
 
+* Major changes in Gnuk 1.2.15
+
+  Released 2020-01-24, by NIIBE Yutaka
+
+** Switch to Python3
+Scripts under tool/ are switched to Python3.
+Thanks to Bertrand Jacquin.
+
+** Upgrade of Chopstx
+We use Chopstx 1.18.
+
+** Tests also support OpenPGPcard
+Now, a test suite under "tests" may be used to OpenPGPcard.
+
+
 * Major changes in Gnuk 1.2.14
 
   Released 2019-03-05, by NIIBE Yutaka
