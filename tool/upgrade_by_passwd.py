@@ -52,7 +52,7 @@ def progress_func(x):
 progress_func.last = 0
 
 
-def main(wait_e, keyno, passwd, data_regnual, data_upgrade, bootloader):
+def main(wait_e, keyno, passwd, data_regnual, data_upgrade, skip_bootloader):
     reg = None
     for i in range(3):
         if reg is not None:
@@ -68,7 +68,7 @@ def main(wait_e, keyno, passwd, data_regnual, data_upgrade, bootloader):
             except Exception as e:
                 print(e)
 
-    if reg is None or not bootloader:
+    if reg is None and not skip_bootloader:
         print('\n*** Starting bootloader upload procedure')
         l = len(data_regnual)
         if (l & 0x03) != 0:
@@ -218,7 +218,7 @@ if __name__ == '__main__':
     parser.add_argument('-e', dest='wait_e', default=DEFAULT_WAIT_FOR_REENUMERATION, type=int,
                         help='time to wait for device to enumerate, after regnual was executed on device')
     parser.add_argument('-k', dest='keyno', default=0, type=int, help='selected key index')
-    parser.add_argument('-b', dest='bootloader', default=False, action='store_true',
+    parser.add_argument('-b', dest='skip_bootloader', default=False, action='store_true',
                         help='Skip bootloader upload (e.g. when done so already)')
     args = parser.parse_args()
 
@@ -263,7 +263,7 @@ if __name__ == '__main__':
     for attempt_counter in range(2):
         try:
             # First 4096-byte in data_upgrade is SYS, so, skip it.
-            main(wait_e, keyno, passwd, data_regnual, data_upgrade[4096:], args.bootloader)
+            main(wait_e, keyno, passwd, data_regnual, data_upgrade[4096:], args.skip_bootloader)
             update_done = True
             break
         except ValueError as e:
