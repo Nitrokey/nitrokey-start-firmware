@@ -74,6 +74,13 @@ static uint8_t *last_p;
 const uint8_t flash_data[4] __attribute__ ((section (".gnuk_data"))) = {
   0x00, 0x00, 0xff, 0xff
 };
+const uint8_t flash_data1[4] __attribute__ ((section (".gnuk_data1"))) = {
+  0x00, 0x00, 0xff, 0xff
+};
+const uint8_t flash_data2[4] __attribute__ ((section (".gnuk_data2"))) = {
+  0x00, 0x00, 0xff, 0xff
+};
+
 
 #ifdef GNU_LINUX_EMULATION
 extern uint8_t *flash_addr_key_storage_start;
@@ -84,8 +91,16 @@ extern uint8_t *flash_addr_data_storage_start;
 /* Linker sets these symbols */
 extern uint8_t _keystore_pool;
 extern uint8_t _data_pool;
-#define FLASH_ADDR_KEY_STORAGE_START  ((&_keystore_pool))
-#define FLASH_ADDR_DATA_STORAGE_START ((&_data_pool))
+extern uint8_t _keystore_pool1;
+extern uint8_t _data_pool1;
+extern uint8_t _keystore_pool2;
+extern uint8_t _data_pool2;
+static uint8_t *_keystore_map[]={(&_keystore_pool),(&_keystore_pool1),(&_keystore_pool2)};
+static uint8_t *_data_map[]={(&_data_pool),(&_data_pool1),(&_data_pool2)};
+static uint8_t _selected_identity=0;
+
+#define FLASH_ADDR_KEY_STORAGE_START  (_keystore_map[_selected_identity])
+#define FLASH_ADDR_DATA_STORAGE_START (_data_map[_selected_identity])
 #endif
 
 static int key_available_at (const uint8_t *k, int key_size)
