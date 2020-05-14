@@ -148,6 +148,40 @@ SECTIONS
         KEEP(*(.gnuk_data))
         . = ALIGN(@FLASH_PAGE_SIZE@);
         . += @FLASH_PAGE_SIZE@;
+        . = ALIGN (@FLASH_PAGE_SIZE@);
+        _keystore_pool1 = .;
+        . += 1024;
+        . = ALIGN(@FLASH_PAGE_SIZE@);
+        . += 1024;
+        . = ALIGN(@FLASH_PAGE_SIZE@);
+        . += 1024;
+        . = ALIGN(@FLASH_PAGE_SIZE@);
+        _updatekey_store1 = .;
+        . += 1024;
+        . = ALIGN(@FLASH_PAGE_SIZE@);
+        _data_pool1 = .;
+        KEEP(*(.gnuk_data1))
+        . = ALIGN(@FLASH_PAGE_SIZE@);
+        . += @FLASH_PAGE_SIZE@;
+        . = ALIGN (@FLASH_PAGE_SIZE@);
+        _keystore_pool2 = .;
+        . += 1024;
+        . = ALIGN(@FLASH_PAGE_SIZE@);
+        . += 1024;
+        . = ALIGN(@FLASH_PAGE_SIZE@);
+        . += 1024;
+        . = ALIGN(@FLASH_PAGE_SIZE@);
+        _updatekey_store2 = .;
+        . += 1024;
+        . = ALIGN(@FLASH_PAGE_SIZE@);
+        _data_pool2 = .;
+        KEEP(*(.gnuk_data2))
+        . = ALIGN(@FLASH_PAGE_SIZE@);
+        . += @FLASH_PAGE_SIZE@;
+        . = ALIGN(@FLASH_PAGE_SIZE@);
+        _identsel = .;
+        . += 1024;
+        . = ALIGN(@FLASH_PAGE_SIZE@);
     } > flash =0xffffffff
 }
 
