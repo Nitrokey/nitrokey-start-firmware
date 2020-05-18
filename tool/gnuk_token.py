@@ -326,6 +326,15 @@ class gnuk_token(object):
             raise ValueError("%02x%02x" % (sw[0], sw[1]))
         return self.cmd_get_response(sw[1])
 
+    def cmd_set_identity(self, ident):
+        cmd_data = iso7816_compose(0x85, 0x00, ident, b"")
+        sw = self.icc_send_cmd(cmd_data)
+        if len(sw) != 2:
+            raise ValueError(sw)
+        if not (sw[0] == 0x90 and sw[1] == 0x00):
+            raise ValueError("%02x%02x" % (sw[0], sw[1]))
+        return True
+
     def cmd_change_reference_data(self, who, data):
         cmd_data = iso7816_compose(0x24, 0x00, 0x80+who, data)
         sw = self.icc_send_cmd(cmd_data)
