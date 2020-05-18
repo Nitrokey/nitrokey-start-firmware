@@ -54,6 +54,7 @@ static struct eventflag *openpgp_comm;
 #define INS_PGP_GENERATE_ASYMMETRIC_KEY_PAIR	0x47
 #define INS_EXTERNAL_AUTHENTICATE		0x82
 #define INS_GET_CHALLENGE			0x84
+#define INS_SET_IDENTITY			0x85
 #define INS_INTERNAL_AUTHENTICATE		0x88
 #define INS_SELECT_FILE				0xa4
 #define INS_READ_BINARY				0xb0
@@ -806,7 +807,7 @@ cmd_read_binary (struct eventflag *ccid_comm)
       const uint8_t *p;
       uint16_t len = 256;
 
-      p = &ch_certificate_start;
+      p = flash_get_ch_cert_start();
       if (offset >= FLASH_CH_CERTIFICATE_SIZE)
 	GPG_MEMORY_FAILURE ();
       else
@@ -908,6 +909,24 @@ cmd_get_data (struct eventflag *ccid_comm)
 
   gpg_do_get_data (tag, 0);
 }
+
+static void
+cmd_set_identity (struct eventflag *ccid_comm)
+{
+  uint16_t tag = ((P1 (apdu)<<8) | P2 (apdu));
+
+  (void)ccid_comm;
+  DEBUG_INFO (" - Set Identity\r\n");
+
+  if(tag>2){
+      GPG_MEMORY_FAILURE ();
+      return;
+  }else{
+      GPG_SUCCESS ();
+      flash_set_identity(tag);
+  }
+}
+
 
 #define ECDSA_HASH_LEN 32
 #define ECDSA_SIGNATURE_LENGTH 64
@@ -1525,6 +1544,7 @@ const struct command cmds[] = {
     cmd_external_authenticate },
 #endif
   { INS_GET_CHALLENGE, cmd_get_challenge }, /* Not in OpenPGP card protocol */
+  { INS_SET_IDENTITY, cmd_set_identity }, /* Not in OpenPGP card protocol */
   { INS_INTERNAL_AUTHENTICATE, cmd_internal_authenticate },
   { INS_SELECT_FILE, cmd_select_file },
   { INS_READ_BINARY, cmd_read_binary },     /* Not in OpenPGP card protocol */

@@ -666,7 +666,7 @@ do_openpgpcard_aid (uint16_t tag, int with_tag)
       *res_p++ = 0xff;
       *res_p++ = 0xfe;
 
-      *res_p++ = u[3];
+      *res_p++ = _selected_identity;
       *res_p++ = u[2];
       *res_p++ = u[1];
       *res_p++ = u[0];
@@ -2112,7 +2112,7 @@ gpg_do_get_data (uint16_t tag, int with_tag)
 #if defined(CERTDO_SUPPORT)
   if (tag == GPG_DO_CH_CERTIFICATE)
     {
-      apdu.res_apdu_data = &ch_certificate_start;
+      apdu.res_apdu_data = flash_get_ch_cert_start();
       apdu.res_apdu_data_len = ((apdu.res_apdu_data[2] << 8) | apdu.res_apdu_data[3]);
       if (apdu.res_apdu_data_len == 0xffff)
 	{
