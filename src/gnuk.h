@@ -153,6 +153,8 @@ void flash_set_data_pool_last (const uint8_t *p);
 void flash_clear_halfword (uintptr_t addr);
 void flash_increment_counter (uint8_t counter_tag_nr);
 void flash_reset_counter (uint8_t counter_tag_nr);
+void flash_read_selected_identity(void);
+void flash_set_identity(uint8_t id);
 
 #define FILEID_SERIAL_NO	0
 #define FILEID_UPDATE_KEY_0	1
@@ -164,10 +166,11 @@ int flash_erase_binary (uint8_t file_id);
 int flash_write_binary (uint8_t file_id, const uint8_t *data,
 			uint16_t len, uint16_t offset);
 
-#define FLASH_CH_CERTIFICATE_SIZE 2048
+extern uint8_t _selected_identity;
+#define FLASH_CH_CERTIFICATE_SIZE (_selected_identity==2?1024:2048)
 
-/* Linker set these two symbols */
-extern uint8_t ch_certificate_start;
+/* Function to get currently selected ch_cert */
+uint8_t* flash_get_ch_cert_start(void);
 
 #define FIRMWARE_UPDATE_KEY_CONTENT_LEN 256	/* RSA-2048 (p and q) */
 

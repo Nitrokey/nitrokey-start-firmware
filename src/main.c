@@ -309,6 +309,7 @@ main (int argc, const char *argv[])
 #endif
   chopstx_t ccid_thd;
   int wait_for_ack = 0;
+  flash_read_selected_identity();
 
   chopstx_conf_idle (1);
 

@@ -74,6 +74,13 @@ static uint8_t *last_p;
 const uint8_t flash_data[4] __attribute__ ((section (".gnuk_data"))) = {
   0x00, 0x00, 0xff, 0xff
 };
+const uint8_t flash_data1[4] __attribute__ ((section (".gnuk_data1"))) = {
+  0x00, 0x00, 0xff, 0xff
+};
+const uint8_t flash_data2[4] __attribute__ ((section (".gnuk_data2"))) = {
+  0x00, 0x00, 0xff, 0xff
+};
+
 
 #ifdef GNU_LINUX_EMULATION
 extern uint8_t *flash_addr_key_storage_start;
@@ -84,9 +91,29 @@ extern uint8_t *flash_addr_data_storage_start;
 /* Linker sets these symbols */
 extern uint8_t _keystore_pool;
 extern uint8_t _data_pool;
-#define FLASH_ADDR_KEY_STORAGE_START  ((&_keystore_pool))
-#define FLASH_ADDR_DATA_STORAGE_START ((&_data_pool))
+extern uint8_t _keystore_pool1;
+extern uint8_t _data_pool1;
+extern uint8_t _keystore_pool2;
+extern uint8_t _data_pool2;
+extern uint8_t _identsel; /* identity selection page */
+extern uint8_t ch_certificate_start;
+extern uint8_t ch_certificate_start1;
+extern uint8_t ch_certificate_start2; /*identity2 can only store one page size worth of cert do*/
+static uint8_t *_ch_cert_map[]={(&ch_certificate_start),(&ch_certificate_start1),(&ch_certificate_start2)};
+
+
+static uint8_t *_keystore_map[]={(&_keystore_pool),(&_keystore_pool1),(&_keystore_pool2)};
+static uint8_t *_data_map[]={(&_data_pool),(&_data_pool1),(&_data_pool2)};
+uint8_t _selected_identity=0;
+
+#define FLASH_ADDR_KEY_STORAGE_START  (_keystore_map[_selected_identity])
+#define FLASH_ADDR_DATA_STORAGE_START (_data_map[_selected_identity])
+#define FLASH_ADDR_CHCERT_START (_ch_cert_map[_selected_identity])
 #endif
+
+uint8_t* flash_get_ch_cert_start(){
+    return FLASH_ADDR_CHCERT_START;
+}
 
 static int key_available_at (const uint8_t *k, int key_size)
 {
@@ -105,6 +132,104 @@ static int key_available_at (const uint8_t *k, int key_size)
     return 0;
 
   return 1;
+}
+
+/*Identity selection algorithm:
+ * For every even byte in identity selection page
+ * If last two bits of byte are zero, skip to next even byte
+ * Otherwise, interpet as follows:
+ * last two bits are 01 -> identity 1; 10-> identity 2; 11-> identity 0 
+ * If all bytes in the page are zero, erase the page, treat as identity 0.
+ * To change identity:
+ * If changing from identity 0 to identity 1 or 2
+ *   Find the current identity byte (first nonzero even byte)
+ *   Write the current identity to its address
+ * If changing from identity 1 or 2 to any other identity
+ *   Find the current identity byte
+ *   If it it the last byte on the page:
+ *      - erase the page
+ *      - if the desired identity is 1 or 2, write the desired identity to byte 0 of the page
+ *   Otherwise:
+ *      - write a zero to its address
+ *      - if the desired identity is 1 or 2, increment the address by 2 and write the desired identity there
+ * 
+ * Why this works:
+ * Flash gets initialized in an all-ones state after erase. Flash writes can clear bits but not set them without an erase.
+ * The STM32F1 flash controller however has a bug that only allows writing two bytes at a time.
+ * It will also flip the order of the bytes we write (0xAABB gets recorded as 0xBBAA).
+ * The permitted writes are: 0xffff -> any value; any value-> 0x0000.
+ * We aim to minimize the number of erases. Here's an example. Imagine we have 6 bytes:
+ * Flash state: 0xff ff ff ff ff ff
+ * We start out with identity 0, because the byte [0] ends in 11:
+ * 0xff = 1111 1111
+ * We change identity from 0 to 1 by writing 0x0001 to address 0:
+ * 0xff ff ff ff ff ff -> 0x01 00 ff ff ff ff (bytes get flipped, that's ok)
+ * Now, let's say we want to change identity back to 0. We write 0x0000 to address 0: 
+ * 0x01 00 ff ff ff ff -> 0x00 00 ff ff ff ff (first nonzero even byte is now address 2, it reads as identity 0)
+ * We change identity again, this time from 0 to 2 (write 0x0002 to address 2):
+ * 0x00 00 ff ff ff ff -> 0x00 00 02 00 ff ff (first nonzero even byte is still address 2, it reads as identity 2)
+ * and from 2 to 1 (write 0x0000 to address 2, 0x0001 to address 4)
+ * 0x00 00 02 00 ff ff -> 0x00 00 00 00 01 00 (first nonzero even byte is now address 4, it reads as identity 1)
+ * On the next change, we'll run out of space - that's fine. Let's go from 1 to 0 again
+ * Because we are on the last byte, we erase the page
+ * 0xff ff ff ff ff ff (reads as identity 0)
+ * If, instead, we were changing from 1 to 2, we would also write 0x0002 to address 0
+ * Now, of course, instead of 6 bytes we have 1024 - meaning we need to erase even less often. This is great!
+ * On other stm32 parts (other than the F1 series) the flash controller allows clearing arbitrary bits. This would let us reduce erases even further.
+ */
+void flash_read_selected_identity(){
+    for(uint16_t byte=0;byte<1024;byte+=2){
+        uint8_t b=((&_identsel)[byte]&0x3);
+        if(b==0x00){
+            continue; /* skip all all-zero bytes */
+        }else{
+            if(b==3){ b=0; }
+            _selected_identity=b;
+            return;
+        }
+    }
+    /* default identity is zero - if we reached here and found only zeroes the flash page is in an invalid state and we should erase it */
+    flash_erase_page ((uintptr_t)(&_identsel));
+}
+
+
+static void flash_write_selected_identity(uint8_t id){
+    if(id>2){
+        return;
+    }
+    if(id==_selected_identity){
+        return;
+    }
+    for(uint16_t byte=0;byte<1024;byte+=2){
+        uint8_t b=((&_identsel)[byte]&0x3);
+        if(b==0x00){
+            continue; /* skip all all-zero byte pairs */
+        }else{
+            if(_selected_identity==0){
+                flash_program_halfword ((uintptr_t)((&_identsel)+byte),id);
+                return;
+            }else{
+                if(byte==1022){
+                    flash_erase_page ((uintptr_t)(&_identsel));
+                    if(id>0){
+                        flash_program_halfword ((uintptr_t)((&_identsel)),id);
+                    }
+                    return;
+                }else{
+                    flash_program_halfword ((uintptr_t)((&_identsel)+byte),0);
+                    if(id>0){
+                        flash_program_halfword ((uintptr_t)((&_identsel)+byte+2),id);
+                    }
+                    return;
+                }
+            }
+        }
+    }
+}
+
+void flash_set_identity(uint8_t id){
+    flash_write_selected_identity(id);
+    nvic_system_reset();
 }
 
 
@@ -170,9 +295,11 @@ flash_terminate (void)
   data_pool = FLASH_ADDR_DATA_STORAGE_START;
   last_p = FLASH_ADDR_DATA_STORAGE_START + FLASH_DATA_POOL_HEADER_SIZE;
 #if defined(CERTDO_SUPPORT)
-  flash_erase_page ((uintptr_t)&ch_certificate_start);
+  flash_erase_page ((uintptr_t)FLASH_ADDR_CHCERT_START);
+  if(_selected_identity!=2){
   if (FLASH_CH_CERTIFICATE_SIZE > flash_page_size)
-    flash_erase_page ((uintptr_t)(&ch_certificate_start + flash_page_size));
+    flash_erase_page ((uintptr_t)(FLASH_ADDR_CHCERT_START + flash_page_size));
+  }
 #endif
 }
 
@@ -682,12 +809,14 @@ flash_erase_binary (uint8_t file_id)
 {
   if (file_id == FILEID_CH_CERTIFICATE)
     {
-      const uint8_t *p = &ch_certificate_start;
+      const uint8_t *p = FLASH_ADDR_CHCERT_START;
       if (flash_check_blank (p, FLASH_CH_CERTIFICATE_SIZE) == 0)
 	{
 	  flash_erase_page ((uintptr_t)p);
-	  if (FLASH_CH_CERTIFICATE_SIZE > flash_page_size)
-	    flash_erase_page ((uintptr_t)p + flash_page_size);
+      if(_selected_identity!=2){
+	    if (FLASH_CH_CERTIFICATE_SIZE > flash_page_size)
+	      flash_erase_page ((uintptr_t)p + flash_page_size);
+      }
 	}
 
       return 0;
@@ -727,7 +856,10 @@ flash_write_binary (uint8_t file_id, const uint8_t *data,
   else if (file_id == FILEID_CH_CERTIFICATE)
     {
       maxsize = FLASH_CH_CERTIFICATE_SIZE;
-      p = &ch_certificate_start;
+      if(_selected_identity==2){
+          maxsize=flash_page_size;
+      }
+      p = FLASH_ADDR_CHCERT_START;
     }
 #endif
   else
