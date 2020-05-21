@@ -625,14 +625,15 @@ def gnuk_devices_by_vidpid():
                 yield dev
                 break
 
-def get_gnuk_device():
+def get_gnuk_device(verbose=True):
     icc = None
     for (dev, config, intf) in gnuk_devices():
         try:
             icc = gnuk_token(dev, config, intf)
-            print("Device: %s" % dev.filename)
-            print("Configuration: %d" % config.value)
-            print("Interface: %d" % intf.interfaceNumber)
+            if verbose:
+                print("Device: %s" % dev.filename)
+                print("Configuration: %d" % config.value)
+                print("Interface: %d" % intf.interfaceNumber)
             break
         except:
             pass

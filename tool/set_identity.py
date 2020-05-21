@@ -33,7 +33,7 @@ if __name__ == "__main__":
             if 'No ICC present' in str(e):
                 print("Could not connect to device, trying to close scdaemon")
                 result = check_output(["gpg-connect-agent",
-                                       "SCD KILLSCD", "SCD BYE", "/bye"])
+                                       "SCD KILLSCD", "SCD BYE", "/bye"])  # gpgconf --kill all might be better?
                 time.sleep(3)
             else:
                 print('*** Found error: {}'.format(str(e)))
