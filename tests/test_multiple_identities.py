@@ -12,6 +12,8 @@ import rsa_keys
 from openpgp_card import OpenPGP_Card
 from tool.gnuk_token import gnuk_token
 
+CERT_DO_FILEID = 5
+
 
 def test_identity_set(gnuk_re: ReconnectableDevice):
     """
@@ -92,8 +94,20 @@ def test_multi_personalize(gnuk_re: ReconnectableDevice):
 #         FIXME test each id
 
 
-def test_certificate_upload_limit():
-    raise NotImplemented()
+@pytest.mark.parametrize("count", [10, 25, 100, 200])
+def test_certificate_upload_limit(gnuk_re: ReconnectableDevice, count):
+    gnuk = next(gnuk_re.get_device())
+
+    gnuk.cmd_verify(3, PIN_ADMIN_FACTORY)
+    data = b'0123456789'*count
+    print('Writing')
+    gnuk.cmd_write_binary(CERT_DO_FILEID, data, is_update=True)
+    print('Writing finished')
+    time.sleep(1)
+    print('Check data')
+    data_in_device = gnuk.cmd_read_binary(CERT_DO_FILEID)
+    assert data == bytes(data_in_device)[:len(data)]
+    print(f'Data written: {len(data)}, data read: {len(bytes(data_in_device))}')
 
 
 @pytest.mark.parametrize("count", [10, 512])
