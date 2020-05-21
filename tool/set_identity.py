@@ -1,16 +1,11 @@
 #! /usr/bin/python3
 
-from collections import defaultdict
+import sys
+import time
 from subprocess import check_output
 
-from gnuk_token import get_gnuk_device, gnuk_devices_by_vidpid, \
-    gnuk_token, regnual, SHA256_OID_PREFIX, crc32, parse_kdf_data
-from kdf_calc import kdf_calc
+from gnuk_token import get_gnuk_device
 from usb.core import USBError
-
-import sys, binascii, time, os
-import rsa
-from struct import pack
 
 if __name__=="__main__":
     if len(sys.argv)!=2:
