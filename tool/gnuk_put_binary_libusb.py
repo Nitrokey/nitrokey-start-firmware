@@ -67,8 +67,13 @@ def main(fileid, is_update, data, passwd):
         data_in_device = gnuk.cmd_read_binary(fileid)
         compare(data, data_in_device)
     else:
-        data_in_device = gnuk.cmd_get_data(0x7f, 0x21)
-        compare(data, data_in_device)
+        # data_in_device = gnuk.cmd_get_data(0x7f, 0x21)
+        data_in_device = binascii.hexlify(bytes(gnuk.cmd_read_binary(5)))
+        data = binascii.hexlify(data)
+        print(data)
+        print(data_in_device)
+        assert compare(data[:len(data_in_device)], data_in_device[:len(data)])
+        compare(data, data_in_device[:len(data)])
     print('Check finished')
     gnuk.icc_power_off()
     return 0
