@@ -22,5 +22,5 @@ reset:
 GNUK_CONFIG=--target=NITROKEY_START --vidpid=20a0:4211 --enable-factory-reset --enable-certdo --enable-hid-card-change
 .PHONY: build
 build:
-	cd ../docker/ && sudo env GNUK_CONFIG="${GNUK_CONFIG}  make
+	cd ../docker/ && sudo env GNUK_CONFIG="${GNUK_CONFIG}"  make
 
