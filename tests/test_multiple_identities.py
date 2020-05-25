@@ -106,8 +106,10 @@ def test_certificate_upload_limit(gnuk_re: ReconnectableDevice, count):
     time.sleep(1)
     print('Check data')
     data_in_device = gnuk.cmd_read_binary(CERT_DO_FILEID)
-    assert data == bytes(data_in_device)[:len(data)]
-    print(f'Data written: {len(data)}, data read: {len(bytes(data_in_device))}')
+    read_data = bytes(data_in_device)
+    assert len(read_data) >= len(data)
+    assert data == read_data[:len(data)]
+    print(f'Data written: {len(data)}, data read: {len(read_data)}')
 
 
 @pytest.mark.parametrize("count", [10, 512])
