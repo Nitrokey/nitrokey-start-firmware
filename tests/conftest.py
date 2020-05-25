@@ -4,6 +4,7 @@ from openpgp_card import OpenPGP_Card
 
 from tool.gnuk_token import get_gnuk_device, gnuk_token
 
+TEST_DATA512 = open('../tool/random512', 'rb').read()
 
 def pytest_addoption(parser):
     parser.addoption("--reader", dest="reader", type=str, action="store",

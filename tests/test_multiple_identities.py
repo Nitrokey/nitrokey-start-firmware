@@ -4,12 +4,13 @@ from binascii import hexlify
 
 import pytest
 import usb
-from conftest import ReconnectableDevice
+from conftest import ReconnectableDevice, TEST_DATA512
 
 from util import get_data_object
 
 import rsa_keys
 from openpgp_card import OpenPGP_Card
+
 from tool.gnuk_token import gnuk_token
 
 CERT_DO_FILEID = 5
@@ -92,6 +93,30 @@ def test_multi_personalize(gnuk_re: ReconnectableDevice):
         gnuk = next(gnuk_re.get_device())
         helper_personalize_card(None, gnuk, f'{i}'.encode(), i)
 #         FIXME test each id
+
+
+@pytest.mark.parametrize("data_src", ['local', 'file'])
+def test_certificate_crash(gnuk_re: ReconnectableDevice, data_src):
+    gnuk = next(gnuk_re.get_device())
+    data = b''
+    if data_src is 'local':
+        data = b'0123456789'*60
+        data = b'\xFE'*4 + data[:512]
+    elif data_src is 'file':
+        data = TEST_DATA512
+    else:
+        raise Exception('No data selected')
+    print()
+    print('Writing')
+    gnuk.cmd_select_openpgp()
+    gnuk.cmd_verify(3, PIN_ADMIN_FACTORY)
+    gnuk.cmd_write_binary(CERT_DO_FILEID, data, is_update=True)
+    gnuk.cmd_select_openpgp()
+    print('Reading')
+    data_in_device = gnuk.cmd_get_data(0x7f, 0x21)
+    read_data = bytes(data_in_device)
+    assert len(read_data) >= len(data)
+    assert data == read_data[:len(data)]
 
 
 @pytest.mark.parametrize("count", [10, 25, 100, 200])
