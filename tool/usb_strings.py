@@ -59,6 +59,8 @@ def print_device(dev: usb.Device, n:int=8) -> None:
 def main(n: int) -> None:
     for dev in get_devices():
         print_device(dev, n)
+    else:
+        print('No devices found')
 
 
 if __name__ == '__main__':
