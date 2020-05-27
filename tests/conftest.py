@@ -2,8 +2,9 @@ import time
 from typing import Generator
 
 
+FORMAT = '%(relativeCreated)-8d %(message)s'
 import logging
-logging.basicConfig()
+logging.basicConfig(format=FORMAT, level=logging.DEBUG)
 logger = logging.getLogger()
 
 log_msg = logger.debug
