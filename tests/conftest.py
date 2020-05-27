@@ -1,3 +1,13 @@
+import time
+from typing import Generator
+
+
+import logging
+logging.basicConfig()
+logger = logging.getLogger()
+
+log_msg = logger.debug
+
 import pytest
 from card_reader import get_ccid_device
 from openpgp_card import OpenPGP_Card
@@ -31,13 +41,32 @@ def gnuk() -> gnuk_token:
     yield gnuk
     del gnuk
 
+
 class ReconnectableDevice():
     def get_device(self) -> gnuk_token:
-        gnuk = get_gnuk_device(verbose=False)
-        gnuk.cmd_select_openpgp()
-        yield gnuk
-        del gnuk
+        while True:
+            gnuk = None
+            for i in range(10):
+                try:
+                    gnuk = get_gnuk_device(verbose=False)
+                    gnuk.cmd_select_openpgp()
+                    break
+                except Exception as e:
+                    log_msg(f'Connection error: {e}')
+                    time.sleep(1)
+            assert gnuk is not None
+            yield gnuk
+            del gnuk
+
+
+devices = ReconnectableDevice().get_device()
+
+IDENTITY_CERTSIZE = {
+    0: 2048,
+    1: 2048,
+    2: 1024
+}
 
 @pytest.fixture(scope="session")
-def gnuk_re() -> ReconnectableDevice:
-    return ReconnectableDevice()
+def gnuk_re() -> gnuk_token:
+    return devices
