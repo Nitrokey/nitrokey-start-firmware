@@ -268,10 +268,10 @@ class gnuk_token(object):
     def cmd_write_binary(self, fileid, data, is_update):
         count = 0
         data_len = len(data)
-        if is_update:
+        if is_update:  # overwrite existing file -> update
             ins = 0xd6
         else:
-            ins = 0xd0
+            ins = 0xd0  # write file, and break if exist already
         while count*256 < data_len:
             if count == 0:
                 if len(data) < 128:
@@ -625,14 +625,15 @@ def gnuk_devices_by_vidpid():
                 yield dev
                 break
 
-def get_gnuk_device():
+def get_gnuk_device(verbose=True):
     icc = None
     for (dev, config, intf) in gnuk_devices():
         try:
             icc = gnuk_token(dev, config, intf)
-            print("Device: %s" % dev.filename)
-            print("Configuration: %d" % config.value)
-            print("Interface: %d" % intf.interfaceNumber)
+            if verbose:
+                print("Device: %s" % dev.filename)
+                print("Configuration: %d" % config.value)
+                print("Interface: %d" % intf.interfaceNumber)
             break
         except:
             pass

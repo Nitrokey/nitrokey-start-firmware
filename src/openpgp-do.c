@@ -2115,13 +2115,19 @@ gpg_do_get_data (uint16_t tag, int with_tag)
       apdu.res_apdu_data = flash_get_ch_cert_start();
       apdu.res_apdu_data_len = ((apdu.res_apdu_data[2] << 8) | apdu.res_apdu_data[3]);
       if (apdu.res_apdu_data_len == 0xffff)
-	{
-	  apdu.res_apdu_data_len = 0;
-	  GPG_NO_RECORD ();
-	}
+        {
+            apdu.res_apdu_data_len = 0;
+            GPG_NO_RECORD ();
+        }
       else
-	/* Add length of (tag+len) */
-	apdu.res_apdu_data_len += 4;
+        {
+            /* check for maximum size in case the header of the certdo is not present or corrupted */
+            if(apdu.res_apdu_data_len>FLASH_CH_CERTIFICATE_SIZE){
+                apdu.res_apdu_data_len=FLASH_CH_CERTIFICATE_SIZE;
+            }
+            /* Add length of (tag+len) */
+            apdu.res_apdu_data_len += 4;
+        }
     }
   else
 #endif

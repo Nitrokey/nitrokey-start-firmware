@@ -19,4 +19,12 @@ flash: $(FLASH_FILE)
 reset:
 	STM32_Programmer_CLI -c port=SWD -halt -rst
 
+# GNUK_CONFIG=--target=NITROKEY_START --vidpid=20a0:4211 --enable-factory-reset --enable-certdo --enable-hid-card-change
+GNUK_CONFIG=--target=NITROKEY_START --vidpid=20a0:4211 --enable-factory-reset --enable-certdo
+.PHONY: build
+build:
+	cd ../docker/ && sudo env GNUK_CONFIG="${GNUK_CONFIG}"  make
 
+.PHONY: status
+status:
+	cd ../tool/ && python3 usb_strings.py
