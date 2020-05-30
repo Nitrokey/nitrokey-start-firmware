@@ -189,11 +189,11 @@ def main(wait_e, keyno, passwd, data_regnual, data_upgrade, skip_bootloader):
 def get_latest_release_data():
     try:
         r = requests.get('https://api.github.com/repos/Nitrokey/nitrokey-start-firmware/releases')
+        json = r.json()
         if r.status_code == 403:
+            logger.debug('JSON release data {}'.format(json))
             print('No Github API access')
             exit(3)
-        json = r.json()
-        logger.debug('JSON release data {}'.format(json))
         latest_tag = json[0]
     except Exception as e:
         logger.exception('Failed getting release data')
@@ -251,12 +251,18 @@ def parse_arguments():
 
 def kill_smartcard_services():
     print('*** Could not connect to the device. Attempting to close scdaemon.')
-    print('*** Running: gpg-connect-agent "SCD KILLSCD" "SCD BYE" /bye')
     # check_output(["gpg-connect-agent",
     #               "SCD KILLSCD", "SCD BYE", "/bye"])
-    command = ['gpgconf', '--kill all']
-    logger.debug('Running {}'.format(command))
-    check_output(command)
+
+    commands = [['gpgconf', '--kill', 'all'],
+                'sudo systemctl stop pcscd pcscd.socket'.split()]
+    for command in commands:
+        print('*** Running: "{}"'.format(' '.join(command)))
+        logger.debug('Running {}'.format(command))
+        try:
+            check_output(command)
+        except Exception as e:
+            logger.exception('Error while running command')
     time.sleep(3)
 
 
@@ -319,11 +325,19 @@ def download_file_or_exit(url):
     return firmware_data
 
 
+def log_arguments_securely(args):
+    args_log = args
+    args_log.password = '<hidden>'
+    logger.debug('Arguments: {}'.format(args_log))
+    del args_log
+
+
 if __name__ == '__main__':
     logger.debug('Start session {}'.format(datetime.now()))
 
     # FIXME remove that to allow standalone
     if os.getcwd() != os.path.dirname(os.path.abspath(__file__)):
+        logger.debug('Wrong directory')
         print("Please change working directory to: %s" % os.path.dirname(os.path.abspath(__file__)))
         exit(1)
 
@@ -331,6 +345,8 @@ if __name__ == '__main__':
     keyno = args.keyno
     passwd = None
     wait_e = args.wait_e
+
+    log_arguments_securely(args)
 
     if args.password:
         passwd = args.password
@@ -359,6 +375,8 @@ if __name__ == '__main__':
     else:
         print('Cannot identify device')
 
+    logger.debug('Initial device strings: {}'.format(dev_strings))
+
     latest_tag = get_latest_release_data()
 
     print('Please note:')
@@ -369,6 +387,8 @@ if __name__ == '__main__':
     print('- Do not interrupt the update process, or the device will not run properly')
     print('- Whole process should not take more than 1 minute')
     answer = input('Do you want to continue? [yes/no]: ')
+    print('Entered: "{}"'.format(answer))
+    logger.debug('Continue? "{}"'.format(answer))
     if answer != 'yes':
         print('Device is not modified. Exiting.')
         exit(1)
@@ -381,6 +401,7 @@ if __name__ == '__main__':
             update_done = True
             break
         except ValueError as e:
+            logger.exception('Error while running update')
             if 'No ICC present' in str(e):
                 kill_smartcard_services()
                 # print('*** Please run update tool again.')
@@ -432,3 +453,5 @@ if __name__ == '__main__':
               'It should be working fine though after power cycle - please reinsert device to '
               'USB slot and test it.')
         print('Device could be removed from the USB slot.')
+    logger.debug('Final device strings: {}'.format(dev_strings_upgraded))
+    logger.debug('Finishing session {}'.format(datetime.now()))
