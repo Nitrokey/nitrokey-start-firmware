@@ -185,11 +185,18 @@ def main(wait_e, keyno, passwd, data_regnual, data_upgrade, skip_bootloader):
     return 0
 
 
+@lru_cache()
 def get_latest_release_data():
     try:
         r = requests.get('https://api.github.com/repos/Nitrokey/nitrokey-start-firmware/releases')
-        latest_tag = r.json()[0]
-    except:
+        if r.status_code == 403:
+            print('No Github API access')
+            exit(3)
+        json = r.json()
+        logger.debug('JSON release data {}'.format(json))
+        latest_tag = json[0]
+    except Exception as e:
+        logger.exception('Failed getting release data')
         latest_tag = defaultdict(lambda: 'unknown')
     return latest_tag
 
