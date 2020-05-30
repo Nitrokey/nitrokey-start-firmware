@@ -252,8 +252,11 @@ def parse_arguments():
 def kill_smartcard_services():
     print('*** Could not connect to the device. Attempting to close scdaemon.')
     print('*** Running: gpg-connect-agent "SCD KILLSCD" "SCD BYE" /bye')
-    check_output(["gpg-connect-agent",
-                  "SCD KILLSCD", "SCD BYE", "/bye"])
+    # check_output(["gpg-connect-agent",
+    #               "SCD KILLSCD", "SCD BYE", "/bye"])
+    command = ['gpgconf', '--kill all']
+    logger.debug('Running {}'.format(command))
+    check_output(command)
     time.sleep(3)
 
 
