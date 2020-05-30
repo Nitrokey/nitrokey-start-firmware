@@ -23,16 +23,17 @@ License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
+import binascii
+import os
+import time
 from collections import defaultdict
+from struct import pack
 from subprocess import check_output
 
-from gnuk_token import get_gnuk_device, gnuk_devices_by_vidpid, \
-    gnuk_token, regnual, SHA256_OID_PREFIX, crc32, parse_kdf_data
-from kdf_calc import kdf_calc
-
-import sys, binascii, time, os
 import rsa
-from struct import pack
+from gnuk_token import get_gnuk_device, gnuk_devices_by_vidpid, \
+    regnual, SHA256_OID_PREFIX, crc32, parse_kdf_data
+from kdf_calc import kdf_calc
 
 DEFAULT_PW3 = "12345678"
 BY_ADMIN = 3
