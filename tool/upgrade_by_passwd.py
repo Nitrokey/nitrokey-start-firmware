@@ -23,22 +23,40 @@ License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
+import argparse
 import binascii
+import hashlib
+import logging
 import os
 import time
 from collections import defaultdict
+from datetime import datetime
+from enum import Enum
+from functools import lru_cache
+from getpass import getpass
 from struct import pack
 from subprocess import check_output
+
+import requests
 
 import rsa
 from gnuk_token import get_gnuk_device, gnuk_devices_by_vidpid, \
     regnual, SHA256_OID_PREFIX, crc32, parse_kdf_data
 from kdf_calc import kdf_calc
+from usb_strings import get_devices, print_device
 
+# This should be event driven, not guessing some period, or polling.
+TIME_DETECT_DEVICE_AFTER_UPDATE_LONG_S = 5
+TIME_DETECT_DEVICE_AFTER_UPDATE_S = 30
+ERR_EMPTY_COUNTER = '6983'
+ERR_INVALID_PIN = '6982'
+DEFAULT_WAIT_FOR_REENUMERATION = 20
 DEFAULT_PW3 = "12345678"
 BY_ADMIN = 3
-
 KEYNO_FOR_AUTH = 2
+FORMAT = '%(relativeCreated)-8d %(message)s'
+logging.basicConfig(format=FORMAT, level=logging.DEBUG, filename='upgrade.log')
+logger = logging.getLogger()
 
 
 def progress_func(x):
@@ -167,15 +185,8 @@ def main(wait_e, keyno, passwd, data_regnual, data_upgrade, skip_bootloader):
     return 0
 
 
-from getpass import getpass
-
-# This should be event driven, not guessing some period, or polling.
-DEFAULT_WAIT_FOR_REENUMERATION = 20
-
-
 def get_latest_release_data():
     try:
-        import requests
         r = requests.get('https://api.github.com/repos/Nitrokey/nitrokey-start-firmware/releases')
         latest_tag = r.json()[0]
     except:
@@ -214,16 +225,10 @@ def validate_regnual(path: str):
     return path
 
 
-if __name__ == '__main__':
-    if os.getcwd() != os.path.dirname(os.path.abspath(__file__)):
-        print("Please change working directory to: %s" % os.path.dirname(os.path.abspath(__file__)))
-        exit(1)
-
-    import argparse
-
+def parse_arguments():
     parser = argparse.ArgumentParser(description='Update tool for GNUK')
-    parser.add_argument('regnual', type=validate_regnual, help='path to regnual binary')
-    parser.add_argument('gnuk', type=validate_gnuk, help='path to gnuk binary')
+    parser.add_argument('--regnual', type=validate_regnual, help='path to regnual binary', default=None)
+    parser.add_argument('--gnuk', type=validate_gnuk, help='path to gnuk binary', default=None)
     parser.add_argument('-f', dest='default_password', action='store_true',
                         default=False, help='use default Admin PIN: {}'.format(DEFAULT_PW3))
     parser.add_argument('-p', dest='password',
@@ -234,7 +239,85 @@ if __name__ == '__main__':
     parser.add_argument('-b', dest='skip_bootloader', default=False, action='store_true',
                         help='Skip bootloader upload (e.g. when done so already)')
     args = parser.parse_args()
+    return args
 
+
+def kill_smartcard_services():
+    print('*** Could not connect to the device. Attempting to close scdaemon.')
+    print('*** Running: gpg-connect-agent "SCD KILLSCD" "SCD BYE" /bye')
+    check_output(["gpg-connect-agent",
+                  "SCD KILLSCD", "SCD BYE", "/bye"])
+    time.sleep(3)
+
+
+class FirmwareType(Enum):
+    UNKNOWN = 0
+    REGNUAL = 1
+    GNUK = 2
+    CHECKSUM = 3
+
+
+FIRMWARE_URL = {
+    FirmwareType.REGNUAL: 'https://raw.githubusercontent.com/Nitrokey/nitrokey-start-firmware/gnuk1.2-regnual-fix/prebuilt/{}/regnual.bin',
+    FirmwareType.GNUK: 'https://raw.githubusercontent.com/Nitrokey/nitrokey-start-firmware/gnuk1.2-regnual-fix/prebuilt/{}/gnuk.bin',
+    FirmwareType.CHECKSUM: 'https://raw.githubusercontent.com/Nitrokey/nitrokey-start-firmware/gnuk1.2-regnual-fix/prebuilt/checksums.sha512',
+}
+
+
+def hash_data_512(data):
+    hash512 = hashlib.sha512(data).digest()
+    hash512_hex = binascii.b2a_hex(hash512)
+    return hash512_hex
+
+
+def validate_hash(url: str, hash: bytes):
+    checksums = download_file_or_exit(FIRMWARE_URL.get(FirmwareType.CHECKSUM, None))
+    name = ' ' + '/'.join(url.split('/')[-2:])
+    for line in checksums.splitlines():
+        if name in line.decode():
+            hash_expected, hash_name = line.split()
+            logger.debug('{} {}/{} {}'.format(hash_expected == hash, hash_name, name, hash[-8:], hash_expected[-8:]))
+            return hash_expected == hash
+    return False
+
+
+def get_firmware_file(file_name: str, type: FirmwareType):
+    if file_name:
+        with open(file_name, "rb") as f:
+            firmware_data = f.read()
+        print("- {}: {}".format(file_name, len(firmware_data)))
+        return firmware_data
+
+    tag = get_latest_release_data()['tag_name']
+    url = FIRMWARE_URL.get(type, None).format(tag)
+    firmware_data = download_file_or_exit(url)
+    hash_data = hash_data_512(firmware_data)
+    hash_valid = 'valid' if validate_hash(url, hash_data) else 'invalid'
+
+    print(
+        "- {}: {}, hash: ...{} {} (from ...{})".format(type, len(firmware_data), hash_data[-8:], hash_valid, url[-24:]))
+    return firmware_data
+
+
+@lru_cache()
+def download_file_or_exit(url):
+    resp = requests.get(url)
+    if not resp.ok:
+        print('Cannot download firmware data {}/{}: {}'.format('type', url, resp.status_code))
+        exit(1)
+    firmware_data = resp.content
+    return firmware_data
+
+
+if __name__ == '__main__':
+    logger.debug('Start session {}'.format(datetime.now()))
+
+    # FIXME remove that to allow standalone
+    if os.getcwd() != os.path.dirname(os.path.abspath(__file__)):
+        print("Please change working directory to: %s" % os.path.dirname(os.path.abspath(__file__)))
+        exit(1)
+
+    args = parse_arguments()
     keyno = args.keyno
     passwd = None
     wait_e = args.wait_e
@@ -250,18 +333,11 @@ if __name__ == '__main__':
             print('Quitting')
             exit(2)
 
-    print('Provided firmware files:')
-    f = open(args.regnual, "rb")
-    data_regnual = f.read()
-    f.close()
-    print("- {}: {}".format(args.regnual, len(data_regnual)))
-    f = open(args.gnuk, "rb")
-    data_upgrade = f.read()
-    f.close()
-    print("- {}: {}".format(args.gnuk, len(data_upgrade)))
+    print('Firmware data to be used:')
+    data = get_firmware_file(args.regnual, FirmwareType.REGNUAL)
+    data_upgrade = get_firmware_file(args.gnuk, FirmwareType.GNUK)
 
-    from usb_strings import get_devices, print_device
-
+    # Detect devices
     dev_strings = get_devices()
     if len(dev_strings) > 1:
         print('Only one device should be connected. Please remove other devices and retry.')
@@ -291,30 +367,26 @@ if __name__ == '__main__':
     for attempt_counter in range(2):
         try:
             # First 4096-byte in data_upgrade is SYS, so, skip it.
-            main(wait_e, keyno, passwd, data_regnual, data_upgrade[4096:], args.skip_bootloader)
+            main(wait_e, keyno, passwd, data, data_upgrade[4096:], args.skip_bootloader)
             update_done = True
             break
         except ValueError as e:
             if 'No ICC present' in str(e):
-                print('*** Could not connect to the device. Attempting to close scdaemon.')
-                print('*** Running: gpg-connect-agent "SCD KILLSCD" "SCD BYE" /bye')
-                result = check_output(["gpg-connect-agent",
-                                       "SCD KILLSCD", "SCD BYE", "/bye"])
-                time.sleep(3)
+                kill_smartcard_services()
                 # print('*** Please run update tool again.')
             else:
                 print('*** Could not proceed with the update.')
                 print('*** Found error: {}'.format(str(e)))
-                if str(e) == '6983':
+                # FIXME run factory reset here since data are lost anyway
+                if str(e) == ERR_EMPTY_COUNTER:
                     print('*** Device returns "Attempt counter empty" error for Admin PIN. Please "factory-reset" '
                           'your device to '
                           'continue - this will delete all user data from the device.')
-                if str(e) == '6982':
+                if str(e) == ERR_INVALID_PIN:
                     print('*** Device returns "Invalid PIN" error. If you do not remember you PIN, '
                           'please factory-reset your device (this will remove all user data from the device) '
                           'and try with "12345678".')
                 break
-
         except Exception as e:
             # unknown error, bail
             print('*** Found unexpected error: {}'.format(str(e)))
@@ -331,8 +403,8 @@ if __name__ == '__main__':
     dev_strings_upgraded = None
     takes_long_time = False
     print('Currently connected device strings (after upgrade):')
-    for i in range(30):
-        if i > 5:
+    for i in range(TIME_DETECT_DEVICE_AFTER_UPDATE_S):
+        if i > TIME_DETECT_DEVICE_AFTER_UPDATE_LONG_S:
             if not takes_long_time:
                 print('\n*** Please reinsert device to the USB slot')
                 takes_long_time = True
@@ -346,6 +418,7 @@ if __name__ == '__main__':
 
     if not dev_strings_upgraded:
         print()
-        print('Could not connect, device should be working fine though after power cycle - please reinsert device to '
+        print('Could not connect to the device. '
+              'It should be working fine though after power cycle - please reinsert device to '
               'USB slot and test it.')
         print('Device could be removed from the USB slot.')
