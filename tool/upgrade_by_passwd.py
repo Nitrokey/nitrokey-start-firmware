@@ -276,8 +276,9 @@ if __name__ == '__main__':
     latest_tag = get_latest_release_data()
 
     print('Please note:')
-    print('- Latest firmware available is: {} (published: {}),\n provided firmware: {}'.format(latest_tag['tag_name'],
-                                                                         latest_tag['published_at'], args.gnuk))
+    print('- Latest firmware available is: '
+          '{} (published: {}),\n provided firmware: {}'
+          .format(latest_tag['tag_name'], latest_tag['published_at'], args.gnuk))
     print('- All data will be removed from the device')
     print('- Do not interrupt the update process, or the device will not run properly')
     print('- Whole process should not take more than 1 minute')
