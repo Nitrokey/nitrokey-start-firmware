@@ -60,6 +60,12 @@ logging.basicConfig(format=FORMAT, level=logging.DEBUG, filename='upgrade.log')
 logger = logging.getLogger()
 
 
+def local_print(message: str = '', **kwargs):
+    if message and message is not '.':
+        logger.debug('print: {}'.format(message.strip()))
+    print(message, **kwargs)
+
+
 def progress_func(x):
     x = x * 100
     if x == 0:
@@ -67,7 +73,7 @@ def progress_func(x):
 
     if progress_func.last * 10 <= x < 100:
         progress_func.last += 1
-        print(f'Progress: {round(x, 2)}%\r', end='', flush=True)
+        local_print(f'Progress: {round(x, 2)}%\r', end='', flush=True)
 
 
 progress_func.last = 0
@@ -78,34 +84,35 @@ def main(wait_e, keyno, passwd, data_regnual, data_upgrade, skip_bootloader, ver
     for i in range(3):
         if reg is not None:
             break
-        print('.', end='', flush=True)
+        local_print('.', end='', flush=True)
         time.sleep(1)
         for dev in gnuk_devices_by_vidpid():
             try:
                 reg = regnual(dev)
                 if dev.filename:
-                    print("Device: %s" % dev.filename)
+                    local_print("Device: %s" % dev.filename)
+                reg.set_logger(logger)
                 break
             except Exception as e:
                 if str(e) != 'Wrong interface class':
-                    print(e)
+                    local_print(e)
 
     if reg is None and not skip_bootloader:
-        print('\n*** Starting bootloader upload procedure')
+        local_print('\n*** Starting bootloader upload procedure')
         l = len(data_regnual)
         if (l & 0x03) != 0:
             data_regnual = data_regnual.ljust(l + 4 - (l & 0x03), chr(0))
         crc32code = crc32(data_regnual)
         if verbosity:
-            print("CRC32: %04x\n" % crc32code)
+            local_print("CRC32: %04x\n" % crc32code)
         data_regnual += pack('<I', crc32code)
 
         rsa_key = rsa.read_key_from_file('rsa_example.key')
         rsa_raw_pubkey = rsa.get_raw_pubkey(rsa_key)
 
-        gnuk = get_gnuk_device()
+        gnuk = get_gnuk_device(logger=logger)
         gnuk.cmd_select_openpgp()
-        print('*** Connected to the device')
+        local_print('*** Connected to the device')
         # Compute passwd data
         try:
             kdf_data = gnuk.cmd_get_data(0x00, 0xf9).tobytes()
@@ -134,13 +141,13 @@ def main(wait_e, keyno, passwd, data_regnual, data_upgrade, skip_bootloader, ver
         gnuk.stop_gnuk()
         mem_info = gnuk.mem_info()
         if verbosity:
-            print("%08x:%08x" % mem_info)
+            local_print("%08x:%08x" % mem_info)
 
-        print('*** Running update. Do NOT remove the device from the USB slot, until further notice.')
+        local_print('*** Running update. Do NOT remove the device from the USB slot, until further notice.')
 
-        print("Downloading flash upgrade program...")
+        local_print("Downloading flash upgrade program...")
         gnuk.download(mem_info[0], data_regnual, progress_func=progress_func, verbose=verbosity is 2)
-        print("Run flash upgrade program...")
+        local_print("Run flash upgrade program...")
         gnuk.execute(mem_info[0] + len(data_regnual) - 4)
         #
         time.sleep(3)
@@ -149,43 +156,43 @@ def main(wait_e, keyno, passwd, data_regnual, data_upgrade, skip_bootloader, ver
         gnuk = None
 
     if reg is None:
-        print("Waiting for device to appear:")
+        local_print("Waiting for device to appear:")
         # while reg == None:
-        print("  Wait {} second{}...".format(wait_e, 's' if wait_e > 1 else ''), end='')
+        local_print("  Wait {} second{}...".format(wait_e, 's' if wait_e > 1 else ''), end='')
         for i in range(wait_e):
             if reg is not None:
                 break
-            print('.', end='', flush=True)
+            local_print('.', end='', flush=True)
             time.sleep(1)
             for dev in gnuk_devices_by_vidpid():
                 try:
                     reg = regnual(dev)
                     if dev.filename:
-                        print("Device: %s" % dev.filename)
+                        local_print("Device: %s" % dev.filename)
                     break
                 except Exception as e:
-                    print(e)
+                    local_print(e)
                     pass
-        print('')
-        print('')
+        local_print('')
+        local_print('')
         if reg is None:
-            print('Device not found. Exiting.')
+            local_print('Device not found. Exiting.')
             raise RuntimeWarning('Device not found. Exiting.')
 
     # Then, send upgrade program...
     mem_info = reg.mem_info()
     if verbosity:
-        print("%08x:%08x" % mem_info)
-    print("Downloading the program")
+        local_print("%08x:%08x" % mem_info)
+    local_print("Downloading the program")
     reg.download(mem_info[0], data_upgrade, progress_func=progress_func, verbose=verbosity is 2)
-    print("Protecting device")
+    local_print("Protecting device")
     reg.protect()
-    print("Finish flashing")
+    local_print("Finish flashing")
     reg.finish()
-    print("Resetting device")
+    local_print("Resetting device")
     reg.reset_device()
-    print("Update procedure finished. Device could be removed from USB slot.")
-    print('')
+    local_print("Update procedure finished. Device could be removed from USB slot.")
+    local_print('')
     return 0
 
 
@@ -196,7 +203,7 @@ def get_latest_release_data():
         json = r.json()
         if r.status_code == 403:
             logger.debug('JSON release data {}'.format(json))
-            print('No Github API access')
+            local_print('No Github API access')
             exit(3)
         latest_tag = json[0]
     except Exception as e:
@@ -256,14 +263,14 @@ def parse_arguments():
 
 
 def kill_smartcard_services():
-    print('*** Could not connect to the device. Attempting to close scdaemon.')
+    local_print('*** Could not connect to the device. Attempting to close scdaemon.')
     # check_output(["gpg-connect-agent",
     #               "SCD KILLSCD", "SCD BYE", "/bye"])
 
     commands = [['gpgconf', '--kill', 'all'],
                 'sudo systemctl stop pcscd pcscd.socket'.split()]
     for command in commands:
-        print('*** Running: "{}"'.format(' '.join(command)))
+        local_print('*** Running: "{}"'.format(' '.join(command)))
         logger.debug('Running {}'.format(command))
         try:
             check_output(command)
@@ -308,7 +315,7 @@ def get_firmware_file(file_name: str, type: FirmwareType):
     if file_name:
         with open(file_name, "rb") as f:
             firmware_data = f.read()
-        print("- {}: {}".format(file_name, len(firmware_data)))
+        local_print("- {}: {}".format(file_name, len(firmware_data)))
         return firmware_data
 
     tag = get_latest_release_data()['tag_name']
@@ -317,7 +324,7 @@ def get_firmware_file(file_name: str, type: FirmwareType):
     hash_data = hash_data_512(firmware_data)
     hash_valid = 'valid' if validate_hash(url, hash_data) else 'invalid'
 
-    print(
+    local_print(
         "- {}: {}, hash: ...{} {} (from ...{})".format(type, len(firmware_data), hash_data[-8:], hash_valid, url[-24:]))
     return firmware_data
 
@@ -326,7 +333,7 @@ def get_firmware_file(file_name: str, type: FirmwareType):
 def download_file_or_exit(url):
     resp = requests.get(url)
     if not resp.ok:
-        print('Cannot download firmware data {}/{}: {}'.format('type', url, resp.status_code))
+        local_print('Cannot download firmware data {}/{}: {}'.format('type', url, resp.status_code))
         exit(1)
     firmware_data = resp.content
     return firmware_data
@@ -345,13 +352,19 @@ if __name__ == '__main__':
     # FIXME remove that to allow standalone
     if os.getcwd() != os.path.dirname(os.path.abspath(__file__)):
         logger.debug('Wrong directory')
-        print("Please change working directory to: %s" % os.path.dirname(os.path.abspath(__file__)))
+        local_print("Please change working directory to: %s" % os.path.dirname(os.path.abspath(__file__)))
         exit(1)
 
     args = parse_arguments()
     keyno = args.keyno
     passwd = None
     wait_e = args.wait_e
+
+    if args.verbose is 3:
+        stream_handler = logging.StreamHandler()
+        stream_handler.setLevel(logging.DEBUG)
+        stream_handler.setFormatter(logging.Formatter('*** %(asctime)-15s %(levelname)s %(message)s'))
+        logger.addHandler(stream_handler)
 
     log_arguments_securely(args)
 
@@ -363,44 +376,44 @@ if __name__ == '__main__':
         try:
             passwd = getpass("Admin password: ")
         except:
-            print('Quitting')
+            local_print('Quitting')
             exit(2)
 
-    print('Firmware data to be used:')
+    local_print('Firmware data to be used:')
     data = get_firmware_file(args.regnual, FirmwareType.REGNUAL)
     data_upgrade = get_firmware_file(args.gnuk, FirmwareType.GNUK)
 
     # Detect devices
     dev_strings = get_devices()
     if len(dev_strings) > 1:
-        print('Only one device should be connected. Please remove other devices and retry.')
+        local_print('Only one device should be connected. Please remove other devices and retry.')
         exit(1)
 
     if dev_strings:
-        print('Currently connected device strings:')
+        local_print('Currently connected device strings:')
         print_device(dev_strings[0])
     else:
-        print('Cannot identify device')
+        local_print('Cannot identify device')
 
     logger.debug('Initial device strings: {}'.format(dev_strings))
 
     latest_tag = get_latest_release_data()
 
-    print('Please note:')
-    print('- Latest firmware available is: '
+    local_print('Please note:')
+    local_print('- Latest firmware available is: '
           '{} (published: {}),\n provided firmware: {}'
           .format(latest_tag['tag_name'], latest_tag['published_at'], args.gnuk))
-    print('- All data will be removed from the device')
-    print('- Do not interrupt the update process, or the device will not run properly')
-    print('- Whole process should not take more than 1 minute')
+    local_print('- All data will be removed from the device')
+    local_print('- Do not interrupt the update process, or the device will not run properly')
+    local_print('- Whole process should not take more than 1 minute')
     if args.yes:
-        print('Accepted automatically')
+        local_print('Accepted automatically')
     else:
         answer = input('Do you want to continue? [yes/no]: ')
-        print('Entered: "{}"'.format(answer))
+        local_print('Entered: "{}"'.format(answer))
         logger.debug('Continue? "{}"'.format(answer))
         if answer != 'yes':
-            print('Device is not modified. Exiting.')
+            local_print('Device is not modified. Exiting.')
             exit(1)
 
     update_done = False
@@ -417,27 +430,27 @@ if __name__ == '__main__':
                                 'and try again with PIN="12345678".'
             if 'No ICC present' in str(e):
                 kill_smartcard_services()
-                # print('*** Please run update tool again.')
+                # local_print('*** Please run update tool again.')
             else:
-                print('*** Could not proceed with the update.')
-                print('*** Found error: {}'.format(str(e)))
+                local_print('*** Could not proceed with the update.')
+                local_print('*** Found error: {}'.format(str(e)))
                 # FIXME run factory reset here since data are lost anyway
                 if str(e) == ERR_EMPTY_COUNTER:
-                    print('*** Device returns "Attempt counter empty" error for Admin PIN.'
+                    local_print('*** Device returns "Attempt counter empty" error for Admin PIN.'
                           + ' ' + str_factory_reset
                           )
                 if str(e) == ERR_INVALID_PIN:
-                    print('*** Device returns "Invalid PIN" error.'
+                    local_print('*** Device returns "Invalid PIN" error.'
                           + ' ' + str_factory_reset)
                 break
         except Exception as e:
             # unknown error, bail
-            print('*** Found unexpected error: {}'.format(str(e)))
+            local_print('*** Found unexpected error: {}'.format(str(e)))
             break
 
     if not update_done:
-        print()
-        print('*** Could not proceed with the update. Please execute one or all of the following and try again:\n'
+        local_print()
+        local_print('*** Could not proceed with the update. Please execute one or all of the following and try again:\n'
               '- reinsert device to the USB slot;\n'
               '- run factory-reset on the device;\n'
               '- close other applications, that possibly could use it (e.g. scdaemon, pcscd).\n')
@@ -445,25 +458,25 @@ if __name__ == '__main__':
 
     dev_strings_upgraded = None
     takes_long_time = False
-    print('Currently connected device strings (after upgrade):')
+    local_print('Currently connected device strings (after upgrade):')
     for i in range(TIME_DETECT_DEVICE_AFTER_UPDATE_S):
         if i > TIME_DETECT_DEVICE_AFTER_UPDATE_LONG_S:
             if not takes_long_time:
-                print('\n*** Please reinsert device to the USB slot')
+                local_print('\n*** Please reinsert device to the USB slot')
                 takes_long_time = True
         time.sleep(1)
         dev_strings_upgraded = get_devices()
         if len(dev_strings_upgraded) > 0:
-            print()
+            local_print()
             print_device(dev_strings_upgraded[0])
             break
-        print('.', end='', flush=True)
+        local_print('.', end='', flush=True)
 
     if not dev_strings_upgraded:
-        print()
-        print('Could not connect to the device. '
+        local_print()
+        local_print('Could not connect to the device. '
               'It should be working fine though after power cycle - please reinsert device to '
               'USB slot and test it.')
-        print('Device could be removed from the USB slot.')
+        local_print('Device could be removed from the USB slot.')
     logger.debug('Final device strings: {}'.format(dev_strings_upgraded))
     logger.debug('Finishing session {}'.format(datetime.now()))
