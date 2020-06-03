@@ -407,6 +407,9 @@ if __name__ == '__main__':
             break
         except ValueError as e:
             logger.exception('Error while running update')
+            str_factory_reset = 'Please "factory-reset" your device to ' \
+                                'continue (this will delete all user data from the device) ' \
+                                'and try again with PIN="12345678".'
             if 'No ICC present' in str(e):
                 kill_smartcard_services()
                 # print('*** Please run update tool again.')
@@ -415,13 +418,12 @@ if __name__ == '__main__':
                 print('*** Found error: {}'.format(str(e)))
                 # FIXME run factory reset here since data are lost anyway
                 if str(e) == ERR_EMPTY_COUNTER:
-                    print('*** Device returns "Attempt counter empty" error for Admin PIN. Please "factory-reset" '
-                          'your device to '
-                          'continue - this will delete all user data from the device.')
+                    print('*** Device returns "Attempt counter empty" error for Admin PIN.'
+                          + ' ' + str_factory_reset
+                          )
                 if str(e) == ERR_INVALID_PIN:
-                    print('*** Device returns "Invalid PIN" error. If you do not remember you PIN, '
-                          'please factory-reset your device (this will remove all user data from the device) '
-                          'and try with "12345678".')
+                    print('*** Device returns "Invalid PIN" error.'
+                          + ' ' + str_factory_reset)
                 break
         except Exception as e:
             # unknown error, bail
@@ -432,7 +434,7 @@ if __name__ == '__main__':
         print()
         print('*** Could not proceed with the update. Please execute one or all of the following and try again:\n'
               '- reinsert device to the USB slot;\n'
-              '- run factory-reset on the device (if you have backup of the keys);\n'
+              '- run factory-reset on the device;\n'
               '- close other applications, that possibly could use it (e.g. scdaemon, pcscd).\n')
         exit(1)
 
