@@ -130,8 +130,9 @@ class gnuk_token(object):
         addr_end = (start + len(data)) & 0xffffff00
         i = int((addr - 0x20000000) / 0x100)
         j = 0
-        print("start %08x" % addr)
-        print("end   %08x" % addr_end)
+        if verbose:
+            print("start %08x" % addr)
+            print("end   %08x" % addr_end)
         if progress_func:
             progress_func(0)
         while addr < addr_end:
@@ -513,8 +514,9 @@ class regnual(object):
         addr_end = (start + len(data)) & 0xffffff00
         i = int((addr - 0x08000000) / 0x100)
         j = 0
-        print("start %08x" % addr)
-        print("end   %08x" % addr_end)
+        if verbose:
+            print("start %08x" % addr)
+            print("end   %08x" % addr_end)
         if progress_func:
             progress_func(0)
         while addr < addr_end:

@@ -73,7 +73,7 @@ def progress_func(x):
 progress_func.last = 0
 
 
-def main(wait_e, keyno, passwd, data_regnual, data_upgrade, skip_bootloader):
+def main(wait_e, keyno, passwd, data_regnual, data_upgrade, skip_bootloader, verbosity=0):
     reg = None
     for i in range(3):
         if reg is not None:
@@ -96,7 +96,8 @@ def main(wait_e, keyno, passwd, data_regnual, data_upgrade, skip_bootloader):
         if (l & 0x03) != 0:
             data_regnual = data_regnual.ljust(l + 4 - (l & 0x03), chr(0))
         crc32code = crc32(data_regnual)
-        print("CRC32: %04x\n" % crc32code)
+        if verbosity:
+            print("CRC32: %04x\n" % crc32code)
         data_regnual += pack('<I', crc32code)
 
         rsa_key = rsa.read_key_from_file('rsa_example.key')
@@ -132,7 +133,8 @@ def main(wait_e, keyno, passwd, data_regnual, data_upgrade, skip_bootloader):
         gnuk.cmd_external_authenticate(keyno, signed_bytes)
         gnuk.stop_gnuk()
         mem_info = gnuk.mem_info()
-        print("%08x:%08x" % mem_info)
+        if verbosity:
+            print("%08x:%08x" % mem_info)
 
         print('*** Running update. Do NOT remove the device from the USB slot, until further notice.')
 
@@ -244,6 +246,7 @@ def parse_arguments():
     parser.add_argument('-e', dest='wait_e', default=DEFAULT_WAIT_FOR_REENUMERATION, type=int,
                         help='time to wait for device to enumerate, after regnual was executed on device')
     parser.add_argument('-k', dest='keyno', default=0, type=int, help='selected key index')
+    parser.add_argument('-v', dest='verbose', default=0, type=int, help='verbosity level')
     parser.add_argument('-y', dest='yes', default=False, action='store_true', help='agree to everything')
     parser.add_argument('-b', dest='skip_bootloader', default=False, action='store_true',
                         help='Skip bootloader upload (e.g. when done so already)')
