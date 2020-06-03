@@ -139,7 +139,7 @@ def main(wait_e, keyno, passwd, data_regnual, data_upgrade, skip_bootloader, ver
         print('*** Running update. Do NOT remove the device from the USB slot, until further notice.')
 
         print("Downloading flash upgrade program...")
-        gnuk.download(mem_info[0], data_regnual, progress_func=progress_func)
+        gnuk.download(mem_info[0], data_regnual, progress_func=progress_func, verbose=verbosity is 2)
         print("Run flash upgrade program...")
         gnuk.execute(mem_info[0] + len(data_regnual) - 4)
         #
@@ -174,9 +174,10 @@ def main(wait_e, keyno, passwd, data_regnual, data_upgrade, skip_bootloader, ver
 
     # Then, send upgrade program...
     mem_info = reg.mem_info()
-    print("%08x:%08x" % mem_info)
+    if verbosity:
+        print("%08x:%08x" % mem_info)
     print("Downloading the program")
-    reg.download(mem_info[0], data_upgrade, progress_func=progress_func)
+    reg.download(mem_info[0], data_upgrade, progress_func=progress_func, verbose=verbosity is 2)
     print("Protecting device")
     reg.protect()
     print("Finish flashing")
@@ -406,7 +407,7 @@ if __name__ == '__main__':
     for attempt_counter in range(2):
         try:
             # First 4096-byte in data_upgrade is SYS, so, skip it.
-            main(wait_e, keyno, passwd, data, data_upgrade[4096:], args.skip_bootloader)
+            main(wait_e, keyno, passwd, data, data_upgrade[4096:], args.skip_bootloader, verbosity=args.verbose)
             update_done = True
             break
         except ValueError as e:
