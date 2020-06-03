@@ -20,7 +20,7 @@ License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-
+import logging
 from struct import *
 import binascii
 import usb, time
@@ -94,6 +94,10 @@ class gnuk_token(object):
 
         self.__timeout = 10000
         self.__seq = 0
+        self.logger = logging.getLogger('gnuk_token')
+
+    def set_logger(self, logger: logging.Logger):
+        self.logger = logger.getChild('gnuk_token')
 
     def get_string(self, num):
         return self.__devhandle.getString(num, 512)
@@ -627,11 +631,13 @@ def gnuk_devices_by_vidpid():
                 yield dev
                 break
 
-def get_gnuk_device(verbose=True):
+def get_gnuk_device(verbose=True, logger: logging.Logger=None):
     icc = None
     for (dev, config, intf) in gnuk_devices():
         try:
             icc = gnuk_token(dev, config, intf)
+            if logger:
+                logger.debug('{} {} {}'.format(dev.filename, config.value, intf.interfaceNumber))
             if verbose:
                 print("Device: %s" % dev.filename)
                 print("Configuration: %d" % config.value)
