@@ -278,10 +278,11 @@ class FirmwareType(Enum):
     CHECKSUM = 3
 
 
+REMOTE_PATH = 'https://raw.githubusercontent.com/Nitrokey/nitrokey-start-firmware/gnuk1.2-regnual-fix/prebuilt'
 FIRMWARE_URL = {
-    FirmwareType.REGNUAL: 'https://raw.githubusercontent.com/Nitrokey/nitrokey-start-firmware/gnuk1.2-regnual-fix/prebuilt/{}/regnual.bin',
-    FirmwareType.GNUK: 'https://raw.githubusercontent.com/Nitrokey/nitrokey-start-firmware/gnuk1.2-regnual-fix/prebuilt/{}/gnuk.bin',
-    FirmwareType.CHECKSUM: 'https://raw.githubusercontent.com/Nitrokey/nitrokey-start-firmware/gnuk1.2-regnual-fix/prebuilt/checksums.sha512',
+    FirmwareType.REGNUAL: ('%s/{}/regnual.bin' % REMOTE_PATH),
+    FirmwareType.GNUK: ('%s/{}/gnuk.bin' % REMOTE_PATH),
+    FirmwareType.CHECKSUM: ('%s/checksums.sha512' % REMOTE_PATH),
 }
 
 
