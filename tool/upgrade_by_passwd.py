@@ -25,6 +25,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 import argparse
 import binascii
+import copy
 import hashlib
 import logging
 import os
@@ -243,6 +244,7 @@ def parse_arguments():
     parser.add_argument('-e', dest='wait_e', default=DEFAULT_WAIT_FOR_REENUMERATION, type=int,
                         help='time to wait for device to enumerate, after regnual was executed on device')
     parser.add_argument('-k', dest='keyno', default=0, type=int, help='selected key index')
+    parser.add_argument('-y', dest='yes', default=False, action='store_true', help='agree to everything')
     parser.add_argument('-b', dest='skip_bootloader', default=False, action='store_true',
                         help='Skip bootloader upload (e.g. when done so already)')
     args = parser.parse_args()
@@ -326,7 +328,7 @@ def download_file_or_exit(url):
 
 
 def log_arguments_securely(args):
-    args_log = args
+    args_log = copy.deepcopy(args)
     args_log.password = '<hidden>'
     logger.debug('Arguments: {}'.format(args_log))
     del args_log
@@ -386,12 +388,15 @@ if __name__ == '__main__':
     print('- All data will be removed from the device')
     print('- Do not interrupt the update process, or the device will not run properly')
     print('- Whole process should not take more than 1 minute')
-    answer = input('Do you want to continue? [yes/no]: ')
-    print('Entered: "{}"'.format(answer))
-    logger.debug('Continue? "{}"'.format(answer))
-    if answer != 'yes':
-        print('Device is not modified. Exiting.')
-        exit(1)
+    if args.yes:
+        print('Accepted automatically')
+    else:
+        answer = input('Do you want to continue? [yes/no]: ')
+        print('Entered: "{}"'.format(answer))
+        logger.debug('Continue? "{}"'.format(answer))
+        if answer != 'yes':
+            print('Device is not modified. Exiting.')
+            exit(1)
 
     update_done = False
     for attempt_counter in range(2):

@@ -6,7 +6,7 @@ all: update
 
 .PHONY: update
 update:
-	cd $(TOOLS) && ./upgrade_by_passwd.py -p ${PASS} --regnual $(FIRMWARE_DIR)/regnual.bin --gnuk ${FIRMWARE_DIR}/gnuk.bin
+	cd $(TOOLS) && ./upgrade_by_passwd.py -p ${PASS} --regnual $(FIRMWARE_DIR)/regnual.bin --gnuk ${FIRMWARE_DIR}/gnuk.bin -y
 	@echo "Note: power cycle might be needed due to setting RDP flag on MCU, which stalls it"
 
 .PHONY: flash
