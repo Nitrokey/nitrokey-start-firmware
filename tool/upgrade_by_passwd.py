@@ -47,6 +47,7 @@ from kdf_calc import kdf_calc
 from usb_strings import get_devices, print_device
 
 # This should be event driven, not guessing some period, or polling.
+UPGRADE_LOG_FN = 'upgrade.log'
 TIME_DETECT_DEVICE_AFTER_UPDATE_LONG_S = 5
 TIME_DETECT_DEVICE_AFTER_UPDATE_S = 30
 ERR_EMPTY_COUNTER = '6983'
@@ -55,8 +56,8 @@ DEFAULT_WAIT_FOR_REENUMERATION = 20
 DEFAULT_PW3 = "12345678"
 BY_ADMIN = 3
 KEYNO_FOR_AUTH = 2
-FORMAT = '%(relativeCreated)-8d %(message)s'
-logging.basicConfig(format=FORMAT, level=logging.DEBUG, filename='upgrade.log')
+FORMAT = '%(relativeCreated)-8d %(levelname)s %(message)s'
+logging.basicConfig(format=FORMAT, level=logging.DEBUG, filename=UPGRADE_LOG_FN)
 logger = logging.getLogger()
 
 
@@ -348,6 +349,7 @@ def log_arguments_securely(args):
 
 if __name__ == '__main__':
     logger.debug('Start session {}'.format(datetime.now()))
+    local_print('Saving run log to: {}'.format(UPGRADE_LOG_FN))
 
     # FIXME remove that to allow standalone
     if os.getcwd() != os.path.dirname(os.path.abspath(__file__)):
@@ -480,3 +482,4 @@ if __name__ == '__main__':
         local_print('Device could be removed from the USB slot.')
     logger.debug('Final device strings: {}'.format(dev_strings_upgraded))
     logger.debug('Finishing session {}'.format(datetime.now()))
+    local_print('Log saved to: {}'.format(UPGRADE_LOG_FN))
