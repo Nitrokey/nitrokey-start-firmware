@@ -662,11 +662,13 @@ do_openpgpcard_aid (uint16_t tag, int with_tag)
       memcpy (res_p, openpgpcard_aid, 8);
       res_p += 8;
 
-      /* vid == 0xfffe: serial number is four random bytes */
+      /* vid == 0xfffe for id 0: serial number is four bytes from hardware id, gpg treats them as random
+       * vid == 0xff01 for id 1
+       * vid == 0xff02 for id 2 */
       *res_p++ = 0xff;
-      *res_p++ = 0xfe;
+      *res_p++ = ((_selected_identity>0)?_selected_identity:0xfe);
 
-      *res_p++ = _selected_identity;
+      *res_p++ = u[3];
       *res_p++ = u[2];
       *res_p++ = u[1];
       *res_p++ = u[0];
