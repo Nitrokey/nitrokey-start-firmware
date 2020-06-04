@@ -45,10 +45,13 @@ import rsa
 from gnuk_token import get_gnuk_device, gnuk_devices_by_vidpid, \
     regnual, SHA256_OID_PREFIX, crc32, parse_kdf_data
 from kdf_calc import kdf_calc
+from threaded_log import ThreadLog
 from usb_strings import get_devices, print_device
 
-# This should be event driven, not guessing some period, or polling.
+LOG_FORMAT_STDOUT = '*** %(asctime)-15s %(levelname)6s %(name)10s %(message)s'
+LOG_FORMAT = '%(relativeCreated)-8d %(levelname)6s %(name)10s %(message)s'
 UPGRADE_LOG_FN = 'upgrade.log'
+# This should be event driven, not guessing some period, or polling.
 TIME_DETECT_DEVICE_AFTER_UPDATE_LONG_S = 5
 TIME_DETECT_DEVICE_AFTER_UPDATE_S = 30
 ERR_EMPTY_COUNTER = '6983'
@@ -57,8 +60,7 @@ DEFAULT_WAIT_FOR_REENUMERATION = 20
 DEFAULT_PW3 = "12345678"
 BY_ADMIN = 3
 KEYNO_FOR_AUTH = 2
-FORMAT = '%(relativeCreated)-8d %(levelname)s %(message)s'
-logging.basicConfig(format=FORMAT, level=logging.DEBUG, filename=UPGRADE_LOG_FN)
+logging.basicConfig(format=LOG_FORMAT, level=logging.DEBUG, filename=UPGRADE_LOG_FN)
 logger = logging.getLogger()
 
 
@@ -366,7 +368,7 @@ def start():
     if args.verbose is 3:
         stream_handler = logging.StreamHandler()
         stream_handler.setLevel(logging.DEBUG)
-        stream_handler.setFormatter(logging.Formatter('*** %(asctime)-15s %(levelname)s %(message)s'))
+        stream_handler.setFormatter(logging.Formatter(LOG_FORMAT_STDOUT))
         logger.addHandler(stream_handler)
 
     log_arguments_securely(args)
@@ -487,4 +489,5 @@ def start():
 
 
 if __name__ == '__main__':
-    start()
+    with ThreadLog(logger.getChild('dmesg'), 'dmesg -w'):
+        start()
