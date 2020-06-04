@@ -31,6 +31,7 @@ import hashlib
 import logging
 import os
 import time
+from sys import platform
 from collections import defaultdict
 from datetime import datetime
 from enum import Enum
@@ -38,6 +39,7 @@ from functools import lru_cache
 from getpass import getpass
 from struct import pack
 from subprocess import check_output
+import platform
 
 import requests
 
@@ -62,6 +64,7 @@ BY_ADMIN = 3
 KEYNO_FOR_AUTH = 2
 logging.basicConfig(format=LOG_FORMAT, level=logging.DEBUG, filename=UPGRADE_LOG_FN)
 logger = logging.getLogger()
+IS_LINUX = platform.system() == "Linux"
 
 
 def local_print(message: str = '', **kwargs):
@@ -271,9 +274,13 @@ def kill_smartcard_services():
     # check_output(["gpg-connect-agent",
     #               "SCD KILLSCD", "SCD BYE", "/bye"])
 
-    commands = [['gpgconf', '--kill', 'all'],
-                'sudo systemctl stop pcscd pcscd.socket'.split()]
-    for command in commands:
+    commands = [
+                (['gpgconf', '--kill', 'all'], True),
+                ('sudo systemctl stop pcscd pcscd.socket'.split(), IS_LINUX)
+                 ]
+    for command, flag in commands:
+        if not flag:
+            continue
         local_print('*** Running: "{}"'.format(' '.join(command)))
         logger.debug('Running {}'.format(command))
         try:
@@ -489,5 +496,8 @@ def start():
 
 
 if __name__ == '__main__':
-    with ThreadLog(logger.getChild('dmesg'), 'dmesg -w'):
+    if IS_LINUX:
+        with ThreadLog(logger.getChild('dmesg'), 'dmesg -w'):
+            start()
+    else:
         start()
