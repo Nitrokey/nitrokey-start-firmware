@@ -7,6 +7,7 @@ upgrade_by_passwd.py - a tool to install another firmware for Gnuk Token
 Copyright (C) 2012, 2013, 2015, 2018
               Free Software Initiative of Japan
 Author: NIIBE Yutaka <gniibe@fsij.org>
+Copyright (C) 2020 Nitrokey Gmbh
 
 This file is a part of Gnuk, a GnuPG USB Token implementation.
 
