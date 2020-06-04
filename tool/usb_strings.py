@@ -1,4 +1,4 @@
-#! /usr/bin/python3
+#! /usr/bin/env python3
 
 """
 usb_strings.py - a tool to dump USB string

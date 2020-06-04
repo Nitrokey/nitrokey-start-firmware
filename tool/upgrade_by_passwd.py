@@ -1,4 +1,4 @@
-#! /usr/bin/python3
+#! /usr/bin/env python3
 
 """
 upgrade_by_passwd.py - a tool to install another firmware for Gnuk Token

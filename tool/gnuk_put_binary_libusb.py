@@ -1,4 +1,4 @@
-#! /usr/bin/python
+#! /usr/bin/env python3
 
 """
 gnuk_put_binary.py - a tool to put binary to Gnuk Token
