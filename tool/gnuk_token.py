@@ -33,6 +33,12 @@ USB_PRODUCT_LIST=[
     { 'vendor' : 0x1209, 'product' : 0x2440 }, # GnuPG e.V.
 ]
 
+USB_PRODUCT_LIST_TUP = [
+    (0x234b, 0x0000), # FSIJ Gnuk Token
+    (0x20a0, 0x4211), # Nitrokey Start
+    (0x1209, 0x2440), # GnuPG e.V.
+]
+
 # USB class, subclass, protocol
 CCID_CLASS = 0x0B
 CCID_SUBCLASS = 0x00
@@ -622,7 +628,8 @@ def gnuk_devices():
                     for alt in intf:
                         if alt.interfaceClass == CCID_CLASS and \
                                 alt.interfaceSubClass == CCID_SUBCLASS and \
-                                alt.interfaceProtocol == CCID_PROTOCOL_0:
+                                alt.interfaceProtocol == CCID_PROTOCOL_0 and \
+                                (dev.idVendor,dev.idProduct) in USB_PRODUCT_LIST_TUP:
                             yield dev, config, alt
 
 
