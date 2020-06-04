@@ -358,7 +358,11 @@ def log_arguments_securely(args):
 
 
 def start():
+    local_print('Nitrokey Start firmware update tool')
     logger.debug('Start session {}'.format(datetime.now()))
+    local_print('Platform: {}'.format(platform.platform()))
+    local_print('System: {}, is_linux: {}'.format(platform.system(), IS_LINUX))
+    local_print('Python: {}'.format(platform.python_version()))
     local_print('Saving run log to: {}'.format(UPGRADE_LOG_FN))
 
     # FIXME remove that to allow standalone
