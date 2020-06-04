@@ -57,6 +57,7 @@ class ThreadLog(threading.Thread):
         self._write_to_log = True
 
     def __enter__(self):
+        time.sleep(1)
         self.start_logging()
         return self
 
