@@ -24,6 +24,23 @@ License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
+
+IMPORT_ERROR_HELP = """
+Some required modules are missing from this environment.
+Please install the following packages:
+    pyusb requests
+e.g. with the following command to install all dependencies:
+    python3 -m pip install -r ./requirements.txt
+(while being in the ./tool directory)
+"""
+
+try:
+    import usb
+    import requests
+except ImportError:
+    print(IMPORT_ERROR_HELP)
+    exit(1)
+
 import argparse
 import binascii
 import copy
