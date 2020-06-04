@@ -20,7 +20,7 @@ License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-
+import logging
 from struct import *
 import binascii
 import usb, time
@@ -31,6 +31,12 @@ USB_PRODUCT_LIST=[
     { 'vendor' : 0x234b, 'product' : 0x0000 }, # FSIJ Gnuk Token
     { 'vendor' : 0x20a0, 'product' : 0x4211 }, # Nitrokey Start
     { 'vendor' : 0x1209, 'product' : 0x2440 }, # GnuPG e.V.
+]
+
+USB_PRODUCT_LIST_TUP = [
+    (0x234b, 0x0000), # FSIJ Gnuk Token
+    (0x20a0, 0x4211), # Nitrokey Start
+    (0x1209, 0x2440), # GnuPG e.V.
 ]
 
 # USB class, subclass, protocol
@@ -94,6 +100,15 @@ class gnuk_token(object):
 
         self.__timeout = 10000
         self.__seq = 0
+        self.logger = logging.getLogger('gnuk_token')
+
+    def set_logger(self, logger: logging.Logger):
+        self.logger = logger.getChild('gnuk_token')
+
+    def local_print(self, message: str, verbose=False):
+        self.logger.debug('print: {}'.format(message))
+        if verbose:
+            print(message)
 
     def get_string(self, num):
         return self.__devhandle.getString(num, 512)
@@ -130,15 +145,14 @@ class gnuk_token(object):
         addr_end = (start + len(data)) & 0xffffff00
         i = int((addr - 0x20000000) / 0x100)
         j = 0
-        print("start %08x" % addr)
-        print("end   %08x" % addr_end)
+        self.local_print("start %08x" % addr, verbose)
+        self.local_print("end   %08x" % addr_end)
         if progress_func:
             progress_func(0)
         while addr < addr_end:
             if progress_func:
                 progress_func((addr-start)/(addr_end-start))
-            if verbose:
-                print("# %08x: %d : %d" % (addr, i, 256))
+            self.local_print("# %08x: %d : %d" % (addr, i, 256), verbose)
             self.__devhandle.controlMsg(requestType = 0x40, request = 1,
                                         buffer = data[j*256:j*256+256],
                                         value = i, index = 0, timeout = 10)
@@ -147,8 +161,7 @@ class gnuk_token(object):
             addr = addr + 256
         residue = len(data) % 256
         if residue != 0:
-            if verbose:
-                print("# %08x: %d : %d" % (addr, i, residue))
+            self.local_print("# %08x: %d : %d" % (addr, i, residue), verbose)
             self.__devhandle.controlMsg(requestType = 0x40, request = 1,
                                         buffer = data[j*256:],
                                         value = i, index = 0, timeout = 10)
@@ -163,7 +176,7 @@ class gnuk_token(object):
     def icc_get_result(self):
         usbmsg = self.__devhandle.bulkRead(self.__bulkin, 1024, self.__timeout)
         if len(usbmsg) < 10:
-            print(usbmsg)
+            self.local_print(usbmsg, True)
             raise ValueError("icc_get_result")
         msg = array('B', usbmsg)
         msg_type = msg[0]
@@ -499,6 +512,15 @@ class regnual(object):
             raise ValueError("Wrong interface class")
         self.__devhandle = dev.open()
         self.__devhandle.claimInterface(intf)
+        self.logger = logging.getLogger('regnual')
+
+    def set_logger(self, logger: logging.Logger):
+        self.logger = logger.getChild('regnual')
+
+    def local_print(self, message: str, verbose=False):
+        self.logger.debug('print: {}'.format(message))
+        if verbose:
+            print(message)
 
     def mem_info(self):
         mem = self.__devhandle.controlMsg(requestType = 0xc0, request = 0,
@@ -513,15 +535,14 @@ class regnual(object):
         addr_end = (start + len(data)) & 0xffffff00
         i = int((addr - 0x08000000) / 0x100)
         j = 0
-        print("start %08x" % addr)
-        print("end   %08x" % addr_end)
+        self.local_print("start %08x" % addr, verbose)
+        self.local_print("end   %08x" % addr_end, verbose)
         if progress_func:
             progress_func(0)
         while addr < addr_end:
             if progress_func:
                 progress_func((addr-start)/(addr_end-start))
-            if verbose:
-                print("# %08x: %d: %d : %d" % (addr, i, j, 256))
+            self.local_print("# %08x: %d: %d : %d" % (addr, i, j, 256), verbose)
             self.__devhandle.controlMsg(requestType = 0x40, request = 1,
                                         buffer = data[j*256:j*256+256],
                                         value = 0, index = 0, timeout = 10000)
@@ -531,7 +552,7 @@ class regnual(object):
                                               timeout = 10000)
             r_value = ((res[3]*256 + res[2])*256 + res[1])*256 + res[0]
             if (crc32code ^ r_value) != 0xffffffff:
-                print("failure")
+                self.local_print("failure")
             self.__devhandle.controlMsg(requestType = 0x40, request = 3,
                                         buffer = None,
                                         value = i, index = 0, timeout = 10000)
@@ -541,14 +562,13 @@ class regnual(object):
                                               timeout = 10000)
             r_value = ((res[3]*256 + res[2])*256 + res[1])*256 + res[0]
             if r_value == 0:
-                print("failure")
+                self.local_print("failure")
             i = i+1
             j = j+1
             addr = addr + 256
         residue = len(data) % 256
         if residue != 0:
-            if verbose:
-                print("# %08x: %d : %d" % (addr, i, residue))
+            self.local_print("# %08x: %d : %d" % (addr, i, residue), verbose)
             self.__devhandle.controlMsg(requestType = 0x40, request = 1,
                                         buffer = data[j*256:],
                                         value = 0, index = 0, timeout = 10000)
@@ -558,7 +578,7 @@ class regnual(object):
                                               timeout = 10000)
             r_value = ((res[3]*256 + res[2])*256 + res[1])*256 + res[0]
             if (crc32code ^ r_value) != 0xffffffff:
-                print("failure")
+                self.local_print("failure")
             self.__devhandle.controlMsg(requestType = 0x40, request = 3,
                                         buffer = None,
                                         value = i, index = 0, timeout = 10000)
@@ -568,7 +588,7 @@ class regnual(object):
                                               timeout = 10000)
             r_value = ((res[3]*256 + res[2])*256 + res[1])*256 + res[0]
             if r_value == 0:
-                print("failure")
+                self.local_print("failure")
 
     def protect(self):
         self.__devhandle.controlMsg(requestType = 0x40, request = 4,
@@ -580,7 +600,7 @@ class regnual(object):
                                           timeout = 10000)
         r_value = ((res[3]*256 + res[2])*256 + res[1])*256 + res[0]
         if r_value == 0:
-            print("protection failure")
+            self.local_print("protection failure")
 
     def finish(self):
         self.__devhandle.controlMsg(requestType = 0x40, request = 5,
@@ -608,7 +628,8 @@ def gnuk_devices():
                     for alt in intf:
                         if alt.interfaceClass == CCID_CLASS and \
                                 alt.interfaceSubClass == CCID_SUBCLASS and \
-                                alt.interfaceProtocol == CCID_PROTOCOL_0:
+                                alt.interfaceProtocol == CCID_PROTOCOL_0 and \
+                                (dev.idVendor,dev.idProduct) in USB_PRODUCT_LIST_TUP:
                             yield dev, config, alt
 
 
@@ -625,11 +646,14 @@ def gnuk_devices_by_vidpid():
                 yield dev
                 break
 
-def get_gnuk_device(verbose=True):
+def get_gnuk_device(verbose=True, logger: logging.Logger=None):
     icc = None
     for (dev, config, intf) in gnuk_devices():
         try:
             icc = gnuk_token(dev, config, intf)
+            icc.set_logger(logger)
+            if logger:
+                logger.debug('{} {} {}'.format(dev.filename, config.value, intf.interfaceNumber))
             if verbose:
                 print("Device: %s" % dev.filename)
                 print("Configuration: %d" % config.value)
