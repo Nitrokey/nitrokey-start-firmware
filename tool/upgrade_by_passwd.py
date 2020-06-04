@@ -347,7 +347,7 @@ def log_arguments_securely(args):
     del args_log
 
 
-if __name__ == '__main__':
+def start():
     logger.debug('Start session {}'.format(datetime.now()))
     local_print('Saving run log to: {}'.format(UPGRADE_LOG_FN))
 
@@ -483,3 +483,7 @@ if __name__ == '__main__':
     logger.debug('Final device strings: {}'.format(dev_strings_upgraded))
     logger.debug('Finishing session {}'.format(datetime.now()))
     local_print('Log saved to: {}'.format(UPGRADE_LOG_FN))
+
+
+if __name__ == '__main__':
+    start()
