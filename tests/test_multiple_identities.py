@@ -54,7 +54,8 @@ def helper_get_smartcard_sn(gnuk: gnuk_token) -> str:
     """
     data = get_data_object(gnuk, 0x4f)
     serial = hexlify(data[10:14]).decode("UTF-8")
-    return serial
+    manufacturer = hexlify(data[8:10]).decode("UTF-8")
+    return manufacturer, serial
 
 
 PIN_USER = b"1234567890123456"
@@ -187,10 +188,11 @@ def test_certificate_upload_limit(gnuk_re: ReconnectableDevice, count, identity)
     gnuk.cmd_select_openpgp()
 
 
-
 def helper_get_current_identity(gnuk):
-    sn = helper_get_smartcard_sn(gnuk)
-    return int(sn[1])
+    DEFAULT_MANUFACTURER = 0xFE
+    man, sn = helper_get_smartcard_sn(gnuk)
+    man2 = int(man[2:], 16)
+    return man2 if man2 is not DEFAULT_MANUFACTURER else 0
 
 
 @pytest.mark.parametrize("count", [
@@ -215,5 +217,5 @@ def test_counter_move(gnuk_re: ReconnectableDevice, count):
         gnuk = next(gnuk_re)
         sn = helper_get_smartcard_sn(gnuk)
         print(f'\r {i} / {count}: {mi_id} / {sn}', end='')
-        assert sn[1] == f'{mi_id}'
+        assert helper_get_current_identity(gnuk) == mi_id
     print()
