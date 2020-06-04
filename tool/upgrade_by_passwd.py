@@ -57,9 +57,7 @@ from getpass import getpass
 from struct import pack
 from subprocess import check_output
 import platform
-
 import requests
-
 import rsa
 from gnuk_token import get_gnuk_device, gnuk_devices_by_vidpid, \
     regnual, SHA256_OID_PREFIX, crc32, parse_kdf_data
