@@ -23,44 +23,16 @@ Similarly for later releases:
 Firmware upgrade instructions
 -------
 
-### Requirements
+To upgrade your "Nitrokey Start" key you will need to install [nitro-python](https://github.com/Nitrokey/nitro-python).
 
-For the upgrading process you need python and the module `python-pyusb`. If you want to test your NK Start after the upgrade (see below) you need the module `python-pytest` as well. You can install these things through your package management (especially on Linux, e. g. `apt-get update && apt-get install python-pyusb python-pytest`) or you can create a virtual python environment and use `pip install` to make sure you have everything needed.
-
-To set up such a virtual python environment following steps are needed (`python`, `virtualenv` and `python-pip` have to be already installed):
-
+With `nitro-python` installed you can first check if your "Nitrokey Start" key is recognized using:
+```bash
+nitrokey start list
 ```
-virtualenv env3 --python python3
-. env3/bin/activate
-pip3 install pytest  # development only - tests execution
-pip3 install pyusb
-```
-You should set up this virtual environment in the `nitrokey-start-firmware` folder (see below).
-
-### Upgrading the device
-Please download firmware repository (branch gnuk1.2-regnual-fix) and enter the folder `nitrokey-start-firmware` by typing the following commands:
-
-```
-git clone -b gnuk1.2-regnual-fix https://github.com/Nitrokey/nitrokey-start-firmware.git
-cd nitrokey-start-firmware/tool
-```
-
-To make sure firmware is changed on device you can save current version to file: `gpg2 --card-status > before.status`. Since gpg2 claims the device please reinsert it to make it free to use by GNUK.
-
-Depending on you current firmware you have to choose the right prebuilts:
-- Please look at releases page to select the latest firmware version (https://github.com/Nitrokey/nitrokey-start-firmware/releases). Assuming below the latest one is `RTM.8`.
-- If your LED flashes green on operation please type `RTM=RTM.1_to_RTM.8` in your console
-- If your LED flashes red then please type `RTM=RTM.8` in your console
-
-Now we can proceed with the actual upgrade:
-```
-./upgrade_by_passwd.py ../prebuilt/$RTM/regnual.bin ../prebuilt/$RTM/gnuk.bin
-```
-
-Please provide the admin-PIN of your NK Start and wait for the results. To check that firmware version was actually changed please run:
-```
-gpg2 --card-status > after.status
-diff before.status after.status
+This is also where you can see the current firmware version installed on your key.
+To run the upgrade simply run:
+```bash
+nitrokey start update
 ```
 
 ### Testing the device
