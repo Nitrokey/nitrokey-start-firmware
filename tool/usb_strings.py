@@ -1,4 +1,4 @@
-#! /usr/bin/python3
+#! /usr/bin/env python3
 
 """
 usb_strings.py - a tool to dump USB string
@@ -59,6 +59,8 @@ def print_device(dev: usb.Device, n:int=8) -> None:
 def main(n: int) -> None:
     for dev in get_devices():
         print_device(dev, n)
+    else:
+        print('No devices found')
 
 
 if __name__ == '__main__':

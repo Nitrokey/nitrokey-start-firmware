@@ -862,9 +862,6 @@ flash_write_binary (uint8_t file_id, const uint8_t *data,
   else if (file_id == FILEID_CH_CERTIFICATE)
     {
       maxsize = FLASH_CH_CERTIFICATE_SIZE;
-      if(_selected_identity==2){
-          maxsize=flash_page_size;
-      }
       p = FLASH_ADDR_CHCERT_START;
     }
 #endif

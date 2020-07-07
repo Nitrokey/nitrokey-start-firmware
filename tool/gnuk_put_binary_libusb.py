@@ -1,4 +1,4 @@
-#! /usr/bin/python
+#! /usr/bin/env python3
 
 """
 gnuk_put_binary.py - a tool to put binary to Gnuk Token
@@ -51,8 +51,14 @@ def main(fileid, is_update, data, passwd):
         gnuk.icc_power_on()
     gnuk.cmd_select_openpgp()
     gnuk.cmd_verify(BY_ADMIN, passwd.encode('UTF-8'))
+    print('Writing')
     gnuk.cmd_write_binary(fileid, data, is_update)
     gnuk.cmd_select_openpgp()
+    print('Writing finished')
+
+    time.sleep(1)
+
+    print('Check data')
     if fileid == 0:
         data_in_device = gnuk.cmd_get_data(0x00, 0x4f)
         print(' '.join([ "%02x" % d for d in data_in_device ]))
@@ -61,8 +67,14 @@ def main(fileid, is_update, data, passwd):
         data_in_device = gnuk.cmd_read_binary(fileid)
         compare(data, data_in_device)
     else:
-        data_in_device = gnuk.cmd_get_data(0x7f, 0x21)
-        compare(data, data_in_device)
+        # data_in_device = gnuk.cmd_get_data(0x7f, 0x21)
+        data_in_device = binascii.hexlify(bytes(gnuk.cmd_read_binary(5)))
+        data = binascii.hexlify(data)
+        print(data)
+        print(data_in_device)
+        assert compare(data[:len(data_in_device)], data_in_device[:len(data)])
+        compare(data, data_in_device[:len(data)])
+    print('Check finished')
     gnuk.icc_power_off()
     return 0
 

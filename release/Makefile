@@ -2,11 +2,12 @@ FIRMWARE_DIR=$(shell readlink -f last-build)
 FLASH_FILE=$(FIRMWARE_DIR)/gnuk.hex
 TOOLS=../tool
 PASS=12345678
+V=0
 all: update
 
 .PHONY: update
 update:
-	cd $(TOOLS) && ./upgrade_by_passwd.py -p ${PASS} $(FIRMWARE_DIR)/{regnual.bin,gnuk.bin} 
+	cd $(TOOLS) && ./upgrade_by_passwd.py -p ${PASS} --regnual $(FIRMWARE_DIR)/regnual.bin --gnuk ${FIRMWARE_DIR}/gnuk.bin -y -v ${V}
 	@echo "Note: power cycle might be needed due to setting RDP flag on MCU, which stalls it"
 
 .PHONY: flash
@@ -19,4 +20,13 @@ flash: $(FLASH_FILE)
 reset:
 	STM32_Programmer_CLI -c port=SWD -halt -rst
 
+# GNUK_CONFIG=--target=NITROKEY_START --vidpid=20a0:4211 --enable-factory-reset --enable-certdo --enable-hid-card-change
+GNUK_CONFIG=--target=NITROKEY_START --vidpid=20a0:4211 --enable-factory-reset --enable-certdo
+.PHONY: build
+build:
+	touch last-build
+	cd ../docker/ && sudo env GNUK_CONFIG="${GNUK_CONFIG}"  make
 
+.PHONY: status
+status:
+	cd ../tool/ && python3 usb_strings.py
