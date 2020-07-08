@@ -1,3 +1,5 @@
 pyusb
 cffi
 requests
+hidapi
+

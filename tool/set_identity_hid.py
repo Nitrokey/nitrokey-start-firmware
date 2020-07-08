@@ -32,7 +32,11 @@ if __name__=="__main__":
     print("Trying to set identity to %d"%(identity,))
     try:
         print("Attempting to acquire HID device")
-        h=hid.Device(vid,pid)
+        a = hid.enumerate(vid, pid)
+        h = hid.device()
+        if not a:
+            raise Exception("No device")
+        h.open_path(a[0]['path'])
         try:
             print("Don't worry if you get a broken pipe error on the next line")
             h.send_feature_report(bytes([0x10+identity,0x00]))
