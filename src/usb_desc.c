@@ -341,7 +341,7 @@ static const struct desc string_descriptors[] = {
   {gnuk_string_product, sizeof (gnuk_string_product)},
   {gnuk_string_serial, sizeof (gnuk_string_serial)},
   {gnuk_revision_detail, sizeof (gnuk_revision_detail)},
-  {gnuk_config_options, sizeof (gnuk_config_options)},
+  /*{gnuk_config_options, sizeof (gnuk_config_options)},*/
   {sys_version, sizeof (sys_version)},
 };
 #define NUM_STRING_DESC (sizeof (string_descriptors) / sizeof (struct desc))
