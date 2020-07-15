@@ -20,12 +20,17 @@ flash: $(FLASH_FILE)
 reset:
 	STM32_Programmer_CLI -c port=SWD -halt -rst
 
-# GNUK_CONFIG=--target=NITROKEY_START --vidpid=20a0:4211 --enable-factory-reset --enable-certdo --enable-hid-card-change
-GNUK_CONFIG=--target=NITROKEY_START --vidpid=20a0:4211 --enable-factory-reset --enable-certdo
+#GNUK_CONFIG_EXTRA=--enable-hid-card-change
+GNUK_CONFIG=--target=NITROKEY_START --vidpid=20a0:4211 --enable-factory-reset --enable-certdo $(GNUK_CONFIG_EXTRA)
 .PHONY: build
 build:
 	sudo touch last-build
 	cd ../docker/ && sudo env GNUK_CONFIG="${GNUK_CONFIG}"  make
+	@echo "Built with '${GNUK_CONFIG}'"
+
+.PHONY: build-hid
+build-hid: GNUK_CONFIG_EXTRA=--enable-hid-card-change
+build-hid: build
 
 .PHONY: status
 status:

@@ -61,6 +61,7 @@ endif
 CC   = $(CROSS)gcc
 LD   = $(CROSS)gcc
 OBJCOPY   = $(CROSS)objcopy
+SIZE   = $(CROSS)size
 
 CWARN = -Wall -Wextra -Wstrict-prototypes
 OPT   = -O3 -Os -g
@@ -96,6 +97,8 @@ build/gnuk.elf: build/gnuk-no-vidpid.elf binary-edit.sh put-vid-pid-ver.sh
 	env FILE="build/gnuk.elf" bash put-vid-pid-ver.sh
 	$(OBJCOPY) -O ihex build/gnuk.elf build/gnuk.hex
 	$(OBJCOPY) -O binary build/gnuk.elf build/gnuk.bin
+	$(SIZE) -A -t -x $@
+	ls -l build/gnuk.elf build/gnuk.bin build/gnuk.hex
 else
 # By specifying DESTDIR on invocation of "make", you can install
 # program to different ROOT.
