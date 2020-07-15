@@ -356,6 +356,7 @@ else
   MEMORY_SIZE=20
   CONFIG="common:debug=$debug:pinpad=$pinpad:certdo=$certdo:factory_reset=$factory_reset"
 fi
+PLACEHOLDER_CONFIG="*:*"
 
 output_vid_pid_version () {
   echo "$VIDPID" | \
@@ -428,10 +429,10 @@ output_vendor_product_serial_strings () {
   echo '};'
   echo
   echo "static const uint8_t ${name}config_options[] = {"
-  echo "  ${#CONFIG}*2+2,                       /* bLength */"
+  echo "  ${#PLACEHOLDER_CONFIG}*2+2,                       /* bLength */"
   echo "  STRING_DESCRIPTOR,            /* bDescriptorType */"
-  echo "  /* configure options: \"$CONFIG\" */"
-  echo $CONFIG | sed -e "s/\(........\)/\1\\${nl}/g" | sed -n -e "s/\(.\)/'\1', 0, /g" -e "s/^/  /" -e "/^  ./s/ $//p"
+  echo "  /* configure options: \"$PLACEHOLDER_CONFIG\" */"
+  echo $PLACEHOLDER_CONFIG | sed -e "s/\(........\)/\1\\${nl}/g" | sed -n -e "s/\(.\)/'\1', 0, /g" -e "s/^/  /" -e "/^  ./s/ $//p"
   echo '};'
   echo '#endif'
   fi
