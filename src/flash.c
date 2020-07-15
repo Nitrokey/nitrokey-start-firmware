@@ -228,6 +228,12 @@ static void flash_write_selected_identity(uint8_t id){
 }
 
 void flash_set_identity(uint8_t id){
+    if(id>2){
+        return;
+    }
+    if(id==_selected_identity){
+        return;
+    }
     flash_write_selected_identity(id);
     nvic_system_reset();
 }

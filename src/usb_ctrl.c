@@ -355,12 +355,25 @@ usb_setup (struct usb_dev *dev)
 	      return usb_lld_ctrl_send (dev, &hid_report, 2);
 
 	    case USB_HID_REQ_SET_REPORT:
+          /* we are abusing the set report command's report ID field to set identity
+           * report ID 0x10 is identity 0, 0x11 is identity 1 and 0x12 is identity 2
+           * This is okay because the operating system will only send HID report types
+           * that are in the descriptor, and these three are not. */
+          if((arg->value&0xff)>=0x10){
+              uint8_t lowbyte=arg->value&0xff;
+              if(lowbyte>=0x10 && lowbyte<0x13){
+                  flash_set_identity(lowbyte-0x10);
+                  /* if we end up here, identity change failed because we're setting to the current identity
+                   * if that happens, proceed as below and reply with a report/ack */
+              }
+          }
 	      /* Received LED set request */
-	      if (arg->len == 1)
-		return usb_lld_ctrl_recv (dev, &hid_report, arg->len);
-	      else
-		return usb_lld_ctrl_ack (dev);
-
+	      if (arg->len == 1){
+            return usb_lld_ctrl_recv (dev, &hid_report, arg->len);
+          }else{
+            return usb_lld_ctrl_ack (dev);
+          }
+          break;
 	    case USB_HID_REQ_GET_PROTOCOL:
 	    case USB_HID_REQ_SET_PROTOCOL:
 	      /* This driver doesn't support boot protocol.  */

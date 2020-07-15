@@ -9,6 +9,7 @@ verify_ssl = true
 pyusb = "==1.0.2"
 cffi = "==1.14.0"
 requests = "==2.23.0"
+hidapi = "*"
 
 [requires]
 python_version = "3"
