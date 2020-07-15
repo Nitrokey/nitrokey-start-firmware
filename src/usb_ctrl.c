@@ -102,7 +102,6 @@ uint32_t bDeviceState = USB_DEVICE_STATE_UNCONNECTED;
 #endif
 
 #ifdef HID_CARD_CHANGE_SUPPORT
-static uint8_t hid_idle_rate;	/* in 4ms */
 static uint8_t hid_report_saved;
 static uint16_t hid_report;
 #endif
@@ -345,10 +344,11 @@ usb_setup (struct usb_dev *dev)
 	{
 	  switch (arg->request)
 	    {
+            /*unsupported requests, return STALL*/
 	    case USB_HID_REQ_GET_IDLE:
-	      return usb_lld_ctrl_send (dev, &hid_idle_rate, 1);
+	      /*fallthrough*/
 	    case USB_HID_REQ_SET_IDLE:
-	      return usb_lld_ctrl_recv (dev, &hid_idle_rate, 1);
+          return -1;
 
 	    case USB_HID_REQ_GET_REPORT:
 	      /* Request of LED status and key press */
