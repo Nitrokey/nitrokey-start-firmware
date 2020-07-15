@@ -348,7 +348,8 @@ usb_setup (struct usb_dev *dev)
 	    case USB_HID_REQ_GET_IDLE:
 	      return usb_lld_ctrl_send (dev, &hid_idle_rate, 1);
 	    case USB_HID_REQ_SET_IDLE:
-	      return usb_lld_ctrl_recv (dev, &hid_idle_rate, 1);
+        /*unsupported request*/
+	      return -1;//usb_lld_ctrl_recv (dev, &hid_idle_rate, 1);
 
 	    case USB_HID_REQ_GET_REPORT:
 	      /* Request of LED status and key press */
