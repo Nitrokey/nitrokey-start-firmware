@@ -1,7 +1,19 @@
+
+Automatic firmware update
+=================
+
+It is possible to update the firmware  to the latest one automatically with the [pynitrokey] Python tool. Please see [installation] and [firmware update] instructions on its page.
+
+[pynitrokey]: https://github.com/Nitrokey/pynitrokey/#pynitrokey
+[installation]: https://github.com/Nitrokey/pynitrokey/#installation
+[firmware update]: https://github.com/Nitrokey/pynitrokey/#firmware-update-1
+
+Below is the old guide for manual update for the sake of completeness.
+
 Prebuilt binaries
 ========
 
-Here are stored firmwares used to flash devices in all (RTM.1->RTM.4) series.  Both HEX and BIN files are usable for direct flashing (HEX files have checksum control though). Only BIN files however could be used for regnual upgrade.  Since LEDs are swapped in RTM.2 (red instead of green) using it with regnual upgrade will result in not working LED (it should be reversible though). For this please use files from RTM.1_to_RTM.2_upgrade/ directory.  Please unpack .hex.gz files before using or they might be interpreted as binary by flashing software.
+Here are stored firmwares used to flash devices in all (RTM.1->RTM.10) series.  Both HEX and BIN files are usable for direct flashing (HEX files have checksum control though). Only BIN files however could be used for regnual upgrade.  Since LEDs are swapped in RTM.2 (red instead of green) using it with regnual upgrade will result in not working LED (it should be reversible though). For this please use files from RTM.1_to_RTM.2_upgrade/ directory.  Please unpack .hex.gz files before using or they might be interpreted as binary by flashing software.
 
 Binary version (.bin) for RTM.1 is provided only for testing purposes and it is a result of a conversion hex->bin using the following command:
 ```
@@ -19,6 +31,8 @@ Similarly for later releases:
 - RTM.6 is based on GNUK 1.2.10.
 - RTM.7 is based on GNUK 1.2.14.
 - RTM.8 is based on GNUK 1.2.15.
+- RTM.9 is based on GNUK 1.2.15.
+- RTM.10 is based on GNUK 1.2.15.
 
 Firmware upgrade instructions
 -------
@@ -48,9 +62,9 @@ cd nitrokey-start-firmware/tool
 To make sure firmware is changed on device you can save current version to file: `gpg2 --card-status > before.status`. Since gpg2 claims the device please reinsert it to make it free to use by GNUK.
 
 Depending on you current firmware you have to choose the right prebuilts:
-- Please look at releases page to select the latest firmware version (https://github.com/Nitrokey/nitrokey-start-firmware/releases). Assuming below the latest one is `RTM.8`.
-- If your LED flashes green on operation please type `RTM=RTM.1_to_RTM.8` in your console
-- If your LED flashes red then please type `RTM=RTM.8` in your console
+- Please look at releases page to select the latest firmware version (https://github.com/Nitrokey/nitrokey-start-firmware/releases). Assuming below the latest one is `RTM.10`.
+- If your LED flashes green on operation please type `RTM=RTM.1_to_RTM.10` in your console
+- If your LED flashes red then please type `RTM=RTM.10` in your console
 
 Now we can proceed with the actual upgrade:
 ```
