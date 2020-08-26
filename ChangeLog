@@ -1,5 +1,9 @@
 2020-08-26  NIIBE Yutaka  <gniibe@fsij.org>
 
+	* src/ac.c (verify_user_0): Fix for a use case of having
+	signing key only.
+	(verify_admin_00): Clean up.
+
 	* tests/test_000_empty_card.py (test_name_lang_sex): Support
 	OpenPGP card version 3.3.
 
