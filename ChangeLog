@@ -1,3 +1,9 @@
+2020-09-03  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/openpgp.c (cmd_internal_authenticate): Remove checking
+	against EDDSA_HASH_LEN_MAX.
+	(cmd_pso): Likewise.
+
 2020-08-28  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* src/openpgp.c (cmd_reset_user_password): Add passphrase length

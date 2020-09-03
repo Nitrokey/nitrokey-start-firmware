@@ -1005,13 +1005,6 @@ cmd_pso (struct eventflag *ccid_comm)
 	{
 	  uint32_t output[64/4];	/* Require 4-byte alignment. */
 
-	  if (len > EDDSA_HASH_LEN_MAX)
-	    {
-	      DEBUG_INFO ("wrong hash length.");
-	      GPG_CONDITION_NOT_SATISFIED ();
-	      return;
-	    }
-
 	  cs = chopstx_setcancelstate (0);
 	  result_len = EDDSA_SIGNATURE_LENGTH;
 	  r = eddsa_sign_25519 (apdu.cmd_apdu_data, len, output,
@@ -1217,13 +1210,6 @@ cmd_internal_authenticate (struct eventflag *ccid_comm)
   else if (attr == ALGO_ED25519)
     {
       uint32_t output[64/4];	/* Require 4-byte alignment. */
-
-      if (len > EDDSA_HASH_LEN_MAX)
-	{
-	  DEBUG_INFO ("wrong hash length.");
-	  GPG_CONDITION_NOT_SATISFIED ();
-	  return;
-	}
 
       cs = chopstx_setcancelstate (0);
       result_len = EDDSA_SIGNATURE_LENGTH;
