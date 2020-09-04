@@ -71,7 +71,7 @@ modp256r1_add (bn256 *X, const bn256 *A, const bn256 *B)
   cond &= bn256_sub (tmp, X, P256R1);
   if (cond)
     /* No-carry AND borrow */
-    memcpy (tmp, tmp, sizeof (bn256));
+    memcpy (tmp, X, sizeof (bn256)); // constant time
   else
     memcpy (X, tmp, sizeof (bn256));
 }
@@ -90,7 +90,7 @@ modp256r1_sub (bn256 *X, const bn256 *A, const bn256 *B)
   if (borrow)
     memcpy (X, tmp, sizeof (bn256));
   else
-    memcpy (tmp, tmp, sizeof (bn256));
+    memcpy (tmp, X, sizeof (bn256)); // constant time
 }
 
 /**
@@ -122,7 +122,7 @@ modp256r1_reduce (bn256 *X, const bn512 *A)
   S1->word[0] = A->word[0];
   borrow = bn256_sub (tmp0, S1, P256R1);
   if (borrow)
-    memcpy (tmp0, tmp0, sizeof (bn256));
+    memcpy (tmp0, S1, sizeof (bn256)); // constant time
   else
     memcpy (S1, tmp0, sizeof (bn256));
   /* X = S1 */
@@ -166,7 +166,7 @@ modp256r1_reduce (bn256 *X, const bn512 *A)
   S5->word[0] = A->word[9];
   borrow = bn256_sub (tmp0, S5, P256R1);
   if (borrow)
-    memcpy (tmp0, tmp0, sizeof (bn256));
+    memcpy (tmp0, S5, sizeof (bn256)); // constant time
   else
     memcpy (S5, tmp0, sizeof (bn256));
   /* X += S5 */
@@ -180,7 +180,7 @@ modp256r1_reduce (bn256 *X, const bn512 *A)
   S6->word[0] = A->word[11];
   borrow = bn256_sub (tmp0, S6, P256R1);
   if (borrow)
-    memcpy (tmp0, tmp0, sizeof (bn256));
+    memcpy (tmp0, S6, sizeof (bn256)); // constant time
   else
     memcpy (S6, tmp0, sizeof (bn256));
   /* X -= S6 */
@@ -195,7 +195,7 @@ modp256r1_reduce (bn256 *X, const bn512 *A)
   S7->word[0] = A->word[12];
   borrow = bn256_sub (tmp0, S7, P256R1);
   if (borrow)
-    memcpy (tmp0, tmp0, sizeof (bn256));
+    memcpy (tmp0, S7, sizeof (bn256)); // constant time
   else
     memcpy (S7, tmp0, sizeof (bn256));
   /* X -= S7 */
@@ -225,7 +225,7 @@ modp256r1_reduce (bn256 *X, const bn512 *A)
 
   borrow = bn256_sub (tmp, X, P256R1);
   if (borrow)
-    memcpy (tmp, X, sizeof (bn256));
+    memcpy (tmp, X, sizeof (bn256)); // constant time
   else
     memcpy (X, tmp, sizeof (bn256));
 
@@ -293,7 +293,7 @@ modp256r1_shift (bn256 *X, const bn256 *A, int shift)
 
   borrow = bn256_sub (tmp, X, P256R1);
   if (borrow)
-    memcpy (tmp, X, sizeof (bn256));
+    memcpy (tmp, X, sizeof (bn256)); // constant time
   else
     memcpy (X, tmp, sizeof (bn256));
 #undef borrow

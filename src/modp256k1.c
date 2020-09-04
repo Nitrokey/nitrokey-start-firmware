@@ -76,7 +76,7 @@ modp256k1_add (bn256 *X, const bn256 *A, const bn256 *B)
   cond &= bn256_sub (tmp, X, P256K1);
   if (cond)
     /* No-carry AND borrow */
-    memcpy (tmp, tmp, sizeof (bn256));
+    memcpy (tmp, X, sizeof (bn256)); // constant time
   else
     memcpy (X, tmp, sizeof (bn256));
 }
@@ -95,7 +95,7 @@ modp256k1_sub (bn256 *X, const bn256 *A, const bn256 *B)
   if (borrow)
     memcpy (X, tmp, sizeof (bn256));
   else
-    memcpy (tmp, tmp, sizeof (bn256));
+    memcpy (tmp, X, sizeof (bn256)); // constant time
 }
 
 /**
