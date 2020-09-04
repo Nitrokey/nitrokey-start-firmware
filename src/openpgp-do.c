@@ -1,7 +1,8 @@
 /*
  * openpgp-do.c -- OpenPGP card Data Objects (DO) handling
  *
- * Copyright (C) 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+ * Copyright (C) 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018,
+ *               2020
  *               Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
@@ -466,6 +467,7 @@ static const struct do_table_entry *get_do_entry (uint16_t tag);
 #define GPG_DO_UIF_DEC		0x00d7
 #define GPG_DO_UIF_AUT		0x00d8
 #define GPG_DO_KDF		0x00f9
+#define GPG_DO_ALG_INFO		0x00fa
 #define GPG_DO_KEY_IMPORT	0x3fff
 #define GPG_DO_LANGUAGE		0x5f2d
 #define GPG_DO_SEX		0x5f35
@@ -532,7 +534,7 @@ copy_tag (uint16_t tag)
 #define SIZE_FP 20
 #define SIZE_KGTIME 4
 
-static int
+static void
 do_fp_all (uint16_t tag, int with_tag)
 {
   const uint8_t *data;
@@ -563,10 +565,9 @@ do_fp_all (uint16_t tag, int with_tag)
   else
     memset (res_p, 0, SIZE_FP);
   res_p += SIZE_FP;
-  return 1;
 }
 
-static int
+static void
 do_cafp_all (uint16_t tag, int with_tag)
 {
   const uint8_t *data;
@@ -597,10 +598,9 @@ do_cafp_all (uint16_t tag, int with_tag)
   else
     memset (res_p, 0, SIZE_FP);
   res_p += SIZE_FP;
-  return 1;
 }
 
-static int
+static void
 do_kgtime_all (uint16_t tag, int with_tag)
 {
   const uint8_t *data;
@@ -631,7 +631,6 @@ do_kgtime_all (uint16_t tag, int with_tag)
   else
     memset (res_p, 0, SIZE_KGTIME);
   res_p += SIZE_KGTIME;
-  return 1;
 }
 
 const uint8_t openpgpcard_aid[] = {
@@ -643,7 +642,7 @@ const uint8_t openpgpcard_aid[] = {
   0xff, 0xff, 0xff, 0xff,  0xff, 0xff, /* To be overwritten */
 };
 
-static int
+static void
 do_openpgpcard_aid (uint16_t tag, int with_tag)
 {
   const volatile uint8_t *p = openpgpcard_aid;
@@ -679,11 +678,9 @@ do_openpgpcard_aid (uint16_t tag, int with_tag)
 
   *res_p++ = 0;
   *res_p++ = 0;
-
-  return 1;
 }
 
-static int
+static void
 do_ds_count (uint16_t tag, int with_tag)
 {
   if (with_tag)
@@ -695,7 +692,37 @@ do_ds_count (uint16_t tag, int with_tag)
   *res_p++ = (digital_signature_counter >> 16) & 0xff;
   *res_p++ = (digital_signature_counter >> 8) & 0xff;
   *res_p++ = digital_signature_counter & 0xff;
-  return 1;
+}
+
+static void
+do_alg_info (uint16_t tag, int with_tag)
+{
+  uint8_t *len_p = NULL;
+  int i;
+
+  if (with_tag)
+    {
+      copy_tag (tag);
+      len_p = res_p;
+      *res_p++ = 0;	 /* Filled later, assuming length is <= 127 */
+    }
+
+  for (i = 0; i < 3; i++)
+    {
+      uint16_t tag_algo = GPG_DO_ALG_SIG + i;
+
+      copy_do_1 (tag_algo, algorithm_attr_rsa2k, 1);
+      copy_do_1 (tag_algo, algorithm_attr_rsa4k, 1);
+      copy_do_1 (tag_algo, algorithm_attr_p256r1, 1);
+      copy_do_1 (tag_algo, algorithm_attr_p256k1, 1);
+      if (i == 0 || i == 2)
+	copy_do_1 (tag_algo, algorithm_attr_ed25519, 1);
+      if (i == 1)
+	copy_do_1 (tag_algo, algorithm_attr_cv25519, 1);
+    };
+
+  if (len_p)
+    *len_p = res_p - len_p - 1; /* Actually, it's 127-byte long.  */
 }
 
 static int
@@ -1735,6 +1762,7 @@ gpg_do_table[] = {
   /* Pseudo DO READ: calculated, not changeable by user */
   { GPG_DO_DS_COUNT, DO_PROC_READ, AC_ALWAYS, AC_NEVER, do_ds_count },
   { GPG_DO_AID, DO_PROC_READ, AC_ALWAYS, AC_NEVER, do_openpgpcard_aid },
+  { GPG_DO_ALG_INFO, DO_PROC_READ, AC_ALWAYS, AC_NEVER, do_alg_info },
   /* Pseudo DO READ/WRITE: calculated */
   { GPG_DO_PW_STATUS, DO_PROC_READWRITE, AC_ALWAYS, AC_ADMIN_AUTHORIZED,
     rw_pw_status },
@@ -2084,9 +2112,10 @@ copy_do (const struct do_table_entry *do_p, int with_tag)
       }
     case DO_PROC_READ:
       {
-	int (*do_func)(uint16_t, int) = (int (*)(uint16_t, int))do_p->obj;
+	void (*do_func)(uint16_t, int) = (void (*)(uint16_t, int))do_p->obj;
 
-	return do_func (do_p->tag, with_tag);
+        do_func (do_p->tag, with_tag);
+	return 1;
       }
     case DO_PROC_READWRITE:
       {

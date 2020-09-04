@@ -1,3 +1,12 @@
+2020-09-04  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/openpgp-do.c (GPG_DO_ALG_INFO): New.
+	(do_fp_all, do_cafp_all, do_kgtime_all, do_openpgpcard_aid)
+	(do_ds_count): Return nothing.
+	(copy_do): Change the API for DO_PROC_READ.
+	(do_alg_info): New for GPG_DO_ALG_INFO.
+	(gpg_do_table): Add an entry for GPG_DO_ALG_INFO.
+
 2020-09-03  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* src/openpgp.c (cmd_internal_authenticate): Remove checking
