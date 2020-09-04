@@ -226,7 +226,7 @@ static const uint8_t lun_table[] = { 0, 0, 0, 0, };
 #endif
 
 #ifdef FLASH_UPGRADE_SUPPORT
-static const uint8_t *const mem_info[] = { &_regnual_start,  __heap_end__, };
+static const uint8_t *const mem_info[] = { _regnual_start,  __heap_end__, };
 #endif
 
 #define USB_FSIJ_GNUK_MEMINFO     0
@@ -244,7 +244,7 @@ download_check_crc32 (struct usb_dev *dev, const uint32_t *end_p)
 
   crc32_rv_reset ();
 
-  for (p = (const uint32_t *)&_regnual_start; p < end_p; p++)
+  for (p = (const uint32_t *)_regnual_start; p < end_p; p++)
     crc32_rv_step (rbit (*p));
 
   if ((rbit (crc32_rv_get ()) ^ crc32) == 0xffffffff)
@@ -283,7 +283,7 @@ usb_setup (struct usb_dev *dev)
 	      if (ccid_get_ccid_state () != CCID_STATE_EXITED)
 		return -1;
 
-	      if (addr < &_regnual_start || addr + arg->len > __heap_end__)
+	      if (addr < _regnual_start || addr + arg->len > __heap_end__)
 		return -1;
 
 	      if (arg->index + arg->len < 256)

@@ -471,8 +471,8 @@ main (int argc, const char *argv[])
 
 #ifdef FLASH_UPGRADE_SUPPORT
   /* Set vector */
-  SCB->VTOR = (uintptr_t)&_regnual_start;
-  entry = calculate_regnual_entry_address (&_regnual_start);
+  SCB->VTOR = (uintptr_t)_regnual_start;
+  entry = calculate_regnual_entry_address (_regnual_start);
 #ifdef DFU_SUPPORT
   {
     /* Use SYS at ORIGIN_REAL instead of the one at ORIGIN */
