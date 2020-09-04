@@ -83,7 +83,7 @@ IS_LINUX = platform.system() == "Linux"
 
 
 def local_print(message: str = '', **kwargs):
-    if message and message is not '.':
+    if message and message != '.':
         logger.debug('print: {}'.format(message.strip()))
     print(message, **kwargs)
 
@@ -168,7 +168,7 @@ def main(wait_e, keyno, passwd, data_regnual, data_upgrade, skip_bootloader, ver
         local_print('*** Running update. Do NOT remove the device from the USB slot, until further notice.')
 
         local_print("Downloading flash upgrade program...")
-        gnuk.download(mem_info[0], data_regnual, progress_func=progress_func, verbose=verbosity is 2)
+        gnuk.download(mem_info[0], data_regnual, progress_func=progress_func, verbose=verbosity == 2)
         local_print("Run flash upgrade program...")
         gnuk.execute(mem_info[0] + len(data_regnual) - 4)
         #
@@ -206,7 +206,7 @@ def main(wait_e, keyno, passwd, data_regnual, data_upgrade, skip_bootloader, ver
     if verbosity:
         local_print("%08x:%08x" % mem_info)
     local_print("Downloading the program")
-    reg.download(mem_info[0], data_upgrade, progress_func=progress_func, verbose=verbosity is 2)
+    reg.download(mem_info[0], data_upgrade, progress_func=progress_func, verbose=verbosity == 2)
     local_print("Protecting device")
     reg.protect()
     local_print("Finish flashing")
@@ -391,7 +391,7 @@ def start():
     passwd = None
     wait_e = args.wait_e
 
-    if args.verbose is 3:
+    if args.verbose == 3:
         stream_handler = logging.StreamHandler()
         stream_handler.setLevel(logging.DEBUG)
         stream_handler.setFormatter(logging.Formatter(LOG_FORMAT_STDOUT))
