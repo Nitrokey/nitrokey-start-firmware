@@ -1,5 +1,7 @@
 2020-09-07  NIIBE Yutaka  <gniibe@fsij.org>
 
+	* src/openpgp.c (gpg_get_firmware_update_key): Use an array.
+
 	* src/modp256r1.c (modp256r1_add, modp256r1_sub)
 	(modp256r1_reduce): Use memmove.
 
