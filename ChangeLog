@@ -1,3 +1,10 @@
+2020-09-07  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/modp256r1.c (modp256r1_add, modp256r1_sub)
+	(modp256r1_reduce): Use memmove.
+
+	*  (modp256k1_add, modp256k1_sub): Use memmove.
+
 2020-09-04  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* src/openpgp-do.c (GPG_DO_ALG_INFO): New.

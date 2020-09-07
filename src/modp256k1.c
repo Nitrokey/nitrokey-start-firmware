@@ -1,7 +1,7 @@
 /*
  * modp256k1.c -- modulo arithmetic for p256k1
  *
- * Copyright (C) 2014, 2016 Free Software Initiative of Japan
+ * Copyright (C) 2014, 2016, 2020 Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
  * This file is a part of Gnuk, a GnuPG USB Token implementation.
@@ -76,7 +76,7 @@ modp256k1_add (bn256 *X, const bn256 *A, const bn256 *B)
   cond &= bn256_sub (tmp, X, P256K1);
   if (cond)
     /* No-carry AND borrow */
-    memcpy (tmp, tmp, sizeof (bn256));
+    memmove (tmp, tmp, sizeof (bn256));
   else
     memcpy (X, tmp, sizeof (bn256));
 }
@@ -95,7 +95,7 @@ modp256k1_sub (bn256 *X, const bn256 *A, const bn256 *B)
   if (borrow)
     memcpy (X, tmp, sizeof (bn256));
   else
-    memcpy (tmp, tmp, sizeof (bn256));
+    memmove (tmp, tmp, sizeof (bn256));
 }
 
 /**
