@@ -74,11 +74,7 @@ modp256k1_add (bn256 *X, const bn256 *A, const bn256 *B)
 
   cond = (bn256_add (X, A, B) == 0);
   cond &= bn256_sub (tmp, X, P256K1);
-  if (cond)
-    /* No-carry AND borrow */
-    memmove (tmp, tmp, sizeof (bn256));
-  else
-    memcpy (X, tmp, sizeof (bn256));
+  memmove (cond?tmp:X, tmp, sizeof (bn256));
 }
 
 /**
@@ -92,10 +88,7 @@ modp256k1_sub (bn256 *X, const bn256 *A, const bn256 *B)
 
   borrow = bn256_sub (X, A, B);
   bn256_add (tmp, X, P256K1);
-  if (borrow)
-    memcpy (X, tmp, sizeof (bn256));
-  else
-    memmove (tmp, tmp, sizeof (bn256));
+  memmove (borrow?X:tmp, tmp, sizeof (bn256));
 }
 
 /**

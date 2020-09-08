@@ -69,11 +69,7 @@ modp256r1_add (bn256 *X, const bn256 *A, const bn256 *B)
 
   cond = (bn256_add (X, A, B) == 0);
   cond &= bn256_sub (tmp, X, P256R1);
-  if (cond)
-    /* No-carry AND borrow */
-    memmove (tmp, tmp, sizeof (bn256));
-  else
-    memcpy (X, tmp, sizeof (bn256));
+  memmove (cond?tmp:X, tmp, sizeof (bn256));
 }
 
 /**
@@ -87,10 +83,7 @@ modp256r1_sub (bn256 *X, const bn256 *A, const bn256 *B)
 
   borrow = bn256_sub (X, A, B);
   bn256_add (tmp, X, P256R1);
-  if (borrow)
-    memcpy (X, tmp, sizeof (bn256));
-  else
-    memmove (tmp, tmp, sizeof (bn256));
+  memmove (borrow?X:tmp, tmp, sizeof (bn256));
 }
 
 /**
@@ -121,10 +114,7 @@ modp256r1_reduce (bn256 *X, const bn512 *A)
   S1->word[1] = A->word[1];
   S1->word[0] = A->word[0];
   borrow = bn256_sub (tmp0, S1, P256R1);
-  if (borrow)
-    memmove (tmp0, tmp0, sizeof (bn256));
-  else
-    memcpy (S1, tmp0, sizeof (bn256));
+  memmove (borrow?tmp0:S1, tmp0, sizeof (bn256));
   /* X = S1 */
 
   S2->word[7] = A->word[15];
@@ -165,10 +155,7 @@ modp256r1_reduce (bn256 *X, const bn512 *A)
   S5->word[1] = A->word[10];
   S5->word[0] = A->word[9];
   borrow = bn256_sub (tmp0, S5, P256R1);
-  if (borrow)
-    memmove (tmp0, tmp0, sizeof (bn256));
-  else
-    memcpy (S5, tmp0, sizeof (bn256));
+  memmove (borrow?tmp0:S5, tmp0, sizeof (bn256));
   /* X += S5 */
   modp256r1_add (X, X, S5);
 
@@ -179,10 +166,7 @@ modp256r1_reduce (bn256 *X, const bn512 *A)
   S6->word[1] = A->word[12];
   S6->word[0] = A->word[11];
   borrow = bn256_sub (tmp0, S6, P256R1);
-  if (borrow)
-    memmove (tmp0, tmp0, sizeof (bn256));
-  else
-    memcpy (S6, tmp0, sizeof (bn256));
+  memmove (borrow?tmp0:S6, tmp0, sizeof (bn256));
   /* X -= S6 */
   modp256r1_sub (X, X, S6);
 
@@ -194,10 +178,7 @@ modp256r1_reduce (bn256 *X, const bn512 *A)
   S7->word[1] = A->word[13];
   S7->word[0] = A->word[12];
   borrow = bn256_sub (tmp0, S7, P256R1);
-  if (borrow)
-    memmove (tmp0, tmp0, sizeof (bn256));
-  else
-    memcpy (S7, tmp0, sizeof (bn256));
+  memmove (borrow?tmp0:S7, tmp0, sizeof (bn256));
   /* X -= S7 */
   modp256r1_sub (X, X, S7);
 
