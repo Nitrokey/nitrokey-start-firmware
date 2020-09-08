@@ -66,10 +66,12 @@ modp256r1_add (bn256 *X, const bn256 *A, const bn256 *B)
 {
   uint32_t cond;
   bn256 tmp[1];
+  bn256 dummy[1];
 
   cond = (bn256_add (X, A, B) == 0);
   cond &= bn256_sub (tmp, X, P256R1);
-  memmove (cond?tmp:X, tmp, sizeof (bn256));
+  memcpy (cond?dummy:X, tmp, sizeof (bn256));
+  asm ("" : "=m" (dummy) : "m" (dummy) : "memory");
 }
 
 /**
@@ -80,10 +82,12 @@ modp256r1_sub (bn256 *X, const bn256 *A, const bn256 *B)
 {
   uint32_t borrow;
   bn256 tmp[1];
+  bn256 dummy[1];
 
   borrow = bn256_sub (X, A, B);
   bn256_add (tmp, X, P256R1);
-  memmove (borrow?X:tmp, tmp, sizeof (bn256));
+  memcpy (borrow?X:dummy, tmp, sizeof (bn256));
+  asm ("" : "=m" (dummy) : "m" (dummy) : "memory");
 }
 
 /**
@@ -93,6 +97,7 @@ void
 modp256r1_reduce (bn256 *X, const bn512 *A)
 {
   bn256 tmp[1], tmp0[1];
+  bn256 dummy[1];
   uint32_t borrow;
 
 #define S1 X
@@ -114,7 +119,8 @@ modp256r1_reduce (bn256 *X, const bn512 *A)
   S1->word[1] = A->word[1];
   S1->word[0] = A->word[0];
   borrow = bn256_sub (tmp0, S1, P256R1);
-  memmove (borrow?tmp0:S1, tmp0, sizeof (bn256));
+  memcpy (borrow?dummy:S1, tmp0, sizeof (bn256));
+  asm ("" : "=m" (dummy) : "m" (dummy) : "memory");
   /* X = S1 */
 
   S2->word[7] = A->word[15];
@@ -155,7 +161,8 @@ modp256r1_reduce (bn256 *X, const bn512 *A)
   S5->word[1] = A->word[10];
   S5->word[0] = A->word[9];
   borrow = bn256_sub (tmp0, S5, P256R1);
-  memmove (borrow?tmp0:S5, tmp0, sizeof (bn256));
+  memcpy (borrow?dummy:S5, tmp0, sizeof (bn256));
+  asm ("" : "=m" (dummy) : "m" (dummy) : "memory");
   /* X += S5 */
   modp256r1_add (X, X, S5);
 
@@ -166,7 +173,8 @@ modp256r1_reduce (bn256 *X, const bn512 *A)
   S6->word[1] = A->word[12];
   S6->word[0] = A->word[11];
   borrow = bn256_sub (tmp0, S6, P256R1);
-  memmove (borrow?tmp0:S6, tmp0, sizeof (bn256));
+  memcpy (borrow?dummy:S6, tmp0, sizeof (bn256));
+  asm ("" : "=m" (dummy) : "m" (dummy) : "memory");
   /* X -= S6 */
   modp256r1_sub (X, X, S6);
 
@@ -178,7 +186,8 @@ modp256r1_reduce (bn256 *X, const bn512 *A)
   S7->word[1] = A->word[13];
   S7->word[0] = A->word[12];
   borrow = bn256_sub (tmp0, S7, P256R1);
-  memmove (borrow?tmp0:S7, tmp0, sizeof (bn256));
+  memcpy (borrow?dummy:S7, tmp0, sizeof (bn256));
+  asm ("" : "=m" (dummy) : "m" (dummy) : "memory");
   /* X -= S7 */
   modp256r1_sub (X, X, S7);
 

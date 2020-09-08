@@ -1,3 +1,10 @@
+2020-09-09  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/modp256k1.c (modp256k1_add, modp256k1_sub): Use memcpy with
+	dummy memory area.
+	* src/modp256r1.c (modp256r1_add, modp256r1_sub)
+	(modp256r1_reduce): Likewise.
+
 2020-09-08  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* src/modp256k1.c (modp256k1_add, modp256k1_reduce): Avoid
