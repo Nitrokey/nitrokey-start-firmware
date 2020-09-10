@@ -1,24 +1,23 @@
 Gnuk - An Implementation of USB Cryptographic Token for GnuPG
 
-							 Version 1.2.15
-							     2020-01-24
+							 Version 1.2.16
+							     2020-09-10
 							   Niibe Yutaka
 				      Free Software Initiative of Japan
 
 Release Notes
 =============
 
-This is the release of Gnuk, version 1.2.15, which has major
+This is the release of Gnuk, version 1.2.16, which has major
 incompatible changes to Gnuk 1.0.x.  Specifically, it now supports
 overriding key import, but importing keys (or generating keys) results
 password reset.  Also, you need to import private keys before changing
 your password.  Please update your documentation for Gnuk Token, so
 that the instruction of importing keys won't cause any confusion.
 
-It has supports of EdDSA, ECDSA (with NIST P256 and secp256k1), and
-ECDH (with X25519, NIST P256 and secp256k1), but this ECC feature is
-somehow experimental, and it requires modern GnuPG 2.2 with libgcrypt
-1.7.0 or later.
+It has supports of Ed25519 and X25519 (ECDH on Curve25519).  It also
+has experimental support of ECDSA (on NIST P256 and secp256k1) and
+ECDH (on NIST P256 and secp256k1).
 
 It also supports RSA-4096, but users should know that it takes more
 than 8 seconds to sign/decrypt.  Key generation of RSA-4096 just fails,
@@ -54,7 +53,7 @@ FAQ
 ===
 
 Q0: How Gnuk USB Token is superior than other solutions (OpenPGP
-    card 2.0, YubiKey, etc.) ?
+    card 2.0/3.3/3.4, YubiKey, etc.) ?
     https://www.g10code.de/p-card.html
     https://www.yubico.com/
 A0: Good points of Gnuk are:
@@ -79,13 +78,12 @@ A2: It takes a second and a half or so for RSA-2048.
 
 Q3: What's your recommendation for target board?
 A3: Orthodox choice is Olimex STM32-H103.
-    FST-01 (Flying Stone Tiny 01) is available for sale, and it is a
-    kind of the best choice, hopefully.
-    If you have a skill of electronics, STM32 Nucleo F103 is the best
-    choice for experiment.
+    FST-01SZ (Flying Stone Tiny 01 SZ) is available for sale, and it
+    is a kind of the best choice, hopefully.  If you have a skill of
+    electronics, STM32 Nucleo F103 is the best choice for experiment.
 
 Q4: What's version of GnuPG are you using?
-A4: In Debian GNU/Linux system, I use GnuPG modern 2.2.12.
+A4: In Debian GNU/Linux system, I use GnuPG modern 2.2.23.
 
 Q5: What's version of pcscd and libccid are you using?
 A5: I don't use them, pcscd and libccid are optional, you can use Gnuk
@@ -146,14 +144,20 @@ Ac: That's because gnome-keyring-daemon interferes GnuPG.  Please
 Qd: Do you know a good SWD debugger to connect FST-01 or something?
 Ad: ST-Link/V2 is cheap one.  We have a tool/stlinkv2.py as flash ROM
     writer program.  STM32 Nucleo F103 comes with the valiant of
-    ST-Link/V2.  However, the firmware of ST-Link/V2 is proprietary.
-    Now, I develop BBG-SWD, SWD debugger by BeagleBone Green.
+    ST-Link/V2.  Note that the firmware of ST-Link/V2 is proprietary.
+    So, in case of transparency matters, ST-Link/V2 would not be your
+    choice.
+    I care transparency for our process of manufacturing FST-01SZ (and
+    better control by Free Software, in general), thus, I develop
+    BBG-SWD, SWD debugger by BeagleBone Green.
+    I use ST-Link/V2 for daily development.  For serious task like
+    flashing product, I use BBG-SWD.
 
 
 Tested features
 ===============
 
-Gnuk is tested by test suite.  Please see the test directory.
+Gnuk is tested by test suite.  Please see the "tests" directory.
 
 	* Personalization of the card
 	  * Changing Login name, URL, Name, Sex, Language, etc.
@@ -190,16 +194,6 @@ DfuSe is for experiment only, because it is impossible for DfuSe to
 disable read from flash.  For real use, please consider killing DfuSe
 and enabling read protection using JTAG debugger.
 
-For experimental PIN-pad support, I connect a consumer IR receive
-module to FST-01, and use controller for TV.  PIN verification is
-supported by this configuration.  Yes, it is not secure at all, since
-it is very easy to monitor IR output of the controllers.  It is just
-an experiment.  Note that hardware needed for this experiment is only
-a consumer IR receive module which is as cheap as 50 JPY.
-
-Note that you need pinpad support for GnuPG to use PIN-pad enabled
-Gnuk.  The pinpad support for GnuPG is only available in version 2.
-
 
 Build system and Host system
 ============================
@@ -210,8 +204,8 @@ If your bash is not installed as /bin/bash, you need to run configure
 script prepending 'bash' before './configure'.
 
 Some tools are written in Python.  If your Python is not installed as
-/usr/bin/python, please prepend 'python' for your command invocation.
-I use Python 3.7 and PyUSB 1.0.0.
+/usr/bin/python, please prepend 'python' or 'python3' for your command
+invocation.  I use Python 3.8 and PyUSB 1.0.2.
 
 
 Source code

@@ -1,3 +1,7 @@
+2020-09-10  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* VERSION: 1.2.16.
+
 2020-09-09  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* src/modp256k1.c (modp256k1_add, modp256k1_sub): Use memcpy with
