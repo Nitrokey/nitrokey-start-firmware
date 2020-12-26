@@ -70,11 +70,11 @@ def build_privkey_template_for_remove(openpgp_keyno):
         keyspec = b'\xb8'
     else:
         keyspec = b'\xa4'
-    return b'\x4d\02' + keyspec + b'\0x00'
+    return b'\x4d\x02' + keyspec + b'\x00'
 
 def compute_digestinfo(msg):
     digest = sha256(msg).digest()
-    prefix = b'\x30\31\x30\x0d\x06\x09\x60\x86\x48\x01\x65\x03\x04\x02\x01\x05\x00\x04\x20'
+    prefix = b'\x30\x31\x30\x0d\x06\x09\x60\x86\x48\x01\x65\x03\x04\x02\x01\x05\x00\x04\x20'
     return prefix + digest
 
 # egcd and modinv are from wikibooks
