@@ -98,7 +98,7 @@ class gnuk_token(object):
                             else:
                                 self.__bulkout = endpoint.address
 
-        self.__timeout = 10000
+        self.__timeout = 100000
         self.__seq = 0
 
     def get_string(self, num):

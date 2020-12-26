@@ -126,7 +126,7 @@ class CardReader(object):
         #       intf.extra_descriptors[41]
 
         self.__dev = dev
-        self.__timeout = 10000
+        self.__timeout = 100000
         self.__seq = 0
 
     def get_string(self, num):
