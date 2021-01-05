@@ -129,6 +129,9 @@ class CardReader(object):
         self.__timeout = 100000
         self.__seq = 0
 
+        if self.ccid_get_status() & 0x03 not in (0, 1):
+            raise ValueError("Card absent")
+
     def get_string(self, num):
         return get_string(self.__dev, num)
 
