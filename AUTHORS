@@ -74,3 +74,11 @@ Peter Lebbing:
 	src/Makefile
     Wrote:
 	src/stdaln-sys.ld.in
+
+Vincent Pelletier:
+    Modified:
+	test/features/202_setup_passphrase.feature
+	test/rsa_keys.py
+	tests/card_reader.py
+	tests/rsa_keys.py
+        tool/gnuk_token.py

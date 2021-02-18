@@ -1,3 +1,13 @@
+2021-02-18  Vincent Pelletier <plr.vincent@gmail.com>
+
+	* test/features/202_setup_passphrase.feature: Fix.
+	* test/rsa_keys.py: Fix escape.
+	* tests/card_reader.py: Extend the timeout.
+	Handle no card.
+	* tests/rsa_keys.py: Fix escape.
+	* tool/gnuk_token.py: Avoid hard-coding the endpoints.
+	Longer timeout.
+
 2021-02-18  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* src/configure [GNU_LINUX_EMULATION] (def_mhz): Define.
