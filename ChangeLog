@@ -1,3 +1,14 @@
+2021-02-18  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/configure [GNU_LINUX_EMULATION] (def_mhz): Define.
+	(output_vendor_product_serial_strings): Output ARCH.
+
+	* GNUK_USB_DEVICE_ID: Use "Gnuk Token" for emulation, too.
+
+	* src/main.c [GNU_LINUX_EMULATION] (main): Add initialization of
+	the .gnuk-flash-image file.
+	(gnuk_sbrk): Rename from sbrk.
+
 2020-09-10  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* VERSION: 1.2.16.
