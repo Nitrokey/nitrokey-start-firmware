@@ -1,6 +1,24 @@
 Gnuk NEWS - User visible changes
 
 
+* Major changes in Gnuk 1.2.17
+
+  Released 2021-02-XX, by NIIBE Yutaka
+
+** GNU/Linux emulation
+Since 1.2.10, it was not build-able because of MHZ definition.  It is
+build-able again, and its USB product string is now "Gnuk Token".  It
+has ACK button support using terminal.  It now has start-up message,
+and its drivers show useful information to setup USBIP.  When no file
+for the .gnuk-flash-image file, it is automatically created.
+
+** Removal of tool/gnuk-emulation-setup
+Because it is automatically created, the tool is needed any more.
+
+** Upgrade of Chopstx
+We use Chopstx 1.19.
+
+
 * Major changes in Gnuk 1.2.16
 
   Released 2020-09-10, by NIIBE Yutaka

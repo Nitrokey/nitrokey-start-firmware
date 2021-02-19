@@ -1,5 +1,7 @@
 2021-02-19  NIIBE Yutaka  <gniibe@fsij.org>
 
+	* tool/gnuk-emulation-setup: Remove.
+
 	* tool/upgrade_by_passwd.py (main): Use tobytes.
 	* tool/gnuk_get_random.py: Likewise.
 	* tool/gnuk_remove_keys_libusb.py (main): Likewise.
