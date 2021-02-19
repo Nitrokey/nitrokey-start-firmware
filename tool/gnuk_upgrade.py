@@ -1,9 +1,9 @@
-#! /usr/bin/python
+#! /usr/bin/python3
 
 """
 gnuk_upgrade.py - a tool to upgrade firmware of Gnuk Token
 
-Copyright (C) 2012, 2015  Free Software Initiative of Japan
+Copyright (C) 2012, 2015, 2021  Free Software Initiative of Japan
 Author: NIIBE Yutaka <gniibe@fsij.org>
 
 This file is a part of Gnuk, a GnuPG USB Token implementation.
@@ -70,7 +70,7 @@ def gpg_sign(keygrip, hash):
         raise ValueError(binascii.hexlify(signed))
     return signed
 
-def main(keyno,keygrip, data_regnual, data_upgrade):
+def main(keyno, keygrip, data_regnual, data_upgrade):
     l = len(data_regnual)
     if (l & 0x03) != 0:
         data_regnual = data_regnual.ljust(l + 4 - (l & 0x03), b'\x00')
@@ -91,7 +91,7 @@ def main(keyno,keygrip, data_regnual, data_upgrade):
     elif icc.icc_get_status() == 1:
         icc.icc_power_on()
     icc.cmd_select_openpgp()
-    challenge = icc.cmd_get_challenge().tostring()
+    challenge = icc.cmd_get_challenge().tobytes()
     signed = gpg_sign(keygrip, binascii.hexlify(challenge))
     icc.cmd_external_authenticate(keyno, signed)
     icc.stop_gnuk()
@@ -107,17 +107,19 @@ def main(keyno,keygrip, data_regnual, data_upgrade):
     del icc
     icc = None
     #
-    print("Wait 3 seconds...")
-    time.sleep(3)
-    # Then, send upgrade program...
     reg = None
-    for dev in gnuk_devices_by_vidpid():
-        try:
-            reg = regnual(dev)
-            print("Device: %d" % dev.filename)
-            break
-        except:
-            pass
+    print("Waiting for device to appear:")
+    while reg == None:
+        print("  Wait {} second{}...".format(wait_e, 's' if wait_e > 1 else ''))
+        time.sleep(wait_e)
+        for dev in gnuk_devices_by_vidpid():
+            try:
+                reg = regnual(dev)
+                print("Device: %s" % dev.filename)
+                break
+            except:
+                pass
+    # Then, send upgrade program...
     mem_info = reg.mem_info()
     print("%08x:%08x" % mem_info)
     print("Downloading the program")

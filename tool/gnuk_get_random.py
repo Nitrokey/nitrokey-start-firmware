@@ -11,7 +11,7 @@ if __name__ == '__main__':
     looping = (len(sys.argv) > 1)
     while True:
         try:
-            challenge = gnuk.cmd_get_challenge().tostring()
+            challenge = gnuk.cmd_get_challenge().tobytes()
         except Exception as e:
             print(count)
             raise e

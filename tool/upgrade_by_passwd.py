@@ -1,10 +1,10 @@
-#! /usr/bin/python
+#! /usr/bin/python3
 
 """
 upgrade_by_passwd.py - a tool to install another firmware for Gnuk Token
                        which is just shipped from factory
 
-Copyright (C) 2012, 2013, 2015, 2018
+Copyright (C) 2012, 2013, 2015, 2018, 2021
               Free Software Initiative of Japan
 Author: NIIBE Yutaka <gniibe@fsij.org>
 
@@ -52,7 +52,7 @@ def main(wait_e, keyno, passwd, data_regnual, data_upgrade):
     gnuk.cmd_select_openpgp()
     # Compute passwd data
     try:
-        kdf_data = gnuk.cmd_get_data(0x00, 0xf9).tostring()
+        kdf_data = gnuk.cmd_get_data(0x00, 0xf9).tobytes()
     except:
         kdf_data = b""
     if kdf_data == b"":
@@ -70,7 +70,7 @@ def main(wait_e, keyno, passwd, data_regnual, data_upgrade):
     gnuk.cmd_write_binary(1+keyno, rsa_raw_pubkey, False)
 
     gnuk.cmd_select_openpgp()
-    challenge = gnuk.cmd_get_challenge().tostring()
+    challenge = gnuk.cmd_get_challenge().tobytes()
     digestinfo = binascii.unhexlify(SHA256_OID_PREFIX) + challenge
     signed = rsa.compute_signature(rsa_key, digestinfo)
     signed_bytes = rsa.integer_to_bytes_256(signed)

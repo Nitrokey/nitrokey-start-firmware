@@ -1,5 +1,14 @@
 2021-02-19  NIIBE Yutaka  <gniibe@fsij.org>
 
+	* tool/upgrade_by_passwd.py (main): Use tobytes.
+	* tool/gnuk_get_random.py: Likewise.
+	* tool/gnuk_remove_keys_libusb.py (main): Likewise.
+	Switch to Python3.
+	* tool/gnuk_put_binary_libusb.py (main): Use tobytes.
+	Switch to Python3.
+	* tool/gnuk_upgrade.py (main): Use tobytes.
+	Switch to Python3.
+
 	* chopstx: Update to 1.19.
 
 2021-02-18  Vincent Pelletier <plr.vincent@gmail.com>
