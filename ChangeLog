@@ -1,3 +1,7 @@
+2021-02-19  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* chopstx: Update to 1.19.
+
 2021-02-18  Vincent Pelletier <plr.vincent@gmail.com>
 
 	* test/features/202_setup_passphrase.feature: Fix.
