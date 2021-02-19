@@ -11,6 +11,16 @@ Anthony Romano:
 	src/main.c
 	src/mod.c
 
+Bertrand Jacquin
+    Modified:
+	tool/add_openpgp_authkey_from_gpgssh.py
+	tool/calc_precompute_table_ecc.py
+	tool/dfuse.py
+	tool/dump_mem.py
+	tool/get_raw_public_key.py
+	tool/pageant_proxy_to_gpg.py
+	tool/pinpadtest.py
+
 Jeremy Drake:
     Modified:
 	regnual/regnual.c
