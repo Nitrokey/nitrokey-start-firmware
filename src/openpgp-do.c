@@ -986,10 +986,24 @@ rw_kdf (uint16_t tag, int with_tag, const uint8_t *data, int len, int is_write)
     }
 }
 
+
+/*
+ * Check LEN is valid for HOW_MANY of passphrase string.
+ *
+ * HOW_MANY = 1: LEN is valid for a single passphrase string.
+ * HOW_MANY = 2: LEN is valid for two single passphrase strings.
+ *               This is used to change passphrase.
+ *               The second passphrase may be nothing.
+ *
+ * LEN = 0: Check if KDF-DO is available.
+ */
 int
 gpg_do_kdf_check (int len, int how_many)
 {
   const uint8_t *kdf_do = do_ptr[NR_DO_KDF];
+
+  if (len == 0)
+    return kdf_do != NULL;
 
   if (kdf_do)
     {
@@ -1597,6 +1611,13 @@ proc_key_import (const uint8_t *data, int len)
   int attr;
   const uint8_t *p = data;
   uint8_t pubkey[512];
+
+#ifdef KDF_DO_REQUIRED
+  const uint8_t *kdf_do = do_ptr[NR_DO_KDF];
+
+  if (kdf_do == NULL)
+    return 0;		/* Error.  */
+#endif
 
   if (admin_authorized == BY_ADMIN)
     keystring_admin = keystring_md_pw3;

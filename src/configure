@@ -46,6 +46,7 @@ hid_card_change=no
 factory_reset=no
 ackbtn_support=yes
 flash_override=""
+kdf_do_required=no
 # For emulation
 prefix=/usr/local
 exec_prefix='${prefix}'
@@ -218,6 +219,7 @@ if test "$target" = "GNU_LINUX"; then
   emulation="yes"
   cross=""
   mcu="none"
+  kdf_do_require=yes
   def_emulation="-DGNU_LINUX_EMULATION"
   def_memory_size="-DMEMORY_SIZE=1024"
   enable_hexoutput=""
@@ -336,6 +338,14 @@ if test "$ackbtn_support" = "yes"; then
 else
   ACKBTN_DEFINE="#undef ACKBTN_SUPPORT"
   echo "Acknowledge button is not supported"
+fi
+
+# KDF Data Object is always required for GNU/Linux emulation
+if test "$kdf_do_required" = "yes"; then
+  KDF_DO_REQUIRED_DEFINE="#define KDF_DO_REQUIRED 1"
+  echo "KDF DO is required before key import/generation"
+else
+  KDF_DO_REQUIRED_DEFINE="#undef KDF_DO_REQUIRED"
 fi
 
 ### !!! Replace following string of "FSIJ" to yours !!! ####

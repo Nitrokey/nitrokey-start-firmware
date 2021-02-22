@@ -738,6 +738,12 @@ cmd_pgp_gakp (struct eventflag *ccid_comm)
     {
       if (!ac_check_status (AC_ADMIN_AUTHORIZED))
 	GPG_SECURITY_FAILURE ();
+#ifdef KDF_DO_REQUIRED
+      else if (!gpg_do_kdf_check (0, 0))
+	GPG_CONDITION_NOT_SATISFIED ();
+#endif
+      else
+	gpg_do_keygen (&apdu.cmd_apdu_data[0]);
       gpg_do_keygen (&apdu.cmd_apdu_data[0]);
     }
 }

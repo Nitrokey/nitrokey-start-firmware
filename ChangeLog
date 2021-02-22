@@ -1,3 +1,17 @@
+2021-02-22  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/config.h.in (@KDF_DO_REQUIRED_DEFINE@): New.
+
+	* src/configure (KDF_DO_REQUIRED_DEFINE): New for GNU/Linux.
+
+	* src/openpgp-do.c (gpg_do_kdf_check): When LEN==0, check if
+	KDO data object is available.
+	[KDF_DO_REQUIRED] (proc_key_import): Refuse the key import when
+	KDF data object is not available.
+
+	* src/openpgp.c [KDF_DO_REQUIRED] (cmd_pgp_gakp): Refuse key
+	generation when KDF data object is not available.
+
 2021-02-19  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* tool/gnuk-emulation-setup: Remove.
