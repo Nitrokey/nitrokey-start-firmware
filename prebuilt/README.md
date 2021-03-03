@@ -68,7 +68,7 @@ Depending on you current firmware you have to choose the right prebuilts:
 
 Now we can proceed with the actual upgrade:
 ```
-./upgrade_by_passwd.py ../prebuilt/$RTM/regnual.bin ../prebuilt/$RTM/gnuk.bin
+./upgrade_by_passwd.py --regnual ../prebuilt/$RTM/regnual.bin --gnuk ../prebuilt/$RTM/gnuk.bin
 ```
 
 Please provide the admin-PIN of your NK Start and wait for the results. To check that firmware version was actually changed please run:
