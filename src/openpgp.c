@@ -744,7 +744,6 @@ cmd_pgp_gakp (struct eventflag *ccid_comm)
 #endif
       else
 	gpg_do_keygen (&apdu.cmd_apdu_data[0]);
-      gpg_do_keygen (&apdu.cmd_apdu_data[0]);
     }
 }
 

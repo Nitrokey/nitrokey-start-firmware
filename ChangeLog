@@ -1,3 +1,7 @@
+2021-03-12  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/openpgp.c (cmd_pgp_gakp): Fix patch mistake.
+
 2021-02-25  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* VERSION: 1.2.17.
