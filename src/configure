@@ -219,7 +219,7 @@ if test "$target" = "GNU_LINUX"; then
   emulation="yes"
   cross=""
   mcu="none"
-  kdf_do_require=yes
+  kdf_do_required=yes
   def_emulation="-DGNU_LINUX_EMULATION"
   def_memory_size="-DMEMORY_SIZE=1024"
   enable_hexoutput=""
