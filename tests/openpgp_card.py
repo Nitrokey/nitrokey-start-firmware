@@ -60,6 +60,7 @@ class OpenPGP_Card(object):
         self.__kdf_salt_reset = None
         self.__kdf_salt_admin = None
         self.is_gnuk = (reader.get_string(2) == "Gnuk Token")
+        self.is_emulated_gnuk = (reader.get_string(3)[-8:] == "EMULATED")
 
     def configure_with_kdf(self):
         kdf_data = self.cmd_get_data(0x00, 0xf9)

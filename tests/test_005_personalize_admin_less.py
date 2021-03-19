@@ -20,6 +20,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
+from skip_if_emulation import *
 from skip_gnuk_only_tests import *
 
 from card_test_personalize_admin_less import *
