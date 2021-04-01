@@ -1,3 +1,8 @@
+2021-04-01  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* tool/upgrade_by_passwd.py: Check configure target and
+	the config in the device are same target.
+
 2021-03-12  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* src/openpgp.c (cmd_pgp_gakp): Fix patch mistake.

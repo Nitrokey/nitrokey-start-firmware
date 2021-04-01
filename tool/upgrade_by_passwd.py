@@ -128,7 +128,8 @@ if __name__ == '__main__':
     keyno = 0
     passwd = None
     wait_e = DEFAULT_WAIT_FOR_REENUMERATION
-    while len(sys.argv) > 3:
+    skip_check = False
+    while len(sys.argv) > 1:
         option = sys.argv[1]
         sys.argv.pop(1)
         if option == '-f':      # F for Factory setting
@@ -139,15 +140,35 @@ if __name__ == '__main__':
         elif option == '-k':    # K for Key number
             keyno = int(sys.argv[1])
             sys.argv.pop(1)
+        elif option == '-s':    # S for skip the check of target
+            skip_check = True
         else:
             raise ValueError("unknown option", option)
     if not passwd:
         passwd = getpass("Admin password: ")
-    filename_regnual = sys.argv[1]
-    filename_upgrade = sys.argv[2]
+    if len(sys.argv) > 1:
+      filename_regnual = sys.argv[1]
+      filename_upgrade = sys.argv[2]
+    else:
+      filename_regnual = "../regnual/regnual.bin"
+      filename_upgrade = "../src/build/gnuk.bin"
     if not filename_regnual.endswith('bin') or not filename_upgrade.endswith('bin'):
         print("Both input files must be in binary format (*.bin)!")
         exit(1)
+    if not skip_check:
+        # More checks
+        gnuk = get_gnuk_device()
+        u_target = gnuk.get_string(5).split(b':')[0].decode('UTF-8')
+        del gnuk
+        f = open("../src/usb-strings.c.inc","r")
+        config_str = f.read()
+        f.close()
+        conf_options=config_str[config_str.find('/* configure options: "')+23:]
+        target=conf_options[:conf_options.find(':')]
+        if target != u_target:
+            print("Target", target, "!= device info from USB " , u_target)
+            exit(1)
+    #
     f = open(filename_regnual,"rb")
     data_regnual = f.read()
     f.close()
