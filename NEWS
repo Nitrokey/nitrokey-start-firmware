@@ -1,6 +1,21 @@
 Gnuk NEWS - User visible changes
 
 
+* Major changes in Gnuk 1.2.18
+
+  Released 2021-04-02, by NIIBE Yutaka
+
+** GNU/Linux emulation bug fix
+This time, for GNU/Linux emulation, KDF Data Object is required before
+keygen and key import, really.
+
+** tool/upgrade_by_passwd.py
+Now, it checks if the target of binary being written and the
+configured target of running device are same.  This check can be
+skipped by -s option.  Please note that FST-01 and FST-01SZ are
+different target, as it's MHz is different.
+
+
 * Major changes in Gnuk 1.2.17
 
   Released 2021-02-25, by NIIBE Yutaka

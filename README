@@ -1,14 +1,14 @@
 Gnuk - An Implementation of USB Cryptographic Token for GnuPG
 
-							 Version 1.2.17
-							     2021-02-25
+							 Version 1.2.18
+							     2021-04-02
 							   Niibe Yutaka
 				      Free Software Initiative of Japan
 
 Release Notes
 =============
 
-This is the release of Gnuk, version 1.2.17, which has major
+This is the release of Gnuk, version 1.2.18, which has major
 incompatible changes to Gnuk 1.0.x.  Specifically, it now supports
 overriding key import, but importing keys (or generating keys) results
 password reset.  Also, you need to import private keys before changing
@@ -365,10 +365,10 @@ You need GNU toolchain and newlib for 'arm-none-eabi' target.
 On Debian we can install the packages of gcc-arm-none-eabi
 and its friends.  I'm using:
 
-	binutils-arm-none-eabi	2.35.1-7+14+b1
+	binutils-arm-none-eabi	2.35.2-2+14+b2
 	gcc-arm-none-eabi 	15:8-2019-q3-1+b1
 	libnewlib-arm-none-eabi	3.3.0-1
-	gdb-multiarch 		10.1-1.7
+	gdb-multiarch 		10.1-2
 
 Or else, see https://launchpad.net/gcc-arm-embedded for preparation of
 GNU Toolchain for 'arm-none-eabi' target.
