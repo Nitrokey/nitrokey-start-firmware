@@ -3,9 +3,37 @@
 	* tool/upgrade_by_passwd.py: Check configure target and
 	the config in the device are same target.
 
+2021-03-19  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* tests/openpgp_card.py (is_emulated_gnuk): Add.
+	* tests/skip_if_emulation.py: New.
+	* tests/skip_if_gnuk.py: New.
+	* tests/test_001_personalize_card.py: Skip if emulation.
+	* tests/test_002_personalize_reset.py: Skip if emulation.
+	* tests/test_003_remove_keys.py: Skip if emulation.
+	* tests/test_004_reset_pw3.py: Skip if emulation.
+	* tests/test_005_personalize_admin_less.py: Skip if emulation.
+	* tests/test_006_pso.py: Skip if Gnuk.
+	* tests/test_009_keygen.py: Skip if emulation.
+	* tests/test_021_personalize_admin_less.py: Rewrite.
+
 2021-03-12  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* src/openpgp.c (cmd_pgp_gakp): Fix patch mistake.
+
+2021-03-01  Vincent Pelletier <plr.vincent@gmail.com>
+
+	* tests/card_const.py: Add attributes for more algos.
+	* tests/card_test_ansix9p256r1.py: New.
+	* tests/card_test_ansix9p384r1.py: New.
+	* tests/card_test_ansix9p512r1.py: New.
+	* tests/card_test_brainpoolp256r1.py: New.
+	* tests/card_test_brainpoolp384r1.py: New.
+	* tests/card_test_brainpoolp512r1.py: New.
+	* tests/card_test_ed25519.py: New.
+	* tests/card_test_x25519.py: New.
+	* tests/func_pso_auth.py: New.
+	* tests/test_006_pso.py: New.
 
 2021-02-25  NIIBE Yutaka  <gniibe@fsij.org>
 

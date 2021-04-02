@@ -89,6 +89,18 @@ Vincent Pelletier:
     Modified:
 	test/features/202_setup_passphrase.feature
 	test/rsa_keys.py
+	tests/card_const.py
 	tests/card_reader.py
 	tests/rsa_keys.py
         tool/gnuk_token.py
+    Wrote:
+	tests/card_test_ansix9p256r1.py
+	tests/card_test_ansix9p384r1.py
+	tests/card_test_ansix9p512r1.py
+	tests/card_test_brainpoolp256r1.py
+	tests/card_test_brainpoolp384r1.py
+	tests/card_test_brainpoolp512r1.py
+	tests/card_test_ed25519.py
+	tests/card_test_x25519.py
+	tests/func_pso_auth.py
+	tests/test_006_pso.py
