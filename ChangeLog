@@ -10,6 +10,10 @@
 	attribute, which may cause GC.  Note that flash_enum_write needs
 	to call flash_enum_clear beforehand.
 
+2021-04-28  Bertrand Jacquin <bertrand@jacquin.bzh>
+
+	* regnual/regnual.c: Include <string.h>.
+
 2021-04-02  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* VERSION: 1.2.18.

@@ -26,6 +26,8 @@
  * ReGNUal
  */
 
+#include <string.h>
+
 #include "types.h"
 #include "usb_lld.h"
 #include "sys.h"
