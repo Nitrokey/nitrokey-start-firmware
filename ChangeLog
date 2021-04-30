@@ -1,3 +1,9 @@
+2021-04-30  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/openpgp-do.c (rw_algorithm_attr): Fix writing algorithm
+	attribute, which may cause GC.  Note that flash_enum_write needs
+	to call flash_enum_clear beforehand.
+
 2021-04-02  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* VERSION: 1.2.18.

@@ -815,6 +815,8 @@ rw_algorithm_attr (uint16_t tag, int with_tag,
       else if (algo == ALGO_RSA2K && *algo_attr_pp != NULL)
 	{
 	  gpg_reset_algo_attr (kk);
+          /* Read it again, since GC may occur.  */
+          algo_attr_pp = get_algo_attr_pointer (kk);
 	  flash_enum_clear (algo_attr_pp);
 	  if (*algo_attr_pp != NULL)
 	    return 0;
@@ -823,6 +825,10 @@ rw_algorithm_attr (uint16_t tag, int with_tag,
                (*algo_attr_pp != NULL && (*algo_attr_pp)[1] != algo))
 	{
 	  gpg_reset_algo_attr (kk);
+          /* Read it again, since GC may occur.  */
+          algo_attr_pp = get_algo_attr_pointer (kk);
+          if (*algo_attr_pp)
+            flash_enum_clear (algo_attr_pp);
 	  *algo_attr_pp = flash_enum_write (kk_to_nr (kk), algo);
 	  if (*algo_attr_pp == NULL)
 	    return 0;
