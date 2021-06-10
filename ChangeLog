@@ -1,3 +1,9 @@
+2021-06-10  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* tool/stlinkv2.py: Switch to Python3.
+
+	* tool/upgrade_by_passwd.py: Fix option handling.
+
 2021-04-30  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* src/openpgp-do.c (rw_algorithm_attr): Fix writing algorithm

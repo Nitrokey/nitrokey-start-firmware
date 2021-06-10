@@ -131,19 +131,25 @@ if __name__ == '__main__':
     skip_check = False
     while len(sys.argv) > 1:
         option = sys.argv[1]
-        sys.argv.pop(1)
         if option == '-f':      # F for Factory setting
+            sys.argv.pop(1)
             passwd = DEFAULT_PW3
         elif option == '-e':    # E for Enumeration
+            sys.argv.pop(1)
             wait_e = int(sys.argv[1])
             sys.argv.pop(1)
         elif option == '-k':    # K for Key number
+            sys.argv.pop(1)
             keyno = int(sys.argv[1])
             sys.argv.pop(1)
         elif option == '-s':    # S for skip the check of target
+            sys.argv.pop(1)
             skip_check = True
         else:
-            raise ValueError("unknown option", option)
+            if option[0] == '-':
+                raise ValueError("unknown option", option)
+            else:
+                break
     if not passwd:
         passwd = getpass("Admin password: ")
     if len(sys.argv) > 1:
