@@ -114,10 +114,10 @@ def test_multi_personalize(gnuk_re: ReconnectableDevice):
 def test_certificate_crash(gnuk_re: ReconnectableDevice, data_src):
     gnuk = next(gnuk_re)
     data = b''
-    if data_src is 'local':
+    if data_src == 'local':
         data = b'0123456789' * 60
         data = b'\xFE' * 4 + data[:512]
-    elif data_src is 'file':
+    elif data_src == 'file':
         data = TEST_DATA512
     else:
         raise Exception('No data selected')
