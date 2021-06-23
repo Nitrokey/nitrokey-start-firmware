@@ -60,7 +60,6 @@ class ReconnectableDevice():
             del gnuk
 
 
-devices = ReconnectableDevice().get_device()
 
 IDENTITY_CERTSIZE = {
     0: 2048,
@@ -70,4 +69,5 @@ IDENTITY_CERTSIZE = {
 
 @pytest.fixture(scope="session")
 def gnuk_re() -> gnuk_token:
+    devices = ReconnectableDevice().get_device()
     return devices

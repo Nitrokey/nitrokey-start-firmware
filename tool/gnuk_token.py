@@ -82,6 +82,7 @@ class gnuk_token(object):
         self.__devhandle = device.open()
         self.__devhandle.claimInterface(interface)
         self.__devhandle.setAltInterface(interface)
+        self.__usb_device = device
 
         self.__intf = interface.interfaceNumber
         self.__alt = interface.alternateSetting
@@ -102,10 +103,16 @@ class gnuk_token(object):
         self.__seq = 0
         self.logger = logging.getLogger('gnuk_token')
 
-    def set_logger(self, logger: logging.Logger):
+    def get_model(self):
+        return self.get_string(2)
+
+    def get_string(self, num):
+        return get_string(self.__usb_device, num)
+
+    def set_logger(self, logger):
         self.logger = logger.getChild('gnuk_token')
 
-    def local_print(self, message: str, verbose=False):
+    def local_print(self, message, verbose=False):
         self.logger.debug('print: {}'.format(message))
         if verbose:
             print(message)
@@ -514,10 +521,10 @@ class regnual(object):
         self.__devhandle.claimInterface(intf)
         self.logger = logging.getLogger('regnual')
 
-    def set_logger(self, logger: logging.Logger):
+    def set_logger(self, logger):
         self.logger = logger.getChild('regnual')
 
-    def local_print(self, message: str, verbose=False):
+    def local_print(self, message, verbose=False):
         self.logger.debug('print: {}'.format(message))
         if verbose:
             print(message)
@@ -646,7 +653,7 @@ def gnuk_devices_by_vidpid():
                 yield dev
                 break
 
-def get_gnuk_device(verbose=True, logger: logging.Logger=None):
+def get_gnuk_device(verbose=True, logger=None):
     icc = None
     for (dev, config, intf) in gnuk_devices():
         try:
