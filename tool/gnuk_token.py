@@ -82,6 +82,7 @@ class gnuk_token(object):
         self.__devhandle = device.open()
         self.__devhandle.claimInterface(interface)
         self.__devhandle.setAltInterface(interface)
+        self.__usb_device = device
 
         self.__intf = interface.interfaceNumber
         self.__alt = interface.alternateSetting
@@ -101,6 +102,12 @@ class gnuk_token(object):
         self.__timeout = 10000
         self.__seq = 0
         self.logger = logging.getLogger('gnuk_token')
+
+    def get_model(self):
+        return self.get_string(2)
+
+    def get_string(self, num):
+        return get_string(self.__usb_device, num)
 
     def set_logger(self, logger):
         self.logger = logger.getChild('gnuk_token')

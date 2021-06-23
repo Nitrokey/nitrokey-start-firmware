@@ -18,7 +18,7 @@ from tool.gnuk_token import gnuk_token
 CERT_DO_FILEID = 5
 
 from conftest import log_msg
-from skip_gnuk_only_tests import *
+from skip_nitrokey_start_only_tests import check_start
 
 
 def test_identity_set(gnuk_re: ReconnectableDevice):
