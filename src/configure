@@ -46,7 +46,7 @@ hid_card_change=no
 factory_reset=no
 ackbtn_support=yes
 flash_override=""
-kdf_do_required=no
+kdf_do=optional
 # For emulation
 prefix=/usr/local
 exec_prefix='${prefix}'
@@ -219,7 +219,7 @@ if test "$target" = "GNU_LINUX"; then
   emulation="yes"
   cross=""
   mcu="none"
-  kdf_do_required=yes
+  kdf_do=required
   def_emulation="-DGNU_LINUX_EMULATION"
   def_memory_size="-DMEMORY_SIZE=1024"
   enable_hexoutput=""
@@ -341,7 +341,7 @@ else
 fi
 
 # KDF Data Object is always required for GNU/Linux emulation
-if test "$kdf_do_required" = "yes"; then
+if test "$kdf_do" = "required"; then
   KDF_DO_REQUIRED_DEFINE="#define KDF_DO_REQUIRED 1"
   echo "KDF DO is required before key import/generation"
 else
@@ -355,7 +355,7 @@ SERIALNO_STR_LEN_DEFINE="#define SERIALNO_STR_LEN ${#SERIALNO}"
 
 
 if test "$sys1_compat" = "yes"; then
-  CONFIG="$target:dfu=$with_dfu:debug=$debug:pinpad=$pinpad:certdo=$certdo:factory_reset=$factory_reset"
+  CONFIG="$target:dfu=$with_dfu:debug=$debug:pinpad=$pinpad:certdo=$certdo:factory_reset=$factory_reset:kdf=$kdf_do"
 else
   if test "$with_dfu" = "yes"; then
     echo "Common binary can't support DFU loader, don't use --with-dfu." >&2
@@ -365,7 +365,7 @@ else
   FLASH_PAGE_SIZE=2048
   FLASH_SIZE=128
   MEMORY_SIZE=20
-  CONFIG="common:debug=$debug:pinpad=$pinpad:certdo=$certdo:factory_reset=$factory_reset"
+  CONFIG="common:debug=$debug:pinpad=$pinpad:certdo=$certdo:factory_reset=$factory_reset:kdf=$kdf_do"
 fi
 
 output_vid_pid_version () {
