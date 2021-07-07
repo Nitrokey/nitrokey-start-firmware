@@ -30,7 +30,7 @@
 #include "usb_lld.h"
 #include "sys.h"
 
-extern void *memset (void *s, int c, size_t n);
+extern void *memset (void *s, int c, unsigned int n);
 
 extern void set_led (int);
 extern int flash_write (uint32_t dst_addr, const uint8_t *src, size_t len);

@@ -478,6 +478,6 @@ int pinpad_getline (int msg_code, uint32_t timeout_usec);
 #endif
 
 
-extern uint8_t _regnual_start, __heap_end__[];
+extern uint8_t _regnual_start[], __heap_end__[];
 
 uint8_t * sram_address (uint32_t offset);

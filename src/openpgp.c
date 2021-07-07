@@ -737,10 +737,10 @@ cmd_pgp_gakp (struct eventflag *ccid_comm)
 const uint8_t *
 gpg_get_firmware_update_key (uint8_t keyno)
 {
-  extern uint8_t _updatekey_store;
+  extern uint8_t _updatekey_store[];
   const uint8_t *p;
 
-  p = &_updatekey_store + keyno * FIRMWARE_UPDATE_KEY_CONTENT_LEN;
+  p = &_updatekey_store[keyno * FIRMWARE_UPDATE_KEY_CONTENT_LEN];
   return p;
 }
 #endif

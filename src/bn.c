@@ -425,3 +425,13 @@ bn256_random (bn256 *X)
     }
 }
 #endif
+
+void bn256_copy_if (int do_it, bn256 *dest, bn256 *src)
+{
+	volatile bn256 fake_dest;
+
+	if (do_it)
+		*dest = *src;
+	else
+		fake_dest = *src;
+}
