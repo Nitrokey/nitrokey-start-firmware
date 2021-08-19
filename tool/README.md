@@ -1,3 +1,11 @@
+
+### Nitrokey Start tools
+
+This directory hosts various tools, most inherited from the upstream. These are not actively maintained. Some of them are incorporated and maintained in the [pynitrokey] tool. Using them through the latter is recommended.
+
+[pynitrokey]: https://github.com/Nitrokey/pynitrokey/
+
+### Setup
 Before using tools located here please install missing dependencies, as presented in either
 - requirements.txt (e.g. with Pip),
 - Pipfile (e.g. with pipenv).
