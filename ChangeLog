@@ -1,3 +1,7 @@
+2021-10-11  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/configure (kdf_do): It can be overridden, now.
+
 2021-07-01  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* src/configure (CONFIG): Add KDF configuration.

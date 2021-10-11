@@ -46,7 +46,7 @@ hid_card_change=no
 factory_reset=no
 ackbtn_support=yes
 flash_override=""
-kdf_do=optional
+kdf_do=${kdf_do:-optional}
 # For emulation
 prefix=/usr/local
 exec_prefix='${prefix}'
@@ -219,7 +219,7 @@ if test "$target" = "GNU_LINUX"; then
   emulation="yes"
   cross=""
   mcu="none"
-  kdf_do=required
+  kdf_do=${kdf_do:-required}
   def_emulation="-DGNU_LINUX_EMULATION"
   def_memory_size="-DMEMORY_SIZE=1024"
   enable_hexoutput=""
