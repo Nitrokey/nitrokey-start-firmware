@@ -3,16 +3,16 @@ Gnuk NEWS - User visible changes
 
 * Major changes in Gnuk 1.2.19
 
-  Released 2021-10-1x, by NIIBE Yutaka
+  Released 2021-10-12, by NIIBE Yutaka
 
 ** KDF Data Object configuration
 KDF Data Object should be highly recommended for all configurations.
 Nevertheless, for backward compatibillity, in Gnuk 1.2, it is optional
 by default; It is up to user to configure KDF Data Object before
-importing private keys.  In this situatoin, it is not good to
-introduce new option like --enable-always-require-kdf-do, because it
-might wrongly encourage use of Gnuk with no KDF Data Object setting,
-by confusion.  If needed, please run configure:
+importing private keys.  In this situation, it is not good to
+introduce new build-time option like --enable-always-require-kdf-do,
+because it might wrongly encourage use of Gnuk with no KDF Data Object
+setting, by confusion.  If needed, please run configure:
 
   kdf_do=required ./configure --enable-factory-reset --target...
 

@@ -1,3 +1,8 @@
+2021-10-12  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* VERSION: 1.2.19.
+	* chopstx: Update to 1.20.
+
 2021-10-11  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* src/configure (kdf_do): It can be overridden, now.
