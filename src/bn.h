@@ -21,3 +21,7 @@ int bn256_is_even (const bn256 *X);
 int bn256_is_ge (const bn256 *A, const bn256 *B);
 int bn256_cmp (const bn256 *A, const bn256 *B);
 void bn256_random (bn256 *X);
+
+// Copy src into dest if do_it is true, otherwise copy
+// dest into a stack buffer so that it takes roughly constant time
+void bn256_copy_if (int do_it, bn256 *dest, bn256 *src);
