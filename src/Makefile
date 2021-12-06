@@ -12,7 +12,7 @@ CSRC = main.c call-rsa.c \
 	modp256r1.c jpc_p256r1.c ec_p256r1.c call-ec_p256r1.c \
 	modp256k1.c jpc_p256k1.c ec_p256k1.c call-ec_p256k1.c \
 	mod25638.c ecc-edwards.c ecc-mont.c sha512.c \
-	random.c neug.c sha256.c
+	random.c neug.c sha256.c chip_config.c
 
 INCDIR =
 
