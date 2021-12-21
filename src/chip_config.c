@@ -48,9 +48,9 @@ HardwareDefinitionPtr detect_chip(void) {
 //    {
 //        g_current_hardware = &stm32;
 //    } else{
-        g_current_hardware = &gd32;
+     //   g_current_hardware = &gd32;
 //    }
-    //if (hw_rev == 5)
-    //    g_current_hardware = &gd32;
+    if (hw_rev == 4)
+        g_current_hardware = &gd32;
     return g_current_hardware;
 }
