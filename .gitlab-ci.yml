@@ -10,13 +10,10 @@ variables:
   GIT_STRATEGY: clone            #This seems to have no effect also set in webinterface
   GIT_DEPTH: 0                    #This seems to have no effect also set in webinterface
   GIT_SUBMODULE_STRATEGY: recursive #This seems to have no effect also set in webinterfac
-  SCRIPTS_REPO: git@git.dotplex.com:nitrokey/gitlab-ci.git
-  REPO_USER: nitrokey
   REPO_NAME: nitrokey-start-firmware
   MAIN_BRANCH: gnuk1.2-regnual-fix
 
 build:
-  image: registry.git.dotplex.com/nitrokey/nitrokey-3-firmware/nitrokey3:latest
   rules:
     - if: '$CI_PIPELINE_SOURCE == "push"'
     - if: '$CI_PIPELINE_SOURCE == "schedule"'
