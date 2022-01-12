@@ -4,7 +4,7 @@
 #ifndef NITROKEY_START_FIRMWARE_CHIP_CONFIG
 #define NITROKEY_START_FIRMWARE_CHIP_CONFIG
 
-extern uint8_t hw_rev;
+//extern uint8_t hw_rev;
 
 struct HardwareDefinition{
     struct {

@@ -1,5 +1,6 @@
 #include "chip_config.h"
 #include <stdint.h>
+#include "mcu/sys-stm32f103.h"
 
 //#include "../chopstx/mcu/stm32.h"
 #define STM32_USBPRE_DIV1P5     (0 << 22)
@@ -50,7 +51,10 @@ HardwareDefinitionPtr detect_chip(void) {
 //    } else{
      //   g_current_hardware = &gd32;
 //    }
-    if (hw_rev == 4)
+    uint8_t  hw_rev = detect_hardware();
+    if (hw_rev == 5)
         g_current_hardware = &gd32;
+    else
+        g_current_hardware = &stm32;
     return g_current_hardware;
 }
