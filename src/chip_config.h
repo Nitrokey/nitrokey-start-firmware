@@ -8,10 +8,10 @@
 
 struct HardwareDefinition{
     struct {
-        uint8_t i_DELIBARATELY_DO_IT_WRONG_START_STOP;
         int i_STM32_USBPRE;
-        uint8_t i_STM32_PLLMUL_VALUE;
         int i_STM32_ADCPRE;
+        uint8_t i_DELIBARATELY_DO_IT_WRONG_START_STOP;
+        uint8_t i_STM32_PLLMUL_VALUE;
     } clock;
 };
 
