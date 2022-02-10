@@ -28,8 +28,6 @@ SECTIONS
 	build/sys-*.o(.text.*)
 	build/sys-*.o(.rodata)
 	build/sys-*.o(.rodata.*)
-	*(.sys.hardware)
-    *(.sys.hardwaredef)
 	. = ALIGN(1024);    /* up until 3rd kB */
 	*(.sys.1)           /* 3rd kB */
 	*(.sys.2)           /* 4th kB */
