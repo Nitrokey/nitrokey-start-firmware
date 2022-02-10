@@ -8,9 +8,10 @@
 #define STM32_ADCPRE_DIV8	(3 << 14)
 #define STM32_ADCPRE_DIV6       (2 << 14)
 
+uint8_t detect_hardware (void);
 
 
-
+__attribute__((section(".sys.hardwaredef")))
 static const struct HardwareDefinition gd32 = {
         .clock = {
                 .i_DELIBARATELY_DO_IT_WRONG_START_STOP = 0,
@@ -20,6 +21,7 @@ static const struct HardwareDefinition gd32 = {
         }
 };
 
+__attribute__((section(".sys.hardwaredef")))
 static const struct HardwareDefinition stm32 = {
     .clock = {
             .i_DELIBARATELY_DO_IT_WRONG_START_STOP = 1,
@@ -31,6 +33,8 @@ static const struct HardwareDefinition stm32 = {
 
 
 static struct HardwareDefinition const * g_current_hardware = NULL;
+
+__attribute__((section(".sys.hardware")))
 HardwareDefinitionPtr detect_chip(void) {
 //    /*
 //    * Check the hardware revision with the following:
@@ -51,7 +55,10 @@ HardwareDefinitionPtr detect_chip(void) {
 //    } else{
      //   g_current_hardware = &gd32;
 //    }
-    uint8_t  hw_rev = detect_hardware();
+
+    // Note: at this point we have uninitialized clocks and GPIO
+
+    const uint8_t  hw_rev = detect_hardware();
     if (hw_rev == 5)
         g_current_hardware = &gd32;
     else
