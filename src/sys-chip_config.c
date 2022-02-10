@@ -1,4 +1,4 @@
-#include "chip_config.h"
+#include "sys-chip_config.h"
 #include <stdint.h>
 #include "mcu/sys-stm32f103.h"
 
