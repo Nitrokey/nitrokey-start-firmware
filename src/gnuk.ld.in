@@ -28,10 +28,11 @@ SECTIONS
 	build/sys-*.o(.text.*)
 	build/sys-*.o(.rodata)
 	build/sys-*.o(.rodata.*)
-	. = ALIGN(1024);
-	*(.sys.0)
-	*(.sys.1)
-	*(.sys.2)
+	*(.sys.hardware)
+    *(.sys.hardwaredef)
+	. = ALIGN(1024);    /* up until 3rd kB */
+	*(.sys.1)           /* 3rd kB */
+	*(.sys.2)           /* 4th kB */
     } > flash0
 
     _text = .;
@@ -52,6 +53,7 @@ SECTIONS
         *(.glue_7t)
         *(.glue_7)
         *(.gcc*)
+        *(.sys.0)
 	. = ALIGN(8);
     } > flash
 
@@ -185,6 +187,13 @@ SECTIONS
         . += 1024;
         . = ALIGN(@FLASH_PAGE_SIZE@);
     } > flash =0xffffffff
+
+    /* Just to see where we have reached */
+    .gnuk_final :
+    {
+     . += 16;
+    } > flash =0xffffffff
+
 }
 
 __heap_base__   = _end;
