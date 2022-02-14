@@ -10,6 +10,11 @@ update:
 	cd $(TOOLS) && ./upgrade_by_passwd.py -p ${PASS} --regnual $(FIRMWARE_DIR)/regnual.bin --gnuk ${FIRMWARE_DIR}/gnuk.bin -y -v ${V}
 	@echo "Note: power cycle might be needed due to setting RDP flag on MCU, which stalls it"
 
+.PHONY: download
+download: 
+	STM32_Programmer_CLI -c port=SWD -halt -u 0x8000000 128000 download.hex
+	@echo "Written to download.hex"
+
 .PHONY: flash
 flash: $(FLASH_FILE)
 	STM32_Programmer_CLI -c port=SWD -halt -e all --readunprotect
