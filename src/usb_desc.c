@@ -343,6 +343,8 @@ static const struct desc string_descriptors[] = {
   {gnuk_revision_detail, sizeof (gnuk_revision_detail)},
   {gnuk_config_options, sizeof (gnuk_config_options)},
   {sys_version, sizeof (sys_version)},
+//  {(const uint8_t *) 0x08000048, 4},     //board id
+  {(const uint8_t *) 0x0800004c, 16*2+2},    //board name
 };
 #define NUM_STRING_DESC (sizeof (string_descriptors) / sizeof (struct desc))
 
@@ -365,9 +367,18 @@ usb_get_descriptor (struct usb_dev *dev)
 	return usb_lld_ctrl_send (dev, config_desc, sizeof (config_desc));
       else if (desc_type == STRING_DESCRIPTOR)
 	{
-	  if (desc_index < NUM_STRING_DESC)
-	    return usb_lld_ctrl_send (dev, string_descriptors[desc_index].desc,
-				      string_descriptors[desc_index].size);
+	  if (desc_index < NUM_STRING_DESC){
+          if (desc_index < 7) {
+              return usb_lld_ctrl_send (dev, string_descriptors[desc_index].desc,
+                                        string_descriptors[desc_index].size);
+          }
+
+          uint8_t buf[32+2+2] = {string_descriptors[desc_index].size, STRING_DESCRIPTOR};
+          for (int i = 0; i < string_descriptors[desc_index].size && (i<(sizeof buf)/2-2); ++i) {
+              buf[2+2*i] = string_descriptors[desc_index].desc[i];
+          }
+	      return usb_lld_ctrl_send (dev, buf,string_descriptors[desc_index].size);
+      }
 #ifdef USE_SYS3
 	  else if (desc_index == NUM_STRING_DESC)
 	    {
