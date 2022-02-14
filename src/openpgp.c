@@ -38,8 +38,8 @@
 
 static struct eventflag *openpgp_comm;
 
-#define USER_PASSWD_MINLEN 14
-#define ADMIN_PASSWD_MINLEN 14
+#define USER_PASSWD_MINLEN 6
+#define ADMIN_PASSWD_MINLEN 8
 
 #define CLS(a) a.cmd_apdu_head[0]
 #define INS(a) a.cmd_apdu_head[1]

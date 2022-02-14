@@ -106,7 +106,9 @@ device_initialize_once (void)
 	  flash_put_data_internal (&p[i*4+2], nibble);
 	}
 
+//#define DFU_SUPPORT
 #ifdef DFU_SUPPORT
+      #warning "DFU_SUPPORT enabled"
 #define CHIP_ID_REG ((uint32_t *)0xE0042000)
       /*
        * Overwrite DFU bootloader with a copy of SYS linked to ORIGIN_REAL.
@@ -148,7 +150,7 @@ device_initialize_once (void)
                       &vector[1], sizeof(handler));
         }
 
-        flash_protect();
+//        flash_protect();
         nvic_system_reset();
       }
 #endif
