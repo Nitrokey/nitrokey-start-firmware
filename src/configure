@@ -169,6 +169,8 @@ BOARD_HEADER_FILE=board-$(echo $target | tr '_[:upper:]' '-[:lower:]').h
 echo "Header file is: $BOARD_HEADER_FILE"
 ln -sf "../chopstx/board/$BOARD_HEADER_FILE" board.h
 
+BOARD_ID=$(grep BOARD_ID board.h | head -1 | awk '{print substr($3,3,4)}')
+
 # Frequency
 MHZ=72
 # Flash page size in byte
@@ -356,7 +358,7 @@ else
   MEMORY_SIZE=20
   CONFIG="common:debug=$debug:pinpad=$pinpad:certdo=$certdo:factory_reset=$factory_reset"
 fi
-PLACEHOLDER_CONFIG="*:*"
+PLACEHOLDER_CONFIG="*:*:${BOARD_ID}"
 
 output_vid_pid_version () {
   echo "$VIDPID" | \

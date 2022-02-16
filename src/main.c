@@ -134,8 +134,6 @@ device_initialize_once (void)
         flash_write_any(addr, &_binary_build_stdaln_sys_bin_start,
                         stdaln_sys_size);
         addr += stdaln_sys_size;
-        flash_write_any(addr, (const uint8_t *) &FT0, sizeof(FT0));
-        addr += sizeof(FT0);
         flash_write_any(addr, (const uint8_t *) &FT1, sizeof(FT1));
         addr += sizeof(FT1);
         flash_write_any(addr, (const uint8_t *) &FT2, sizeof(FT2));
