@@ -26,7 +26,7 @@ fi
 popd
 
 
-export GNUK_CONFIG="--target=NITROKEY_START --vidpid=20a0:4211 --enable-factory-reset --enable-certdo"
+export GNUK_CONFIG="--target=NITROKEY_START-g --vidpid=20a0:4211 --enable-factory-reset --enable-certdo"
 	pushd $tag/src/
 	./configure ${GNUK_CONFIG}
 	popd
