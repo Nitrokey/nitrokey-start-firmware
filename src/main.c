@@ -1,7 +1,7 @@
 /*
  * main.c - main routine of Gnuk
  *
- * Copyright (C) 2010, 2011, 2012, 2013, 2015, 2016, 2017, 2018
+ * Copyright (C) 2010, 2011, 2012, 2013, 2015, 2016, 2017, 2018, 2021
  *               Free Software Initiative of Japan
  * Author: NIIBE Yutaka <gniibe@fsij.org>
  *
@@ -36,6 +36,11 @@
 #include "usb-cdc.h"
 #include "random.h"
 #ifdef GNU_LINUX_EMULATION
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #define main emulated_main
@@ -371,6 +376,34 @@ main (int argc, const char *argv[])
   else
     flash_image_path = argv[1];
 
+  if (access (flash_image_path, F_OK) < 0)
+    {
+      int fd;
+      char buf[8192];
+
+      memset (buf, 0xff, sizeof buf);
+      memset (buf+4*1024, 0, 2);
+      fd = open (flash_image_path, O_CREAT|O_WRONLY, S_IRUSR|S_IWUSR);
+      if (fd < 0)
+	{
+	  perror ("creating flash file");
+	  exit (1);
+	}
+
+      if (write (fd, buf, sizeof buf) != sizeof buf)
+	{
+	  perror ("initializing flash file");
+	  close (fd);
+	  exit (1);
+	}
+
+      close (fd);
+    }
+
+  puts ("Gnuk (emulation with USBIP), a GnuPG USB Token implementation");
+  puts ("Copyright (C) 2021 Free Software Initiative of Japan");
+  puts ("This is free software under GPLv3+.");
+
   flash_addr = flash_init (flash_image_path);
   flash_addr_key_storage_start = (uint8_t *)flash_addr;
   flash_addr_data_storage_start = (uint8_t *)flash_addr + 4096;
@@ -562,11 +595,11 @@ gnuk_malloc_init (void)
 }
 
 static void *
-sbrk (size_t size)
+gnuk_sbrk (intptr_t size)
 {
   void *p = (void *)heap_p;
 
-  if ((size_t)(HEAP_END - heap_p) < size)
+  if ((HEAP_END - heap_p) < size)
     return NULL;
 
   heap_p += size;
@@ -602,7 +635,7 @@ gnuk_malloc (size_t size)
     {
       if (m == NULL)
 	{
-	  m = (struct mem_head *)sbrk (size);
+	  m = (struct mem_head *)gnuk_sbrk (size);
 	  if (m)
 	    m->size = size;
 	  break;

@@ -1,9 +1,9 @@
-#! /usr/bin/python
+#! /usr/bin/python3
 
 """
 gnuk_remove_keys_libusb.py - a tool to remove keys in Gnuk Token
 
-Copyright (C) 2012, 2018 Free Software Initiative of Japan
+Copyright (C) 2012, 2018, 2021 Free Software Initiative of Japan
 Author: NIIBE Yutaka <gniibe@fsij.org>
 
 This file is a part of Gnuk, a GnuPG USB Token implementation.
@@ -51,7 +51,7 @@ def main(passwd):
         gnuk.icc_power_on()
     gnuk.cmd_select_openpgp()
     # Compute passwd data
-    kdf_data = gnuk.cmd_get_data(0x00, 0xf9).tostring()
+    kdf_data = gnuk.cmd_get_data(0x00, 0xf9).tobytes()
     if kdf_data == b"":
         passwd_data = passwd.encode('UTF-8')
     else:

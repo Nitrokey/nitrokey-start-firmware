@@ -1,10 +1,10 @@
-#! /usr/bin/env python3
+#! /usr/bin/python3
 
 """
 gnuk_put_binary.py - a tool to put binary to Gnuk Token
 This tool is for importing certificate, writing serial number, etc.
 
-Copyright (C) 2011, 2012 Free Software Initiative of Japan
+Copyright (C) 2011, 2012, 2021 Free Software Initiative of Japan
 Author: NIIBE Yutaka <gniibe@fsij.org>
 
 This file is a part of Gnuk, a GnuPG USB Token implementation.
@@ -62,7 +62,7 @@ def main(fileid, is_update, data, passwd):
     if fileid == 0:
         data_in_device = gnuk.cmd_get_data(0x00, 0x4f)
         print(' '.join([ "%02x" % d for d in data_in_device ]))
-        compare(data + b'\x00\x00', data_in_device[8:].tostring())
+        compare(data + b'\x00\x00', data_in_device[8:].tobytes())
     elif fileid >= 1 and fileid <= 4:
         data_in_device = gnuk.cmd_read_binary(fileid)
         compare(data, data_in_device)

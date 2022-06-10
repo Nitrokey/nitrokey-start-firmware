@@ -1,4 +1,4 @@
-#! /usr/bin/python
+#! /usr/bin/python3
 
 """
 stlinkv2.py - a tool to control ST-Link/V2

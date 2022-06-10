@@ -95,11 +95,17 @@ class gnuk_token(object):
                         alt.interfaceSubClass == HID_SUBCLASS_NO_BOOT and \
                         alt.interfaceProtocol == HID_PROTOCOL_0:
                     self.__hid_intf = alt.interfaceNumber
+                elif alt.interfaceClass == CCID_CLASS and \
+                        alt.interfaceSubClass == CCID_SUBCLASS and \
+                        alt.interfaceProtocol == CCID_PROTOCOL_0:
+                    for endpoint in alt.endpoints:
+                        if endpoint.type == usb.ENDPOINT_TYPE_BULK:
+                            if endpoint.address & usb.ENDPOINT_DIR_MASK == usb.ENDPOINT_IN:
+                                self.__bulkin = endpoint.address
+                            else:
+                                self.__bulkout = endpoint.address
 
-        self.__bulkout = 1
-        self.__bulkin  = 0x81
-
-        self.__timeout = 10000
+        self.__timeout = 100000
         self.__seq = 0
         self.logger = logging.getLogger('gnuk_token')
 
