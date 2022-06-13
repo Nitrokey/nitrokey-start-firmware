@@ -63,7 +63,7 @@ verify_user_0 (uint8_t access, const uint8_t *pw, int buf_len, int pw_len_known,
 	       const uint8_t *ks_pw1, int save_ks)
 {
   int pw_len;
-  int r1, r2;
+  int r;
   uint8_t keystring[KEYSTRING_MD_SIZE];
   const uint8_t *salt;
   int salt_len;
@@ -99,21 +99,31 @@ verify_user_0 (uint8_t access, const uint8_t *pw, int buf_len, int pw_len_known,
     memcpy (keystring_md_pw3, keystring, KEYSTRING_MD_SIZE);
 
   if (access == AC_PSO_CDS_AUTHORIZED)
-    {
-      r1 = gpg_do_load_prvkey (GPG_KEY_FOR_SIGNING, BY_USER, keystring);
-      r2 = 0;
-    }
+    r = gpg_do_load_prvkey (GPG_KEY_FOR_SIGNING, BY_USER, keystring);
   else
     {
+      int r1, r2;
+
       r1 = gpg_do_load_prvkey (GPG_KEY_FOR_DECRYPTION, BY_USER, keystring);
       r2 = gpg_do_load_prvkey (GPG_KEY_FOR_AUTHENTICATION, BY_USER, keystring);
+
+      if (r1 < 0 || r2 < 0)
+	r = -1;
+      else if (r1 == 0)
+	{
+	  if (r2 == 0)
+	    /* No encryption/authentication keys, then, check signing key.  */
+	    r = gpg_do_load_prvkey (GPG_KEY_FOR_SIGNING, BY_USER, keystring);
+	  else
+	    r = r2;
+	}
+      else if (r2 == 0)
+	r = r1;
+      else
+	r = 1;
     }
 
-  if (r1 < 0 || r2 < 0
-      || (r1 == 0 && r2 == 0 && ks_pw1 != NULL
-	  && ((ks_pw1[0] & PW_LEN_KEYSTRING_BIT) == 0
-	      || memcmp (KS_GET_KEYSTRING (ks_pw1),
-			 keystring, KEYSTRING_MD_SIZE) != 0)))
+  if (r < 0)
     {
     failure:
       gpg_pw_increment_err_counter (PW_ERR_PW1);
@@ -163,7 +173,7 @@ verify_admin_00 (const uint8_t *pw, int buf_len, int pw_len_known,
 		 const uint8_t *ks, int save_ks)
 {
   int pw_len;
-  int r1, r2;
+  int r;
   uint8_t keystring[KEYSTRING_MD_SIZE];
   const uint8_t *salt;
   int salt_len;
@@ -179,12 +189,11 @@ verify_admin_00 (const uint8_t *pw, int buf_len, int pw_len_known,
   if (save_ks)
     memcpy (keystring_md_pw3, keystring, KEYSTRING_MD_SIZE);
 
-  r1 = gpg_do_load_prvkey (GPG_KEY_FOR_SIGNING, BY_ADMIN, keystring);
-  r2 = 0;
+  r = gpg_do_load_prvkey (GPG_KEY_FOR_SIGNING, BY_ADMIN, keystring);
 
-  if (r1 < 0 || r2 < 0)
+  if (r < 0)
     return -1;
-  else if (r1 == 0 && r2 == 0)
+  else if (r == 0)
     if ((ks[0] & PW_LEN_KEYSTRING_BIT) == 0
 	|| memcmp (KS_GET_KEYSTRING (ks), keystring, KEYSTRING_MD_SIZE) != 0)
       return -1;

@@ -1,3 +1,58 @@
+2020-09-10  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* VERSION: 1.2.16.
+
+2020-09-09  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/modp256k1.c (modp256k1_add, modp256k1_sub): Use memcpy with
+	dummy memory area.
+	* src/modp256r1.c (modp256r1_add, modp256r1_sub)
+	(modp256r1_reduce): Likewise.
+
+2020-09-08  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/modp256k1.c (modp256k1_add, modp256k1_reduce): Avoid
+	optimization to remove call of memmove.
+	* src/modp256r1.c (modp256r1_add, modp256r1_sub)
+	(modp256r1_reduce): Likewise.
+
+2020-09-07  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/openpgp.c (gpg_get_firmware_update_key): Use an array.
+
+	* src/modp256k1.c (modp256k1_add, modp256k1_sub): Use memmove.
+	* src/modp256r1.c (modp256r1_add, modp256r1_sub)
+	(modp256r1_reduce): Likewise.
+
+2020-09-04  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/openpgp-do.c (GPG_DO_ALG_INFO): New.
+	(do_fp_all, do_cafp_all, do_kgtime_all, do_openpgpcard_aid)
+	(do_ds_count): Return nothing.
+	(copy_do): Change the API for DO_PROC_READ.
+	(do_alg_info): New for GPG_DO_ALG_INFO.
+	(gpg_do_table): Add an entry for GPG_DO_ALG_INFO.
+
+2020-09-03  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/openpgp.c (cmd_internal_authenticate): Remove checking
+	against EDDSA_HASH_LEN_MAX.
+	(cmd_pso): Likewise.
+
+2020-08-28  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/openpgp.c (cmd_reset_user_password): Add passphrase length
+	check.
+
+2020-08-26  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/ac.c (verify_user_0): Fix for a use case of having
+	signing key only.
+	(verify_admin_00): Clean up.
+
+	* tests/test_000_empty_card.py (test_name_lang_sex): Support
+	OpenPGP card version 3.3.
+
 2020-01-24  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* VERSION: 1.2.15.

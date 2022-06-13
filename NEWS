@@ -1,6 +1,24 @@
 Gnuk NEWS - User visible changes
 
 
+* Major changes in Gnuk 1.2.16
+
+  Released 2020-09-10, by NIIBE Yutaka
+
+** New Data Object (Algorithm Information) of OpenPGP card v3.4
+The tag is 0x00FA.  This is useful for user interaction to show which
+algorithms are supported by the device.
+
+** Ed25519 signing allowing longer message
+For OpenPGP, it does hashing on host side before requesting signing to
+the device.  Thus, the length of message to be signed is limited and
+determined by the hash algorithm.  That's good feature of OpenPGP.  On
+the other hand, there is a use case, like OpenSSH certificate signing,
+where the length of message is a kind of arbitrary.  Even though Gnuk
+(or OpenPGP card protocol itself) has limitation, we removed the
+length check against EDDSA_HASH_LEN_MAX at cmd_pso.
+
+
 * Major changes in Gnuk 1.2.15
 
   Released 2020-01-24, by NIIBE Yutaka
