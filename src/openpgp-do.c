@@ -34,6 +34,8 @@
 #include "polarssl/config.h"
 #include "polarssl/aes.h"
 #include "sha512.h"
+#include "sha256.h"
+#include "board.h"
 
 /* Forward declaration */
 #define CLEAN_PAGE_FULL 1
@@ -668,10 +670,22 @@ do_openpgpcard_aid (uint16_t tag, int with_tag)
       *res_p++ = 0xff;
       *res_p++ = ((_selected_identity>0)?_selected_identity:0xfe);
 
-      *res_p++ = u[3];
-      *res_p++ = u[2];
-      *res_p++ = u[1];
-      *res_p++ = u[0];
+      if (CHECK_GD32()) {
+        // Uses 32 + 26*4 -> 136 bytes here - added in stack-def.h (probably redundant for this case)
+        uint8_t sha_res[32];
+        sha256_context ctx;
+        sha256_start (&ctx);
+        sha256_update (&ctx, unique_device_id (), 96/8);
+        sha256_finish (&ctx, sha_res);
+        memmove(res_p, sha_res, 4);
+        res_p += 4;
+      } else {
+        *res_p++ = u[3];
+        *res_p++ = u[2];
+        *res_p++ = u[1];
+        *res_p++ = u[0];
+      }
+
     }
   else
     {
