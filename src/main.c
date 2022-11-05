@@ -44,6 +44,7 @@
 #endif
 
 #include "board.h"
+#include "sha256.h"
 
 /*
  * main thread does 1-bit LED display output
@@ -94,24 +95,26 @@ device_initialize_once (void)
     const uint8_t *u = unique_device_id() + (MHZ < 96 ? 8 : 0);
     int i;
 
-    const uint8_t *unique = unique_device_id();
-    uint8_t output[4] = {};
 
+    uint8_t output[4] = {};
     if (CHECK_GD32()) {
       // Squash all 96 bits of MCU unique id into 32 with xor
-      for (i = 0; i < 3; i++) {
-        output[0] ^= unique[i * 4 + 0];
-        output[1] ^= unique[i * 4 + 1];
-        output[2] ^= unique[i * 4 + 2];
-        output[3] ^= unique[i * 4 + 3];
-      }
+      // Requires additionally 26 * 4 + 32 + 4 -> 140 bytes on stack
+      // See stack-def.h for the memory map
+      const uint8_t *unique = unique_device_id();
+      uint8_t sha_res[32];
+      sha256_context ctx;   // 26 * 4 bytes
+      sha256_start (&ctx);
+      sha256_update (&ctx, unique, 96/8);
+      sha256_finish (&ctx, sha_res);
+      memmove(output, sha_res, sizeof output);
     }
 
 
     for (i = 0; i < 4; i++) {
       uint8_t b;
       if (CHECK_GD32()) {
-        // Use the xored ID for GD32, as the serial number source
+        // Use the ID for GD32, as the serial number source
         b = output[i];
       } else {
         b = u[3 - i];
