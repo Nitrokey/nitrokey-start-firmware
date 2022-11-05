@@ -35,6 +35,14 @@ build:
 	cd ../docker/ && sudo env GNUK_CONFIG="${GNUK_CONFIG}"  make
 	@echo "Built with '${GNUK_CONFIG}'"
 
+.PHONY: release
+TAG=$(shell basename $(FIRMWARE_DIR))
+release:
+	7za a $(TAG).zip $(TAG)
+	gpg2 --detach-sign $(TAG).zip
+	gpg2 --verify $(TAG).zip.sig
+	ls -lh $(TAG).zip*
+
 .PHONY: build-hid
 build-hid: GNUK_CONFIG_EXTRA=--enable-hid-card-change
 build-hid: build
