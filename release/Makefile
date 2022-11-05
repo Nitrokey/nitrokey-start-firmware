@@ -5,9 +5,11 @@ PASS=12345678
 V=0
 all: update
 
+UPDATETOOL=nitropy start update
+
 .PHONY: update
 update:
-	cd $(TOOLS) && ./upgrade_by_passwd.py -p ${PASS} --regnual $(FIRMWARE_DIR)/regnual.bin --gnuk ${FIRMWARE_DIR}/gnuk.bin -y -v ${V}
+	$(UPDATETOOL) -p ${PASS} --regnual $(FIRMWARE_DIR)/regnual.bin --gnuk ${FIRMWARE_DIR}/gnuk.bin -y -v ${V}
 	@echo "Note: power cycle might be needed due to setting RDP flag on MCU, which stalls it"
 
 .PHONY: download
