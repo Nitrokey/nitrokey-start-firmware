@@ -19,7 +19,7 @@ download:
 
 .PHONY: flash
 flash: $(FLASH_FILE)
-	STM32_Programmer_CLI -c port=SWD -halt -e all --readunprotect
+	STM32_Programmer_CLI -c port=SWD -halt --readunprotect -e all
 	STM32_Programmer_CLI -c port=SWD -halt -d $< -rst
 	@echo "Written: $<"
 
