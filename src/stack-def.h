@@ -3,7 +3,7 @@
 #define SIZE_2 4096
 #define SIZE_3 (5 * 4096)
 #else
-#define SIZE_0 (0x0160 + 140) /* Main         */
+#define SIZE_0 (0x0160 + 140*4) /* Main         */
 #define SIZE_1 0x01a0 /* CCID         */
 #define SIZE_2 0x0180 /* RNG          */
 #if MEMORY_SIZE >= 32
@@ -11,7 +11,7 @@
 #elif MEMORY_SIZE >= 24
 #define SIZE_3 0x2640 /* openpgp-card */
 #else
-#define SIZE_3 (0x1640 + 136) /* openpgp-card */
+#define SIZE_3 (0x1640 + 136*4) /* openpgp-card */
 #endif
 #define SIZE_4 0x0000 /* ---          */
 #define SIZE_5 0x0200 /* msc          */
