@@ -5,9 +5,11 @@ PASS=12345678
 V=0
 all: update
 
+UPDATETOOL=nitropy start update
+
 .PHONY: update
 update:
-	cd $(TOOLS) && ./upgrade_by_passwd.py -p ${PASS} --regnual $(FIRMWARE_DIR)/regnual.bin --gnuk ${FIRMWARE_DIR}/gnuk.bin -y -v ${V}
+	$(UPDATETOOL) -p ${PASS} --regnual $(FIRMWARE_DIR)/regnual.bin --gnuk ${FIRMWARE_DIR}/gnuk.bin -y -v ${V}
 	@echo "Note: power cycle might be needed due to setting RDP flag on MCU, which stalls it"
 
 .PHONY: download
@@ -32,6 +34,14 @@ build:
 	sudo touch last-build
 	cd ../docker/ && sudo env GNUK_CONFIG="${GNUK_CONFIG}"  make
 	@echo "Built with '${GNUK_CONFIG}'"
+
+.PHONY: release
+TAG=$(shell basename $(FIRMWARE_DIR))
+release:
+	7za a $(TAG).zip $(TAG)
+	gpg2 --detach-sign $(TAG).zip
+	gpg2 --verify $(TAG).zip.sig
+	ls -lh $(TAG).zip*
 
 .PHONY: build-hid
 build-hid: GNUK_CONFIG_EXTRA=--enable-hid-card-change
