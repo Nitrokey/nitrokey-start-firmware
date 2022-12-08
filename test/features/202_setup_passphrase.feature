@@ -4,7 +4,7 @@ Feature: setup pass phrase
   A token should support pass phrase: PW1, PW3 and reset code
 
   Scenario: setup PW1 (admin-full mode)
-     Given cmd_change_reference_data with 1 and "123456user pass phrase"
+     Given cmd_change_reference_data with 1 and "another user pass phraseuser pass phrase"
      Then it should get success
 
   Scenario: verify PW1 (1)

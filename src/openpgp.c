@@ -562,6 +562,7 @@ cmd_reset_user_password (struct eventflag *ccid_comm)
   uint8_t new_ks0[KEYSTRING_SIZE];
   uint8_t *new_ks = KS_GET_KEYSTRING (new_ks0);
   uint8_t *new_salt = KS_GET_SALT (new_ks0);
+  const uint8_t *ks_pw3 = gpg_do_read_simple (NR_DO_KEYSTRING_PW3);
   const uint8_t *salt;
   int salt_len;
 
@@ -576,7 +577,6 @@ cmd_reset_user_password (struct eventflag *ccid_comm)
     {
       const uint8_t *ks_rc = gpg_do_read_simple (NR_DO_KEYSTRING_RC);
       uint8_t old_ks[KEYSTRING_MD_SIZE];
-      const uint8_t *ks_pw3 = gpg_do_read_simple (NR_DO_KEYSTRING_PW3);
 
       if (gpg_do_kdf_check (len, 2) == 0)
 	{
@@ -666,6 +666,16 @@ cmd_reset_user_password (struct eventflag *ccid_comm)
 
       newpw_len = len;
       newpw = pw;
+
+      /* Check length of new password */
+      if ((ks_pw3 == NULL && newpw_len < ADMIN_PASSWD_MINLEN)
+	  || newpw_len < USER_PASSWD_MINLEN)
+	{
+	  DEBUG_INFO ("new password length is too short.");
+	  GPG_CONDITION_NOT_SATISFIED ();
+	  return;
+	}
+
       random_get_salt (new_salt);
       s2k (new_salt, SALT_SIZE, newpw, newpw_len, new_ks);
       new_ks0[0] = newpw_len;
@@ -729,7 +739,12 @@ cmd_pgp_gakp (struct eventflag *ccid_comm)
     {
       if (!ac_check_status (AC_ADMIN_AUTHORIZED))
 	GPG_SECURITY_FAILURE ();
-      gpg_do_keygen (&apdu.cmd_apdu_data[0]);
+#ifdef KDF_DO_REQUIRED
+      else if (!gpg_do_kdf_check (0, 0))
+	GPG_CONDITION_NOT_SATISFIED ();
+#endif
+      else
+	gpg_do_keygen (&apdu.cmd_apdu_data[0]);
     }
 }
 
@@ -737,10 +752,10 @@ cmd_pgp_gakp (struct eventflag *ccid_comm)
 const uint8_t *
 gpg_get_firmware_update_key (uint8_t keyno)
 {
-  extern uint8_t _updatekey_store;
+  extern uint8_t _updatekey_store[1024];
   const uint8_t *p;
 
-  p = &_updatekey_store + keyno * FIRMWARE_UPDATE_KEY_CONTENT_LEN;
+  p = _updatekey_store + keyno * FIRMWARE_UPDATE_KEY_CONTENT_LEN;
   return p;
 }
 #endif
@@ -1014,13 +1029,6 @@ cmd_pso (struct eventflag *ccid_comm)
 	{
 	  uint32_t output[64/4];	/* Require 4-byte alignment. */
 
-	  if (len > EDDSA_HASH_LEN_MAX)
-	    {
-	      DEBUG_INFO ("wrong hash length.");
-	      GPG_CONDITION_NOT_SATISFIED ();
-	      return;
-	    }
-
 	  cs = chopstx_setcancelstate (0);
 	  result_len = EDDSA_SIGNATURE_LENGTH;
 	  r = eddsa_sign_25519 (apdu.cmd_apdu_data, len, output,
@@ -1226,13 +1234,6 @@ cmd_internal_authenticate (struct eventflag *ccid_comm)
   else if (attr == ALGO_ED25519)
     {
       uint32_t output[64/4];	/* Require 4-byte alignment. */
-
-      if (len > EDDSA_HASH_LEN_MAX)
-	{
-	  DEBUG_INFO ("wrong hash length.");
-	  GPG_CONDITION_NOT_SATISFIED ();
-	  return;
-	}
 
       cs = chopstx_setcancelstate (0);
       result_len = EDDSA_SIGNATURE_LENGTH;

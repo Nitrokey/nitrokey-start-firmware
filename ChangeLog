@@ -1,3 +1,182 @@
+2021-10-12  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* VERSION: 1.2.19.
+	* chopstx: Update to 1.20.
+
+2021-10-11  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/configure (kdf_do): It can be overridden, now.
+
+2021-07-01  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/configure (CONFIG): Add KDF configuration.
+
+2021-06-10  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* tool/stlinkv2.py: Switch to Python3.
+
+	* tool/upgrade_by_passwd.py: Fix option handling.
+
+2021-04-30  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/openpgp-do.c (rw_algorithm_attr): Fix writing algorithm
+	attribute, which may cause GC.  Note that flash_enum_write needs
+	to call flash_enum_clear beforehand.
+
+2021-04-28  Bertrand Jacquin <bertrand@jacquin.bzh>
+
+	* regnual/regnual.c: Include <string.h>.
+
+2021-04-02  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* VERSION: 1.2.18.
+
+2021-04-01  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* tool/upgrade_by_passwd.py: Check configure target and
+	the config in the device are same target.
+
+2021-03-19  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* tests/openpgp_card.py (is_emulated_gnuk): Add.
+	* tests/skip_if_emulation.py: New.
+	* tests/skip_if_gnuk.py: New.
+	* tests/test_001_personalize_card.py: Skip if emulation.
+	* tests/test_002_personalize_reset.py: Skip if emulation.
+	* tests/test_003_remove_keys.py: Skip if emulation.
+	* tests/test_004_reset_pw3.py: Skip if emulation.
+	* tests/test_005_personalize_admin_less.py: Skip if emulation.
+	* tests/test_006_pso.py: Skip if Gnuk.
+	* tests/test_009_keygen.py: Skip if emulation.
+	* tests/test_021_personalize_admin_less.py: Rewrite.
+
+2021-03-12  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/openpgp.c (cmd_pgp_gakp): Fix patch mistake.
+
+2021-03-01  Vincent Pelletier <plr.vincent@gmail.com>
+
+	* tests/card_const.py: Add attributes for more algos.
+	* tests/card_test_ansix9p256r1.py: New.
+	* tests/card_test_ansix9p384r1.py: New.
+	* tests/card_test_ansix9p512r1.py: New.
+	* tests/card_test_brainpoolp256r1.py: New.
+	* tests/card_test_brainpoolp384r1.py: New.
+	* tests/card_test_brainpoolp512r1.py: New.
+	* tests/card_test_ed25519.py: New.
+	* tests/card_test_x25519.py: New.
+	* tests/func_pso_auth.py: New.
+	* tests/test_006_pso.py: New.
+
+2021-02-25  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* VERSION: 1.2.17.
+
+2021-02-22  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/config.h.in (@KDF_DO_REQUIRED_DEFINE@): New.
+
+	* src/configure (KDF_DO_REQUIRED_DEFINE): New for GNU/Linux.
+
+	* src/openpgp-do.c (gpg_do_kdf_check): When LEN==0, check if
+	KDO data object is available.
+	[KDF_DO_REQUIRED] (proc_key_import): Refuse the key import when
+	KDF data object is not available.
+
+	* src/openpgp.c [KDF_DO_REQUIRED] (cmd_pgp_gakp): Refuse key
+	generation when KDF data object is not available.
+
+2021-02-19  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* tool/gnuk-emulation-setup: Remove.
+
+	* tool/upgrade_by_passwd.py (main): Use tobytes.
+	* tool/gnuk_get_random.py: Likewise.
+	* tool/gnuk_remove_keys_libusb.py (main): Likewise.
+	Switch to Python3.
+	* tool/gnuk_put_binary_libusb.py (main): Use tobytes.
+	Switch to Python3.
+	* tool/gnuk_upgrade.py (main): Use tobytes.
+	Switch to Python3.
+
+	* chopstx: Update to 1.19.
+
+2021-02-18  Vincent Pelletier <plr.vincent@gmail.com>
+
+	* test/features/202_setup_passphrase.feature: Fix.
+	* test/rsa_keys.py: Fix escape.
+	* tests/card_reader.py: Extend the timeout.
+	Handle no card.
+	* tests/rsa_keys.py: Fix escape.
+	* tool/gnuk_token.py: Avoid hard-coding the endpoints.
+	Longer timeout.
+
+2021-02-18  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/configure [GNU_LINUX_EMULATION] (def_mhz): Define.
+	(output_vendor_product_serial_strings): Output ARCH.
+
+	* GNUK_USB_DEVICE_ID: Use "Gnuk Token" for emulation, too.
+
+	* src/main.c [GNU_LINUX_EMULATION] (main): Add initialization of
+	the .gnuk-flash-image file.
+	(gnuk_sbrk): Rename from sbrk.
+
+2020-09-10  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* VERSION: 1.2.16.
+
+2020-09-09  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/modp256k1.c (modp256k1_add, modp256k1_sub): Use memcpy with
+	dummy memory area.
+	* src/modp256r1.c (modp256r1_add, modp256r1_sub)
+	(modp256r1_reduce): Likewise.
+
+2020-09-08  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/modp256k1.c (modp256k1_add, modp256k1_reduce): Avoid
+	optimization to remove call of memmove.
+	* src/modp256r1.c (modp256r1_add, modp256r1_sub)
+	(modp256r1_reduce): Likewise.
+
+2020-09-07  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/openpgp.c (gpg_get_firmware_update_key): Use an array.
+
+	* src/modp256k1.c (modp256k1_add, modp256k1_sub): Use memmove.
+	* src/modp256r1.c (modp256r1_add, modp256r1_sub)
+	(modp256r1_reduce): Likewise.
+
+2020-09-04  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/openpgp-do.c (GPG_DO_ALG_INFO): New.
+	(do_fp_all, do_cafp_all, do_kgtime_all, do_openpgpcard_aid)
+	(do_ds_count): Return nothing.
+	(copy_do): Change the API for DO_PROC_READ.
+	(do_alg_info): New for GPG_DO_ALG_INFO.
+	(gpg_do_table): Add an entry for GPG_DO_ALG_INFO.
+
+2020-09-03  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/openpgp.c (cmd_internal_authenticate): Remove checking
+	against EDDSA_HASH_LEN_MAX.
+	(cmd_pso): Likewise.
+
+2020-08-28  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/openpgp.c (cmd_reset_user_password): Add passphrase length
+	check.
+
+2020-08-26  NIIBE Yutaka  <gniibe@fsij.org>
+
+	* src/ac.c (verify_user_0): Fix for a use case of having
+	signing key only.
+	(verify_admin_00): Clean up.
+
+	* tests/test_000_empty_card.py (test_name_lang_sex): Support
+	OpenPGP card version 3.3.
+
 2020-01-24  NIIBE Yutaka  <gniibe@fsij.org>
 
 	* VERSION: 1.2.15.
