@@ -1,0 +1,27 @@
+From cd80992fe69d20b9adc1c9ce1c57840d8acd36f4 Mon Sep 17 00:00:00 2001
+From: Szczepan Zalega <szczepan@nitrokey.com>
+Date: Wed, 7 Dec 2022 18:56:55 +0100
+Subject: [PATCH 1398/1399] REMOVE Set PIN lenght to default for tests
+
+---
+ src/openpgp.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/src/openpgp.c b/src/openpgp.c
+index 9f1a133..4f807ae 100644
+--- a/src/openpgp.c
++++ b/src/openpgp.c
+@@ -38,8 +38,8 @@
+ 
+ static struct eventflag *openpgp_comm;
+ 
+-#define USER_PASSWD_MINLEN 14
+-#define ADMIN_PASSWD_MINLEN 14
++#define USER_PASSWD_MINLEN 6
++#define ADMIN_PASSWD_MINLEN 8
+ 
+ #define CLS(a) a.cmd_apdu_head[0]
+ #define INS(a) a.cmd_apdu_head[1]
+-- 
+2.38.1
+

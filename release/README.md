@@ -34,6 +34,12 @@ This could happen, when the `RDP` flag is set by the firmware, and after that th
 
 ## Tests
 
+Tests should be executed with a small patch, which reverts the change of the minimal PIN length.
+
+Patch file is called `REMOVE-Set-PIN-length-to-default-for-tests.patch`.
+
+### Execution
+
 1. Test direct flashing
 2. Tests update firmware from:
    - HW3/RTM.10
@@ -50,4 +56,19 @@ pip install pytest-reporter-html1
 # execution
 pytest  --template=html1/index.html --report=reports/report-rtm10-to-rtm13.rc3-hw3-updated.html -v
 pytest  --template=html1/index.html --report=reports/report-rtm10-to-rtm13.rc3-hw3-updated-ident.html -v test_multiple_identities.py
+```
+
+## Release
+Following builds the firmware in the container, and places in the build directory.
+
+```shell
+git tag -sm ... RTM.13
+cd ./prebuilt
+bash build_all.sh RTM.13 red
+mv build/RTM.13/ .
+cat build/sums.sha512 >> checksums.sha512
+git add RTM.13
+git reset RTM.13/gnuk.hex
+git add checksums.sha512
+git commit -S ...
 ```
